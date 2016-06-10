@@ -50,3 +50,10 @@ export NVM_DIR="$HOME/.nvm"
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../,,'
+
+# current directoryとuser nameを2行で表示
+# http://webtech-walker.com/archive/2008/12/15101251.html
+PROMPT="
+ %{${fg[yellow]}%}%~%{${reset_color}%} 
+ [%n]$ "
+PROMPT2='[%n]> ' 
