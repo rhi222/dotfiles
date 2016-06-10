@@ -1,0 +1,6 @@
+\pset null '[NULL]'
+\x auto
+\set HISTFILE ~/.psql_history- :DBNAME
+\set COMP_KEYWORD_CASE upper
+\timing on
+\set VERBOSITY verbose
