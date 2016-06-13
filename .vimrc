@@ -67,3 +67,10 @@ nmap <Space>j <Plug>(quickhl-match)
 " ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
+
+" filetype
+augroup fileTypeIndent
+	autocmd!
+	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 shiftwidth=4
+	autocmd BufNewFile,BufRead *.rb setlocal tabstop=2 softtabstop=2 shiftwidth=2
+augroup END

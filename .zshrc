@@ -47,13 +47,19 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
 
 # alias for cd
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../,,'
+alias ..="cd .."
+alias ..2="cd ../.."
+alias ..3="cd ../../.."
+alias ..4="cd ../../../.."
+alias ..5="cd ../../../../.."
 
 # current directoryとuser nameを2行で表示
 # http://webtech-walker.com/archive/2008/12/15101251.html
+# color
+# https://h2ham.net/zsh-prompt-color
+autoload colors
+colors
 PROMPT="
- %{${fg[yellow]}%}%~%{${reset_color}%} 
- [%n]$ "
+ %{${fg[cyan]}%}%~%{${reset_color}%} 
+ [%n@%m]$ "
 PROMPT2='[%n]> ' 
