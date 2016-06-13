@@ -1,6 +1,8 @@
 #! /bin/bash
-ln -s /data/git-repos/dotfiles/.vimrc ~/.vimrc
-ln -s /data/git-repos/dotfiles/.zshrc ~/.zshrc
-ln -s /data/git-repos/dotfiles/.vim ~/.vim
-ln -s /data/git-repos/dotfiles/.tmux.conf ~/.tmux.conf
-ln -s /data/git-repos/dotfiles/.psqlrc /home/postgres/.psqlrc
+PWD=`pwd`
+ln -s $PWD/.vimrc ~/.vimrc
+ln -s $PWD/.zshrc ~/.zshrc
+ln -s $PWD/.vim ~/.vim
+ln -s $PWD/.tmux.conf ~/.tmux.conf
+ln -s $PWD/.psqlrc /home/postgres/.psqlrc
+echo $PWD
