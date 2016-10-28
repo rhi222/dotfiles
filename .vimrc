@@ -1,37 +1,43 @@
-" Neobundle settings {{{
-if has('vim_starting')
-	set runtimepath+=~/.vim/bundle/neobundle.vim/
+"" dein.vim settings {{{
+" プラグインが実際にインストールされるディレクトリ
+let s:dein_dir = expand('~/.cache/dein')
+" dein.vim 本体
+let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
+
+" dein.vim がなければ github から落としてくる
+if &runtimepath !~# '/dein.vim'
+  if !isdirectory(s:dein_repo_dir)
+    execute '!git clone https://github.com/Shougo/dein.vim' s:dein_repo_dir
+  endif
+  execute 'set runtimepath^=' . fnamemodify(s:dein_repo_dir, ':p')
 endif
 
-call neobundle#begin(expand('~/.vim/bundle/'))
-NeoBundleFetch 'Shougo/neobundle.vim'
-NeoBundle 'scrooloose/nerdtree'
-NeoBundle 'ctrlpvim/ctrlp.vim'
-"NeoBundle 'jiangmiao/auto-pairs'
-"NeoBundle 'junegunn/vim-easy-align'
-"NeoBundle 'Yggdroot/indentLine'
-NeoBundle 'forcia'
-"NeoBundle 'mattn/emmet-vim'
-NeoBundle 't9md/vim-quickhl'
-NeoBundle 'Shougo/neocomplete.vim'
-call neobundle#end()
-" }}}
+" 設定開始
+if dein#load_state(s:dein_dir)
+  call dein#begin(s:dein_dir)
 
-"" dein.vim settings {{{
-"if &compatible
-"	set nocompatible
-"endif
-"set runtimepath^=/data/git-repos/dein.vim/repos/github.com/Shougo/dein.vim
-"call dein#begin('/data/git-repos/dein.vim')
-"call dein#add('Shougo/dein.vim')
-"call dein#add('Shougo/neocomplete.vim')
-"call dein#add('scrooloose/nerdtree')
-"call dein#add('ctrlpvim/ctrlp.vim')
-"call dein#add('Yggdroot/indentLine')
-"call dein#add('forcia')
-"call dein#add('t9md/vim-quickhl')
-"
-"call dein#end()
+  " プラグインリストを収めた TOML ファイル
+  " 予め TOML ファイル（後述）を用意しておく
+  let g:rc_dir    = expand('~/.vim/dein')
+  let s:toml      = g:rc_dir . '/dein.toml'
+  let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
+
+  " TOML を読み込み、キャッシュしておく
+  call dein#load_toml(s:toml,      {'lazy': 0})
+  call dein#load_toml(s:lazy_toml, {'lazy': 1})
+
+  " forciaのプラグインを読み込む
+  call dein#local("~/.vim/dein")
+
+  " 設定終了
+  call dein#end()
+  call dein#save_state()
+endif
+
+" もし、未インストールものものがあったらインストール
+if dein#check_install()
+  call dein#install()
+endif
 "" }}}
 
 " setting statusline
