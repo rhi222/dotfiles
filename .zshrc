@@ -63,3 +63,13 @@ PROMPT="
  %{${fg[cyan]}%}%~%{${reset_color}%} 
  [%n@%m]$ "
 PROMPT2='[%n]> ' 
+
+# path
+export JAVA_HOME=/usr/local/java
+export PATH=$JAVA_HOME/bin:$PATH
+export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin"
+
+function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
+
+# alias for cocot
+alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP環境にsshする
