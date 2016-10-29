@@ -73,3 +73,6 @@ function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
 # alias for cocot
 alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP環境にsshする
+
+# alias for neovim
+alias vi='nvim'
