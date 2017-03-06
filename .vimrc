@@ -23,7 +23,8 @@ if dein#check_install()
 	call dein#install()
 endif
 "" }}}
-"
+
+
 " setting statusline
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
@@ -47,6 +48,7 @@ let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 1
+syntax on
 
 " encoding
 set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
