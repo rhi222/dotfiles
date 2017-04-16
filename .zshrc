@@ -5,10 +5,6 @@
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
 #
 
-# Source Prezto.
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
-  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
-fi
 
 # Customize to your needs...
 # for fzf
@@ -76,3 +72,10 @@ if [ -d "${PYENV_ROOT}" ]; then
 	eval "$(pyenv init -)"
 	eval "$(pyenv virtualenv-init -)"
 fi
+
+# Source Prezto.
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+fi
+
+alias vi="nvim"
