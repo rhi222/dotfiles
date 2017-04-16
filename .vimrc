@@ -1,4 +1,5 @@
 "" dein.vim settings {{{
+" dein自体の自動インストール
 let s:dein_dir = expand('~/.cache/dein')
 let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
 if &runtimepath !~# '/dein.vim'
@@ -8,17 +9,19 @@ if &runtimepath !~# '/dein.vim'
 	execute 'set runtimepath^=' . fnamemodify(s:dein_repo_dir, ':p')
 endif
 
+" プラグイン読み込み＆キャッシュ作成
 if dein#load_state(s:dein_dir)
 	call dein#begin(s:dein_dir)
 	let g:rc_dir    = expand('~/.vim/dein')
 	let s:toml      = g:rc_dir . '/dein.toml'
-	let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
+	"let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
 	call dein#load_toml(s:toml,      {'lazy': 0})
-	call dein#load_toml(s:lazy_toml, {'lazy': 1})
+	"call dein#load_toml(s:lazy_toml, {'lazy': 1})
 	call dein#end()
 	call dein#save_state()
 endif
 
+" 不足プラグインの自動インストール
 if dein#check_install()
 	call dein#install()
 endif
@@ -40,7 +43,7 @@ set ignorecase
 " ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
 " 無名レジスタに入るデータを、*レジスタにも入れる。
-set clipboard=unnamedplus,autoselect
+"set clipboard=unnamedplus,autoselect
 "set clipboard+=unnamed
 "set clipboard=unnamedplus
 
@@ -84,3 +87,20 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 shiftwidth=4
 	autocmd BufNewFile,BufRead *.rb setlocal tabstop=2 softtabstop=2 shiftwidth=2
 augroup END
+
+" Use deoplete.
+" https://github.com/Shougo/deoplete.nvim
+"" deplete.nvim settings {{{
+let g:deoplete#enable_at_startup = 1
+let g:deoplete#auto_complete_delay = 0
+let g:deoplete#auto_complete_start_length = 1
+let g:deoplete#enable_camel_case = 0
+let g:deoplete#enable_ignore_case = 0
+let g:deoplete#enable_refresh_always = 0
+let g:deoplete#enable_smart_case = 1
+let g:deoplete#file#enable_buffer_path = 1
+let g:deoplete#max_list = 10000
+inoremap <expr><tab> pumvisible() ? "\<C-n>" :
+      \ neosnippet#expandable_or_jumpable() ?
+      \    "\<Plug>(neosnippet_expand_or_jump)" : "\<tab>"
+"" }}
