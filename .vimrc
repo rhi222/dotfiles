@@ -54,7 +54,7 @@ let g:syntastic_check_on_wq = 1
 syntax on
 
 " encoding
-set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 set encoding=utf-8
 
 " etc
