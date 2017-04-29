@@ -43,9 +43,11 @@ set ignorecase
 " ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
 " 無名レジスタに入るデータを、*レジスタにも入れる。
+" http://stackoverflow.com/questions/39645253/clipboard-failure-in-tmux-vim-after-upgrading-to-macos-sierra
 "set clipboard=unnamedplus,autoselect
 "set clipboard+=unnamed
 "set clipboard=unnamedplus
+set clipboard=unnamed
 
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
