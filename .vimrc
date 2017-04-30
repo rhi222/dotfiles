@@ -1,5 +1,5 @@
 "" dein.vim settings {{{
-" dein$B<+BN$N<+F0%$%s%9%H!<%k(B
+" dein自体の自動インストール
 let s:dein_dir = expand('~/.cache/dein')
 let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
 if &runtimepath !~# '/dein.vim'
@@ -9,7 +9,7 @@ if &runtimepath !~# '/dein.vim'
 	execute 'set runtimepath^=' . fnamemodify(s:dein_repo_dir, ':p')
 endif
 
-" $B%W%i%0%$%sFI$_9~$_!u%-%c%C%7%e:n@.(B
+" プラグイン読み込み＆キャッシュ作成
 if dein#load_state(s:dein_dir)
 	call dein#begin(s:dein_dir)
 	let g:rc_dir    = expand('~/.vim/dein')
@@ -21,7 +21,7 @@ if dein#load_state(s:dein_dir)
 	call dein#save_state()
 endif
 
-" $BITB-%W%i%0%$%s$N<+F0%$%s%9%H!<%k(B
+" 不足プラグインの自動インストール
 if dein#check_install()
 	call dein#install()
 endif
@@ -40,9 +40,9 @@ set laststatus=2
 " ignore upper or lower case
 set ignorecase
 
-" $B%S%8%e%"%k%b!<%I$GA*Br$7$?%F%-%9%H$,!"%/%j%C%W%\!<%I$KF~$k$h$&$K$9$k(B
+" ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
-" $BL5L>%l%8%9%?$KF~$k%G!<%?$r!"(B*$B%l%8%9%?$K$bF~$l$k!#(B
+" 無名レジスタに入るデータを、*レジスタにも入れる。
 " http://stackoverflow.com/questions/39645253/clipboard-failure-in-tmux-vim-after-upgrading-to-macos-sierra
 "set clipboard=unnamedplus,autoselect
 "set clipboard+=unnamed
@@ -57,6 +57,7 @@ syntax on
 
 " encoding
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
+"set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
 set encoding=utf-8
 
 " etc
@@ -79,7 +80,7 @@ nmap <Space>M <Plug>(quickhl-reset)
 xmap <Space>M <Plug>(quickhl-reset)
 nmap <Space>j <Plug>(quickhl-match)
 
-" $B%U%!%$%k$N3HD%;R$rH=Dj$9$k(B
+" ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
 
