@@ -64,12 +64,15 @@ set encoding=utf-8
 set tabstop=4
 set hlsearch
 set number
-set cursorline
 set incsearch
 let g:indentLine_char = '|'
 set list listchars=trail:~,tab:\|\ 
 hi SpecialKey guibg=NONE guifg=Gray40
 
+" highlight current line
+set cursorline
+highlight CursorLine cterm=NONE ctermbg=Black
+highlight CursorLine gui=NONE guibg=Black
 
 "------------------------------------
 """ vim-quickhl
@@ -103,7 +106,6 @@ let g:deoplete#enable_refresh_always = 0
 let g:deoplete#enable_smart_case = 1
 let g:deoplete#file#enable_buffer_path = 1
 let g:deoplete#max_list = 10000
-inoremap <expr><tab> pumvisible() ? "\<C-n>" :
-      \ neosnippet#expandable_or_jumpable() ?
-      \    "\<Plug>(neosnippet_expand_or_jump)" : "\<tab>"
+" deoplete tab-complete
+inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 "" }}
