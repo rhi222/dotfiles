@@ -67,7 +67,7 @@ PROMPT2='[%n]> '
 # path
 export JAVA_HOME=/usr/local/java
 export PATH=$JAVA_HOME/bin:$PATH
-export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/local/java/bin:/usr/local/java/bin:/home/forcia/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/forcia/.rbenv/bin:/usr/local/python/bin:/home/forcia/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/forcia/.fzf/bin"
+export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/local/java/bin:/usr/local/java/bin:/home/forcia/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/forcia/.rbenv/bin:/usr/local/pyenv/shims:/usr/local/pyenv/bin:/usr/local/python/bin:/home/forcia/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/forcia/.fzf/bin"
 
 function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
@@ -76,3 +76,30 @@ alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP環境にsshする
 
 # alias for neovim
 alias vi='nvim'
+alias view='nvim -R'
+
+# alias for mkdir and cd
+function mkdircd () { mkdir -p $1 && cd $_ }
+
+# alias for rsync always use ssh and don't update file
+function rsyncs () { rsync --ignore-existing -e ssh $1}
+
+# pyenv
+export PYENV_ROOT=$HOME/.pyenv
+export PATH=$PYENV_ROOT/bin:$PATH
+eval "$(pyenv init -)"
+
+# editor
+EDITOR=nvim
+
+
+# fzf
+#function vi () { nvim $(fzf) }
+
+# fd - cd to selected directory
+fd() {
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune \
+                  -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
+}
