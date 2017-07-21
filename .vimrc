@@ -29,6 +29,12 @@ if dein#load_state(s:dein_dir)
   " forciaのプラグインを読み込む
   call dein#local("~/.vim/dein")
 
+  " ./install --all so the interactive script doesn't block
+  " you can check the other command line options  in the install file
+  call dein#add('junegunn/fzf', { 'build': './install --all', 'merged': 0 }) 
+  call dein#add('junegunn/fzf.vim', { 'depends': 'fzf' })
+
+
   " 設定終了
   call dein#end()
   call dein#save_state()
@@ -55,9 +61,7 @@ set ignorecase
 " ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
 " 無名レジスタに入るデータを、*レジスタにも入れる。
-set clipboard=unnamedplus,autoselect
-"set clipboard+=unnamed
-"set clipboard=unnamedplus
+set clipboard+=unnamedplus
 
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
@@ -66,21 +70,27 @@ let g:syntastic_check_on_wq = 1
 
 " encoding
 set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
-set encoding=utf-8
+"set encoding=utf-8
 
 " etc
 set tabstop=4
+set shiftwidth=4
 set hlsearch
 set number
 set cursorline
+highlight CursorLine cterm=NONE ctermbg=Black
+highlight CursorLine gui=NONE guibg=Black
 "highlight CursorLine term=none ctermbg=242
 "highlight CursorLine cterm=NONE ctermbg=darkred ctermfg=white guibg=darkred guifg=white
 "highlight CursorLine cterm=NONE ctermbg=24
 set incsearch
-let g:indentLine_char = '|'
 set list listchars=trail:~,tab:\|\ 
 hi SpecialKey guibg=NONE guifg=Gray40
 
+" mouse
+set mouse=a
+
+" let g:syntastic_python_checkers = ["flake8"]
 
 "------------------------------------
 """ vim-quickhl
@@ -101,7 +111,6 @@ augroup fileTypeIndent
 	autocmd!
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
 	autocmd BufNewFile,BufRead *.rb setlocal tabstop=2 softtabstop=2 shiftwidth=2
-	"autocmd BufNewFile,BufRead *.rb setlocal shiftwidth=2
 augroup END
 
 autocmd BufWritePost *.py call Flake8()
