@@ -46,6 +46,9 @@ if dein#check_install()
 endif
 "" }}}
 
+"------------------------------------
+""" general
+"------------------------------------
 " setting statusline
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
@@ -80,9 +83,6 @@ set number
 set cursorline
 highlight CursorLine cterm=NONE ctermbg=Black
 highlight CursorLine gui=NONE guibg=Black
-"highlight CursorLine term=none ctermbg=242
-"highlight CursorLine cterm=NONE ctermbg=darkred ctermfg=white guibg=darkred guifg=white
-"highlight CursorLine cterm=NONE ctermbg=24
 set incsearch
 set list listchars=trail:~,tab:\|\ 
 hi SpecialKey guibg=NONE guifg=Gray40
@@ -102,6 +102,9 @@ xmap <Space>M <Plug>(quickhl-reset)
 nmap <Space>j <Plug>(quickhl-match)
 
 
+"------------------------------------
+""" filetype settings
+"------------------------------------
 " ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
