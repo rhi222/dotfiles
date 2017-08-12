@@ -72,7 +72,8 @@ let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 1
 
 " encoding
-set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+" set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
 " etc
@@ -124,6 +125,7 @@ autocmd BufWritePost *.py call Flake8()
 " Use deoplete.
 " https://github.com/Shougo/deoplete.nvim
 "" deplete.nvim settings {{{
+""" standard settings
 let g:deoplete#enable_at_startup = 1
 let g:deoplete#auto_complete_delay = 0
 let g:deoplete#auto_complete_start_length = 1
@@ -133,6 +135,16 @@ let g:deoplete#enable_refresh_always = 0
 let g:deoplete#enable_smart_case = 1
 let g:deoplete#file#enable_buffer_path = 1
 let g:deoplete#max_list = 10000
-" deoplete tab-complete
+" https://github.com/Shougo/deoplete.nvim/issues/298
+set completeopt-=preview
+""" deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
+
 "" }}
+
+"------------------------------------
+""" vim-jsdoc
+"------------------------------------
+" https://github.com/heavenshell/vim-jsdoc
+" nmap <silent> <C-l> <Plug>(jsdoc)
+nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
