@@ -103,3 +103,6 @@ fd() {
                   -o -type d -print 2> /dev/null | fzf +m) &&
   cd "$dir"
 }
+
+# alias for catalina
+alias catalina='less /usr/local/tomcat/logs/catalina.out'
