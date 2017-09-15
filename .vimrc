@@ -72,7 +72,7 @@ let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 1
 
 " encoding
-" set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+"set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
@@ -148,3 +148,16 @@ inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 " https://github.com/heavenshell/vim-jsdoc
 " nmap <silent> <C-l> <Plug>(jsdoc)
 nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
+
+
+" jq
+" http://qiita.com/tekkoc/items/324d736f68b0f27680b8
+command! -nargs=? Jq call s:Jq(<f-args>)
+function! s:Jq(...)
+    if 0 == a:0
+        let l:arg = "."
+    else
+        let l:arg = a:1
+    endif
+    execute "%! jq \"" . l:arg . "\""
+endfunction
