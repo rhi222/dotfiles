@@ -1,10 +1,10 @@
 "" dein.vim settings {{{
-" $B%W%i%0%$%s$,<B:]$K%$%s%9%H!<%k$5$l$k%G%#%l%/%H%j(B
+" プラグインが実際にインストールされるディレクトリ
 let s:dein_dir = expand('~/.cache/dein')
-" dein.vim $BK\BN(B
+" dein.vim 本体
 let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
 
-" dein.vim $B$,$J$1$l$P(B github $B$+$iMn$H$7$F$/$k(B
+" dein.vim がなければ落としてくる
 if &runtimepath !~# '/dein.vim'
   if !isdirectory(s:dein_repo_dir)
     execute '!git clone https://github.com/Shougo/dein.vim' s:dein_repo_dir
@@ -12,21 +12,20 @@ if &runtimepath !~# '/dein.vim'
   execute 'set runtimepath^=' . fnamemodify(s:dein_repo_dir, ':p')
 endif
 
-" $B@_Dj3+;O(B
+" 設定開始
 if dein#load_state(s:dein_dir)
   call dein#begin(s:dein_dir)
 
-  " $B%W%i%0%$%s%j%9%H$r<}$a$?(B TOML $B%U%!%$%k(B
-  " $BM=$a(B TOML $B%U%!%$%k!J8e=R!K$rMQ0U$7$F$*$/(B
+  " プラグイン情報が記載されているtoml fileを予め用意しておく
   let g:rc_dir    = expand('~/.vim/dein')
   let s:toml      = g:rc_dir . '/dein.toml'
   let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
 
-  " TOML $B$rFI$_9~$_!"%-%c%C%7%e$7$F$*$/(B
+  " TOML を読み込み、キャッシュする
   call dein#load_toml(s:toml,      {'lazy': 0})
   call dein#load_toml(s:lazy_toml, {'lazy': 1})
 
-  " example-org$B$N%W%i%0%$%s$rFI$_9~$`(B
+  "  road example-org origina plugin
   call dein#local("~/.vim/dein")
 
   " ./install --all so the interactive script doesn't block
@@ -35,12 +34,12 @@ if dein#load_state(s:dein_dir)
   call dein#add('junegunn/fzf.vim', { 'depends': 'fzf' })
 
 
-  " $B@_Dj=*N;(B
+  " 設定終了
   call dein#end()
   call dein#save_state()
 endif
 
-" $B$b$7!"L$%$%s%9%H!<%k$b$N$b$N$,$"$C$?$i%$%s%9%H!<%k(B
+" 未インストールがあればインストール
 if dein#check_install()
   call dein#install()
 endif
@@ -61,9 +60,9 @@ set laststatus=2
 " ignore upper or lower case
 set ignorecase
 
-" $B%S%8%e%"%k%b!<%I$GA*Br$7$?%F%-%9%H$,!"%/%j%C%W%\!<%I$KF~$k$h$&$K$9$k(B
+" ビジュアルモードで選択したテキストをクリップボードに入れる
 " http://nanasi.jp/articles/howto/editing/clipboard.html
-" $BL5L>%l%8%9%?$KF~$k%G!<%?$r!"(B*$B%l%8%9%?$K$bF~$l$k!#(B
+" 無名レジスタに入るデータを*レジスタにも入れる
 set clipboard+=unnamedplus
 
 let g:syntastic_always_populate_loc_list = 1
@@ -72,7 +71,7 @@ let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 1
 
 " encoding
-"set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+" set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
@@ -106,7 +105,7 @@ nmap <Space>j <Plug>(quickhl-match)
 "------------------------------------
 """ filetype settings
 "------------------------------------
-" $B%U%!%$%k$N3HD%;R$rH=Dj$9$k(B
+" ファイルの拡張子を識別
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
 
