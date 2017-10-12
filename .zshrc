@@ -106,3 +106,7 @@ fd() {
 
 # alias for catalina
 alias catalina='less /usr/local/tomcat/logs/catalina.out'
+
+# tree for exel
+# https://qiita.com/yoccola/items/bac59716c88633b68b61
+alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
