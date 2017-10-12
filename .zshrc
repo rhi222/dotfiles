@@ -37,21 +37,10 @@ precmd () {
 			}
 			RPROMPT="%1(v|%F{green}%1v%f|)"
 
-# alias find command
-# http://takuya-1st.hatenablog.jp/entry/2015/12/15/030119
-function f () { find $1 -name "$2" }
-
 # nvm
 # https://github.com/creationix/nvm
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
-
-# alias for cd
-alias ..="cd .."
-alias ..2="cd ../.."
-alias ..3="cd ../../.."
-alias ..4="cd ../../../.."
-alias ..5="cd ../../../../.."
 
 # current directory$B$H(Buser name$B$r(B2$B9T$GI=<((B
 # http://webtech-walker.com/archive/2008/12/15101251.html
@@ -71,6 +60,40 @@ export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/lo
 
 function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
+# pyenv
+export PYENV_ROOT=$HOME/.pyenv
+export PATH=$PYENV_ROOT/bin:$PATH
+eval "$(pyenv init -)"
+
+# editor
+EDITOR=nvim
+
+# fzf
+#function vi () { nvim $(fzf) }
+
+# fd - cd to selected directory
+fd() {
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune \
+                  -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
+}
+
+###
+# alias
+###
+
+# alias find command
+# http://takuya-1st.hatenablog.jp/entry/2015/12/15/030119
+function f () { find $1 -name "$2" }
+
+# alias for catalina
+alias catalina='less /usr/local/tomcat/logs/catalina.out'
+
+# tree for exel
+# https://qiita.com/yoccola/items/bac59716c88633b68b61
+alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
+
 # alias for cocot
 alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP$B4D6-$K(Bssh$B$9$k(B
 
@@ -84,29 +107,9 @@ function mkdircd () { mkdir -p $1 && cd $_ }
 # alias for rsync always use ssh and don't update file
 function rsyncs () { rsync --ignore-existing -e ssh $1}
 
-# pyenv
-export PYENV_ROOT=$HOME/.pyenv
-export PATH=$PYENV_ROOT/bin:$PATH
-eval "$(pyenv init -)"
-
-# editor
-EDITOR=nvim
-
-
-# fzf
-#function vi () { nvim $(fzf) }
-
-# fd - cd to selected directory
-fd() {
-  local dir
-  dir=$(find ${1:-*} -path '*/\.*' -prune \
-                  -o -type d -print 2> /dev/null | fzf +m) &&
-  cd "$dir"
-}
-
-# alias for catalina
-alias catalina='less /usr/local/tomcat/logs/catalina.out'
-
-# tree for exel
-# https://qiita.com/yoccola/items/bac59716c88633b68b61
-alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
+# alias for cd
+alias ..="cd .."
+alias ..2="cd ../.."
+alias ..3="cd ../../.."
+alias ..4="cd ../../../.."
+alias ..5="cd ../../../../.."
