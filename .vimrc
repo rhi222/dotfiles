@@ -4,7 +4,7 @@ let s:dein_dir = expand('~/.cache/dein')
 " dein.vim 本体
 let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
 
-" dein.vim がなければ落としてくる
+" dein.vim がなければ github から落としてくる
 if &runtimepath !~# '/dein.vim'
   if !isdirectory(s:dein_repo_dir)
     execute '!git clone https://github.com/Shougo/dein.vim' s:dein_repo_dir
@@ -16,16 +16,17 @@ endif
 if dein#load_state(s:dein_dir)
   call dein#begin(s:dein_dir)
 
-  " プラグイン情報が記載されているtoml fileを予め用意しておく
+  " プラグインリストを収めた TOML ファイル
+  " 予め TOML ファイル（後述）を用意しておく
   let g:rc_dir    = expand('~/.vim/dein')
   let s:toml      = g:rc_dir . '/dein.toml'
   let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
 
-  " TOML を読み込み、キャッシュする
+  " TOML を読み込み、キャッシュしておく
   call dein#load_toml(s:toml,      {'lazy': 0})
   call dein#load_toml(s:lazy_toml, {'lazy': 1})
 
-  "  road forcia origina plugin
+  " forciaのプラグインを読み込む
   call dein#local("~/.vim/dein")
 
   " ./install --all so the interactive script doesn't block
@@ -39,7 +40,7 @@ if dein#load_state(s:dein_dir)
   call dein#save_state()
 endif
 
-" 未インストールがあればインストール
+" もし、未インストールものものがあったらインストール
 if dein#check_install()
   call dein#install()
 endif
@@ -60,9 +61,9 @@ set laststatus=2
 " ignore upper or lower case
 set ignorecase
 
-" ビジュアルモードで選択したテキストをクリップボードに入れる
+" ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
-" 無名レジスタに入るデータを*レジスタにも入れる
+" 無名レジスタに入るデータを、*レジスタにも入れる。
 set clipboard+=unnamedplus
 
 let g:syntastic_always_populate_loc_list = 1
@@ -105,7 +106,7 @@ nmap <Space>j <Plug>(quickhl-match)
 "------------------------------------
 """ filetype settings
 "------------------------------------
-" ファイルの拡張子を識別
+" ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
 
@@ -113,7 +114,8 @@ filetype plugin indent on
 augroup fileTypeIndent
 	autocmd!
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
-	autocmd BufNewFile,BufRead *.rb setlocal tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 augroup END
 
 autocmd BufWritePost *.py call Flake8()
@@ -147,6 +149,7 @@ inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 " https://github.com/heavenshell/vim-jsdoc
 " nmap <silent> <C-l> <Plug>(jsdoc)
 nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
+let g:jsdoc_enable_es6 = 0
 
 
 " jq
@@ -160,3 +163,30 @@ function! s:Jq(...)
     endif
     execute "%! jq \"" . l:arg . "\""
 endfunction
+
+"------------------------------------
+""" neosnippet
+"------------------------------------
+"" Plugin key-mappings.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+smap <C-k>     <Plug>(neosnippet_expand_or_jump)
+xmap <C-k>     <Plug>(neosnippet_expand_target)
+
+" SuperTab like snippets behavior.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+"imap <expr><TAB>
+" \ pumvisible() ? "\<C-n>" :
+" \ neosnippet#expandable_or_jumpable() ?
+" \    "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
+smap <expr><TAB> neosnippet#expandable_or_jumpable() ?
+\ "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
+
+" For conceal markers.
+if has('conceal')
+  set conceallevel=2 concealcursor=niv
+endif
+
+" 自分用 snippet ファイルの場所 (任意のパス)
+let g:neosnippet#snippets_directory = '~/.vim/snippets/'
