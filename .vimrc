@@ -31,8 +31,9 @@ if dein#load_state(s:dein_dir)
 
   " ./install --all so the interactive script doesn't block
   " you can check the other command line options  in the install file
-  call dein#add('junegunn/fzf', { 'build': './install --all', 'merged': 0 }) 
-  call dein#add('junegunn/fzf.vim', { 'depends': 'fzf' })
+  "call dein#add('junegunn/fzf', { 'build': './install --all', 'merged': 0 }) 
+  "call dein#add('junegunn/fzf', { 'build': './install', 'rtp': '' })
+  "call dein#add('junegunn/fzf.vim', { 'depends': 'fzf' })
 
 
   " 設定終了
@@ -190,3 +191,18 @@ endif
 
 " 自分用 snippet ファイルの場所 (任意のパス)
 let g:neosnippet#snippets_directory = '~/.vim/snippets/'
+
+"------------------------------------
+""" FZF
+"------------------------------------
+" init.vim
+function! s:find_git_root()
+  return system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
+endfunction
+
+command! ProjectFiles execute 'Files' s:find_git_root()
+
+nnoremap <silent> <C-p> :ProjectFiles<CR>
+nnoremap <silent> <M-p> :History<CR>
+
+
