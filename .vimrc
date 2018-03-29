@@ -18,7 +18,7 @@ if dein#load_state(s:dein_dir)
 
   " プラグインリストを収めた TOML ファイル
   " 予め TOML ファイル（後述）を用意しておく
-  let g:rc_dir    = expand('~/.vim/dein')
+  let g:rc_dir    = expand('~/.config/nvim/dein')
   let s:toml      = g:rc_dir . '/dein.toml'
   let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
 
@@ -114,7 +114,8 @@ filetype plugin indent on
 " filetype
 augroup fileTypeIndent
 	autocmd!
-	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
+	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
+	autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 augroup END
@@ -204,5 +205,47 @@ command! ProjectFiles execute 'Files' s:find_git_root()
 
 nnoremap <silent> <C-p> :ProjectFiles<CR>
 nnoremap <silent> <M-p> :History<CR>
+" https://wonderwall.hatenablog.com/entry/2017/10/07/220000
+let g:fzf_layout = { 'down': '~90%' }
 
 
+"------------------------------------
+""" apache config file
+"------------------------------------
+autocmd BufNewFile,BufRead .htaccess setfiletype apache
+autocmd BufNewFile,BufRead httpd* setfiletype apache
+
+
+"------------------------------------
+""" eslint quickrun
+" https://qiita.com/zaki-yama/items/6bcc24469d06acdf8643
+"------------------------------------
+call dein#add('w0rp/ale')
+let g:ale_statusline_format = ['⨉ %d', '⚠ %d', '⬥ ok']
+let g:ale_fixers = {
+\   'javascript': ['eslint'],
+\}
+let g:ale_set_loclist = 0
+let g:ale_set_quickfix = 1
+
+call dein#add('itchyny/lightline.vim')
+let g:lightline = {
+  \'active': {
+  \  'left': [
+  \    ['mode', 'paste'],
+  \    ['readonly', 'relativepath', 'modified'],
+  \    ['ale'],
+  \  ]
+  \},
+  \'component_function': {
+  \  'ale': 'ALEStatus'
+  \}
+\ }
+
+function! LightLineFilename()
+  return expand('%:p:h')
+endfunction
+
+
+nmap <silent> <C-w>n <Plug>(ale_next_wrap)
+nmap <silent> <C-w>p <Plug>(ale_previous_wrap)
