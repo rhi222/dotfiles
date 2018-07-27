@@ -1,11 +1,16 @@
 snippet af
-    let ${1:name} = (${2:args}) => {
-        ${3:routine}
-    return;
+    const ${1:name} = (${2:args}) => {
+        return;
     };
 
 snippet debug
-    let debug = require("debug");
+    const debug = require("debug");
 
 snippet dd
     debug.dump(${1:output});
+
+snippet req
+    require("${1:source}");
+
+snippet cl
+    console.log(${1:output});
