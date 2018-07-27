@@ -44,7 +44,9 @@ PROMPT2='[%n]> '
 # path
 export JAVA_HOME=/usr/local/java
 export PATH=$JAVA_HOME/bin:$PATH
-export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/local/java/bin:/usr/local/java/bin:/home/forcia/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/forcia/.rbenv/bin:/usr/local/pyenv/shims:/usr/local/pyenv/bin:/usr/local/python/bin:/home/forcia/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/forcia/.fzf/bin"
+export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/local/java/bin:/usr/local/java/bin:/home/forcia/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/forcia/.rbenv/bin:/usr/local/python/bin:/usr/local/python/bin:/home/forcia/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/forcia/.fzf/bin"
+
+# export PATH="/home/forcia/.nvm/versions/node/v5.0.0/bin:/home/forcia/bin:/usr/local/java/bin:/usr/local/java/bin:/home/forcia/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/forcia/.rbenv/bin:/usr/local/pyenv/shims:/usr/local/pyenv/bin:/usr/local/python/bin:/home/forcia/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/forcia/.fzf/bin"
 
 function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
@@ -101,6 +103,13 @@ alias ..2="cd ../.."
 alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
+
+# alias for grep
+alias g='grep'
+alias eg='egrep'
+
+# alias for cd
+alias cdrr="cd $(git rev-parse --show-toplevel)"
 
 # axis2 for jetstar api
 export AXIS2_HOME=/usr/local/src/axis2-1.7.6
@@ -180,7 +189,7 @@ read -r -d '' __timetrack_ignore_progs <<EOF
 less
 emacs vi vim view
 ssh mosh telnet nc netcat
-gdb tmux tig
+gdb tmux tig man
 EOF
 
 export __timetrack_threshold
@@ -255,3 +264,25 @@ if which growlnotify >/dev/null 2>&1 ||
     add-zsh-hook preexec __my_preexec_start_timetrack
     add-zsh-hook precmd __my_preexec_end_timetrack
 fi
+
+export PATH=/home/forcia/bin/apricot-shell-1.1.1/bin:$PATH
+export PATH=/data/git-repos/apricot_modules/jasmine-apricot/bin:$PATH
+export APRICOT_MODULE_PATH=/data/git-repos/apricot_modules
+export PSQL_EDITOR='nvim +"set syntax=sql" '
+
+# rustup
+source ~/.cargo/env
+
+
+# kohno
+# https://github.com/fnwiya/dotfiles/blob/master/setup/zsh/.zsh.d/fzf.zsh
+function fzf-ssh () {
+    local selected_host=$(cat ~/.ssh/config | grep HostName | awk '{print $2}' | fzf)
+    if [ -n "$selected_host" ]; then
+        BUFFER="ssh ${selected_host}"
+        zle accept-line
+    fi
+    zle clear-screen
+}
+zle -N fzf-ssh
+bindkey '^x^[' fzf-ssh

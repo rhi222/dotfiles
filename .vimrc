@@ -29,13 +29,6 @@ if dein#load_state(s:dein_dir)
   " forciaのプラグインを読み込む
   call dein#local("~/.vim/dein")
 
-  " ./install --all so the interactive script doesn't block
-  " you can check the other command line options  in the install file
-  "call dein#add('junegunn/fzf', { 'build': './install --all', 'merged': 0 }) 
-  "call dein#add('junegunn/fzf', { 'build': './install', 'rtp': '' })
-  "call dein#add('junegunn/fzf.vim', { 'depends': 'fzf' })
-
-
   " 設定終了
   call dein#end()
   call dein#save_state()
@@ -77,6 +70,9 @@ let g:syntastic_check_on_wq = 1
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
+" tab
+set tabpagemax=50
+
 " etc
 set tabstop=4
 set shiftwidth=4
@@ -92,7 +88,8 @@ hi SpecialKey guibg=NONE guifg=Gray40
 " mouse
 set mouse=a
 
-" let g:syntastic_python_checkers = ["flake8"]
+" reload
+" nmap <silent> <C-w>r <Plug>(ale_next_wrap)
 
 "------------------------------------
 """ vim-quickhl
@@ -114,6 +111,7 @@ filetype plugin indent on
 " filetype
 augroup fileTypeIndent
 	autocmd!
+	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
@@ -121,37 +119,41 @@ augroup fileTypeIndent
 augroup END
 
 autocmd BufWritePost *.py call Flake8()
+	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
 
 "------------------------------------
 """ deoplete
 "------------------------------------
 " Use deoplete.
 " https://github.com/Shougo/deoplete.nvim
-"" deplete.nvim settings {{{
-""" standard settings
+"-- deplete.nvim settings {{{
+" standard settings
 let g:deoplete#enable_at_startup = 1
+let g:deoplete#enable_smart_case = 1
 let g:deoplete#auto_complete_delay = 0
 let g:deoplete#auto_complete_start_length = 1
 let g:deoplete#enable_camel_case = 0
-let g:deoplete#enable_ignore_case = 0
+let g:deoplete#enable_ignore_case = 1
 let g:deoplete#enable_refresh_always = 0
-let g:deoplete#enable_smart_case = 1
 let g:deoplete#file#enable_buffer_path = 1
 let g:deoplete#max_list = 10000
 " https://github.com/Shougo/deoplete.nvim/issues/298
 set completeopt-=preview
-""" deoplete tab-complete
+" set sources
+let g:deoplete#sources = {}
+" 5MB
+let deoplete#tag#cache_limit_size = 5000000
+" deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
-
-"" }}
+"-- }}}
 
 "------------------------------------
 """ vim-jsdoc
 "------------------------------------
 " https://github.com/heavenshell/vim-jsdoc
-" nmap <silent> <C-l> <Plug>(jsdoc)
-nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
+ nmap <silent> <C-l> <Plug>(jsdoc)
 let g:jsdoc_enable_es6 = 0
+" nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
 
 
 " jq
@@ -222,12 +224,17 @@ autocmd BufNewFile,BufRead httpd* setfiletype apache
 "------------------------------------
 call dein#add('w0rp/ale')
 let g:ale_statusline_format = ['⨉ %d', '⚠ %d', '⬥ ok']
-let g:ale_fixers = {
-\   'javascript': ['eslint'],
+let g:ale_linters = {
+\   'javascript': ['eslint', 'flow'],
+\   'html': ['write-good', 'alex!!', 'proselint'],
 \}
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
 
+"------------------------------------
+""" lightline.vim
+" https://github.com/itchyny/lightline.vim
+"------------------------------------
 call dein#add('itchyny/lightline.vim')
 let g:lightline = {
   \'active': {
@@ -246,6 +253,36 @@ function! LightLineFilename()
   return expand('%:p:h')
 endfunction
 
+"let g:ale_set_highlights = 0
+highlight ALEError ctermfg=235 ctermbg=208 guifg=#262626 guibg=#ff8700
+highlight ALEWarning ctermfg=117 ctermbg=24 guifg=#87dfff guibg=#005f87
+
 
 nmap <silent> <C-w>n <Plug>(ale_next_wrap)
 nmap <silent> <C-w>p <Plug>(ale_previous_wrap)
+
+
+"------------------------------------
+""" ack.vim
+" https://github.com/mileszs/ack.vim
+"------------------------------------
+if executable('rg')
+  let g:ackprg = 'rg --vimgrep'
+endif
+
+"------------------------------------
+""" nerdcommenter
+" https://github.com/scrooloose/nerdcommenter
+"------------------------------------
+let g:NERDSpaceDelims=1
+let g:NERDDefaultAlign='left'
+
+
+"------------------------------------
+""" dbext.vim
+" https://github.com/vim-scripts/dbext.vim
+" http://www.jonathansacramento.com/posts/20160122-improve-postgresql-workflow-vim-dbext.html
+"------------------------------------
+"let g:dbext_default_profile_postgres = 'type=PGSQL:host=localhost:user=forcia:dbname=dom_tour:passwd=forcia:port=9999'
+let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
+let g:dbext_default_profile = 'psql'
