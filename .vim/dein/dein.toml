@@ -25,3 +25,12 @@ repo = 'hail2u/vim-css3-syntax'
 
 [[plugins]]
 repo = 'jelera/vim-javascript-syntax'
+
+[[plugins]]
+repo = 'rust-lang/rust.vim'
+
+[[plugins]]
+repo = 'nvie/vim-flake8'
+
+[[plugins]]
+repo = 'dag/vim2hs'

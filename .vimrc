@@ -92,7 +92,13 @@ augroup fileTypeIndent
 	autocmd!
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 shiftwidth=4
 	autocmd BufNewFile,BufRead *.rb setlocal tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead *.js setlocal tabstop=4 softtabstop=4 shiftwidth=4
+	autocmd BufNewFile,BufRead *.rs setlocal tabstop=4 softtabstop=4 shiftwidth=4
+	autocmd BufNewFile,BufRead *.hs setlocal tabstop=2 softtabstop=2 expandtab
 augroup END
+
+" python linter vim-flake8
+autocmd BufWritePost *.py call Flake8()
 
 " Use deoplete.
 " https://github.com/Shougo/deoplete.nvim
