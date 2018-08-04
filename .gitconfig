@@ -1,0 +1,20 @@
+[user]
+	email = xxxxxxxx
+	name = xxxxxxxx
+[core]
+	editor = nvim -c \"set fenc=utf-8\"
+	whitespace = cr-at-eol
+[alias]
+	st  = status
+	ch  = checkout
+	co  = commit
+	me  = merge
+	re  = rebase
+	fe  = fetch
+	l  = log
+	ss = status -s
+	sh = show
+	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
+	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
+[credential]
+	helper = cache
