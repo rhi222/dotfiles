@@ -2,6 +2,8 @@
 " dein自体の自動インストール
 let s:dein_dir = expand('~/.cache/dein')
 let s:dein_repo_dir = s:dein_dir . '/repos/github.com/Shougo/dein.vim'
+
+" dein.vim がなければ github から落としてくる
 if &runtimepath !~# '/dein.vim'
 	if !isdirectory(s:dein_repo_dir)
 		execute '!git clone https://github.com/Shougo/dein.vim' s:dein_repo_dir
@@ -9,25 +11,35 @@ if &runtimepath !~# '/dein.vim'
 	execute 'set runtimepath^=' . fnamemodify(s:dein_repo_dir, ':p')
 endif
 
-" プラグイン読み込み＆キャッシュ作成
+" 設定開始
 if dein#load_state(s:dein_dir)
-	call dein#begin(s:dein_dir)
-	let g:rc_dir    = expand('~/.vim/dein')
-	let s:toml      = g:rc_dir . '/dein.toml'
-	"let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
-	call dein#load_toml(s:toml,      {'lazy': 0})
-	"call dein#load_toml(s:lazy_toml, {'lazy': 1})
-	call dein#end()
-	call dein#save_state()
+  call dein#begin(s:dein_dir)
+
+  " プラグインリストを収めた TOML ファイル
+  " 予め TOML ファイル（後述）を用意しておく
+  let g:rc_dir    = expand('~/.config/nvim/dein')
+  let s:toml      = g:rc_dir . '/dein.toml'
+  let s:lazy_toml = g:rc_dir . '/dein_lazy.toml'
+
+  " TOML を読み込み、キャッシュしておく
+  call dein#load_toml(s:toml,      {'lazy': 0})
+  call dein#load_toml(s:lazy_toml, {'lazy': 1})
+
+  " 設定終了
+  call dein#end()
+  call dein#save_state()
 endif
 
-" 不足プラグインの自動インストール
+" もし、未インストールものものがあったらインストール
 if dein#check_install()
 	call dein#install()
 endif
 "" }}}
 
 
+"------------------------------------
+""" general
+"------------------------------------
 " setting statusline
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
@@ -60,19 +72,28 @@ set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
 set encoding=utf-8
 
+" tab
+set tabpagemax=50
+
 " etc
 set tabstop=4
+set shiftwidth=4
 set hlsearch
 set number
-set incsearch
-let g:indentLine_char = '|'
-set list listchars=trail:~,tab:\|\ 
-hi SpecialKey guibg=NONE guifg=Gray40
 
 " highlight current line
 set cursorline
 highlight CursorLine cterm=NONE ctermbg=Black
 highlight CursorLine gui=NONE guibg=Black
+set incsearch
+set list listchars=trail:~,tab:\|\ 
+hi SpecialKey guibg=NONE guifg=Gray40
+
+" mouse
+set mouse=a
+
+" reload
+" nmap <silent> <C-w>r <Plug>(ale_next_wrap)
 
 "------------------------------------
 """ vim-quickhl
@@ -83,6 +104,10 @@ nmap <Space>M <Plug>(quickhl-reset)
 xmap <Space>M <Plug>(quickhl-reset)
 nmap <Space>j <Plug>(quickhl-match)
 
+
+"------------------------------------
+""" filetype settings
+"------------------------------------
 " ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
@@ -95,23 +120,175 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead *.js setlocal tabstop=4 softtabstop=4 shiftwidth=4
 	autocmd BufNewFile,BufRead *.rs setlocal tabstop=4 softtabstop=4 shiftwidth=4
 	autocmd BufNewFile,BufRead *.hs setlocal tabstop=2 softtabstop=2 expandtab
+	autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
+	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 augroup END
 
 " python linter vim-flake8
 autocmd BufWritePost *.py call Flake8()
 
+"------------------------------------
+""" deoplete
+"------------------------------------
 " Use deoplete.
 " https://github.com/Shougo/deoplete.nvim
-"" deplete.nvim settings {{{
+"-- deplete.nvim settings {{{
+" standard settings
 let g:deoplete#enable_at_startup = 1
+let g:deoplete#enable_smart_case = 1
 let g:deoplete#auto_complete_delay = 0
 let g:deoplete#auto_complete_start_length = 1
 let g:deoplete#enable_camel_case = 0
-let g:deoplete#enable_ignore_case = 0
+let g:deoplete#enable_ignore_case = 1
 let g:deoplete#enable_refresh_always = 0
-let g:deoplete#enable_smart_case = 1
 let g:deoplete#file#enable_buffer_path = 1
 let g:deoplete#max_list = 10000
+" https://github.com/Shougo/deoplete.nvim/issues/298
+set completeopt-=preview
+" set sources
+let g:deoplete#sources = {}
+" 5MB
+let deoplete#tag#cache_limit_size = 5000000
 " deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
-"" }}
+"-- }}}
+
+"------------------------------------
+""" vim-jsdoc
+"------------------------------------
+" https://github.com/heavenshell/vim-jsdoc
+ nmap <silent> <C-l> <Plug>(jsdoc)
+let g:jsdoc_enable_es6 = 0
+" nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
+
+
+" jq
+" http://qiita.com/tekkoc/items/324d736f68b0f27680b8
+command! -nargs=? Jq call s:Jq(<f-args>)
+function! s:Jq(...)
+    if 0 == a:0
+        let l:arg = "."
+    else
+        let l:arg = a:1
+    endif
+    execute "%! jq \"" . l:arg . "\""
+endfunction
+
+"------------------------------------
+""" neosnippet
+"------------------------------------
+"" Plugin key-mappings.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+smap <C-k>     <Plug>(neosnippet_expand_or_jump)
+xmap <C-k>     <Plug>(neosnippet_expand_target)
+
+" SuperTab like snippets behavior.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+"imap <expr><TAB>
+" \ pumvisible() ? "\<C-n>" :
+" \ neosnippet#expandable_or_jumpable() ?
+" \    "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
+smap <expr><TAB> neosnippet#expandable_or_jumpable() ?
+\ "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
+
+" For conceal markers.
+if has('conceal')
+  set conceallevel=2 concealcursor=niv
+endif
+
+" 自分用 snippet ファイルの場所 (任意のパス)
+let g:neosnippet#snippets_directory = '~/.vim/snippets/'
+
+"------------------------------------
+""" FZF
+"------------------------------------
+" init.vim
+function! s:find_git_root()
+  return system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
+endfunction
+
+command! ProjectFiles execute 'Files' s:find_git_root()
+
+nnoremap <silent> <C-p> :ProjectFiles<CR>
+nnoremap <silent> <M-p> :History<CR>
+" https://wonderwall.hatenablog.com/entry/2017/10/07/220000
+let g:fzf_layout = { 'down': '~90%' }
+
+
+"------------------------------------
+""" apache config file
+"------------------------------------
+autocmd BufNewFile,BufRead .htaccess setfiletype apache
+autocmd BufNewFile,BufRead httpd* setfiletype apache
+
+
+"------------------------------------
+""" eslint quickrun
+" https://qiita.com/zaki-yama/items/6bcc24469d06acdf8643
+"------------------------------------
+call dein#add('w0rp/ale')
+let g:ale_statusline_format = ['⨉ %d', '⚠ %d', '⬥ ok']
+let g:ale_linters = {
+\   'javascript': ['eslint', 'flow'],
+\   'html': ['write-good', 'alex!!', 'proselint'],
+\}
+let g:ale_set_loclist = 0
+let g:ale_set_quickfix = 1
+
+"------------------------------------
+""" lightline.vim
+" https://github.com/itchyny/lightline.vim
+"------------------------------------
+call dein#add('itchyny/lightline.vim')
+let g:lightline = {
+  \'active': {
+  \  'left': [
+  \    ['mode', 'paste'],
+  \    ['readonly', 'relativepath', 'modified'],
+  \    ['ale'],
+  \  ]
+  \},
+  \'component_function': {
+  \  'ale': 'ALEStatus'
+  \}
+\ }
+
+function! LightLineFilename()
+  return expand('%:p:h')
+endfunction
+
+"let g:ale_set_highlights = 0
+highlight ALEError ctermfg=235 ctermbg=208 guifg=#262626 guibg=#ff8700
+highlight ALEWarning ctermfg=117 ctermbg=24 guifg=#87dfff guibg=#005f87
+
+
+nmap <silent> <C-w>n <Plug>(ale_next_wrap)
+nmap <silent> <C-w>p <Plug>(ale_previous_wrap)
+
+
+"------------------------------------
+""" ack.vim
+" https://github.com/mileszs/ack.vim
+"------------------------------------
+if executable('rg')
+  let g:ackprg = 'rg --vimgrep'
+endif
+
+"------------------------------------
+""" nerdcommenter
+" https://github.com/scrooloose/nerdcommenter
+"------------------------------------
+let g:NERDSpaceDelims=1
+let g:NERDDefaultAlign='left'
+
+
+"------------------------------------
+""" dbext.vim
+" https://github.com/vim-scripts/dbext.vim
+" http://www.jonathansacramento.com/posts/20160122-improve-postgresql-workflow-vim-dbext.html
+"------------------------------------
+"let g:dbext_default_profile_postgres = 'type=PGSQL:host=localhost:user=forcia:dbname=dom_tour:passwd=forcia:port=9999'
+let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
+let g:dbext_default_profile = 'psql'
