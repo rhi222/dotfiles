@@ -184,13 +184,6 @@ precmd () {
 
 RPROMPT="%1(v|%F{green}%1v%f|)`git_not_pushed`"
 
-# ntfy
-eval "$(ntfy shell-integration)"
-
-# Growl notification
-# https://github.com/dschep/ntfy
-autoload -U add-zsh-hook 2>/dev/null || return
-
 #
 # Notification of local host command
 # ----------------------------------
