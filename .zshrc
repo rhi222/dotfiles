@@ -103,9 +103,6 @@ fd() {
 # http://takuya-1st.hatenablog.jp/entry/2015/12/15/030119
 function f () { find $1 -name "$2" }
 
-# alias for catalina
-alias catalina='less /usr/local/tomcat/logs/catalina.out'
-
 # tree for exel
 # https://qiita.com/yoccola/items/bac59716c88633b68b61
 alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
@@ -284,9 +281,6 @@ if which growlnotify >/dev/null 2>&1 ||
     add-zsh-hook precmd __my_preexec_end_timetrack
 fi
 
-export PATH=/home/forcia/bin/apricot-shell-1.1.1/bin:$PATH
-export PATH=/data/git-repos/apricot_modules/jasmine-apricot/bin:$PATH
-export APRICOT_MODULE_PATH=/data/git-repos/apricot_modules
 export PSQL_EDITOR='nvim +"set syntax=sql" '
 
 # rustup
