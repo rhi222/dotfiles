@@ -286,3 +286,10 @@ function fzf-ssh () {
 }
 zle -N fzf-ssh
 bindkey '^x^[' fzf-ssh
+
+# change LXTerminal color schema
+COLOR_SCHEME='/home/forcia/colorscheme.sh'
+[[ -s $COLOR_SCHEME ]] && source $COLOR_SCHEME
+
+
+set -g terminal-overrides ',xterm-256color:Tc'

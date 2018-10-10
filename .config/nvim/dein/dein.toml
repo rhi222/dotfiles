@@ -65,3 +65,6 @@ repo = 'scrooloose/nerdcommenter'
 
 [[plugins]]
 repo = 'vim-scripts/dbext.vim'
+
+[[plugins]]
+repo = 'Shougo/denite.nvim'
