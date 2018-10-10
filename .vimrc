@@ -78,12 +78,12 @@ set tabstop=4
 set shiftwidth=4
 set hlsearch
 set number
-set cursorline
-highlight CursorLine cterm=NONE ctermbg=Black
-highlight CursorLine gui=NONE guibg=Black
+" set cursorline
+" highlight CursorLine cterm=NONE ctermbg=Black
+" highlight CursorLine gui=NONE guibg=Black
 set incsearch
-set list listchars=trail:~,tab:\|\ 
 hi SpecialKey guibg=NONE guifg=Gray40
+set list listchars=trail:~,tab:\|\ 
 
 " mouse
 set mouse=a
@@ -217,6 +217,14 @@ let g:fzf_layout = { 'down': '~90%' }
 autocmd BufNewFile,BufRead .htaccess setfiletype apache
 autocmd BufNewFile,BufRead httpd* setfiletype apache
 
+"------------------------------------
+" ale　実行タイミング
+" https://rcmdnk.com/blog/2017/09/25/computer-vim/
+"------------------------------------
+let g:ale_lint_on_enter = 1
+let g:ale_lint_on_save =1
+let g:ale_lint_on_text_changed = 1
+let g:ale_lint_on_insert_leave = 0
 
 "------------------------------------
 """ eslint quickrun
@@ -227,6 +235,7 @@ let g:ale_statusline_format = ['⨉ %d', '⚠ %d', '⬥ ok']
 let g:ale_linters = {
 \   'javascript': ['eslint', 'flow'],
 \   'html': ['write-good', 'alex!!', 'proselint'],
+\   'typescript': ['eslint', 'tsserver', 'typecheck'],
 \}
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
@@ -253,7 +262,6 @@ function! LightLineFilename()
   return expand('%:p:h')
 endfunction
 
-"let g:ale_set_highlights = 0
 highlight ALEError ctermfg=235 ctermbg=208 guifg=#262626 guibg=#ff8700
 highlight ALEWarning ctermfg=117 ctermbg=24 guifg=#87dfff guibg=#005f87
 
@@ -284,5 +292,50 @@ let g:NERDDefaultAlign='left'
 " http://www.jonathansacramento.com/posts/20160122-improve-postgresql-workflow-vim-dbext.html
 "------------------------------------
 "let g:dbext_default_profile_postgres = 'type=PGSQL:host=localhost:user=forcia:dbname=dom_tour:passwd=forcia:port=9999'
-let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
-let g:dbext_default_profile = 'psql'
+"let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
+"let g:dbext_default_profile = 'psql'
+"
+""--- LXTerminal
+set guicursor=
+
+"------------------------------------
+""" denite
+" https://github.com/Shougo/denite.nvim
+"------------------------------------
+if executable('rg')
+  call denite#custom#var('file_rec', 'command',
+        \ ['rg', '--files', '--glob', '!.git'])
+  call denite#custom#var('grep', 'command', ['rg'])
+endif
+
+" promptの変更
+call denite#custom#option('default', 'prompt', '>')
+" key bind
+" denite/insert モードのときは，C- で移動できるようにする
+call denite#custom#map('insert', "<C-j>", '<denite:move_to_next_line>')
+call denite#custom#map('insert', "<C-k>", '<denite:move_to_previous_line>')
+
+" jj で denite/insert を抜けるようにする
+call denite#custom#map('insert', 'jj', '<denite:enter_mode:normal>')
+
+" tabopen や vsplit のキーバインドを割り当て
+call denite#custom#map('insert', "<C-t>", '<denite:do_action:tabopen>')
+call denite#custom#map('insert', "<C-v>", '<denite:do_action:vsplit>')
+call denite#custom#map('normal', "v", '<denite:do_action:vsplit>')
+
+
+" ファイル内検索
+" カーソル以下の単語をgrep
+nnoremap <silent> ;cg :<C-u>DeniteCursorWord grep -buffer-name=search line<CR><C-R><C-W><CR>
+" search
+nnoremap <silent> / :<C-u>Denite -buffer-name=search -auto-resize line<CR>
+
+" 横断検索
+" 普通にgrep
+nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
+
+" ctrlp
+"nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
+
+" resume previous buffer
+nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
