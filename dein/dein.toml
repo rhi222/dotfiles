@@ -2,9 +2,6 @@
 repo = 'scrooloose/nerdtree'
 
 [[plugins]]
-repo = 'forcia'
-
-[[plugins]]
 repo = 't9md/vim-quickhl'
 
 [[plugins]]
@@ -32,6 +29,9 @@ repo = 'rust-lang/rust.vim'
 
 [[plugins]]
 repo = 'Shougo/deoplete.nvim'
+
+[[plugins]]
+repo = 'Shougo/denite.nvim'
 
 [[plugins]]
 repo = 'heavenshell/vim-jsdoc'
