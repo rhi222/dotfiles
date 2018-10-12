@@ -17,3 +17,7 @@ on_ft = ['python']
 [[plugins]]
 repo = 'carlitux/deoplete-ternjs'
 on_ft = ['javascript']
+
+[[plugins]]
+repo = 'fatih/vim-go'
+on_ft = ['go']
