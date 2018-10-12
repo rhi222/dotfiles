@@ -292,3 +292,47 @@ let g:NERDDefaultAlign='left'
 "let g:dbext_default_profile_postgres = 'type=PGSQL:host=localhost:user=forcia:dbname=dom_tour:passwd=forcia:port=9999'
 let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
 let g:dbext_default_profile = 'psql'
+
+let g:python3_host_prog='/Users/ryohei/.pyenv/shims/python3'
+
+"------------------------------------
+""" denite
+" https://github.com/Shougo/denite.nvim
+"------------------------------------
+
+if executable('rg')
+  call denite#custom#var('file_rec', 'command',
+        \ ['rg', '--files', '--glob', '!.git'])
+  call denite#custom#var('grep', 'command', ['rg'])
+endif
+
+" promptの変更
+call denite#custom#option('default', 'prompt', '>')
+" key bind
+" denite/insert モードのときは，C- で移動できるようにする
+call denite#custom#map('insert', "<C-j>", '<denite:move_to_next_line>')
+call denite#custom#map('insert', "<C-k>", '<denite:move_to_previous_line>')
+
+" jj で denite/insert を抜けるようにする
+call denite#custom#map('insert', 'jj', '<denite:enter_mode:normal>')
+
+" tabopen や vsplit のキーバインドを割り当て
+call denite#custom#map('insert', "<C-t>", '<denite:do_action:tabopen>')
+call denite#custom#map('insert', "<C-v>", '<denite:do_action:vsplit>')
+call denite#custom#map('normal', "v", '<denite:do_action:vsplit>')
+
+" ファイル内検索
+" カーソル以下の単語をgrep
+nnoremap <silent> ;cg :<C-u>DeniteCursorWord grep -buffer-name=search line<CR><C-R><C-W><CR>
+" search
+nnoremap <silent> ;/ :<C-u>Denite -buffer-name=search -auto-resize line<CR>
+
+" 横断検索
+" 普通にgrep
+nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
+
+" ctrlp
+nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
+
+" resume previous buffer
+nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
