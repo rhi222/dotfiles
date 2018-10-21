@@ -25,25 +25,10 @@ hook_add = '''
 '''
 
 [[plugins]]
-repo = 'derekwyatt/vim-scala'
-
-[[plugins]]
-repo = 'rust-lang/rust.vim'
-
-[[plugins]]
 repo = 'Shougo/deoplete.nvim'
 
 [[plugins]]
 repo = 'heavenshell/vim-jsdoc'
-
-[[plugins]]
-repo = 'carlitux/deoplete-ternjs'
-
-[[plugins]]
-repo = 'davidhalter/jedi'
-
-[[plugins]]
-repo = 'zchee/deoplete-jedi'
 
 [[plugins]]
 repo = 'Shougo/neosnippet.vim'
@@ -58,13 +43,7 @@ repo = 'w0rp/ale'
 repo = 'itchyny/lightline.vim'
 
 [[plugins]]
-repo = 'leafgarland/typescript-vim'
-
-[[plugins]]
 repo = 'scrooloose/nerdcommenter'
-
-[[plugins]]
-repo = 'vim-scripts/dbext.vim'
 
 [[plugins]]
 repo = 'Shougo/denite.nvim'
