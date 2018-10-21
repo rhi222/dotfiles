@@ -129,20 +129,10 @@ autocmd BufWritePost *.py call Flake8()
 "-- deplete.nvim settings {{{
 " standard settings
 let g:deoplete#enable_at_startup = 1
-let g:deoplete#enable_smart_case = 1
-let g:deoplete#auto_complete_delay = 0
-let g:deoplete#auto_complete_start_length = 1
-let g:deoplete#enable_camel_case = 0
-let g:deoplete#enable_ignore_case = 1
-let g:deoplete#enable_refresh_always = 0
-let g:deoplete#file#enable_buffer_path = 1
-let g:deoplete#max_list = 10000
 " https://github.com/Shougo/deoplete.nvim/issues/298
 set completeopt-=preview
 " set sources
 let g:deoplete#sources = {}
-" 5MB
-let deoplete#tag#cache_limit_size = 5000000
 " deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 "-- }}}
@@ -205,7 +195,7 @@ endfunction
 
 command! ProjectFiles execute 'Files' s:find_git_root()
 
-nnoremap <silent> <C-p> :ProjectFiles<CR>
+"nnoremap <silent> <C-p> :ProjectFiles<CR>
 nnoremap <silent> <M-p> :History<CR>
 " https://wonderwall.hatenablog.com/entry/2017/10/07/220000
 let g:fzf_layout = { 'down': '~90%' }
@@ -285,6 +275,12 @@ endif
 let g:NERDSpaceDelims=1
 let g:NERDDefaultAlign='left'
 
+"------------------------------------
+""" NERDTree
+" https://github.com/scrooloose/nerdtree
+"------------------------------------
+map <C-n> :NERDTreeToggle<CR>
+
 
 "------------------------------------
 """ dbext.vim
@@ -328,7 +324,7 @@ call denite#custom#map('normal', "v", '<denite:do_action:vsplit>')
 " カーソル以下の単語をgrep
 nnoremap <silent> ;cg :<C-u>DeniteCursorWord grep -buffer-name=search line<CR><C-R><C-W><CR>
 " search
-nnoremap <silent> / :<C-u>Denite -buffer-name=search -auto-resize line<CR>
+nnoremap <silent> ;/ :<C-u>Denite -buffer-name=search -auto-resize -auto-highlight line<CR>
 
 " 横断検索
 " 普通にgrep
@@ -336,6 +332,13 @@ nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
 
 " ctrlp
 "nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
+nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
+" Option 1 : Set colors yourself
+hi deniteMatchedChar ctermbg=NONE ctermfg=6
+" Option 2 : link to other Highlight Group
+hi link deniteMatchedChar Identifier
 
 " resume previous buffer
-nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
+"nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
+nnoremap <silent> ;b :<C-u>Denite buffer -mode=normal<CR>
+nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
