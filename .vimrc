@@ -342,3 +342,11 @@ hi link deniteMatchedChar Identifier
 "nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
 nnoremap <silent> ;b :<C-u>Denite buffer -mode=normal<CR>
 nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
+
+
+"------------------------------------
+""" vim-gitgutter
+" https://github.com/airblade/vim-gitgutter
+"------------------------------------
+nnoremap <silent> ,gg :<C-u>GitGutterToggle<CR>
+nnoremap <silent> ,gh :<C-u>GitGutterLineHighlightsToggle<CR>
