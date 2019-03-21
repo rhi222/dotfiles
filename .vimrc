@@ -116,6 +116,7 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead *.yaml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 augroup END
 
 autocmd BufWritePost *.py call Flake8()
@@ -211,9 +212,9 @@ autocmd BufNewFile,BufRead httpd* setfiletype apache
 " ale　実行タイミング
 " https://rcmdnk.com/blog/2017/09/25/computer-vim/
 "------------------------------------
-let g:ale_lint_on_enter = 1
+let g:ale_lint_on_enter = 0
 let g:ale_lint_on_save =1
-let g:ale_lint_on_text_changed = 1
+let g:ale_lint_on_text_changed = 0
 let g:ale_lint_on_insert_leave = 0
 
 "------------------------------------
@@ -226,6 +227,7 @@ let g:ale_linters = {
 \   'javascript': ['eslint', 'flow'],
 \   'html': ['write-good', 'alex!!', 'proselint'],
 \   'typescript': ['eslint', 'tsserver', 'typecheck'],
+\   'python': ['flake8'],
 \}
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
@@ -333,6 +335,7 @@ nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
 " ctrlp
 "nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
 nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
+nnoremap <silent> <C-l> :<C-u>DeniteProjectDir file_rec<CR>
 " Option 1 : Set colors yourself
 hi deniteMatchedChar ctermbg=NONE ctermfg=6
 " Option 2 : link to other Highlight Group
@@ -350,3 +353,16 @@ nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
 "------------------------------------
 nnoremap <silent> ,gg :<C-u>GitGutterToggle<CR>
 nnoremap <silent> ,gh :<C-u>GitGutterLineHighlightsToggle<CR>
+
+" let g:python3_host_prog = system('which python3')
+
+
+
+"------------------------------------
+""" vim-markdown
+" https://github.com/plasticboy/vim-markdown
+"------------------------------------
+let g:vim_markdown_folding_disabled = 1
+let g:vim_markdown_conceal = 0
+let g:vim_markdown_conceal = 0
+set conceallevel=0

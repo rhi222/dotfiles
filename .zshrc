@@ -293,3 +293,10 @@ COLOR_SCHEME='/home/forcia/colorscheme.sh'
 
 
 set -g terminal-overrides ',xterm-256color:Tc'
+
+export GOPATH=$HOME
+export PATH=$PATH:$GOPATH/bin
+
+# ghq|fzf
+# https://gfx.hatenablog.com/entry/2017/07/26/104634
+alias g='cd $(ghq root)/$(ghq list | fzf)'
