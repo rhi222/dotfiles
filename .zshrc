@@ -90,10 +90,6 @@ alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
 
-# alias for grep
-alias g='grep'
-alias eg='egrep'
-
 # open tmux in 256color
 alias tmux='tmux -2'
 
