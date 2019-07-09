@@ -1,4 +1,4 @@
-"" dein.vim settings {{{
+" ----------- dein.vim settings {{{
 " プラグインが実際にインストールされるディレクトリ
 let s:dein_dir = expand('~/.cache/dein')
 " dein.vim 本体
@@ -38,11 +38,9 @@ endif
 if dein#check_install()
   call dein#install()
 endif
-"" }}}
+" }}} -------------------------
 
-"------------------------------------
-""" general
-"------------------------------------
+" ----------- general settings {{{
 " setting statusline
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
@@ -52,8 +50,6 @@ set statusline+=%{'['.(&fenc!=''?&fenc:&enc).']['.&fileformat.']'}
 set statusline+=%=%l/%L,%c%V%8P
 set laststatus=2
 
-" ignore upper or lower case
-set ignorecase
 
 " ビジュアルモードで選択したテキストが、クリップボードに入るようにする
 " http://nanasi.jp/articles/howto/editing/clipboard.html
@@ -70,23 +66,23 @@ let g:syntastic_check_on_wq = 1
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
-" tab
-set tabpagemax=50
-
 " etc
+set tabpagemax=50
 set tabstop=4
 set shiftwidth=4
 set hlsearch
 set number
-" set cursorline
+set incsearch
+" ignore upper or lower case
+set ignorecase
+hi SpecialKey guibg=NONE guifg=Gray40
+set list listchars=trail:~,tab:\|\ 
+
+" highlight
 highlight Normal ctermbg=NONE guibg=NONE
 highlight NonText ctermbg=NONE guibg=NONE
 highlight SpecialKey ctermbg=NONE guibg=NONE
 highlight EndOfBuffer ctermbg=NONE guibg=NONE
-
-set incsearch
-hi SpecialKey guibg=NONE guifg=Gray40
-set list listchars=trail:~,tab:\|\ 
 
 " mouse
 set mouse=a
@@ -94,19 +90,19 @@ set mouse=a
 " reload
 " nmap <silent> <C-w>r <Plug>(ale_next_wrap)
 
-"------------------------------------
-""" vim-quickhl
-"------------------------------------
+" }}} -------------------------
+
+
+" ----------- vim-quickhl settings {{{
 nmap <Space>m <Plug>(quickhl-toggle)
 xmap <Space>m <Plug>(quickhl-toggle)
 nmap <Space>M <Plug>(quickhl-reset)
 xmap <Space>M <Plug>(quickhl-reset)
 nmap <Space>j <Plug>(quickhl-match)
+" }}} -------------------------
 
 
-"------------------------------------
-""" filetype settings
-"------------------------------------
+" ----------- filetype settings {{{
 " ファイルの拡張子を判定する
 " http://d.hatena.ne.jp/wiredool/20120618/1340019962
 filetype plugin indent on
@@ -120,17 +116,17 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yaml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead .htaccess setfiletype apache
+	autocmd BufNewFile,BufRead httpd* setfiletype apache
 augroup END
 
 autocmd BufWritePost *.py call Flake8()
 	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
+" }}} -------------------------
 
-"------------------------------------
-""" deoplete
-"------------------------------------
-" Use deoplete.
+
+" ----------- deoplete.nvim settings {{{
 " https://github.com/Shougo/deoplete.nvim
-"-- deplete.nvim settings {{{
 " standard settings
 let g:deoplete#enable_at_startup = 1
 " https://github.com/Shougo/deoplete.nvim/issues/298
@@ -139,18 +135,18 @@ set completeopt-=preview
 let g:deoplete#sources = {}
 " deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
-"-- }}}
+" }}} -------------------------
 
-"------------------------------------
-""" vim-jsdoc
-"------------------------------------
+
+" ----------- vim-jsdoc settings {{{
 " https://github.com/heavenshell/vim-jsdoc
  nmap <silent> <C-l> <Plug>(jsdoc)
 let g:jsdoc_enable_es6 = 0
 " nmap <silent> <C-l> ?function<cr>:noh<cr><Plug>(jsdoc)
+" }}} -------------------------
 
 
-" jq
+" ----------- jq settings {{{
 " http://qiita.com/tekkoc/items/324d736f68b0f27680b8
 command! -nargs=? Jq call s:Jq(<f-args>)
 function! s:Jq(...)
@@ -161,10 +157,10 @@ function! s:Jq(...)
     endif
     execute "%! jq \"" . l:arg . "\""
 endfunction
+" }}} -------------------------
 
-"------------------------------------
-""" neosnippet
-"------------------------------------
+
+" -----------neosnippet settings {{{
 "" Plugin key-mappings.
 " Note: It must be "imap" and "smap".  It uses <Plug> mappings.
 imap <C-k>     <Plug>(neosnippet_expand_or_jump)
@@ -188,10 +184,10 @@ endif
 
 " 自分用 snippet ファイルの場所 (任意のパス)
 let g:neosnippet#snippets_directory = '~/.vim/snippets/'
+" }}} -------------------------
 
-"------------------------------------
-""" FZF
-"------------------------------------
+
+" ----------- FZF settings {{{
 " init.vim
 function! s:find_git_root()
   return system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
@@ -203,28 +199,18 @@ command! ProjectFiles execute 'Files' s:find_git_root()
 nnoremap <silent> <M-p> :History<CR>
 " https://wonderwall.hatenablog.com/entry/2017/10/07/220000
 let g:fzf_layout = { 'down': '~90%' }
+" }}} -------------------------
 
 
-"------------------------------------
-""" apache config file
-"------------------------------------
-autocmd BufNewFile,BufRead .htaccess setfiletype apache
-autocmd BufNewFile,BufRead httpd* setfiletype apache
-
-"------------------------------------
-" ale　実行タイミング
+" ----------- ale settings {{{
 " https://rcmdnk.com/blog/2017/09/25/computer-vim/
-"------------------------------------
+call dein#add('w0rp/ale')
 let g:ale_lint_on_enter = 0
 let g:ale_lint_on_save =1
 let g:ale_lint_on_text_changed = 0
 let g:ale_lint_on_insert_leave = 0
-
-"------------------------------------
-""" eslint quickrun
+" eslint quickrun
 " https://qiita.com/zaki-yama/items/6bcc24469d06acdf8643
-"------------------------------------
-call dein#add('w0rp/ale')
 let g:ale_statusline_format = ['⨉ %d', '⚠ %d', '⬥ ok']
 let g:ale_linters = {
 \   'javascript': ['eslint', 'flow'],
@@ -234,11 +220,11 @@ let g:ale_linters = {
 \}
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
+" }}} -------------------------
 
-"------------------------------------
-""" lightline.vim
+
+" ----------- lightline.vim settings {{{
 " https://github.com/itchyny/lightline.vim
-"------------------------------------
 call dein#add('itchyny/lightline.vim')
 let g:lightline = {
   \'active': {
@@ -260,50 +246,27 @@ endfunction
 highlight ALEError ctermfg=235 ctermbg=208 guifg=#262626 guibg=#ff8700
 highlight ALEWarning ctermfg=117 ctermbg=24 guifg=#87dfff guibg=#005f87
 
-
 nmap <silent> <C-w>n <Plug>(ale_next_wrap)
 nmap <silent> <C-w>p <Plug>(ale_previous_wrap)
+" }}} -------------------------
 
 
-"------------------------------------
-""" ack.vim
+" ----------- ack.vim settings {{{
 " https://github.com/mileszs/ack.vim
-"------------------------------------
 if executable('rg')
   let g:ackprg = 'rg --vimgrep'
 endif
+" }}} -------------------------
 
-"------------------------------------
-""" nerdcommenter
-" https://github.com/scrooloose/nerdcommenter
-"------------------------------------
-let g:NERDSpaceDelims=1
-let g:NERDDefaultAlign='left'
 
-"------------------------------------
-""" NERDTree
+" ----------- NERDTree settings {{{
 " https://github.com/scrooloose/nerdtree
-"------------------------------------
 map <C-n> :NERDTreeToggle<CR>
+" }}} -------------------------
 
 
-"------------------------------------
-""" dbext.vim
-" https://github.com/vim-scripts/dbext.vim
-" http://www.jonathansacramento.com/posts/20160122-improve-postgresql-workflow-vim-dbext.html
-"------------------------------------
-"let g:dbext_default_profile_postgres = 'type=PGSQL:host=localhost:user=forcia:dbname=dom_tour:passwd=forcia:port=9999'
-"let g:dbext_default_profile_psql = 'type=PGSQL:host=localhost:port=9990:dbname=dom_tour:user=forcia:passwd=forcia'
-"let g:dbext_default_profile = 'psql'
-"
-""--- LXTerminal
-"" https://github.com/neovim/neovim/issues/6041
-set guicursor=
-
-"------------------------------------
-""" denite
+" ----------- denite.vim settings {{{
 " https://github.com/Shougo/denite.nvim
-"------------------------------------
 if executable('rg')
   call denite#custom#var('file_rec', 'command',
         \ ['rg', '--files', '--glob', '!.git'])
@@ -349,32 +312,27 @@ hi link deniteMatchedChar Identifier
 "nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
 nnoremap <silent> ;b :<C-u>Denite buffer -mode=normal<CR>
 nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
+" }}} -------------------------
 
 
-"------------------------------------
-""" vim-gitgutter
+" ----------- vim-gitgutter settings {{{
 " https://github.com/airblade/vim-gitgutter
-"------------------------------------
 nnoremap <silent> ,gg :<C-u>GitGutterToggle<CR>
 nnoremap <silent> ,gh :<C-u>GitGutterLineHighlightsToggle<CR>
-
-" let g:python3_host_prog = system('which python3')
-
+" }}} -------------------------
 
 
-"------------------------------------
-""" vim-markdown
+" ----------- vim-markdown settings {{{
 " https://github.com/plasticboy/vim-markdown
-"------------------------------------
 let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_conceal = 0
 let g:vim_markdown_conceal = 0
 set conceallevel=0
+" }}} -------------------------
 
-"------------------------------------
-""" tender.vim
+
+" ----------- tender.vim settings {{{
 " https://github.com/jacoborus/tender.vim
-"------------------------------------
 " If you have vim >=8.0 or Neovim >= 0.1.5
 if (has("termguicolors"))
  set termguicolors
@@ -386,3 +344,12 @@ let $NVIM_TUI_ENABLE_TRUE_COLOR=1
 " Theme
 syntax enable
 colorscheme tender
+" }}} -------------------------
+
+
+" ----------- etc settings {{{
+" LXTerminal
+" https://github.com/neovim/neovim/issues/6041
+set guicursor=
+" }}} -------------------------
+
