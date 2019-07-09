@@ -79,8 +79,11 @@ set shiftwidth=4
 set hlsearch
 set number
 " set cursorline
-" highlight CursorLine cterm=NONE ctermbg=Black
-" highlight CursorLine gui=NONE guibg=Black
+highlight Normal ctermbg=NONE guibg=NONE
+highlight NonText ctermbg=NONE guibg=NONE
+highlight SpecialKey ctermbg=NONE guibg=NONE
+highlight EndOfBuffer ctermbg=NONE guibg=NONE
+
 set incsearch
 hi SpecialKey guibg=NONE guifg=Gray40
 set list listchars=trail:~,tab:\|\ 
