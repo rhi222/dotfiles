@@ -294,6 +294,7 @@ map <C-n> :NERDTreeToggle<CR>
 "let g:dbext_default_profile = 'psql'
 "
 ""--- LXTerminal
+"" https://github.com/neovim/neovim/issues/6041
 set guicursor=
 
 "------------------------------------
@@ -366,3 +367,19 @@ let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_conceal = 0
 let g:vim_markdown_conceal = 0
 set conceallevel=0
+
+"------------------------------------
+""" tender.vim
+" https://github.com/jacoborus/tender.vim
+"------------------------------------
+" If you have vim >=8.0 or Neovim >= 0.1.5
+if (has("termguicolors"))
+ set termguicolors
+endif
+
+" For Neovim 0.1.3 and 0.1.4
+let $NVIM_TUI_ENABLE_TRUE_COLOR=1
+
+" Theme
+syntax enable
+colorscheme tender
