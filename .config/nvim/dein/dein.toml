@@ -110,3 +110,6 @@ repo = 'plasticboy/vim-markdown'
 # 	  \ defx#do_action('change_vim_cwd')
 # 	endfunction
 # '''
+
+[[plugins]]
+repo = 'jacoborus/tender.vim'
