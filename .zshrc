@@ -1,102 +1,88 @@
-#
-# Executes commands at the start of an interactive session.
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
 
+# ------------- prezto setting {{{
+# https://github.com/sorin-ionescu/prezto
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
+# ------------- }}}
 
-# Customize to your needs...
-# for fzf
+# ------------- fzf setting {{{
 # https://github.com/junegunn/fzf
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+# ghq|fzf
+# https://gfx.hatenablog.com/entry/2017/07/26/104634
+alias g='cd $(ghq root)/$(ghq list | fzf)'
+
+# kohno
+# https://github.com/fnwiya/dotfiles/blob/master/setup/zsh/.zsh.d/fzf.zsh
+function fzf-ssh () {
+    local selected_host=$(cat ~/.ssh/config | grep HostName | awk '{print $2}' | fzf)
+    if [ -n "$selected_host" ]; then
+        BUFFER="ssh ${selected_host}"
+        zle accept-line
+    fi
+    zle clear-screen
+}
+zle -N fzf-ssh
+bindkey '^x^[' fzf-ssh
+# ------------- }}}
+
+# ------------- history setting {{{
 # History Configuration
 # http://news.mynavi.jp/column/zsh/003/
-HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-setopt hist_ignore_dups     # ignore duplication command history list
-setopt share_history        # share command history data
-setopt hist_reduce_blanks # $BM>J,$J%9%Z!<%9$r:o=|$7$F%R%9%H%j$KJ]B8$9$k(B
-setopt hist_ignore_all_dups # $BF~NO$7$?%3%^%s%I$,$9$G$K%3%^%s%IMzNr$K4^$^$l$k>l9g!"MzNr$+$i8E$$$[$&$N%3%^%s%I$r:o=|$9$k(B
+HISTFILE=~/.zsh_history      # ヒストリファイルを指定
+HISTSIZE=10000               # ヒストリに保存するコマンド数
+SAVEHIST=10000               # ヒストリファイルに保存するコマンド数
+setopt hist_ignore_all_dups  # 重複するコマンド行は古い方を削除
+setopt hist_ignore_dups      # 直前と同じコマンドラインはヒストリに追加しない
+setopt share_history         # コマンド履歴ファイルを共有する
+setopt append_history        # 履歴を追加 (毎回 .zsh_history を作るのではなく)
+setopt inc_append_history    # 履歴をインクリメンタルに追加
+setopt hist_no_store         # historyコマンドは履歴に登録しない
+setopt hist_reduce_blanks    # 余分な空白は詰めて記録
+# ------------- }}}
 
-# nvm
-# https://github.com/creationix/nvm
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
-
-# current directory$B$H(Buser name$B$r(B2$B9T$GI=<((B
-# http://webtech-walker.com/archive/2008/12/15101251.html
+# ------------- prompt setting {{{
 # color
 # https://h2ham.net/zsh-prompt-color
 autoload colors
 colors
+# current directory
+# http://webtech-walker.com/archive/2008/12/15101251.html
 PROMPT="
  %{${fg[cyan]}%}%~%{${reset_color}%} 
  [%n@%m]$ "
 PROMPT2='[%n]> ' 
 
-# path
+# show branch info
+# http://mollifier.hatenablog.com/entry/20090814/p1
+autoload -Uz vcs_info
+zstyle ':vcs_info:*' formats '(%s)-[%b]'
+zstyle ':vcs_info:*' actionformats '(%s)-[%b|%a]'
+precmd () {
+	psvar=()
+	LANG=en_US.UTF-8 vcs_info
+	[[ -n "$vcs_info_msg_0_" ]] && psvar[1]="$vcs_info_msg_0_"
+}
+
+RPROMPT="%1(v|%F{green}%1v%f|)`git_not_pushed`"
+
+# ------------- }}}
+
+# ------------- path setting {{{
 export JAVA_HOME=/usr/local/java
 export PATH=$JAVA_HOME/bin:$PATH
 export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/python/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin:/home/example-org/anaconda3/bin"
 
 # export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/pyenv/shims:/usr/local/pyenv/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin"
+export GOPATH=$HOME
+export PATH=$PATH:$GOPATH/bin
+# ------------- }}}
 
-function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
-# pyenv
-export PYENV_ROOT=$HOME/.pyenv
-export PATH=$PYENV_ROOT/bin:$PATH
-eval "$(pyenv init -)"
-
-# editor
-EDITOR=nvim
-
-# fzf
-#function vi () { nvim $(fzf) }
-
-# fd - cd to selected directory
-fd() {
-  local dir
-  dir=$(find ${1:-*} -path '*/\.*' -prune \
-                  -o -type d -print 2> /dev/null | fzf +m) &&
-  cd "$dir"
-}
-
-###
-# alias
-###
-
-# alias find command
-# http://takuya-1st.hatenablog.jp/entry/2015/12/15/030119
-function f () { find $1 -name "$2" }
-
-# alias for catalina
-alias catalina='less /usr/local/tomcat/logs/catalina.out'
-
-# tree for exel
-# https://qiita.com/yoccola/items/bac59716c88633b68b61
-alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
-
-# alias for cocot
-alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP$B4D6-$K(Bssh$B$9$k(B
-
-# alias for neovim
-alias vi='nvim'
-alias view='nvim -R'
-
-# alias for mkdir and cd
-function mkdircd () { mkdir -p $1 && cd $_ }
-
-# alias for rsync always use ssh and don't update file
-function rsyncs () { rsync --ignore-existing -e ssh $1}
-
+# ------------- ailas setting {{{
 # alias for cd
 alias ..="cd .."
 alias ..2="cd ../.."
@@ -148,26 +134,99 @@ function git_not_pushed {
 	fi
 }
 
-# show branch info
-# http://mollifier.hatenablog.com/entry/20090814/p1
-autoload -Uz vcs_info
-zstyle ':vcs_info:*' formats '(%s)-[%b]'
-zstyle ':vcs_info:*' actionformats '(%s)-[%b|%a]'
-precmd () {
-	psvar=()
-	LANG=en_US.UTF-8 vcs_info
-	[[ -n "$vcs_info_msg_0_" ]] && psvar[1]="$vcs_info_msg_0_"
+function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
+
+# fd - cd to selected directory
+fd() {
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune \
+                  -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
 }
 
-RPROMPT="%1(v|%F{green}%1v%f|)`git_not_pushed`"
+# alias find command
+# http://takuya-1st.hatenablog.jp/entry/2015/12/15/030119
+function f () { find $1 -name "$2" }
 
-# ntfy
-eval "$(ntfy shell-integration)"
+# alias for catalina
+alias catalina='less /usr/local/tomcat/logs/catalina.out'
 
-# Growl notification
-# https://github.com/dschep/ntfy
-autoload -U add-zsh-hook 2>/dev/null || return
+# tree for exel
+# https://qiita.com/yoccola/items/bac59716c88633b68b61
+alias treex="tree -NF | perl -pe 's/^├── //g; s/^└── //g; s/^│\xc2\xa0\xc2\xa0\x20//g; s/├── /\t/g; s/│\xc2\xa0\xc2\xa0\x20/\t/g; s/└── /\t/g; s/    /\t/g; s/\*$//g; s/^\.\n//g;'"
 
+# alias for cocot
+alias sshe='cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP$B4D6-$K(Bssh$B$9$k(B
+
+# alias for neovim
+alias vi='nvim'
+alias view='nvim -R'
+
+# alias for mkdir and cd
+function mkdircd () { mkdir -p $1 && cd $_ }
+
+# alias for rsync always use ssh and don't update file
+function rsyncs () { rsync --ignore-existing -e ssh $1}
+
+# ------------- }}}
+
+
+# ------------- apriotc setting {{{
+export PATH=/home/example-org/bin/apricot-shell-1.1.1/bin:$PATH
+export PATH=/data/git-repos/apricot_modules/jasmine-apricot/bin:$PATH
+export APRICOT_MODULE_PATH=/data/git-repos/apricot_modules
+# ------------- }}}
+#
+
+# ------------- conda setting {{{
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+# comment in
+__conda_setup="$('/home/example-org/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/example-org/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/example-org/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/example-org/anaconda3/bin:$PATH"
+    fi
+fi
+# comment in
+unset __conda_setup
+# <<< conda initialize <<<
+# ------------- }}}
+
+# ------------- etc setting {{{
+# alacritty
+fpath+=${ZDOTDIR:-~}/.zsh_functions
+
+# nvm
+# https://github.com/creationix/nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
+
+# pyenv
+export PYENV_ROOT=$HOME/.pyenv
+export PATH=$PYENV_ROOT/bin:$PATH
+eval "$(pyenv init -)"
+
+# editor
+EDITOR=nvim
+
+# terminal
+set -g terminal-overrides ',xterm-256color:Tc'
+export TERM="xterm-256color"
+
+# rustup
+source ~/.cargo/env
+
+export PSQL_EDITOR='nvim +"set syntax=sql" '
+# ------------- }}}
+
+
+
+# ------------- local notification setting {{{
 #
 # Notification of local host command
 # ----------------------------------
@@ -185,7 +244,7 @@ autoload -U add-zsh-hook 2>/dev/null || return
 #
 #  * Trigger regex: ==ZSH LONGRUN COMMAND TRACKER==(.*)
 #  * Parameters: \1
-#
+
 
 __timetrack_threshold=10 # seconds
 read -r -d '' __timetrack_ignore_progs <<EOF
@@ -268,55 +327,4 @@ if which growlnotify >/dev/null 2>&1 ||
     add-zsh-hook precmd __my_preexec_end_timetrack
 fi
 
-export PATH=/home/example-org/bin/apricot-shell-1.1.1/bin:$PATH
-export PATH=/data/git-repos/apricot_modules/jasmine-apricot/bin:$PATH
-export APRICOT_MODULE_PATH=/data/git-repos/apricot_modules
-export PSQL_EDITOR='nvim +"set syntax=sql" '
-
-# rustup
-source ~/.cargo/env
-
-
-# kohno
-# https://github.com/fnwiya/dotfiles/blob/master/setup/zsh/.zsh.d/fzf.zsh
-function fzf-ssh () {
-    local selected_host=$(cat ~/.ssh/config | grep HostName | awk '{print $2}' | fzf)
-    if [ -n "$selected_host" ]; then
-        BUFFER="ssh ${selected_host}"
-        zle accept-line
-    fi
-    zle clear-screen
-}
-zle -N fzf-ssh
-bindkey '^x^[' fzf-ssh
-
-
-set -g terminal-overrides ',xterm-256color:Tc'
-export TERM="xterm-256color"
-
-export GOPATH=$HOME
-export PATH=$PATH:$GOPATH/bin
-
-# ghq|fzf
-# https://gfx.hatenablog.com/entry/2017/07/26/104634
-alias g='cd $(ghq root)/$(ghq list | fzf)'
-
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-# comment in
-__conda_setup="$('/home/example-org/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/example-org/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/example-org/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/example-org/anaconda3/bin:$PATH"
-    fi
-fi
-# comment in
-unset __conda_setup
-# <<< conda initialize <<<
-
-# alacritty
-fpath+=${ZDOTDIR:-~}/.zsh_functions
+# ------------- }}}
