@@ -67,7 +67,7 @@ precmd () {
 	[[ -n "$vcs_info_msg_0_" ]] && psvar[1]="$vcs_info_msg_0_"
 }
 
-RPROMPT="%1(v|%F{green}%1v%f|)`git_not_pushed`"
+ RPROMPT="%1(v|%F{green}%1v%f|)"
 
 # ------------- }}}
 
@@ -100,35 +100,6 @@ alias cdrr="cd $(git rev-parse --show-toplevel)"
 export AXIS2_HOME=/usr/local/src/axis2-1.7.6
 
 alias estart="/home/forcia/eclipse/jee-oxygen/eclipse/eclipse -clean"
-
-
-# git push 漏れ防止策
-# https://qiita.com/shiraji/items/92bbe60e9ddc618e11c2
-alias gbn='git rev-parse --abbrev-ref HEAD'
-
-function glr() {
-	_branch=`gbn`
-	git log origin/${_branch}..${_branch}
-}
-
-function git_not_pushed {
-	# git管理下にいるかどうかの確認
-	if [[ "`git rev-parse --is-inside-work-tree 2>/dev/null`" = "true" ]]; then
-		# HEADのハッシュを取得
-		_head="`git rev-parse --verify -q HEAD 2>/dev/null`"
-		if [[ $? -eq 0 ]]; then
-			# origin/branch名のハッシュを取得
-			### gbnはブランチ名取得のalias。上に記載してある。###
-			_remote="`git rev-parse --verify -q origin/\`gbn\` 2>/dev/null`"
-			if [[ $? -eq 0 ]]; then
-				# 比較して、違ったら*表示。
-				if [[ "${_head}" != "${_remote}" ]]; then
-					echo -n "*"
-				fi
-			fi
-		fi
-	fi
-}
 
 function jgrep () { grep -nr `echo $1 | nkf -s` $2 | nkf -w }
 
