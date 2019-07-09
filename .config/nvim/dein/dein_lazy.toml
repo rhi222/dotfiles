@@ -34,3 +34,10 @@ on_ft = ['rust']
 repo = 'leafgarland/typescript-vim'
 on_ft = ['typescript']
 
+[[plugins]]
+repo = 'scrooloose/vim-slumlord'
+on_ft = ['plantuml', 'uml']
+
+[[plugins]]
+repo = 'aklt/plantuml-syntax'
+on_ft = ['plantuml', 'uml']
