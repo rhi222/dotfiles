@@ -11,6 +11,10 @@ repo = 'carlitux/deoplete-ternjs'
 on_ft = ['javascript']
 
 [[plugins]]
+repo = 'heavenshell/vim-jsdoc'
+on_ft = ['javascript']
+
+[[plugins]]
 repo = 'nvie/vim-flake8'
 on_ft = ['python']
 
@@ -41,3 +45,11 @@ on_ft = ['plantuml', 'uml']
 [[plugins]]
 repo = 'aklt/plantuml-syntax'
 on_ft = ['plantuml', 'uml']
+
+[[plugins]]
+repo = 'cespare/vim-toml'
+on_ft = ['toml']
+
+[[plugins]]
+repo = 'plasticboy/vim-markdown'
+on_ft = ['md']
