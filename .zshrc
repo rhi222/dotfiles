@@ -44,7 +44,7 @@ PROMPT2='[%n]> '
 # path
 export JAVA_HOME=/usr/local/java
 export PATH=$JAVA_HOME/bin:$PATH
-export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/python/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin"
+export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/python/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin:/home/example-org/anaconda3/bin"
 
 # export PATH="/home/example-org/.nvm/versions/node/v5.0.0/bin:/home/example-org/bin:/usr/local/java/bin:/usr/local/java/bin:/home/example-org/bin:/usr/local/sbin:/usr/local/bin:/usr/local/pgsql/bin:/home/example-org/.rbenv/bin:/usr/local/pyenv/shims:/usr/local/pyenv/bin:/usr/local/python/bin:/home/example-org/.rbenv/shims:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/example-org/.fzf/bin"
 
@@ -108,7 +108,10 @@ alias ..5="cd ../../../../.."
 alias g='grep'
 alias eg='egrep'
 
-# alias for cd
+# open tmux in 256color
+alias tmux='tmux -2'
+
+# jump to repository root
 alias cdrr="cd $(git rev-parse --show-toplevel)"
 
 # axis2 for jetstar api
@@ -287,12 +290,9 @@ function fzf-ssh () {
 zle -N fzf-ssh
 bindkey '^x^[' fzf-ssh
 
-# change LXTerminal color schema
-COLOR_SCHEME='/home/example-org/colorscheme.sh'
-[[ -s $COLOR_SCHEME ]] && source $COLOR_SCHEME
-
 
 set -g terminal-overrides ',xterm-256color:Tc'
+export TERM="xterm-256color"
 
 export GOPATH=$HOME
 export PATH=$PATH:$GOPATH/bin
@@ -300,3 +300,23 @@ export PATH=$PATH:$GOPATH/bin
 # ghq|fzf
 # https://gfx.hatenablog.com/entry/2017/07/26/104634
 alias g='cd $(ghq root)/$(ghq list | fzf)'
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+# comment in
+__conda_setup="$('/home/example-org/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/example-org/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/example-org/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/example-org/anaconda3/bin:$PATH"
+    fi
+fi
+# comment in
+unset __conda_setup
+# <<< conda initialize <<<
+
+# alacritty
+fpath+=${ZDOTDIR:-~}/.zsh_functions
