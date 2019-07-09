@@ -28,9 +28,6 @@ hook_add = '''
 repo = 'Shougo/deoplete.nvim'
 
 [[plugins]]
-repo = 'heavenshell/vim-jsdoc'
-
-[[plugins]]
 repo = 'Shougo/neosnippet.vim'
 
 [[plugins]]
@@ -43,16 +40,13 @@ repo = 'w0rp/ale'
 repo = 'itchyny/lightline.vim'
 
 [[plugins]]
-repo = 'scrooloose/nerdcommenter'
-
-[[plugins]]
 repo = 'Shougo/denite.nvim'
 
 [[plugins]]
 repo = 'airblade/vim-gitgutter'
 
 [[plugins]]
-repo = 'plasticboy/vim-markdown'
+repo = 'jacoborus/tender.vim'
 
 # [[plugins]]
 # repo = 'Shougo/defx.nvim'
@@ -110,6 +104,3 @@ repo = 'plasticboy/vim-markdown'
 # 	  \ defx#do_action('change_vim_cwd')
 # 	endfunction
 # '''
-
-[[plugins]]
-repo = 'jacoborus/tender.vim'
