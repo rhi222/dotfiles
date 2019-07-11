@@ -351,5 +351,26 @@ colorscheme tender
 " LXTerminal
 " https://github.com/neovim/neovim/issues/6041
 set guicursor=
+
+" copy file relative path to register
+" https://stackoverflow.com/questions/916875/yank-file-name-path-of-current-buffer-in-vim
+:command! Cp let @+ = expand("%")
+
+" copy gitlab.fdev url
+" usage -> :Cpg
+:function! s:GetGitlabURL()
+:	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=gitlab.fdev:)(.*)(?=.git)'")
+:	let relativepath = "./" . expand("%")
+:	let filepath = system('git ls-files --full-name ' . l:relativepath)
+:	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/master/" . l:filepath
+:	echo 'copied to your clipboard!'
+:	return
+:endfunction
+
+":command! -nargs=1 Cpg call s:GetGitlabURL(<f-args>)
+:command! Cpg call s:GetGitlabURL()
+
+" reload init.vim
+":command! Rl source "~/.config/nvim/init.vim"
 " }}} -------------------------
 
