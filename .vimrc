@@ -361,8 +361,9 @@ set guicursor=
 :function! s:GetGitlabURL()
 :	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=gitlab.fdev:)(.*)(?=.git)'")
 :	let relativepath = "./" . expand("%")
+:	let branch = "master"
 :	let filepath = system('git ls-files --full-name ' . l:relativepath)
-:	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/master/" . l:filepath
+:	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/" . l:branch . "/" . l:filepath
 :	echo 'copied to your clipboard!'
 :	return
 :endfunction
@@ -371,6 +372,6 @@ set guicursor=
 :command! Cpg call s:GetGitlabURL()
 
 " reload init.vim
-":command! Rl source "~/.config/nvim/init.vim"
+" :command! Rl source "~/.config/nvim/init.vim"
 " }}} -------------------------
 
