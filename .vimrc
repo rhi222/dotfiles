@@ -364,7 +364,7 @@ set guicursor=
 :	let branch = "master"
 :	let filepath = system('git ls-files --full-name ' . l:relativepath)
 :	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/" . l:branch . "/" . l:filepath
-:	echo 'copied to your clipboard!'
+:	echo 'copied to clipboard!'
 :	return
 :endfunction
 
