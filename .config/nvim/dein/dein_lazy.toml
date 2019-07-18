@@ -1,3 +1,4 @@
+# 初期読込の高速化
 [[plugins]]
 repo = 'flowtype/vim-flow'
 on_ft = ['javascript']
