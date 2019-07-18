@@ -142,14 +142,28 @@ autocmd BufWritePost *.py call Flake8()
 
 " ----------- deoplete.nvim settings {{{
 " https://github.com/Shougo/deoplete.nvim
-" standard settings
-let g:deoplete#enable_at_startup = 1
+" Enable deoplete when InsertEnter.
+" for neovim quick open
+let g:deoplete#enable_at_startup = 0
+autocmd InsertEnter * call deoplete#enable()
+
 " https://github.com/Shougo/deoplete.nvim/issues/298
 set completeopt-=preview
 " set sources
 let g:deoplete#sources = {}
 " deoplete tab-complete
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
+
+" for quick neovim start
+call deoplete#custom#option({
+\ 'auto_complete_delay': 200,
+\ 'smart_case': v:true,
+\ })
+
+" set candidate popup color
+highlight Pmenu ctermbg=8 guibg=#a6a6a6
+highlight PmenuSel ctermfg=1 ctermbg=15 guibg=#d1cf58
+highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
 " }}} -------------------------
 
 
