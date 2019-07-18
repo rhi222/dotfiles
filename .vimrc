@@ -296,21 +296,19 @@ map <C-n> :NERDTreeToggle<CR>
 
 " ----------- denite.vim settings {{{
 " https://github.com/Shougo/denite.nvim
-if executable('rg')
-  call denite#custom#var('file_rec', 'command',
-        \ ['rg', '--files', '--glob', '!.git'])
-  call denite#custom#var('grep', 'command', ['rg'])
-endif
 
-" promptの変更
-call denite#custom#option('default', 'prompt', '>')
 " key bind
 " denite/insert モードのときは，C- で移動できるようにする
+" https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L1876-L1887
 call denite#custom#map('insert', "<C-j>", '<denite:move_to_next_line>')
 call denite#custom#map('insert', "<C-k>", '<denite:move_to_previous_line>')
-
-" jj で denite/insert を抜けるようにする
-call denite#custom#map('insert', 'jj', '<denite:enter_mode:normal>')
+autocmd FileType denite-filter call s:denite_filter_my_settings()
+function! s:denite_filter_my_settings() abort
+  inoremap <silent><buffer> <C-j>
+  \ <Esc><C-w>p:call cursor(line('.')+1,0)<CR><C-w>pA
+  inoremap <silent><buffer> <C-k>
+  \ <Esc><C-w>p:call cursor(line('.')-1,0)<CR><C-w>pA
+endfunction
 
 " tabopen や vsplit のキーバインドを割り当て
 call denite#custom#map('insert', "<C-t>", '<denite:do_action:tabopen>')
@@ -328,9 +326,6 @@ nnoremap <silent> ;/ :<C-u>Denite -buffer-name=search -auto-resize -auto-highlig
 " 普通にgrep
 nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
 
-" ctrlp
-"nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
-nnoremap <silent> <C-p> :<C-u>Denite file_rec<CR>
 nnoremap <silent> <C-l> :<C-u>DeniteProjectDir file_rec<CR>
 " Option 1 : Set colors yourself
 hi deniteMatchedChar ctermbg=NONE ctermfg=6
@@ -341,6 +336,74 @@ hi link deniteMatchedChar Identifier
 "nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
 nnoremap <silent> ;b :<C-u>Denite buffer -mode=normal<CR>
 nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
+
+" ref: https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L124
+" Define mappings
+autocmd FileType denite call s:denite_my_settings()
+function! s:denite_my_settings() abort
+  nnoremap <silent><buffer><expr> <CR>
+  \ denite#do_map('do_action')
+  nnoremap <silent><buffer><expr> d
+  \ denite#do_map('do_action', 'delete')
+  nnoremap <silent><buffer><expr> p
+  \ denite#do_map('do_action', 'preview')
+  nnoremap <silent><buffer><expr> q
+  \ denite#do_map('quit')
+  nnoremap <silent><buffer><expr> i
+  \ denite#do_map('open_filter_buffer')
+  nnoremap <silent><buffer><expr> <Space>
+  \ denite#do_map('toggle_select').'j'
+endfunction
+
+autocmd FileType denite-filter call s:denite_filter_my_settings()
+function! s:denite_filter_my_settings() abort
+  imap <silent><buffer> <C-o> <Plug>(denite_filter_quit)
+endfunction
+
+" set floating window
+" https://qiita.com/lighttiger2505/items/d4a3371399cfe6dbdd56
+let s:denite_win_width_percent = 0.85
+let s:denite_win_height_percent = 0.7
+
+" Change denite default options
+call denite#custom#option('default', {
+    \ 'split': 'floating',
+    \ 'winwidth': float2nr(&columns * s:denite_win_width_percent),
+    \ 'wincol': float2nr((&columns - (&columns * s:denite_win_width_percent)) / 2),
+    \ 'winheight': float2nr(&lines * s:denite_win_height_percent),
+    \ 'winrow': float2nr((&lines - (&lines * s:denite_win_height_percent)) / 2),
+    \ })
+
+" Change matchers.
+call denite#custom#source(
+\ 'file_mru', 'matchers', ['matcher/fuzzy', 'matcher/project_files'])
+call denite#custom#source(
+\ 'file/rec', 'matchers', ['matcher/cpsm'])
+
+" Change sorters.
+call denite#custom#source(
+\ 'file/rec', 'sorters', ['sorter/sublime'])
+
+" Change default action.
+" call denite#custom#kind('file', 'default_action', 'split')
+
+" For ripgrep
+" Note: It is slower than ag
+call denite#custom#var('file/rec', 'command',
+\ ['rg', '--files', '--glob', '!.git'])
+
+call denite#custom#var('file/rec/git', 'command',
+\ ['rg', '--files', '--glob', '!.git'])
+
+" Ripgrep command on grep source
+call denite#custom#var('grep', 'command', ['rg'])
+" Define alias
+" https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L1772
+call denite#custom#alias('source', 'file/rec/git', 'file/rec')
+call denite#custom#var('file/rec/git', 'command',
+      \ ['git', 'ls-files', '-co', '--exclude-standard'])
+nnoremap <silent> <C-p> :<C-u>Denite
+	\ `finddir('.git', ';') != '' ? 'file/rec/git' : 'file/rec'`<CR>
 " }}} -------------------------
 
 
@@ -386,5 +449,14 @@ set guicursor=
 
 " reload init.vim
 " :command! Rl source "~/.config/nvim/init.vim"
+
+" floating window
+highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#93a1a1 guibg=#002931
+
+" quick start
+" https://github.com/Shougo/deoplete.nvim/blob/master/doc/deoplete.txt#L1551
+" https://qiita.com/euxn23/items/2d7a0ede93d35a6badd0
+" https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
+let g:python3_host_prog = substitute(system('which python3'),"\n","","")
 " }}} -------------------------
 
