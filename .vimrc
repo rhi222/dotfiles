@@ -155,7 +155,7 @@ inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 
 " for quick neovim start
 call deoplete#custom#option({
-\ 'auto_complete_delay': 200,
+\ 'auto_complete_delay': 100,
 \ 'smart_case': v:true,
 \ })
 
