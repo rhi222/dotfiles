@@ -96,8 +96,7 @@ hi SpecialKey guibg=NONE guifg=Gray40
 set list listchars=trail:~,tab:\|\ 
 
 " highlight
-" color: https://note.cman.jp/color/base_color.cgi
-autocmd ColorScheme * highlight Search ctermfg=235,bold,underline ctermbg=15 guifg=#282828 guibg=#FFFACD
+highlight Search ctermfg=235,bold,underline ctermbg=15 guifg=#282828 guibg=#d1cf58
 
 " mouse
 set mouse=a
