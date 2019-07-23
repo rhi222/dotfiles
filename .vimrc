@@ -434,7 +434,7 @@ set guicursor=
 " copy gitlab.example.com url
 " usage -> :Cpg
 :function! s:GetGitlabURL()
-:	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=gitlab.example.com:)(.*)(?=.git)'")
+:	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=gitlab.example.com:)(.*)(?=.git)' | tr -d '\n' ")
 :	let relativepath = "./" . expand("%")
 :	let branch = "master"
 :	let filepath = system('git ls-files --full-name ' . l:relativepath)
