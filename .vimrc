@@ -399,8 +399,8 @@ call denite#custom#var('grep', 'command', ['rg'])
 " Define alias
 " https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L1772
 call denite#custom#alias('source', 'file/rec/git', 'file/rec')
-call denite#custom#var('file/rec/git', 'command',
-      \ ['git', 'ls-files', '-co', '--exclude-standard'])
+call denite#custom#var('file/rec', 'command',
+      \ ['git', 'ls-files',  '-co', '--exclude-standard'])
 nnoremap <silent> <C-p> :<C-u>Denite
 	\ `finddir('.git', ';') != '' ? 'file/rec/git' : 'file/rec'`<CR>
 " }}} -------------------------
