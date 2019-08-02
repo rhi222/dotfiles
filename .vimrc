@@ -134,7 +134,7 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead httpd* setfiletype apache
 augroup END
 
-autocmd BufWritePost *.py call Flake8()
+"autocmd BufWritePost *.py call Flake8()
 	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
 " }}} -------------------------
 
@@ -248,6 +248,11 @@ let g:ale_linters = {
 \}
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
+
+" Fix files with prettier, and then ESLint.
+" let b:ale_fixers = ['prettier', 'eslint']
+" Equivalent to the above.
+" let b:ale_fixers = {'javascript': ['prettier', 'eslint']}
 " }}} -------------------------
 
 
@@ -296,45 +301,15 @@ map <C-n> :NERDTreeToggle<CR>
 " ----------- denite.vim settings {{{
 " https://github.com/Shougo/denite.nvim
 
-" key bind
-" denite/insert モードのときは，C- で移動できるようにする
-" https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L1876-L1887
-call denite#custom#map('insert', "<C-j>", '<denite:move_to_next_line>')
-call denite#custom#map('insert', "<C-k>", '<denite:move_to_previous_line>')
-autocmd FileType denite-filter call s:denite_filter_my_settings()
-function! s:denite_filter_my_settings() abort
-  inoremap <silent><buffer> <C-j>
-  \ <Esc><C-w>p:call cursor(line('.')+1,0)<CR><C-w>pA
-  inoremap <silent><buffer> <C-k>
-  \ <Esc><C-w>p:call cursor(line('.')-1,0)<CR><C-w>pA
-endfunction
-
 " tabopen や vsplit のキーバインドを割り当て
 call denite#custom#map('insert', "<C-t>", '<denite:do_action:tabopen>')
 call denite#custom#map('insert', "<C-v>", '<denite:do_action:vsplit>')
 call denite#custom#map('normal', "v", '<denite:do_action:vsplit>')
 
-
-" ファイル内検索
-" カーソル以下の単語をgrep
-nnoremap <silent> ;cg :<C-u>DeniteCursorWord grep -buffer-name=search line<CR><C-R><C-W><CR>
-" search
-nnoremap <silent> ;/ :<C-u>Denite -buffer-name=search -auto-resize -auto-highlight line<CR>
-
-" 横断検索
-" 普通にgrep
-nnoremap <silent> ;g :<C-u>Denite -buffer-name=search -mode=normal grep<CR>
-
-nnoremap <silent> <C-l> :<C-u>DeniteProjectDir file_rec<CR>
 " Option 1 : Set colors yourself
 hi deniteMatchedChar ctermbg=NONE ctermfg=6
 " Option 2 : link to other Highlight Group
 hi link deniteMatchedChar Identifier
-
-" resume previous buffer
-"nnoremap <silent> ;r :<C-u>Denite -buffer-name=search -resume -mode=normal<CR>
-nnoremap <silent> ;b :<C-u>Denite buffer -mode=normal<CR>
-nnoremap <silent> ;r :<C-u>Denite register -mode=normal<CR>
 
 " ref: https://github.com/Shougo/denite.nvim/blob/master/doc/denite.txt#L124
 " Define mappings
@@ -406,6 +381,66 @@ nnoremap <silent> <C-p> :<C-u>Denite
 " }}} -------------------------
 
 
+" ----------- defx.vim settings {{{
+" https://github.com/Shougo/defx.nvim
+
+" vimfiler like keybind
+" https://takkii.hatenablog.com/entry/2018/08/19/133847
+autocmd FileType defx call s:defx_my_settings()
+    function! s:defx_my_settings() abort
+     " Define mappings
+      nnoremap <silent><buffer><expr> <CR>
+     \ defx#do_action('open')
+      nnoremap <silent><buffer><expr> c
+     \ defx#do_action('copy')
+      nnoremap <silent><buffer><expr> m
+     \ defx#do_action('move')
+      nnoremap <silent><buffer><expr> p
+     \ defx#do_action('paste')
+      nnoremap <silent><buffer><expr> l
+     \ defx#do_action('open')
+      nnoremap <silent><buffer><expr> E
+     \ defx#do_action('open', 'vsplit')
+      nnoremap <silent><buffer><expr> P
+     \ defx#do_action('open', 'pedit')
+      nnoremap <silent><buffer><expr> K
+     \ defx#do_action('new_directory')
+      nnoremap <silent><buffer><expr> N
+     \ defx#do_action('new_file')
+      nnoremap <silent><buffer><expr> d
+     \ defx#do_action('remove')
+      nnoremap <silent><buffer><expr> r
+     \ defx#do_action('rename')
+      nnoremap <silent><buffer><expr> x
+     \ defx#do_action('execute_system')
+      nnoremap <silent><buffer><expr> yy
+     \ defx#do_action('yank_path')
+      nnoremap <silent><buffer><expr> .
+     \ defx#do_action('toggle_ignored_files')
+      nnoremap <silent><buffer><expr> h
+     \ defx#do_action('cd', ['..'])
+      nnoremap <silent><buffer><expr> ~
+     \ defx#do_action('cd')
+      nnoremap <silent><buffer><expr> q
+     \ defx#do_action('quit')
+      nnoremap <silent><buffer><expr> <Space>
+     \ defx#do_action('toggle_select') . 'j'
+      nnoremap <silent><buffer><expr> *
+     \ defx#do_action('toggle_select_all')
+      nnoremap <silent><buffer><expr> j
+     \ line('.') == line('$') ? 'gg' : 'j'
+      nnoremap <silent><buffer><expr> k
+     \ line('.') == 1 ? 'G' : 'k'
+      nnoremap <silent><buffer><expr> <C-l>
+     \ defx#do_action('redraw')
+      nnoremap <silent><buffer><expr> <C-g>
+     \ defx#do_action('print')
+      nnoremap <silent><buffer><expr> cd
+     \ defx#do_action('change_vim_cwd')
+    endfunction
+" }}} -------------------------
+
+
 " ----------- vim-gitgutter settings {{{
 " https://github.com/airblade/vim-gitgutter
 nnoremap <silent> ,gg :<C-u>GitGutterToggle<CR>
@@ -458,4 +493,3 @@ highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#c6cccc gui
 " https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
 let g:python3_host_prog = substitute(system('which python3'),"\n","","")
 " }}} -------------------------
-
