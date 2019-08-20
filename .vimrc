@@ -1,3 +1,17 @@
+" ----------- path settings {{{
+" use nvm setting ndoe path for coc
+let g:node_host_prog = substitute(system('which node'),"\n","","")
+" let g:node_host_prog = expand('~/.nvm/versions/node/v11.11.0/bin/node')
+
+" quick start
+" https://github.com/Shougo/deoplete.nvim/blob/master/doc/deoplete.txt#L1551
+" https://qiita.com/euxn23/items/2d7a0ede93d35a6badd0
+" https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
+let g:python3_host_prog = substitute(system('which python3'),"\n","","")
+
+" }}} -------------------------
+
+
 " ----------- dein.vim settings {{{
 " プラグインが実際にインストールされるディレクトリ
 let s:dein_dir = expand('~/.cache/dein')
@@ -57,56 +71,6 @@ colorscheme tender
 " }}} -------------------------
 
 
-" ----------- general settings {{{
-" setting statusline
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
-set statusline=%<%f\ %m%r%h%w
-set statusline+=%{'['.(&fenc!=''?&fenc:&enc).']['.&fileformat.']'}
-set statusline+=%=%l/%L,%c%V%8P
-set laststatus=2
-
-
-" ビジュアルモードで選択したテキストが、クリップボードに入るようにする
-" http://nanasi.jp/articles/howto/editing/clipboard.html
-" 無名レジスタに入るデータを、*レジスタにも入れる。
-set clipboard+=unnamedplus
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 0
-let g:syntastic_check_on_wq = 1
-
-" encoding
-" set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
-set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
-"set encoding=utf-8
-
-" etc
-set tabpagemax=50
-set tabstop=4
-set shiftwidth=4
-set hlsearch
-set number
-set incsearch
-" ignore upper or lower case
-set ignorecase
-hi SpecialKey guibg=NONE guifg=Gray40
-set list listchars=trail:~,tab:\|\ 
-
-" highlight
-highlight Search ctermfg=235,bold,underline ctermbg=15 guifg=#282828 guibg=#d1cf58
-
-" mouse
-set mouse=a
-
-" reload
-" nmap <silent> <C-w>r <Plug>(ale_next_wrap)
-
-" }}} -------------------------
-
-
 " ----------- vim-quickhl settings {{{
 nmap <Space>m <Plug>(quickhl-toggle)
 xmap <Space>m <Plug>(quickhl-toggle)
@@ -139,31 +103,72 @@ augroup END
 " }}} -------------------------
 
 
-" ----------- deoplete.nvim settings {{{
-" https://github.com/Shougo/deoplete.nvim
-" Enable deoplete when InsertEnter.
-" for neovim quick open
-let g:deoplete#enable_at_startup = 0
-autocmd InsertEnter * call deoplete#enable()
+" ----------- coc.nvim settings {{{
+" https://github.com/neoclide/coc.nvim
+" https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim#using-deinvim
+" call dein#add('neoclide/coc.nvim', {'merge':0, 'rev': 'release'})
+call dein#add('neoclide/coc.nvim', {'merge':0, 'build': 'yarn install --frozen-lockfile'})
 
-" https://github.com/Shougo/deoplete.nvim/issues/298
-set completeopt-=preview
-" set sources
-let g:deoplete#sources = {}
-" deoplete tab-complete
-inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
+" Better display for messages
+set cmdheight=1
 
-" for quick neovim start
-call deoplete#custom#option({
-\ 'auto_complete_delay': 100,
-\ 'smart_case': v:true,
-\ })
+" You will have bad experience for diagnostic messages when it's default 4000.
+set updatetime=300
+
+" don't give |ins-completion-menu| messages.
+set shortmess+=c
+
+" always show signcolumns
+set signcolumn=yes
+
+" Use tab for trigger completion with characters ahead and navigate.
+" Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion.
+inoremap <silent><expr> <c-space> coc#refresh()
 
 " set candidate popup color
 highlight Pmenu ctermbg=8 guibg=#a6a6a6
 highlight PmenuSel ctermfg=1 ctermbg=15 guibg=#d1cf58
 highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
 " }}} -------------------------
+
+
+"" ----------- deoplete.nvim settings {{{
+"" https://github.com/Shougo/deoplete.nvim
+"" Enable deoplete when InsertEnter.
+"" for neovim quick open
+"let g:deoplete#enable_at_startup = 0
+"autocmd InsertEnter * call deoplete#enable()
+"
+"" https://github.com/Shougo/deoplete.nvim/issues/298
+"set completeopt-=preview
+"" set sources
+"let g:deoplete#sources = {}
+"" deoplete tab-complete
+"inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
+"
+"" for quick neovim start
+"call deoplete#custom#option({
+"\ 'auto_complete_delay': 100,
+"\ 'smart_case': v:true,
+"\ })
+"
+"" set candidate popup color
+"highlight Pmenu ctermbg=8 guibg=#a6a6a6
+"highlight PmenuSel ctermfg=1 ctermbg=15 guibg=#d1cf58
+"highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
+"" }}} -------------------------
 
 
 " ----------- vim-jsdoc settings {{{
@@ -457,6 +462,55 @@ set conceallevel=0
 " }}} -------------------------
 
 
+" ----------- general settings {{{
+highlight Search ctermfg=235,bold,underline ctermbg=15 guifg=#282828 guibg=#d1cf58
+" setting statusline
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+set statusline=%<%f\ %m%r%h%w
+set statusline+=%{'['.(&fenc!=''?&fenc:&enc).']['.&fileformat.']'}
+set statusline+=%=%l/%L,%c%V%8P
+set laststatus=2
+
+
+" ビジュアルモードで選択したテキストが、クリップボードに入るようにする
+" http://nanasi.jp/articles/howto/editing/clipboard.html
+" 無名レジスタに入るデータを、*レジスタにも入れる。
+set clipboard+=unnamedplus
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 0
+let g:syntastic_check_on_wq = 1
+
+" encoding
+" set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
+set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
+"set encoding=utf-8
+
+" etc
+set tabpagemax=50
+set tabstop=4
+set shiftwidth=4
+set hlsearch
+set number
+set incsearch
+" ignore upper or lower case
+set ignorecase
+hi SpecialKey guibg=NONE guifg=Gray40
+set list listchars=trail:~,tab:\|\ 
+
+" highlight
+highlight Search ctermfg=235,bold,underline ctermbg=15 guifg=#282828 guibg=#d1cf58
+
+" mouse
+set mouse=a
+
+" reload
+" nmap <silent> <C-w>r <Plug>(ale_next_wrap)
+" }}} -------------------------
+
 " ----------- etc settings {{{
 " LXTerminal
 " https://github.com/neovim/neovim/issues/6041
@@ -487,9 +541,5 @@ set guicursor=
 " floating window
 highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#c6cccc guibg=#49595c
 
-" quick start
-" https://github.com/Shougo/deoplete.nvim/blob/master/doc/deoplete.txt#L1551
-" https://qiita.com/euxn23/items/2d7a0ede93d35a6badd0
-" https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
-let g:python3_host_prog = substitute(system('which python3'),"\n","","")
 " }}} -------------------------
+
