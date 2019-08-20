@@ -24,8 +24,11 @@ hook_add = '''
 		\   <bang>0)
 '''
 
+# [[plugins]]
+# repo = 'Shougo/deoplete.nvim'
+
 [[plugins]]
-repo = 'Shougo/deoplete.nvim'
+repo = 'neoclide/coc.nvim'
 
 [[plugins]]
 repo = 'Shougo/neosnippet.vim'
