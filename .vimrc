@@ -90,12 +90,20 @@ augroup fileTypeIndent
 	autocmd!
 	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
-	autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
+	"autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yaml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead .htaccess setfiletype apache
 	autocmd BufNewFile,BufRead httpd* setfiletype apache
+augroup END
+
+" タグ自動補完
+" https://qiita.com/KaoruIto76/items/002d9658b890fb6392f9
+augroup HTMLANDXML
+  autocmd!
+  autocmd Filetype xml inoremap <buffer> </ </<C-x><C-o>
+  autocmd Filetype html inoremap <buffer> </ </<C-x><C-o><ESC>F<i
 augroup END
 
 "autocmd BufWritePost *.py call Flake8()
@@ -136,6 +144,13 @@ endfunction
 
 " Use <c-space> to trigger completion.
 inoremap <silent><expr> <c-space> coc#refresh()
+
+" https://qiita.com/KaoruIto76/items/8637cbf5c51ec0a8bd7c#vimが最高に近づいてることを確認
+" Remap keys for gotos
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
 
 " set candidate popup color
 highlight Pmenu ctermbg=8 guibg=#a6a6a6
