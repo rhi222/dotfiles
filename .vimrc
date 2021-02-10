@@ -7,6 +7,7 @@ let g:node_host_prog = substitute(system('which node'),"\n","","")
 " https://github.com/Shougo/deoplete.nvim/blob/master/doc/deoplete.txt#L1551
 " https://qiita.com/euxn23/items/2d7a0ede93d35a6badd0
 " https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
+let g:python_host_prog = '/home/forcia/.pyenv/versions/2.7.17/bin/python'
 let g:python3_host_prog = substitute(system('which python3'),"\n","","")
 
 " }}} -------------------------
@@ -94,8 +95,10 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead *.yaml setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
+	autocmd BufNewFile,BufRead *.rules setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
 	autocmd BufNewFile,BufRead .htaccess setfiletype apache
 	autocmd BufNewFile,BufRead httpd* setfiletype apache
+	autocmd BufNewFile,BufRead *.sqltmpl setfiletype sql
 augroup END
 
 " タグ自動補完
@@ -114,8 +117,8 @@ augroup END
 " ----------- coc.nvim settings {{{
 " https://github.com/neoclide/coc.nvim
 " https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim#using-deinvim
-" call dein#add('neoclide/coc.nvim', {'merge':0, 'rev': 'release'})
-call dein#add('neoclide/coc.nvim', {'merge':0, 'build': 'yarn install --frozen-lockfile'})
+call dein#add('neoclide/coc.nvim', {'merge':0, 'rev': 'release'})
+" call dein#add('neoclide/coc.nvim', {'merge':0, 'build': 'yarn install --frozen-lockfile'})
 
 " Better display for messages
 set cmdheight=1
@@ -231,7 +234,7 @@ if has('conceal')
 endif
 
 " 自分用 snippet ファイルの場所 (任意のパス)
-let g:neosnippet#snippets_directory = '~/.vim/snippets/'
+let g:neosnippet#snippets_directory = '~/.config/nvim/snippets/'
 " }}} -------------------------
 
 
@@ -504,6 +507,9 @@ let g:syntastic_check_on_wq = 1
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
 "set encoding=utf-8
 
+" 矢印無効化
+set nocompatible
+
 " etc
 set tabpagemax=50
 set tabstop=4
@@ -525,6 +531,19 @@ set mouse=a
 " reload
 " nmap <silent> <C-w>r <Plug>(ale_next_wrap)
 " }}} -------------------------
+
+" ----------- coc-prettier  {{{
+"  https://prettier.io/docs/en/vim.html#coc-prettier-https-githubcom-neoclide-coc-prettier
+command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
+" }}} -------------------------
+"
+" ----------- vim-jsx-typescript  {{{
+" https://github.com/peitalin/vim-jsx-typescript/blob/master/after/syntax/tsx.vim
+" hi tsxTagName guifg=#3CB371
+" hi def link tsxCloseString tsxTagName
+" hi def link tsxCloseTag tsxTag
+" }}} -------------------------
+
 
 " ----------- etc settings {{{
 " LXTerminal
@@ -555,6 +574,5 @@ set guicursor=
 
 " floating window
 highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#c6cccc guibg=#49595c
-
 " }}} -------------------------
 
