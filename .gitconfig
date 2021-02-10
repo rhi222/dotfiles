@@ -16,5 +16,7 @@
 	sh = show
 	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
+[ghq]
+    root = /data/git-repos
 [credential]
 	helper = cache
