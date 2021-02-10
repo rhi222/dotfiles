@@ -1,8 +1,9 @@
 # [[plugins]]
 # repo = 'scrooloose/nerdtree'
 
-[[plugins]]
-repo = 'forcia'
+#[[plugins]]
+# repo = 'vim-scripts/forcia'
+#repo = 'forcia'
 
 [[plugins]]
 repo = 't9md/vim-quickhl'
@@ -12,17 +13,28 @@ repo = 'junegunn/fzf'
 build = './install --bin'
 merged = '0'
 
+#E[[plugins]]
+#Erepo = 'junegunn/fzf.vim'
+#Edepends = 'fzf'
+
 [[plugins]]
 repo = 'junegunn/fzf.vim'
 depends = 'fzf'
 hook_add = '''
-	command! -bang -nargs=* Rg
-		\ call fzf#vim#grep(
-		\   'rg --column --line-number --no-heading --color=always --smart-case '.shellescape(<q-args>), 1,
-		\   <bang>0 ? fzf#vim#with_preview('up:60%')
-		\           : fzf#vim#with_preview('right:50%:wrap', '?'),
-		\   <bang>0)
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep(
+  \   'rg --column --line-number --no-heading --color=always --smart-case -- '.shellescape(<q-args>), 1,
+  \   fzf#vim#with_preview(), <bang>0)
 '''
+#	command! -bang -nargs=* Rg
+#		\ call fzf#vim#grep(
+#		\   'rg --column --line-number --no-heading --color=always --smart-case '.shellescape(<q-args>), 1,
+#		\   <bang>0 ? fzf#vim#with_preview('up:60%')
+#		\           : fzf#vim#with_preview('right:50%:wrap', '?'),
+#		\   <bang>0)
+
+#[[plugins]]
+#repo = 'jremmen/vim-ripgrep'
 
 # [[plugins]]
 # repo = 'Shougo/deoplete.nvim'
@@ -74,7 +86,8 @@ repo ='Shougo/defx.nvim'
 on_cmd = 'Defx'
 depends = ['defx-icons', 'defx-git']
 hook_add = '''
-	nnoremap <silent> <Space>f :<C-u>Defx -listed -resume -buffer-name=tab`tabpagenr()`<CR>
+	nnoremap <silent> <Space>f :<C-u>Defx `expand('%:p:h')` -search=`expand('%:p')`<CR>
+	nnoremap <silent> <Space>d :<C-u>Defx -listed -columns=icons:indent:filename:type`<CR>
 '''
 hook_source = '''
 	call defx#custom#option('_', {
