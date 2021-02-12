@@ -530,6 +530,12 @@ set mouse=a
 
 " reload
 " nmap <silent> <C-w>r <Plug>(ale_next_wrap)
+
+" cursor
+" https://qiita.com/shiena/items/3f51a2c0b4722427e430
+set cursorline
+set cursorcolumn
+
 " }}} -------------------------
 
 " ----------- coc-prettier  {{{
