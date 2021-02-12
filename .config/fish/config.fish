@@ -25,19 +25,19 @@ set PSQL_EDITOR 'nvim'
 # bashrc での rbenv の設定
 # eval "$(rbenv init -)" と同様のことを書きたい時
 # https://github.com/fish-shell/fish-shell/issues/1820
-eval (rbenv init - | source)
+# eval (rbenv init - | source)
 # ------------- }}}
 
 # ------------- path setting {{{
-set JAVA_HOME /usr/local/java
-set PATH $JAVA_HOME/bin $PATH
-set PATH /home/forcia/.nvm/versions/node/v5.0.0/bin /home/forcia/bin /usr/local/java/bin /usr/local/java/bin /home/forcia/bin /usr/local/sbin /usr/local/bin /usr/local/pgsql/bin /home/forcia/.rbenv/bin /usr/local/python/bin /usr/local/python/bin /home/forcia/.rbenv/shims /usr/sbin /usr/bin /sbin /bin /usr/games /usr/local/games /home/forcia/.fzf/bin /home/forcia/anaconda3/bin $PATH
+# set JAVA_HOME /usr/local/java
+# set PATH $JAVA_HOME/bin $PATH
+# set PATH /home/forcia/.nvm/versions/node/v5.0.0/bin /home/forcia/bin /usr/local/java/bin /usr/local/java/bin /home/forcia/bin /usr/local/sbin /usr/local/bin /usr/local/pgsql/bin /home/forcia/.rbenv/bin /usr/local/python/bin /usr/local/python/bin /home/forcia/.rbenv/shims /usr/sbin /usr/bin /sbin /bin /usr/games /usr/local/games /home/forcia/.fzf/bin /home/forcia/anaconda3/bin $PATH
 
 set GOROOT /usr/local/go
 set GOPATH $HOME
 set PATH $PATH $GOROOT/bin
-set -x PATH $HOME/.pyenv/bin $PATH
-eval (pyenv init - | source)
+# set -x PATH $HOME/.pyenv/bin $PATH
+# eval (pyenv init - | source)
 #. (pyenv init - | psub)
 
 set TERM screen-256color
