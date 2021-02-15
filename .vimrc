@@ -502,6 +502,21 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 1
 
+" clipboard setting for wsl2
+" https://qiita.com/tMinamiii/items/0c6589806090c7fc3f8a
+let g:clipboard = {
+    \   'name': 'myClipboard',
+    \   'copy': {
+    \      '+': 'win32yank.exe -i',
+    \      '*': 'win32yank.exe -i',
+    \    },
+    \   'paste': {
+    \      '+': 'win32yank.exe -o',
+    \      '*': 'win32yank.exe -o',
+    \   },
+    \   'cache_enabled': 1,
+    \ }
+
 " encoding
 " set fileencodings=iso-2022-jp,cp932,sjis,euc-jp,utf-8
 set fileencodings=utf-8,iso-2022-jp,cp932,sjis,euc-jp
