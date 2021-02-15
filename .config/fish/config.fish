@@ -33,12 +33,23 @@ set PSQL_EDITOR 'nvim'
 # set PATH $JAVA_HOME/bin $PATH
 # set PATH /home/example-org/.nvm/versions/node/v5.0.0/bin /home/example-org/bin /usr/local/java/bin /usr/local/java/bin /home/example-org/bin /usr/local/sbin /usr/local/bin /usr/local/pgsql/bin /home/example-org/.rbenv/bin /usr/local/python/bin /usr/local/python/bin /home/example-org/.rbenv/shims /usr/sbin /usr/bin /sbin /bin /usr/games /usr/local/games /home/example-org/.fzf/bin /home/example-org/anaconda3/bin $PATH
 
-set GOROOT /usr/local/go
-set GOPATH $HOME
-set PATH $PATH $GOROOT/bin
+# set GOROOT /usr/local/go
+# set GOPATH $HOME/go
+# set PATH $PATH $GOROOT/bin
+
+# https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
+set GOPATH $HOME/go
+set PATH $PATH $GOPATH/bin
+
 # set -x PATH $HOME/.pyenv/bin $PATH
 # eval (pyenv init - | source)
 #. (pyenv init - | psub)
+
+# volta setting
+# https://docs.volta.sh/guide/getting-started
+set VOLTA_HOME $HOME/.volta
+set PATH $PATH $VOLTA_HOME/bin
+
 
 set TERM screen-256color
 # ------------- }}}
