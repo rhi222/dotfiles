@@ -58,6 +58,9 @@ set PATH $PATH $HOME/bin
 # https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#wsl2%E3%81%AEpath%E3%81%8B%E3%82%89windows%E3%83%91%E3%82%B9%E3%82%92%E6%8A%9C%E3%81%8F
 set PATH $PATH /mnt/c/Program\ Files/Docker/Docker/resources/bin
 
+# rust setting
+set PATH $PATH $HOME/.cargo/bin
+
 set TERM screen-256color
 # ------------- }}}
 
