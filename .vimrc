@@ -471,6 +471,13 @@ nnoremap <silent> ,gh :<C-u>GitGutterLineHighlightsToggle<CR>
 " }}} -------------------------
 
 
+" ----------- blamer.vim settings {{{
+" https://github.com/APZelos/blamer.nvim
+let g:blamer_date_format = '%y/%m/%d'
+let g:blamer_template = '<committer>, <committer-time> <summary> <commit-short>'
+nnoremap <silent> <buffer> b :BlamerToggle<CR>
+" }}} -------------------------
+
 " ----------- vim-markdown settings {{{
 " https://github.com/plasticboy/vim-markdown
 let g:vim_markdown_folding_disabled = 1
