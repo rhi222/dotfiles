@@ -43,10 +43,13 @@ command! -bang -nargs=* Rg
 repo = 'neoclide/coc.nvim'
 
 [[plugins]]
-repo = 'Shougo/neosnippet.vim'
+repo = 'honza/vim-snippets'
 
-[[plugins]]
-repo = 'Shougo/neosnippet-snippets'
+# [[plugins]]
+# repo = 'Shougo/neosnippet.vim'
+
+# [[plugins]]
+# repo = 'Shougo/neosnippet-snippets'
 
 [[plugins]]
 repo = 'w0rp/ale'

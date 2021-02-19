@@ -159,6 +159,33 @@ nmap <silent> gr <Plug>(coc-references)
 highlight Pmenu ctermbg=8 guibg=#a6a6a6
 highlight PmenuSel ctermfg=1 ctermbg=15 guibg=#d1cf58
 highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
+
+" manage coc install list
+" https://github.com/neoclide/coc.nvim/wiki/Using-coc-extensions#manage-extensions-with-coclist
+let g:coc_global_extensions = [
+	\ 'coc-tsserver',
+	\ 'coc-snippets',
+	\ 'coc-prettier'
+	\]
+
+" coc-snippets
+" https://github.com/neoclide/coc-snippets
+" https://www.chrisatmachine.com/Neovim/17-snippets/
+" `:CocCommand snippets.editSnippets` for custom directory
+" Use <C-l> for trigger snippet expand.
+imap <C-l> <Plug>(coc-snippets-expand)
+
+" Use <C-j> for select text for visual placeholder of snippet.
+vmap <C-j> <Plug>(coc-snippets-select)
+
+" Use <C-j> for jump to next placeholder, it's default of coc.nvim
+let g:coc_snippet_next = '<buffer> j'
+"let g:coc_snippet_next = '<c-j>'
+
+" Use <C-k> for jump to previous placeholder, it's default of coc.nvim
+let g:coc_snippet_prev = '<buffer> k'
+" let g:coc_snippet_prev = '<c-k>'
+
 " }}} -------------------------
 
 
