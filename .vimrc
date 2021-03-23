@@ -588,8 +588,8 @@ set cursorcolumn
 " }}} -------------------------
 
 " ----------- coc-prettier  {{{
-"  https://prettier.io/docs/en/vim.html#coc-prettier-https-githubcom-neoclide-coc-prettier
-command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
+" https://github.com/neoclide/coc-prettier#setup-prettier-command-in-your-initvim-or-vimrc
+command! -nargs=0 Prettier :CocCommand prettier.formatFile
 " }}} -------------------------
 "
 " ----------- vim-jsx-typescript  {{{
