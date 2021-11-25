@@ -488,6 +488,11 @@ autocmd FileType defx call s:defx_my_settings()
       nnoremap <silent><buffer><expr> cd
      \ defx#do_action('change_vim_cwd')
     endfunction
+
+call defx#custom#option('_', {
+	\ 'columns': 'git:icons:indent:filename:mark',
+	\ 'show_ignored_files': 1,
+	\ })
 " }}} -------------------------
 
 
