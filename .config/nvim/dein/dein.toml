@@ -69,7 +69,9 @@ repo = 'APZelos/blamer.nvim'
 [[plugins]]
 repo = 'jacoborus/tender.vim'
 
-# https://blog.x39.dev/tech/defx/
+[[plugins]]
+repo = 'ryanoasis/vim-devicons'
+
 [[plugins]]
 repo ='kristijanhusak/defx-icons'
 
@@ -94,25 +96,4 @@ depends = ['defx-icons', 'defx-git']
 hook_add = '''
 	nnoremap <silent> <Space>f :<C-u>Defx `expand('%:p:h')` -search=`expand('%:p')`<CR>
 	nnoremap <silent> <Space>d :<C-u>Defx -listed -columns=icons:indent:filename:type`<CR>
-'''
-hook_source = '''
-	call defx#custom#option('_', {
-			\ 'columns': 'indent:git:icons:filename',
-			\ 'show_ignored_files': 1,
-			\ })
-
-	call defx#custom#column('filename', {
-			\ 'directory_icon': '',
-			\ 'opened_icon': '',
-			\ })
-
-	call defx#custom#column('mark', {
-			\ 'readonly_icon': '✗',
-			\ 'selected_icon': '✓',
-			\ })
-
-	call defx#custom#option('_', {
-			\ 'columns': 'indent:git:icons:filename',
-			\ 'show_ignored_files': 1,
-			\ })
 '''
