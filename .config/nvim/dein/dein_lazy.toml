@@ -36,6 +36,10 @@ repo = 'rust-lang/rust.vim'
 on_ft = ['rust']
 
 [[plugins]]
+repo = 'jparise/vim-graphql'
+on_ft = ['graphql']
+
+[[plugins]]
 repo = 'leafgarland/typescript-vim'
 on_ft = ['typescript', 'typescriptreact']
 
