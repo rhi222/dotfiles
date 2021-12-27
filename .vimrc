@@ -165,9 +165,14 @@ highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
 " manage coc install list
 " https://github.com/neoclide/coc.nvim/wiki/Using-coc-extensions#manage-extensions-with-coclist
 let g:coc_global_extensions = [
+	\ 'coc-docker',
+	\ 'coc-prettier',
+	\ 'coc-prisma',
+	\ 'coc-python',
+	"\ 'coc-snippets',
+	\ 'coc-sql',
 	\ 'coc-tsserver',
-	\ 'coc-snippets',
-	\ 'coc-prettier'
+	\ 'coc-yaml',
 	\]
 
 " coc-snippets
@@ -189,6 +194,13 @@ let g:coc_snippet_prev = '<buffer> k'
 " let g:coc_snippet_prev = '<c-k>'
 
 " }}} -------------------------
+
+
+" ----------- coc-prettier  {{{
+" https://github.com/neoclide/coc-prettier#setup-prettier-command-in-your-initvim-or-vimrc
+command! -nargs=0 Prettier :CocCommand prettier.formatFile
+" }}} -------------------------
+"
 
 
 "" ----------- deoplete.nvim settings {{{
@@ -588,11 +600,7 @@ set cursorcolumn
 
 " }}} -------------------------
 
-" ----------- coc-prettier  {{{
-" https://github.com/neoclide/coc-prettier#setup-prettier-command-in-your-initvim-or-vimrc
-command! -nargs=0 Prettier :CocCommand prettier.formatFile
-" }}} -------------------------
-"
+
 " ----------- vim-jsx-typescript  {{{
 " https://github.com/peitalin/vim-jsx-typescript/blob/master/after/syntax/tsx.vim
 " hi tsxTagName guifg=#3CB371
