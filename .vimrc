@@ -331,11 +331,6 @@ endif
 " }}} -------------------------
 
 
-" ----------- NERDTree settings {{{
-" https://github.com/scrooloose/nerdtree
-map <C-n> :NERDTreeToggle<CR>
-" }}} -------------------------
-
 
 " ----------- denite.vim settings {{{
 " https://github.com/Shougo/denite.nvim
