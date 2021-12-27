@@ -42,14 +42,13 @@ command! -bang -nargs=* Rg
 [[plugins]]
 repo = 'neoclide/coc.nvim'
 
+# https://zenn.dev/shougo/articles/snippet-plugins-2020
+# を参考にcoc-neosnippetから移行
 [[plugins]]
 repo = 'honza/vim-snippets'
 
 # [[plugins]]
-# repo = 'Shougo/neosnippet.vim'
-
-# [[plugins]]
-# repo = 'Shougo/neosnippet-snippets'
+# repo = 'SirVer/ultisnips'
 
 [[plugins]]
 repo = 'w0rp/ale'
