@@ -87,9 +87,11 @@ nmap <Space>j <Plug>(quickhl-match)
 filetype plugin indent on
 
 " filetype
+" tab周りのオプション: https://yu8mada.com/2018/08/26/i-ll-explain-vim-s-5-tab-and-space-related-somewhat-complicated-options-as-simply-as-possible/
 augroup fileTypeIndent
 	autocmd!
 	"autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 noexpandtab
+	autocmd BufNewFile,BufRead *.graphql setlocal tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab
 	autocmd BufNewFile,BufRead *.py setlocal tabstop=4 softtabstop=4 expandtab
 	"autocmd BufNewFile,BufRead *.ts setlocal tabstop=4 softtabstop=4 expandtab
 	autocmd BufNewFile,BufRead *.rb setlocal expandtab tabstop=2 softtabstop=2 shiftwidth=2
