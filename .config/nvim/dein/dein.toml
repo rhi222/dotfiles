@@ -42,13 +42,20 @@ command! -bang -nargs=* Rg
 [[plugins]]
 repo = 'neoclide/coc.nvim'
 
+# snippet
+# https://zenn.dev/yano/articles/vim_plugin_top_10#ultisnips
 # https://zenn.dev/shougo/articles/snippet-plugins-2020
-# を参考にcoc-neosnippetから移行
+# を参考にcoc-neosnippet( https://github.com/neoclide/coc-snippets )から ultisnipsへ 移行する
+# neovimではultisnipsが遅いという報告があるので、様子を見てcoc-snippetに戻す
+# https://zenn.dev/shougo/articles/snippet-plugins-2020#ultisnips
+# https://github.com/neovim/neovim/issues/5702
+## snipet engine
+[[plugins]]
+repo = 'SirVer/ultisnips'
+
+## snippet definitions
 [[plugins]]
 repo = 'honza/vim-snippets'
-
-# [[plugins]]
-# repo = 'SirVer/ultisnips'
 
 [[plugins]]
 repo = 'w0rp/ale'
