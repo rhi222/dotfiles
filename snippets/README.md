@@ -1,12 +1,7 @@
-# create file
-- open file
-- `:NeoSnippetEdit`
+# README
+deprecated
 
-# use neosnippet in coc.nvim
-- `:CocInstall coc-neosnippet`
-
-# replace
-- https://github.com/neoclide/coc-snippets is better for using coc.nvim
+ultisnipsへ移行したため参照なし
 
 # ref
 - https://zenn.dev/shougo/articles/snippet-plugins-2020
