@@ -166,6 +166,7 @@ highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
 " https://github.com/neoclide/coc.nvim/wiki/Using-coc-extensions#manage-extensions-with-coclist
 let g:coc_global_extensions = [
 	\ 'coc-docker',
+	\ 'coc-graphql',
 	\ 'coc-prettier',
 	\ 'coc-prisma',
 	\ 'coc-python',
