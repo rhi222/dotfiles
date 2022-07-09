@@ -167,10 +167,10 @@ highlight PmenuSbar ctermbg=0 guibg=#d6d6d6
 let g:coc_global_extensions = [
 	\ 'coc-docker',
 	\ 'coc-graphql',
+	\ 'coc-json',
 	\ 'coc-prettier',
 	\ 'coc-prisma',
-	\ 'coc-python',
-	"\ 'coc-snippets',
+	\ 'coc-pyright',
 	\ 'coc-sql',
 	\ 'coc-tsserver',
 	\ 'coc-yaml',
@@ -202,6 +202,8 @@ let g:coc_snippet_prev = '<buffer> k'
 command! -nargs=0 Prettier :CocCommand prettier.formatFile
 " }}} -------------------------
 "
+" ----------- pfs/black settings {{{
+" }}} -------------------------
 
 
 "" ----------- deoplete.nvim settings {{{
@@ -609,6 +611,11 @@ set cursorcolumn
 " hi def link tsxCloseTag tsxTag
 " }}} -------------------------
 
+" ----------- phaazon/hop.nvim  {{{
+lua require'hop'.setup { keys = 'etovxqpdygfblzhckisuran', jump_on_sole_occurrence = false }
+nnoremap <Space>j :HopWord<CR>
+" }}} -------------------------
+
 
 " ----------- etc settings {{{
 " LXTerminal
@@ -624,7 +631,7 @@ set guicursor=
 :function! s:GetGitlabURL()
 :	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=git@gitlab.fdev:|http://gitlab.fdev/)(.*)(?=.git)' | tr -d '\n' ")
 :	let relativepath = "./" . expand("%")
-:	let branch = "master"
+:	let branch = system("git rev-parse --abbrev-ref HEAD | tr -d '\n'")
 :	let filepath = system('git ls-files --full-name ' . l:relativepath)
 :	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/" . l:branch . "/" . l:filepath
 :	echo 'copied to clipboard!'
@@ -641,3 +648,8 @@ set guicursor=
 highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#c6cccc guibg=#49595c
 " }}} -------------------------
 
+
+" ----------- jumpcursor.vim  {{{
+" https://github.com/skanehira/jumpcursor.vim
+" nmap [j <Plug>(jumpcursor-jump)
+" }}} -------------------------
