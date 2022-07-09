@@ -103,3 +103,14 @@ hook_add = '''
 	nnoremap <silent> <Space>f :<C-u>Defx `expand('%:p:h')` -search=`expand('%:p')`<CR>
 	nnoremap <silent> <Space>d :<C-u>Defx -listed -columns=icons:indent:filename:type`<CR>
 '''
+
+[[plugins]]
+repo ='tpope/vim-surround'
+
+# 使いたいがエラー出るのでコメントアウト
+# [[plugins]]
+# repo ='skanehira/jumpcursor.vim'
+
+
+[[plugins]]
+repo = 'phaazon/hop.nvim'
