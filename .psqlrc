@@ -1,6 +1,7 @@
+\set QUIET ON
 \pset null '[NULL]'
 \x auto
 \set HISTFILE ~/.psql_history- :DBNAME
-\timing on
 \set VERBOSITY verbose
 \setenv EDITOR 'nvim'
+\set QUIET OFF

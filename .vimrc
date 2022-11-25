@@ -194,6 +194,9 @@ let g:coc_snippet_next = '<buffer> j'
 let g:coc_snippet_prev = '<buffer> k'
 " let g:coc_snippet_prev = '<c-k>'
 
+" <C-g>u breaks current undo, please make your own choice.
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
 " }}} -------------------------
 
 
@@ -632,8 +635,9 @@ set guicursor=
 :	let repo = system("git config -l | grep 'origin.url' | grep -oP '(?<=git@gitlab.fdev:|http://gitlab.fdev/)(.*)(?=.git)' | tr -d '\n' ")
 :	let relativepath = "./" . expand("%")
 :	let branch = system("git rev-parse --abbrev-ref HEAD | tr -d '\n'")
+:	let hash = system("git rev-parse HEAD | tr -d '\n'")
 :	let filepath = system('git ls-files --full-name ' . l:relativepath)
-:	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/" . l:branch . "/" . l:filepath
+:	let @+ = "http://gitlab.fdev/" . l:repo . "/blob/" . l:hash . "/" . l:filepath
 :	echo 'copied to clipboard!'
 :	return
 :endfunction
