@@ -6,7 +6,9 @@
 	whitespace = cr-at-eol
 [alias]
 	st  = status
-	ch  = checkout
+	# ch  = checkout
+	ch  = !echo "Use git switch/restore instead!"
+	sw = switch
 	co  = commit
 	me  = merge
 	re  = rebase
