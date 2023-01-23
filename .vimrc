@@ -1,5 +1,6 @@
 " ----------- path settings {{{
 " use nvm setting ndoe path for coc
+" let g:node_host_prog = substitute(system('/home/nishiyama/.volta/bin/node'),"\n","","")
 let g:node_host_prog = substitute(system('which node'),"\n","","")
 " let g:node_host_prog = expand('~/.nvm/versions/node/v11.11.0/bin/node')
 
@@ -557,6 +558,7 @@ let g:syntastic_check_on_wq = 1
 
 " clipboard setting for wsl2
 " https://qiita.com/tMinamiii/items/0c6589806090c7fc3f8a
+" https://blog.himanoa.net/20/
 let g:clipboard = {
     \   'name': 'myClipboard',
     \   'copy': {
