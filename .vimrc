@@ -654,6 +654,16 @@ set guicursor=
 highlight NormalFloat cterm=NONE ctermfg=14 ctermbg=0 gui=NONE guifg=#c6cccc guibg=#49595c
 " }}} -------------------------
 
+" ----------- copilot settings {{{
+" https://github.com/github/copilot.vim
+" 提案を入力する: Tab defaultまま
+" 提案を却下する: Ctrl+] defaultまま
+" 次の提案に移る: Alt+j defaultはAlt+]
+" 前の提案い移る: Alt+k defaultはAlt+[
+imap <M-j> <Plug>(copilot-next)
+imap <M-k> <Plug>(copilot-previous)
+" }}} -------------------------
+
 
 " ----------- jumpcursor.vim  {{{
 " https://github.com/skanehira/jumpcursor.vim
