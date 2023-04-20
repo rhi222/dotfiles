@@ -102,6 +102,8 @@ augroup fileTypeIndent
 	autocmd BufNewFile,BufRead .htaccess setfiletype apache
 	autocmd BufNewFile,BufRead httpd* setfiletype apache
 	autocmd BufNewFile,BufRead *.sqltmpl setfiletype sql
+	autocmd BufNewFile,BufRead *.csv setfiletype csv
+	autocmd BufNewFile,BufRead *.tsv setfiletype tsv
 augroup END
 
 " タグ自動補完
