@@ -8,7 +8,7 @@ let g:node_host_prog = substitute(system('which node'),"\n","","")
 " https://github.com/Shougo/deoplete.nvim/blob/master/doc/deoplete.txt#L1551
 " https://qiita.com/euxn23/items/2d7a0ede93d35a6badd0
 " https://qiita.com/tayusa/items/c25a5adc70e1ad4478a7
-let g:python_host_prog = '/home/forcia/.pyenv/versions/2.7.17/bin/python'
+let g:python_host_prog = substitute(system('which python2'),"\n","","")
 let g:python3_host_prog = substitute(system('which python3'),"\n","","")
 
 " }}} -------------------------
