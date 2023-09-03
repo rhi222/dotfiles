@@ -13,10 +13,6 @@ repo = 'junegunn/fzf'
 build = './install --bin'
 merged = '0'
 
-#E[[plugins]]
-#Erepo = 'junegunn/fzf.vim'
-#Edepends = 'fzf'
-
 [[plugins]]
 repo = 'junegunn/fzf.vim'
 depends = 'fzf'
