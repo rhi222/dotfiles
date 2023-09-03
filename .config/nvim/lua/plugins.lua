@@ -50,9 +50,9 @@ return {
 	{
 		'folke/tokyonight.nvim',
 	},
-	-- {
-	-- 	'catppuccin/nvim',
-	-- },
+	{
+		'catppuccin/nvim',
+	},
 	{
 		'nvim-treesitter/nvim-treesitter',
 		config = function()
@@ -78,6 +78,16 @@ return {
 		dependencies = {
 			'williamboman/mason-lspconfig'
 		},
+		-- 遅延ロードを試してみる
+		-- https://zenn.dev/yuucu/articles/lazy_nvim_tuning#%E9%81%85%E5%BB%B6%E3%83%AD%E3%83%BC%E3%83%89%E8%A8%AD%E5%AE%9A%E3%81%AE%E7%B4%B9%E4%BB%8B%E3%81%A8%E5%AE%9F%E4%BE%8B
+		cmd = {
+		  "Mason",
+		  "MasonInstall",
+		  "MasonUninstall",
+		  "MasonUninstallAll",
+		  "MasonLog",
+		  "MasonUpdate",
+		},
 		-- config = function()
 		-- 	require('config/mason')
 		-- end
@@ -96,6 +106,12 @@ return {
 		},
 		config = function()
 			require('config/nvim-cmp')
+		end
+	},
+	{
+		'mhartington/formatter.nvim',
+		config = function()
+			require('config/formatter')
 		end
 	}
 }
