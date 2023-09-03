@@ -35,25 +35,30 @@ return {
 			require('config/hop')
 		end
 	},
+	-- colorschemaは検討中
+	{
+		'rebelot/kanagawa.nvim',
+		dependencies = {
+			'nvim-treesitter/nvim-treesitter'
+		},
+		config = function()
+			require('config/kanagawa')
+		end
+	},
+	'rmehri01/onenord.nvim',
+	-- 'rktjmp/lush.nvim',
+	{
+		'folke/tokyonight.nvim',
+	},
+	-- {
+	-- 	'catppuccin/nvim',
+	-- },
 	{
 		'nvim-treesitter/nvim-treesitter',
 		config = function()
 			require('config/nvim-treesitter')
 		end
 	},
-	-- colorschemaは検討中
-	{
-		'rebelot/kanagawa.nvim',
-		config = function()
-			require('config/kanagawa')
-		end
-	},
-	-- {
-	-- 	'folke/tokyonight.nvim',
-	-- },
-	-- {
-	-- 	'catppuccin/nvim',
-	-- },
 	{
 		'zbirenbaum/copilot.lua',
 		config = function()
@@ -84,7 +89,7 @@ return {
 			'hrsh7th/cmp-nvim-lsp', --LSPを補完ソースに
 			'hrsh7th/cmp-buffer', --bufferを補完ソースに
 			'hrsh7th/cmp-cmdline', -- vimのコマンド
-			-- 'hrsh7th/cmp-path', --pathを補完ソースに
+			'hrsh7th/cmp-path', --pathを補完ソースに
 			'hrsh7th/vim-vsnip', --スニペットエンジン
 			-- 'hrsh7th/cmp-vsnip', --スニペットを補完ソースに
 			'onsails/lspkind.nvim' --補完欄にアイコンを表示
