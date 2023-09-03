@@ -83,6 +83,7 @@ return {
 			-- TODO: 要精査
 			'hrsh7th/cmp-nvim-lsp', --LSPを補完ソースに
 			'hrsh7th/cmp-buffer', --bufferを補完ソースに
+			'hrsh7th/cmp-cmdline', -- vimのコマンド
 			-- 'hrsh7th/cmp-path', --pathを補完ソースに
 			'hrsh7th/vim-vsnip', --スニペットエンジン
 			-- 'hrsh7th/cmp-vsnip', --スニペットを補完ソースに
@@ -92,5 +93,4 @@ return {
 			require('config/nvim-cmp')
 		end
 	}
-	-- {}
 }
