@@ -68,11 +68,19 @@ return {
 	},
 	-- LSP/補完
 	{ 'neovim/nvim-lspconfig' },
-	{ 'williamboman/mason.nvim' },
-	{ 'williamboman/mason-lspconfig' },
+	{
+		'williamboman/mason.nvim',
+		dependencies = {
+			'williamboman/mason-lspconfig'
+		},
+		-- config = function()
+		-- 	require('config/mason')
+		-- end
+	},
 	{
 		'hrsh7th/nvim-cmp',
 		dependencies = {
+			-- TODO: 要精査
 			'hrsh7th/cmp-nvim-lsp', --LSPを補完ソースに
 			'hrsh7th/cmp-buffer', --bufferを補完ソースに
 			-- 'hrsh7th/cmp-path', --pathを補完ソースに
