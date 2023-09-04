@@ -35,29 +35,30 @@ return {
 			require('config/hop')
 		end
 	},
-	-- colorschemaは検討中
-	{
-		'rebelot/kanagawa.nvim',
-		dependencies = {
-			'nvim-treesitter/nvim-treesitter'
-		},
-		config = function()
-			require('config/kanagawa')
-		end
-	},
-	'rmehri01/onenord.nvim',
-	-- 'rktjmp/lush.nvim',
-	{
-		'folke/tokyonight.nvim',
-	},
-	{
-		'catppuccin/nvim',
-	},
 	{
 		'nvim-treesitter/nvim-treesitter',
 		config = function()
 			require('config/nvim-treesitter')
 		end
+	},
+	-- colorschemaは検討中
+	{
+		'rebelot/kanagawa.nvim',
+		-- config = function()
+		-- 	require('config/kanagawa')
+		-- end
+	},
+	-- 'rktjmp/lush.nvim',
+	{
+		'folke/tokyonight.nvim',
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require('config/tokyonight')
+		end
+	},
+	{
+		'catppuccin/nvim',
 	},
 	{
 		'zbirenbaum/copilot.lua',
