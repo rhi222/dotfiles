@@ -50,12 +50,14 @@ return {
 	{
 		'catppuccin/nvim',
 	},
-	{
-		'zbirenbaum/copilot.lua',
-		config = function()
-			require('config/copilot')
-		end
-	},
+	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
+	-- {
+	-- 	'zbirenbaum/copilot.lua',
+	-- 	config = function()
+	-- 		require('config/copilot')
+	-- 	end
+	-- },
+	'github/copilot.vim',
 	{
 		'lukas-reineke/indent-blankline.nvim',
 		config = function()
