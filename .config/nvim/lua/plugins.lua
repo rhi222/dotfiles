@@ -12,32 +12,6 @@ return {
 		end
 	},
 	{
-		'nvim-telescope/telescope.nvim',
-		tag = '0.1.2',
-		dependencies = {
-			'nvim-lua/plenary.nvim',
-			-- Fuzzy Finder Algorithm which requires local dependencies to be built.
-			-- Only load if `make` is available. Make sure you have the system
-			-- requirements installed.
-			{
-			  'nvim-telescope/telescope-fzf-native.nvim',
-			  -- NOTE: If you are having trouble with this installation,
-			  --       refer to the README for telescope-fzf-native for more instructions.
-			  build = 'make',
-			  cond = function()
-			    return vim.fn.executable 'make' == 1
-			  end,
-			},
-		},
-		config = function()
-			require('config/telescope')
-		end
-	},
-	{
-		'nvim-telescope/telescope-file-browser.nvim',
-		dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" },
-	},
-	{
 		'lewis6991/gitsigns.nvim',
 		config = function()
 			require('config/gitsigns')
@@ -123,6 +97,38 @@ return {
 			require('config/nvim-cmp')
 		end
 	},
+	{
+		'mhartington/formatter.nvim',
+		config = function()
+			require('config/formatter')
+		end
+	},
+	{
+		'nvim-telescope/telescope.nvim',
+		tag = '0.1.2',
+		dependencies = {
+			'nvim-lua/plenary.nvim',
+			-- Fuzzy Finder Algorithm which requires local dependencies to be built.
+			-- Only load if `make` is available. Make sure you have the system
+			-- requirements installed.
+			{
+			  'nvim-telescope/telescope-fzf-native.nvim',
+			  -- NOTE: If you are having trouble with this installation,
+			  --       refer to the README for telescope-fzf-native for more instructions.
+			  build = 'make',
+			  cond = function()
+			    return vim.fn.executable 'make' == 1
+			  end,
+			},
+		},
+		config = function()
+			require('config/telescope')
+		end
+	},
+	{
+		'nvim-telescope/telescope-file-browser.nvim',
+		dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" },
+	},
 	-- Useful plugin to show you pending keybinds.
 	-- https://github.com/folke/which-key.nvim
 	{
@@ -133,10 +139,4 @@ return {
 			vim.o.timeoutlen = 300
 		end,
 	},
-	{
-		'mhartington/formatter.nvim',
-		config = function()
-			require('config/formatter')
-		end
-	}
 }
