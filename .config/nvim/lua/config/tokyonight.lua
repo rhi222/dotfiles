@@ -1,6 +1,6 @@
 -- https://github.com/folke/tokyonight.nvim
 require("tokyonight").setup({
-	style = "moon"
+	style = "moon",
 })
 
-vim.cmd[[colorscheme tokyonight]]
+vim.cmd([[colorscheme tokyonight]])

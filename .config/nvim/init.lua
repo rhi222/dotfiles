@@ -17,41 +17,43 @@ vim.o.cursorcolumn = true
 -- clipboard
 -- https://zenn.dev/koxya/articles/b71047cd88303b
 -- https://zenn.dev/renoinn/scraps/f64fe35a81b753
-vim.opt.clipboard = 'unnamedplus'
+vim.opt.clipboard = "unnamedplus"
 if vim.fn.has("wsl") then
-  vim.g.clipboard = {
-    name = "win32yank-wsl",
-    copy = {
-      ["+"] = "win32yank.exe -i --crlf",
-      ["*"] = "win32yank.exe -i --crlf"
-    },
-    paste = {
-      ["+"] = "win32yank.exe -o --crlf",
-      ["*"] = "win32yank.exe -o --crlf"
-    },
-    cache_enable = 0,
-  }
+	vim.g.clipboard = {
+		name = "win32yank-wsl",
+		copy = {
+			["+"] = "win32yank.exe -i --crlf",
+			["*"] = "win32yank.exe -i --crlf",
+		},
+		paste = {
+			["+"] = "win32yank.exe -o --crlf",
+			["*"] = "win32yank.exe -o --crlf",
+		},
+		cache_enable = 0,
+	}
 end
 -- TODO: which つかって他環境でも動くようにしたい
-vim.g.node_host_prog = '/home/nishiyama/.volta/bin/node'
-vim.g.python_host_prog = '/usr/bin/python2'
-vim.g.python3_host_prog = '/usr/bin/python3'
+vim.g.node_host_prog = "/home/nishiyama/.volta/bin/node"
+vim.g.python_host_prog = "/usr/bin/python2"
+vim.g.python3_host_prog = "/usr/bin/python3"
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 -- }}} -------------------------------
 
 -- -------------------- filetype {{{
 -- https://zenn.dev/rapan931/articles/45b09b774512fc
-local my_filetype = require('filetype')
+local my_filetype = require("filetype")
 
-vim.api.nvim_create_augroup('vimrc_augroup', {})
-vim.api.nvim_create_autocmd('FileType', {
-  group = 'vimrc_augroup',
-  pattern = '*',
-  callback = function(args) my_filetype[args.match]() end
+vim.api.nvim_create_augroup("vimrc_augroup", {})
+vim.api.nvim_create_autocmd("FileType", {
+	group = "vimrc_augroup",
+	pattern = "*",
+	callback = function(args)
+		my_filetype[args.match]()
+	end,
 })
 -- }}} -------------------------------
 
@@ -59,18 +61,16 @@ vim.api.nvim_create_autocmd('FileType', {
 -- https://github.com/folke/lazy.nvim
 -- load lazy.nvim
 -- see: https://github.com/euxn23/init-lua-and-lazy-nvim-sample
-require('lazy_nvim')
+require("lazy_nvim")
 -- }}} -------------------------------
-
 
 -- LSP, 補完
 -- TODO: 取りあえず動くようにしたので要精査
 -- https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
-local on_attach = function(client, bufnr)
-
+local on_attach = function(_, _)
 	-- LSPが持つフォーマット機能を無効化する
 	-- →例えばtsserverはデフォルトでフォーマット機能を提供しますが、利用したくない場合はコメントアウトを解除してください
- --client.server_capabilities.documentFormattingProvider = false
+	--client.server_capabilities.documentFormattingProvider = false
 	-- 下記ではデフォルトのキーバインドを設定しています
 	-- ほかのLSPプラグインを使う場合（例：Lspsaga）は必要ないこともあります
 
@@ -85,24 +85,23 @@ local on_attach = function(client, bufnr)
 	set("n", "<space>e", "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>")
 	set("n", "[d", "<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>")
 	set("n", "]d", "<cmd>lua vim.lsp.diagnostic.goto_next()<CR>")
-
 end
 
 -- Diagnosticの表示方法を変更
 -- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
 vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
-  update_in_insert = false,
-  virtual_text = {
-    format = function(diagnostic)
-      return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
-    end,
-  },
- })
+	update_in_insert = false,
+	virtual_text = {
+		format = function(diagnostic)
+			return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
+		end,
+	},
+})
 
 -- 補完プラグインであるcmp_nvim_lspをLSPと連携させています（後述）
 -- nvim-cmp supports additional completion capabilities, so broadcast that to servers
 local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 -- (2022/11/1追記):cmp-nvim-lspに破壊的変更が加えられ、
 -- local capabilities = require('cmp_nvim_lsp').update_capabilities(
 --  vim.lsp.protocol.make_client_capabilities()
@@ -111,24 +110,24 @@ capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
 -- この一連の記述で、mason.nvimでインストールしたLanguage Serverが自動的に個別にセットアップされ、利用可能になります
 require("mason").setup()
-require("mason-lspconfig").setup {
+require("mason-lspconfig").setup({
 	ensure_installed = {
-		'graphql',
-		'lua_ls', -- lua
+		"graphql",
+		"lua_ls", -- lua
 		-- https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
 		-- 動かすためにvirtualenvが必要だった
-		'pylsp', -- python
-		'sqlls', --sql
-		'tsserver', -- typescript
-		'jsonls',
-		'prismals',
+		"pylsp", -- python
+		"sqlls", --sql
+		"tsserver", -- typescript
+		"jsonls",
+		"prismals",
 	},
-}
-require("mason-lspconfig").setup_handlers {
-  function (server_name) -- default handler (optional)
-    require("lspconfig")[server_name].setup {
-      on_attach = on_attach, --keyバインドなどの設定を登録
-      capabilities = capabilities, --cmpを連携
-    }
-  end,
-}
+})
+require("mason-lspconfig").setup_handlers({
+	function(server_name) -- default handler (optional)
+		require("lspconfig")[server_name].setup({
+			on_attach = on_attach, --keyバインドなどの設定を登録
+			capabilities = capabilities, --cmpを連携
+		})
+	end,
+})
