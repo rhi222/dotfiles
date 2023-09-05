@@ -5,6 +5,8 @@ return {
 			require('config/vim-quickhl')
 		end
 	},
+	-- Detect tabstop and shiftwidth automatically
+	'tpope/vim-sleuth',
 	{
 		'nvim-lualine/lualine.nvim',
 		config = function()
