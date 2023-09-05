@@ -113,13 +113,14 @@ capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 require("mason").setup()
 require("mason-lspconfig").setup {
 	ensure_installed = {
-		"lua_ls", -- lua
-		-- 動かすためにvirtualenvが必要だった
+		'graphql',
+		'lua_ls', -- lua
 		-- https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
-		"graphql",
-		"pylsp", -- python
-		"sqlls", --sql
-		"tsserver", -- typescript
+		-- 動かすためにvirtualenvが必要だった
+		'pylsp', -- python
+		'sqlls', --sql
+		'tsserver', -- typescript
+		'jsonls',
 		'prismals',
 	},
 }
