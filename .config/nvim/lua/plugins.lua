@@ -96,6 +96,7 @@ return {
 	},
 	{
 		"hrsh7th/nvim-cmp",
+		event = "InsertEnter",
 		dependencies = {
 			-- TODO: 要精査
 			"hrsh7th/cmp-nvim-lsp", --LSPを補完ソースに
@@ -147,7 +148,9 @@ return {
 	-- https://github.com/folke/which-key.nvim
 	{
 		"folke/which-key.nvim",
-		event = "VeryLazy",
+		cmd = {
+			"WhichKey",
+		},
 		init = function()
 			vim.o.timeout = true
 			vim.o.timeoutlen = 300
