@@ -1,4 +1,7 @@
 -- https://github.com/mhartington/formatter.nvim
+-- -- Utilities for creating configurations
+-- local util = require("formatter.util")
+
 -- Provides the Format, FormatWrite, FormatLock, and FormatWriteLock commands
 local formatter_prettier = { require("formatter.defaults.prettier") }
 require("formatter").setup({
@@ -13,7 +16,7 @@ require("formatter").setup({
 		typescript = formatter_prettier,
 		typescriptreact = formatter_prettier,
 		json = {
-			require("formatter.filetypes.json").jq,
+			require("formatter.filetypes.json").prettier,
 		},
 		python = {
 			require("formatter.filetypes.python").black,
