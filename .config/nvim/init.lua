@@ -32,6 +32,10 @@ if vim.fn.has("wsl") then
     cache_enable = 0,
   }
 end
+-- TODO: which つかって他環境でも動くようにしたい
+vim.g.node_host_prog = '/home/nishiyama/.volta/bin/node'
+vim.g.python_host_prog = '/usr/bin/python2'
+vim.g.python3_host_prog = '/usr/bin/python3'
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
@@ -98,6 +102,8 @@ require("mason").setup()
 require("mason-lspconfig").setup {
 	ensure_installed = {
 		"lua_ls", -- lua
+		-- 動かすためにvirtualenvが必要だった
+		-- https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
 		"pylsp", -- python
 		"sqlls", --sql
 		"tsserver", -- typescript
