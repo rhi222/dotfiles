@@ -99,7 +99,7 @@ require("mason-lspconfig").setup {
 	ensure_installed = {
 		"lua_ls", -- lua
 		"pylsp", -- python
-		"sqls", --sql
+		"sqlls", --sql
 		"tsserver", -- typescript
 	},
 }
