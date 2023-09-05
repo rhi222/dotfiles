@@ -35,7 +35,8 @@ end
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
-vim.g.mapleader = " "
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
 -- }}} -------------------------------
 
 -- -------------------- filetype {{{
@@ -94,7 +95,14 @@ local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
 -- この一連の記述で、mason.nvimでインストールしたLanguage Serverが自動的に個別にセットアップされ、利用可能になります
 require("mason").setup()
-require("mason-lspconfig").setup()
+require("mason-lspconfig").setup {
+	ensure_installed = {
+		"lua_ls", -- lua
+		"pylsp", -- python
+		"sqls", --sql
+		"tsserver", -- typescript
+	},
+}
 require("mason-lspconfig").setup_handlers {
   function (server_name) -- default handler (optional)
     require("lspconfig")[server_name].setup {
