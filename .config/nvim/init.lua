@@ -88,6 +88,17 @@ local on_attach = function(client, bufnr)
 
 end
 
+-- Diagnosticの表示方法を変更
+-- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
+vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+  update_in_insert = false,
+  virtual_text = {
+    format = function(diagnostic)
+      return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
+    end,
+  },
+ })
+
 -- 補完プラグインであるcmp_nvim_lspをLSPと連携させています（後述）
 -- nvim-cmp supports additional completion capabilities, so broadcast that to servers
 local capabilities = vim.lsp.protocol.make_client_capabilities()
