@@ -7,7 +7,9 @@ vim.opt.list = true
 require("indent_blankline").setup {
     -- show_current_context = true,
     -- show_current_context_start = true,
+	char = '┊',
 	show_end_of_line = true,
+	show_trailing_blankline_indent = false,
     -- char_highlight_list = {
     --     "IndentBlanklineIndent",
     -- },
