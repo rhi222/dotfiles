@@ -31,6 +31,14 @@ M.python = function()
 	set_indent(4, true)
 end
 
+M.typescript = function()
+	set_indent(4, true)
+end
+
+M.typescriptreact = function()
+	set_indent(4, true)
+end
+
 M.yaml = function()
 	set_indent(2, true)
 end
