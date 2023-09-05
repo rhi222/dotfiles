@@ -113,6 +113,7 @@ require("mason").setup()
 require("mason-lspconfig").setup({
 	ensure_installed = {
 		"graphql",
+		"marksman",
 		"lua_ls", -- lua
 		-- https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
 		-- 動かすためにvirtualenvが必要だった
@@ -121,6 +122,8 @@ require("mason-lspconfig").setup({
 		"tsserver", -- typescript
 		"jsonls",
 		"prismals",
+		-- "lemminx",
+		"yamlls",
 	},
 })
 require("mason-lspconfig").setup_handlers({
