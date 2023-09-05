@@ -1,4 +1,10 @@
--- $XDG_CONFIG_HOME/nvim/lua/my/filetype.lua
+-- https://neovim.discourse.group/t/vim-filetype-add-with-the-filename-option-seems-not-working/3338/4
+vim.filetype.add({
+  pattern = {
+    [".*sqltmpl"] = "sql",
+  },
+})
+
 local M = {}
 
 local function set_indent(tab_length, is_hard_tab)
