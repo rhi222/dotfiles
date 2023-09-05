@@ -11,6 +11,13 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-plugins = require("plugins")
+local plugins = require("plugins")
 
-require("lazy").setup(plugins)
+-- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
+local opts = {
+	-- defaults = {
+	-- 	lazy = true,
+	-- },
+}
+
+require("lazy").setup(plugins, opts)
