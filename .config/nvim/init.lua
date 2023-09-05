@@ -32,8 +32,9 @@ if vim.fn.has("wsl") then
 		cache_enable = 0,
 	}
 end
+-- https://github.com/volta-cli/volta/issues/866
+vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d "\n"')
 -- TODO: which つかって他環境でも動くようにしたい
-vim.g.node_host_prog = "/home/nishiyama/.volta/bin/node"
 vim.g.python_host_prog = "/usr/bin/python2"
 vim.g.python3_host_prog = "/usr/bin/python3"
 -- }}} -------------------------------
