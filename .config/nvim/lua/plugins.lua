@@ -142,17 +142,14 @@ return {
 					return vim.fn.executable("make") == 1
 				end,
 			},
+			{
+				"nvim-telescope/telescope-file-browser.nvim",
+			},
 		},
 		config = function()
 			require("config/telescope")
 		end,
 	},
-	{
-		"nvim-telescope/telescope-file-browser.nvim",
-		dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" },
-	},
-	-- Useful plugin to show you pending keybinds.
-	-- https://github.com/folke/which-key.nvim
 	{
 		"folke/which-key.nvim",
 		cmd = {
