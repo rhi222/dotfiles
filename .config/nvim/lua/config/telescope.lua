@@ -35,6 +35,7 @@ require("telescope").setup({
 		},
 		file_browser = {
 			hijack_netrw = true,
+			initial_mode = "normal",
 			mappings = {
 				["i"] = {
 					-- your custom insert mode mappings
@@ -58,6 +59,6 @@ require("telescope").load_extension("file_browser")
 vim.api.nvim_set_keymap(
 	"n",
 	"<space>f",
-	":Telescope file_browser path=%:p:h initial_mode=normal select_buffer=true hidden=true<CR>",
+	":Telescope file_browser path=%:p:h select_buffer=true hidden=true<CR>",
 	{ noremap = true }
 )
