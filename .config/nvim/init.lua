@@ -99,28 +99,19 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagn
 	},
 })
 
--- 補完プラグインであるcmp_nvim_lspをLSPと連携させています（後述）
--- nvim-cmp supports additional completion capabilities, so broadcast that to servers
+-- 補完プラグインのcmp_nvim_lspとLSPを連携
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
--- (2022/11/1追記):cmp-nvim-lspに破壊的変更が加えられ、
--- local capabilities = require('cmp_nvim_lsp').update_capabilities(
---  vim.lsp.protocol.make_client_capabilities()
--- )
--- ⇑上記のupdate_capabilities(...)の関数は非推奨となり、代わりにdefault_capabilities()関数が採用されました。日本語情報が少ないため、念の為併記してメモしておきます。
 
--- この一連の記述で、mason.nvimでインストールしたLanguage Serverが自動的に個別にセットアップされ、利用可能になります
 require("mason").setup()
 require("mason-lspconfig").setup({
 	ensure_installed = {
 		"graphql",
 		"marksman",
-		"lua_ls", -- lua
-		-- https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
-		-- 動かすためにvirtualenvが必要だった
-		"pylsp", -- python
-		"sqlls", --sql
-		"tsserver", -- typescript
+		"lua_ls",
+		"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
+		"sqlls",
+		"tsserver",
 		"jsonls",
 		"prismals",
 		-- "lemminx",
