@@ -17,6 +17,13 @@ require("telescope").setup({
 				["q"] = actions.close,
 			},
 		},
+		cache_picker = {
+			num_pickers = 10,
+		},
+		-- neovim nightlyだとresults are not display when filtering
+		-- いずれ削除してもよい設定
+		-- https://github.com/nvim-telescope/telescope.nvim/issues/2667
+		sorting_strategy = "ascending",
 	},
 	extensions = {
 		-- https://github.com/nvim-telescope/telescope-fzf-native.nvim
