@@ -17,6 +17,14 @@ require("telescope").setup({
 				["q"] = actions.close,
 			},
 		},
+		layout_strategy = "center", -- horizontal, center, vertical, flex, cursor
+		layout_config = {
+			vertical = {
+				width = 0.8,
+				height = 0.8,
+			},
+			-- other layout configuration here
+		},
 		cache_picker = {
 			num_pickers = 10,
 		},
@@ -35,6 +43,7 @@ require("telescope").setup({
 		},
 		file_browser = {
 			hijack_netrw = true,
+			-- theme = "ivy", -- ivy, dropdown, cursor
 			initial_mode = "normal",
 			mappings = {
 				["i"] = {
