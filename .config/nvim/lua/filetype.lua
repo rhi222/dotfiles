@@ -1,8 +1,8 @@
 -- https://neovim.discourse.group/t/vim-filetype-add-with-the-filename-option-seems-not-working/3338/4
 vim.filetype.add({
-  pattern = {
-    [".*sqltmpl"] = "sql",
-  },
+	pattern = {
+		[".*sqltmpl"] = "sql",
+	},
 })
 
 local M = {}
@@ -46,7 +46,7 @@ end
 return setmetatable(M, {
 	__index = function()
 		return function()
-			print("Unexpected filetype!")
+			-- print("Unexpected filetype!")
 			set_indent(4, true)
 		end
 	end,
