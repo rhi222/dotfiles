@@ -14,6 +14,8 @@ vim.o.hlsearch = true
 -- https://qiita.com/shiena/items/3f51a2c0b4722427e430
 vim.o.cursorline = true
 vim.o.cursorcolumn = true
+-- https://zenn.dev/shougo/articles/set-cmdheight-0
+vim.o.cmdheight = 0
 -- clipboard
 -- https://zenn.dev/koxya/articles/b71047cd88303b
 -- https://zenn.dev/renoinn/scraps/f64fe35a81b753
