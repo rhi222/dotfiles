@@ -135,3 +135,35 @@ require("mason-lspconfig").setup_handlers({
 		})
 	end,
 })
+-- }}} -------------------------------
+
+-- -------------------- user command {{{
+-- https://github.com/willelz/nvim-lua-guide-ja/blob/master/README.ja.md#%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B
+--
+local function OpenGitURL()
+	local repo_name = vim.fn.systemlist(
+		"git config --get remote.origin.url | grep -oP '(?<=git@|http://)(.*)(?=.git)' | sed 's/:/\\//'"
+	)[1]
+	-- bufferのgithubのurlを取得する
+	local bufname = vim.fn.expand("%")
+	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. bufname)[1]
+	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
+	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
+	-- TODO: visual modeで範囲選択したい
+	local url = "https://"
+		.. repo_name
+		.. "/blob/"
+		.. hash
+		.. "/"
+		.. filepath_from_root
+		.. "#L"
+		.. vim.fn.line(".")
+		.. "-L"
+		.. vim.fn.line(".")
+	print("Open: " .. url)
+	-- wsl-open
+	-- https://github.com/4U6U57/wsl-open/tree/master
+	vim.fn.jobstart("wsl-open " .. url)
+end
+vim.api.nvim_create_user_command("Opg", OpenGitURL, { nargs = 0 })
+-- }}} -------------------------------
