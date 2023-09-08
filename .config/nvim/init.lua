@@ -67,27 +67,37 @@ vim.api.nvim_create_autocmd("FileType", {
 require("lazy_nvim")
 -- }}} -------------------------------
 
--- LSP, 補完
--- TODO: 取りあえず動くようにしたので要精査
--- https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
-local on_attach = function(_, _)
-	-- LSPが持つフォーマット機能を無効化する
-	-- →例えばtsserverはデフォルトでフォーマット機能を提供しますが、利用したくない場合はコメントアウトを解除してください
-	--client.server_capabilities.documentFormattingProvider = false
-	-- 下記ではデフォルトのキーバインドを設定しています
-	-- ほかのLSPプラグインを使う場合（例：Lspsaga）は必要ないこともあります
-
+-- -------------------- LSP/補完 {{{
+-- 参考: https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
+-- TODO: LSPAttach移行
+-- https://zenn.dev/ryoppippi/articles/8aeedded34c914
+-- TODO: 設定ファイル分割
+local on_attach = function(_, bufnr)
 	local set = vim.keymap.set
-	set("n", "gd", "<cmd>lua vim.lsp.buf.definition()<CR>")
-	set("n", "K", "<cmd>lua vim.lsp.buf.hover()<CR>")
-	set("n", "<C-m>", "<cmd>lua vim.lsp.buf.signature_help()<CR>")
-	set("n", "gy", "<cmd>lua vim.lsp.buf.type_definition()<CR>")
-	set("n", "rn", "<cmd>lua vim.lsp.buf.rename()<CR>")
-	set("n", "ma", "<cmd>lua vim.lsp.buf.code_action()<CR>")
-	set("n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>")
-	set("n", "<space>e", "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>")
-	set("n", "[d", "<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>")
-	set("n", "]d", "<cmd>lua vim.lsp.diagnostic.goto_next()<CR>")
+	local opts = { buffer = bufnr }
+	-- https://github.com/neovim/nvim-lspconfig#suggested-configuration
+	set("n", "<space>e", vim.diagnostic.open_float)
+	set("n", "[d", vim.diagnostic.goto_prev)
+	set("n", "]d", vim.diagnostic.goto_next)
+	set("n", "<space>q", vim.diagnostic.setloclist)
+
+    set('n', 'gD', vim.lsp.buf.declaration, opts)
+    set('n', 'gd', vim.lsp.buf.definition, opts)
+    set('n', 'K', vim.lsp.buf.hover, opts)
+    set('n', 'gi', vim.lsp.buf.implementation, opts)
+    set('n', '<C-k>', vim.lsp.buf.signature_help, opts)
+    set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, opts)
+    set('n', '<space>wr', vim.lsp.buf.remove_workspace_folder, opts)
+    set('n', '<space>wl', function()
+      print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+    end, opts)
+    set('n', '<space>D', vim.lsp.buf.type_definition, opts)
+    set('n', '<space>rn', vim.lsp.buf.rename, opts)
+    set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, opts)
+    set('n', 'gr', vim.lsp.buf.references, opts)
+    set('n', '<space>f', function()
+      vim.lsp.buf.format { async = true }
+    end, opts)
 end
 
 -- Diagnosticの表示方法を変更
