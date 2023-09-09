@@ -170,7 +170,7 @@ function OpenGitURL()
 		.. start_line
 		-- is_gitlabは - のみ
 		-- is_githubは -L となる
-		.. (is_gitlab and "" or "-L")
+		.. (is_gitlab and "-" or "-L")
 		.. end_line
 	print("Open: " .. url)
 	-- wsl-open
