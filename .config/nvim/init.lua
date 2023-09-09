@@ -139,7 +139,7 @@ require("mason-lspconfig").setup_handlers({
 
 -- -------------------- user command {{{
 -- https://github.com/willelz/nvim-lua-guide-ja/blob/master/README.ja.md#%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B
-local function OpenGitURL()
+function OpenGitURL()
 	local repo_name = vim.fn.systemlist(
 		"git config --get remote.origin.url | grep -oP '(?<=git@|http://)(.*)(?=.git)' | sed 's/:/\\//'"
 	)[1]
@@ -147,7 +147,10 @@ local function OpenGitURL()
 	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. bufname)[1]
 	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
 	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
-	-- NOTE: gitlabがhttp onlyなのでhttpsにしない
+	-- get selected line range in visual mode
+	local start_line = vim.fn.getpos("'<")[2]
+	local end_line = vim.fn.getpos("'>")[2]
+	-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
 	local url = "http://"
 		.. repo_name
 		.. "/blob/"
@@ -155,15 +158,14 @@ local function OpenGitURL()
 		.. "/"
 		.. filepath_from_root
 		.. "#L"
-		.. vim.fn.line(".")
-		-- TODO: visual modeで範囲選択したい
-		-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
-		-- .. "-"
-		-- .. vim.fn.line(".")
+		.. start_line
+		.. "-"
+		.. end_line
 	print("Open: " .. url)
 	-- wsl-open
 	-- https://github.com/4U6U57/wsl-open/tree/master
 	vim.fn.jobstart("wsl-open " .. url)
 end
-vim.api.nvim_create_user_command("Opg", OpenGitURL, { nargs = 0 })
+vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
+vim.api.nvim_set_keymap("v", "<leader>og", ":lua OpenGitURL()<CR>", { noremap = true, silent = true })
 -- }}} -------------------------------
