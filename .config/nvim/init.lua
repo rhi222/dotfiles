@@ -143,6 +143,15 @@ function OpenGitURL()
 	local repo_name = vim.fn.systemlist(
 		"git config --get remote.origin.url | grep -oP '(?<=git@|http://)(.*)(?=.git)' | sed 's/:/\\//'"
 	)[1]
+	--repo_nameにgithubの文字列が入るか判定
+	local is_github = string.find(repo_name, "github")
+	local is_gitlab = string.find(repo_name, "gitlab")
+	-- githubとgitlab以外はエラー
+	if is_github == nil and is_gitlab == nil then
+		print("This repository is not github or gitlab")
+		return
+	end
+	-- url生成処理
 	local bufname = vim.fn.expand("%") -- bufferのgithubのurlを取得する
 	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. bufname)[1]
 	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
@@ -159,7 +168,9 @@ function OpenGitURL()
 		.. filepath_from_root
 		.. "#L"
 		.. start_line
-		.. "-"
+		-- is_gitlabは - のみ
+		-- is_githubは -L となる
+		.. (is_gitlab and "" or "-L")
 		.. end_line
 	print("Open: " .. url)
 	-- wsl-open
