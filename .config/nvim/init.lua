@@ -159,18 +159,8 @@ function OpenGitURL(mode)
 
 	-- normalモードの場合はカーソル位置の行数を取得
 	-- visualモードの場合は選択範囲の行数を取得
-	local start_line = 0
-	local end_line = 0
-	if mode == "n" then
-		-- normalモードの場合はカーソル位置の行数を取得
-		start_line = vim.fn.line(".")
-		end_line = vim.fn.line(".")
-	elseif mode == "v" then
-		start_line = vim.fn.getpos("'<")[2]
-		end_line = vim.fn.getpos("'>")[2]
-	else
-		-- do nothing
-	end
+	local start_line, end_line = GetCurrentLine(mode)
+
 	-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
 	local url = "http://"
 		.. repo_name
@@ -188,6 +178,22 @@ function OpenGitURL(mode)
 	-- wsl-open
 	-- https://github.com/4U6U57/wsl-open/tree/master
 	vim.fn.jobstart("wsl-open " .. url)
+end
+
+function GetCurrentLine(mode)
+	local start_line = 0
+	local end_line = 0
+	if mode == "n" then
+		-- normalモードの場合はカーソル位置の行数を取得
+		start_line = vim.fn.line(".")
+		end_line = vim.fn.line(".")
+	elseif mode == "v" then
+		start_line = vim.fn.getpos("'<")[2]
+		end_line = vim.fn.getpos("'>")[2]
+	else
+		-- do nothing
+	end
+	return start_line, end_line
 end
 
 vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
