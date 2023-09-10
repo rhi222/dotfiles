@@ -5,9 +5,11 @@ return {
 			require("config/vim-quickhl")
 		end,
 	},
-	-- filetype.luaと衝突するのでコメントアウト
-	-- Detect tabstop and shiftwidth automatically
-	-- "tpope/vim-sleuth",
+	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
+	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
+	{
+		"tpope/vim-sleuth",
+	},
 	{
 		"nvim-lualine/lualine.nvim",
 		config = function()
