@@ -5,8 +5,9 @@ return {
 			require("config/vim-quickhl")
 		end,
 	},
+	-- filetype.luaと衝突するのでコメントアウト
 	-- Detect tabstop and shiftwidth automatically
-	"tpope/vim-sleuth",
+	-- "tpope/vim-sleuth",
 	{
 		"nvim-lualine/lualine.nvim",
 		config = function()
@@ -165,5 +166,4 @@ return {
 	{
 		"nvim-tree/nvim-web-devicons",
 	}
-	
 }
