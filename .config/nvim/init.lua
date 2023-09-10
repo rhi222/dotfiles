@@ -52,7 +52,6 @@ vim.g.maplocalleader = " "
 -- -------------------- filetype {{{
 -- https://zenn.dev/rapan931/articles/45b09b774512fc
 local my_filetype = require("filetype")
-
 vim.api.nvim_create_augroup("vimrc_augroup", {})
 vim.api.nvim_create_autocmd("FileType", {
 	group = "vimrc_augroup",
