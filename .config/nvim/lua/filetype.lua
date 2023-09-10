@@ -7,6 +7,14 @@ vim.filetype.add({
 
 local M = {}
 
+-- tab/indent
+-- https://qiita.com/ysn/items/f4fc8f245ba50d5fb8b0
+-- https://qiita.com/ysn/items/f4fc8f245ba50d5fb8b0
+-- NOTE:
+-- expandtab: タブをスペースに変換するかどうか。trueなら変換しソフトタブ
+-- shiftwidth: インデントの見た目の空白数の設定値
+-- softtabstop: インサートモード時に、<Tab>キー、<BS>キーの入力に対する見た目上の空白数を設定する
+-- tabstop: タブ制御文字(\0x09 in ascii)に対する見た目上の空白数を設定する
 local function set_indent(tab_length, is_hard_tab)
 	if is_hard_tab then
 		vim.bo.expandtab = false
@@ -32,22 +40,23 @@ M.python = function()
 end
 
 M.typescript = function()
-	set_indent(4, true)
+	set_indent(4, false)
 end
 
 M.typescriptreact = function()
-	set_indent(4, true)
+	set_indent(4, false)
 end
 
 M.yaml = function()
-	set_indent(2, true)
+	set_indent(2, false)
 end
 
 return setmetatable(M, {
 	__index = function()
 		return function()
-			-- print("Unexpected filetype!")
-			set_indent(4, true)
+			print("Unexpected filetype!")
+			-- NOTE: デフォルトはタブインデント
+			set_indent(4, false)
 		end
 	end,
 })
