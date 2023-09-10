@@ -151,35 +151,26 @@ function OpenGitURL(mode)
 		print("This repository is not github or gitlab")
 		return
 	end
-	-- url生成処理
-	local bufname = vim.fn.expand("%") -- bufferのgithubのurlを取得する
-	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. bufname)[1]
+	local filepath = GetFilePathFromRepoRoot()
 	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
 	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
-
-	-- normalモードの場合はカーソル位置の行数を取得
-	-- visualモードの場合は選択範囲の行数を取得
 	local start_line, end_line = GetCurrentLine(mode)
-
-	-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
-	local url = "http://"
-		.. repo_name
-		.. "/blob/"
-		.. hash
-		.. "/"
-		.. filepath_from_root
-		.. "#L"
-		.. start_line
-		-- is_gitlabは - のみ
-		-- is_githubは -L となる
-		.. (is_gitlab and "-" or "-L")
-		.. end_line
+	local url = GenerateGitUrl(repo_name, hash, filepath, start_line, end_line, is_gitlab)
 	print("Open: " .. url)
 	-- wsl-open
 	-- https://github.com/4U6U57/wsl-open/tree/master
 	vim.fn.jobstart("wsl-open " .. url)
 end
 
+-- レポジトリrootからの相対パスを取得
+function GetFilePathFromRepoRoot()
+	local filename = vim.fn.expand("%")
+	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. filename)[1]
+	return filepath_from_root
+end
+
+-- normalモードの場合はカーソル位置の行数を取得
+-- visualモードの場合は選択範囲の行数を取得
 function GetCurrentLine(mode)
 	local start_line = 0
 	local end_line = 0
@@ -194,6 +185,23 @@ function GetCurrentLine(mode)
 		-- do nothing
 	end
 	return start_line, end_line
+end
+
+function GenerateGitUrl(repo_name, hash, filepath_from_root, start_line, end_line, is_gitlab)
+	local url = "http://"
+		.. repo_name
+		.. "/blob/"
+		.. hash
+		.. "/"
+		.. filepath_from_root
+		.. "#L"
+		.. start_line
+		-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
+		-- is_gitlabは - のみ
+		-- is_githubは -L となる
+		.. (is_gitlab and "-" or "-L")
+		.. end_line
+	return url
 end
 
 vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
