@@ -3,9 +3,10 @@ vim.scriptencoding = "utf-8"
 vim.o.number = true
 vim.o.tabpagemax = 50
 -- indent
-vim.o.tabstop = 4
-vim.o.softtabstop = 4
-vim.o.shiftwidth = 4
+-- filetype.luaで設定しているのでコメントアウト
+-- vim.o.tabstop = 4
+-- vim.o.softtabstop = 4
+-- vim.o.shiftwidth = 4
 -- search
 vim.o.incsearch = true
 vim.o.ignorecase = true
