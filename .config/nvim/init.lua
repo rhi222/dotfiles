@@ -139,7 +139,7 @@ require("mason-lspconfig").setup_handlers({
 
 -- -------------------- user command {{{
 -- https://github.com/willelz/nvim-lua-guide-ja/blob/master/README.ja.md#%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B
-function OpenGitURL()
+function OpenGitURL(mode)
 	local repo_name = vim.fn.systemlist(
 		"git config --get remote.origin.url | grep -oP '(?<=git@|http://)(.*)(?=.git)' | sed 's/:/\\//'"
 	)[1]
@@ -156,9 +156,21 @@ function OpenGitURL()
 	local filepath_from_root = vim.fn.systemlist("git ls-files --full-name " .. bufname)[1]
 	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
 	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
-	-- get selected line range in visual mode
-	local start_line = vim.fn.getpos("'<")[2]
-	local end_line = vim.fn.getpos("'>")[2]
+
+	-- normalモードの場合はカーソル位置の行数を取得
+	-- visualモードの場合は選択範囲の行数を取得
+	local start_line = 0
+	local end_line = 0
+	if mode == "n" then
+		-- normalモードの場合はカーソル位置の行数を取得
+		start_line = vim.fn.line(".")
+		end_line = vim.fn.line(".")
+	elseif mode == "v" then
+		start_line = vim.fn.getpos("'<")[2]
+		end_line = vim.fn.getpos("'>")[2]
+	else
+		-- do nothing
+	end
 	-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
 	local url = "http://"
 		.. repo_name
@@ -177,6 +189,8 @@ function OpenGitURL()
 	-- https://github.com/4U6U57/wsl-open/tree/master
 	vim.fn.jobstart("wsl-open " .. url)
 end
+
 vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
-vim.api.nvim_set_keymap("v", "<leader>og", ":lua OpenGitURL()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>og", ":lua OpenGitURL('n')<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("v", "<leader>og", ":lua OpenGitURL('v')<CR>", { noremap = true, silent = true })
 -- }}} -------------------------------
