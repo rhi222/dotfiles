@@ -191,9 +191,8 @@ function GetCurrentLine(mode)
 end
 
 function GenerateGitUrl(repo_name, hash, filepath_from_root, start_line, end_line, is_gitlab)
-	local url = 
-		-- gitlabの場合はhttp
-		(is_gitlab and "http://" or "https://")
+	-- gitlabの場合はhttp、fdevがhttps対応してないため
+	local url = (is_gitlab and "http://" or "https://")
 		.. repo_name
 		.. "/blob/"
 		.. hash
