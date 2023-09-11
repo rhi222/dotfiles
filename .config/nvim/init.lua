@@ -129,6 +129,7 @@ require("mason-lspconfig").setup({
 		"yamlls",
 	},
 })
+-- FIXME: .config/pycodestyleの設定をinit.luaに寄せる
 require("mason-lspconfig").setup_handlers({
 	function(server_name) -- default handler (optional)
 		require("lspconfig")[server_name].setup({
@@ -190,7 +191,9 @@ function GetCurrentLine(mode)
 end
 
 function GenerateGitUrl(repo_name, hash, filepath_from_root, start_line, end_line, is_gitlab)
-	local url = "http://"
+	local url = 
+		-- gitlabの場合はhttp
+		(is_gitlab and "http://" or "https://")
 		.. repo_name
 		.. "/blob/"
 		.. hash
