@@ -167,5 +167,8 @@ return {
 	},
 	{
 		"nvim-tree/nvim-web-devicons",
+	},
+	{
+		"kevinhwang91/nvim-hlslens",
 	}
 }
