@@ -1,3 +1,4 @@
+-- require nvim v0.9.0 or later
 -- -------------------- general mapping {{{
 vim.scriptencoding = "utf-8"
 vim.o.number = true
@@ -42,6 +43,10 @@ vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d 
 -- TODO: which つかって他環境でも動くようにしたい
 vim.g.python_host_prog = "/usr/bin/python2"
 vim.g.python3_host_prog = "/usr/bin/python3"
+-- 特殊文字表示
+-- https://qiita.com/pollenjp/items/459a08a2cc59485fa08b
+vim.opt.list = true
+vim.opt.listchars = {tab='>-', trail='*', nbsp='+'}
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
@@ -78,14 +83,17 @@ local on_attach = function(_, bufnr)
 	local set = vim.keymap.set
 	local opts = { buffer = bufnr }
 	-- https://github.com/neovim/nvim-lspconfig#suggested-configuration
+	-- 今後整理するためによく使うもの順
 	set("n", "<space>e", vim.diagnostic.open_float)
 	set("n", "[d", vim.diagnostic.goto_prev)
 	set("n", "]d", vim.diagnostic.goto_next)
-	set("n", "<space>q", vim.diagnostic.setloclist)
-
-	set("n", "gD", vim.lsp.buf.declaration, opts)
 	set("n", "gd", vim.lsp.buf.definition, opts)
 	set("n", "K", vim.lsp.buf.hover, opts)
+	set("n", "gr", vim.lsp.buf.references, opts)
+	set("n", "<space>D", vim.lsp.buf.type_definition, opts)
+
+	set("n", "<space>q", vim.diagnostic.setloclist)
+	set("n", "gD", vim.lsp.buf.declaration, opts)
 	set("n", "gi", vim.lsp.buf.implementation, opts)
 	set("n", "<C-k>", vim.lsp.buf.signature_help, opts)
 	set("n", "<space>wa", vim.lsp.buf.add_workspace_folder, opts)
@@ -93,10 +101,8 @@ local on_attach = function(_, bufnr)
 	set("n", "<space>wl", function()
 		print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
 	end, opts)
-	set("n", "<space>D", vim.lsp.buf.type_definition, opts)
 	set("n", "<space>rn", vim.lsp.buf.rename, opts)
 	set({ "n", "v" }, "<space>ca", vim.lsp.buf.code_action, opts)
-	set("n", "gr", vim.lsp.buf.references, opts)
 end
 
 -- Diagnosticの表示方法を変更
