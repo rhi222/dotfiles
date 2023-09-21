@@ -46,7 +46,7 @@ vim.g.python3_host_prog = "/usr/bin/python3"
 -- 特殊文字表示
 -- https://qiita.com/pollenjp/items/459a08a2cc59485fa08b
 vim.opt.list = true
-vim.opt.listchars = {tab='>-', trail='*', nbsp='+'}
+vim.opt.listchars = { tab = ">-", trail = "*", nbsp = "+" }
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
