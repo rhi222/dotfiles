@@ -135,12 +135,30 @@ require("mason-lspconfig").setup({
 		"yamlls",
 	},
 })
+
+Servers = {
+	-- https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
+	pylsp = {
+		pylsp = {
+			-- flake8に統一したいが若干ノイジー
+			configurationSources = { "flake8" },
+			plugins = {
+				pycodestyle = {
+					ignore = { "W391", "W503", "W605", "E402" },
+					maxLineLength = 200,
+				},
+			},
+		},
+	},
+}
 -- FIXME: .config/pycodestyleの設定をinit.luaに寄せる
 require("mason-lspconfig").setup_handlers({
 	function(server_name) -- default handler (optional)
 		require("lspconfig")[server_name].setup({
 			on_attach = on_attach, --keyバインドなどの設定を登録
 			capabilities = capabilities, --cmpを連携
+			-- Serversに設定がなければ空
+			settings = Servers[server_name] or {},
 		})
 	end,
 })
