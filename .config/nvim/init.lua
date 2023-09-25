@@ -144,7 +144,11 @@ Servers = {
 			configurationSources = { "flake8" },
 			plugins = {
 				pycodestyle = {
-					ignore = { "W391", "W503", "W605", "E402" },
+					-- https://qiita.com/KuruwiC/items/8e12704e338e532eb34a
+					ignore = {
+						"W503", -- blackと競合する
+						"E402", -- build.pyでsys.path.appendの後にimportするため
+					},
 					maxLineLength = 200,
 				},
 			},
