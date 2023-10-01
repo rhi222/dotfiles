@@ -170,5 +170,14 @@ return {
 	},
 	{
 		"kevinhwang91/nvim-hlslens",
-	}
+	},
+	{
+		"ibhagwan/fzf-lua",
+		-- optional for icon support
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		config = function()
+			require("config/fzf-lua")
+			-- calling `setup` is optional for customization
+		end,
+	},
 }
