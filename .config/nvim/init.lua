@@ -40,9 +40,8 @@ if vim.fn.has("wsl") then
 end
 -- https://github.com/volta-cli/volta/issues/866
 vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d "\n"')
--- TODO: which つかって他環境でも動くようにしたい
-vim.g.python_host_prog = "/usr/bin/python2"
-vim.g.python3_host_prog = "/usr/bin/python3"
+vim.g.python_host_prog = vim.call("system", 'which python2 | tr -d "\n"')
+vim.g.python3_host_prog = vim.call("system", 'which python3 | tr -d "\n"')
 -- 特殊文字表示
 -- https://qiita.com/pollenjp/items/459a08a2cc59485fa08b
 vim.opt.list = true
