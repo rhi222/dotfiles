@@ -1,4 +1,7 @@
 -- https://github.com/ibhagwan/fzf-lua#usage
-vim.keymap.set("n", "<c-g>",
-  "<cmd>lua require('fzf-lua').grep()<CR>", { silent = true })
-require("fzf-lua").setup({})
+require("fzf-lua").setup({
+	grep = {
+		rg_opts = "--hidden --glob '!.git' --column --line-number --no-heading --color=always --smart-case --max-columns=4096 -e",
+	},
+})
+vim.keymap.set("n", "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", { silent = true })
