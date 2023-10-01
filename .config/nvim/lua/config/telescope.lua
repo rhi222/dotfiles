@@ -34,6 +34,9 @@ require("telescope").setup({
 				width = 0.8,
 				height = 0.8,
 			},
+			center = {
+				height = 0.8,
+			},
 			-- other layout configuration here
 		},
 		cache_picker = {
