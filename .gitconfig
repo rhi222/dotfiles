@@ -21,7 +21,7 @@
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
 	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
 [ghq]
-    root = /data/git-repos
+	root = /data/git-repos
 [credential]
 	helper = cache
 [interactive]
@@ -29,10 +29,10 @@
 [delta]
 	# https://github.com/dandavison/delta
 	# https://zenn.dev/sh090/articles/0796e6b3f4ed94beadc4
-    navigate = true    # use n and N to move between diff sections
-    light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+	navigate = true    # use n and N to move between diff sections
+	light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
 	side-by-side = true
 [merge]
-    conflictstyle = diff3
+	conflictstyle = diff3
 [diff]
-    colorMoved = default
+	colorMoved = default
