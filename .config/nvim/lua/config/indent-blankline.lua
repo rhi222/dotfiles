@@ -1,7 +1,7 @@
 -- https://github.com/lukas-reineke/indent-blankline.nvim
 
 require("ibl").setup({
-	char = "|",
+	indent = { char = "|" },
 	-- 改行コードは好みじゃないので表示しない
 	-- show_end_of_line = true,
 	-- vscode同様、現在のネスト範囲をハイライト
