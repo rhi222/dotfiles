@@ -1,6 +1,5 @@
 -- https://github.com/hrsh7th/nvim-cmp
 local cmp = require("cmp")
-local lspkind = require("lspkind")
 cmp.setup({
 	snippet = {
 		-- REQUIRED - you must specify a snippet engine
