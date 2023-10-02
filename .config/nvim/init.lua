@@ -75,47 +75,9 @@ require("lazy_nvim")
 
 -- -------------------- LSP/補完 {{{
 -- 参考: https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
--- TODO: LSPAttach移行
 -- https://zenn.dev/ryoppippi/articles/8aeedded34c914
 -- TODO: 設定ファイル分割
-local on_attach = function(_, bufnr)
-	local set = vim.keymap.set
-	local opts = { buffer = bufnr }
-	-- https://github.com/neovim/nvim-lspconfig#suggested-configuration
-	-- 今後整理するためによく使うもの順
-	set("n", "<space>e", vim.diagnostic.open_float)
-	set("n", "[d", vim.diagnostic.goto_prev)
-	set("n", "]d", vim.diagnostic.goto_next)
-	set("n", "gd", vim.lsp.buf.definition, opts)
-	set("n", "K", vim.lsp.buf.hover, opts)
-	set("n", "gr", vim.lsp.buf.references, opts)
-	set("n", "<space>D", vim.lsp.buf.type_definition, opts)
 
-	set("n", "<space>q", vim.diagnostic.setloclist)
-	set("n", "gD", vim.lsp.buf.declaration, opts)
-	set("n", "gi", vim.lsp.buf.implementation, opts)
-	set("n", "<C-k>", vim.lsp.buf.signature_help, opts)
-	set("n", "<space>wa", vim.lsp.buf.add_workspace_folder, opts)
-	set("n", "<space>wr", vim.lsp.buf.remove_workspace_folder, opts)
-	set("n", "<space>wl", function()
-		print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-	end, opts)
-	set("n", "<space>rn", vim.lsp.buf.rename, opts)
-	set({ "n", "v" }, "<space>ca", vim.lsp.buf.code_action, opts)
-end
-
--- Diagnosticの表示方法を変更
--- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
-vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
-	update_in_insert = false,
-	virtual_text = {
-		format = function(diagnostic)
-			return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
-		end,
-	},
-})
-
--- 補完プラグインのcmp_nvim_lspとLSPを連携
 local servers = {
 	-- https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 	pylsp = {
@@ -136,13 +98,14 @@ local servers = {
 	},
 }
 
+-- 補完プラグインのcmp_nvim_lspとLSPを連携
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
 local handlers = {
 	function(server_name) -- default handler (optional)
 		require("lspconfig")[server_name].setup({
-			on_attach = on_attach, --keyバインドなどの設定を登録
+			-- on_attach = on_attach, --keyバインドなどの設定を登録
 			capabilities = capabilities, --cmpを連携
 			-- Serversに設定がなければ空
 			settings = servers[server_name] or {},
@@ -167,6 +130,53 @@ require("mason-lspconfig").setup({
 		"yamlls",
 	},
 	handlers = handlers,
+})
+
+-- see: https://github.com/neovim/nvim-lspconfig#suggested-configuration
+-- Global mappings.
+-- See `:help vim.diagnostic.*` for documentation on any of the below functions
+vim.keymap.set('n', '<space>e', vim.diagnostic.open_float)
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
+vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist)
+
+-- Use LspAttach autocommand to only map the following keys
+-- after the language server attaches to the current buffer
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    -- Enable completion triggered by <c-x><c-o>
+    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+
+    -- Buffer local mappings.
+    -- See `:help vim.lsp.*` for documentation on any of the below functions
+    local opts = { buffer = ev.buf }
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+    vim.keymap.set('n', '<C-k>', vim.lsp.buf.signature_help, opts)
+    vim.keymap.set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, opts)
+    vim.keymap.set('n', '<space>wr', vim.lsp.buf.remove_workspace_folder, opts)
+    vim.keymap.set('n', '<space>wl', function()
+      print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+    end, opts)
+    vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, opts)
+    vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, opts)
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  end,
+})
+
+-- Diagnosticの表示方法を変更
+-- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
+vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+	update_in_insert = false,
+	virtual_text = {
+		format = function(diagnostic)
+			return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
+		end,
+	},
 })
 -- }}} -------------------------------
 
