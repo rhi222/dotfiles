@@ -119,23 +119,11 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagn
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
+-- mason -> mason-lspconfig -> lspconfigの順番で設定が必須
+-- https://github.com/williamboman/mason-lspconfig.nvim#setup
 require("mason").setup()
-require("mason-lspconfig").setup({
-	ensure_installed = {
-		"graphql",
-		"marksman",
-		"lua_ls",
-		"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
-		"sqlls",
-		"tsserver",
-		"jsonls",
-		"prismals",
-		-- "lemminx",
-		"yamlls",
-	},
-})
 
-Servers = {
+local servers = {
 	-- https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 	pylsp = {
 		pylsp = {
@@ -154,16 +142,30 @@ Servers = {
 		},
 	},
 }
--- FIXME: .config/pycodestyleの設定をinit.luaに寄せる
-require("mason-lspconfig").setup_handlers({
+local handlers = {
 	function(server_name) -- default handler (optional)
 		require("lspconfig")[server_name].setup({
 			on_attach = on_attach, --keyバインドなどの設定を登録
 			capabilities = capabilities, --cmpを連携
 			-- Serversに設定がなければ空
-			settings = Servers[server_name] or {},
+			settings = servers[server_name] or {},
 		})
 	end,
+}
+require("mason-lspconfig").setup({
+	ensure_installed = {
+		"graphql",
+		"marksman",
+		"lua_ls",
+		"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
+		"sqlls",
+		"tsserver",
+		"jsonls",
+		"prismals",
+		-- "lemminx",
+		"yamlls",
+	},
+	handlers = handlers,
 })
 -- }}} -------------------------------
 
