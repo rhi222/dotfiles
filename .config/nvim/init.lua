@@ -116,9 +116,6 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagn
 })
 
 -- 補完プラグインのcmp_nvim_lspとLSPを連携
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-
 local servers = {
 	-- https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 	pylsp = {
@@ -138,6 +135,10 @@ local servers = {
 		},
 	},
 }
+
+local capabilities = vim.lsp.protocol.make_client_capabilities()
+capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+
 local handlers = {
 	function(server_name) -- default handler (optional)
 		require("lspconfig")[server_name].setup({
