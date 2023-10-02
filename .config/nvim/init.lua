@@ -119,10 +119,6 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagn
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
--- mason -> mason-lspconfig -> lspconfigの順番で設定が必須
--- https://github.com/williamboman/mason-lspconfig.nvim#setup
-require("mason").setup()
-
 local servers = {
 	-- https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 	pylsp = {
@@ -152,6 +148,10 @@ local handlers = {
 		})
 	end,
 }
+
+-- mason -> mason-lspconfig -> lspconfigの順番で設定が必須
+-- https://github.com/williamboman/mason-lspconfig.nvim#setup
+require("mason").setup()
 require("mason-lspconfig").setup({
 	ensure_installed = {
 		"graphql",
