@@ -72,37 +72,6 @@ return {
 		end,
 	},
 	{
-		"williamboman/mason.nvim",
-		dependencies = {
-			"williamboman/mason-lspconfig",
-		},
-		cmd = {
-			"Mason",
-			"MasonInstall",
-			"MasonUninstall",
-			"MasonUninstallAll",
-			"MasonLog",
-			"MasonUpdate",
-		},
-		-- config = function()
-		-- 	require('config/mason')
-		-- end
-	},
-	-- LSP/補完
-	{
-		"neovim/nvim-lspconfig",
-		dependencies = {
-			-- Useful status updates for LSP
-			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-			{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
-			-- Additional lua configuration, makes nvim stuff amazing!
-			{ "folke/neodev.nvim", opts = {} }
-		},
-		-- config = function()
-		-- 	require("config/nvim-lspconfig")
-		-- end,
-	},
-	{
 		"hrsh7th/nvim-cmp",
 		event = "InsertEnter",
 		dependencies = {
@@ -117,6 +86,38 @@ return {
 		},
 		config = function()
 			require("config/nvim-cmp")
+		end,
+	},
+	{
+		"williamboman/mason.nvim",
+		dependencies = {
+			"williamboman/mason-lspconfig",
+		},
+		-- lspの設定もここで実施しているのでlazyloadしない
+		-- cmd = {
+		-- 	"Mason",
+		-- 	"MasonInstall",
+		-- 	"MasonUninstall",
+		-- 	"MasonUninstallAll",
+		-- 	"MasonLog",
+		-- 	"MasonUpdate",
+		-- },
+		config = function()
+			require("config/mason")
+		end,
+	},
+	-- LSP/補完
+	{
+		"neovim/nvim-lspconfig",
+		dependencies = {
+			-- Useful status updates for LSP
+			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
+			{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
+			-- Additional lua configuration, makes nvim stuff amazing!
+			{ "folke/neodev.nvim", opts = {} },
+		},
+		config = function()
+			require("config/nvim-lspconfig")
 		end,
 	},
 	{
