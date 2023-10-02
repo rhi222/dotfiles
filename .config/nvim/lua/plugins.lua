@@ -71,17 +71,6 @@ return {
 			require("config/indent-blankline")
 		end,
 	},
-	-- LSP/補完
-	{
-		"neovim/nvim-lspconfig",
-		dependencies = {
-			-- Useful status updates for LSP
-			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-			{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
-			-- Additional lua configuration, makes nvim stuff amazing!
-			"folke/neodev.nvim",
-		},
-	},
 	{
 		"williamboman/mason.nvim",
 		dependencies = {
@@ -98,6 +87,20 @@ return {
 		-- config = function()
 		-- 	require('config/mason')
 		-- end
+	},
+	-- LSP/補完
+	{
+		"neovim/nvim-lspconfig",
+		dependencies = {
+			-- Useful status updates for LSP
+			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
+			{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
+			-- Additional lua configuration, makes nvim stuff amazing!
+			"folke/neodev.nvim",
+		},
+		-- config = function()
+		-- 	require("config/nvim-lspconfig")
+		-- end,
 	},
 	{
 		"hrsh7th/nvim-cmp",
