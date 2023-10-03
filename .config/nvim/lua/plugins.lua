@@ -34,14 +34,17 @@ return {
 			require("config/nvim-treesitter")
 		end,
 	},
-	-- colorschemaは検討中
 	{
 		"rebelot/kanagawa.nvim",
-		-- config = function()
-		-- 	require('config/kanagawa')
-		-- end
+		config = function()
+			require('config/kanagawa')
+		end,
+		lazy = true,
 	},
-	-- 'rktjmp/lush.nvim',
+	{
+		"catppuccin/nvim",
+		lazy = true,
+	},
 	{
 		"folke/tokyonight.nvim",
 		lazy = false,
@@ -49,9 +52,6 @@ return {
 		config = function()
 			require("config/tokyonight")
 		end,
-	},
-	{
-		"catppuccin/nvim",
 	},
 	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
 	-- {
