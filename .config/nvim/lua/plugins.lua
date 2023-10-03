@@ -1,16 +1,5 @@
 return {
 	{
-		"t9md/vim-quickhl",
-		config = function()
-			require("config/vim-quickhl")
-		end,
-	},
-	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
-	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
-	{
-		"tpope/vim-sleuth",
-	},
-	{
 		"nvim-lualine/lualine.nvim",
 		config = function()
 			require("config/lualine")
@@ -20,12 +9,6 @@ return {
 		"lewis6991/gitsigns.nvim",
 		config = function()
 			require("config/gitsigns")
-		end,
-	},
-	{
-		"phaazon/hop.nvim",
-		config = function()
-			require("config/hop")
 		end,
 	},
 	{
@@ -88,10 +71,24 @@ return {
 			require("config/nvim-cmp")
 		end,
 	},
+	-- LSP
 	{
 		"williamboman/mason.nvim",
 		dependencies = {
 			"williamboman/mason-lspconfig",
+			{
+				"neovim/nvim-lspconfig",
+				dependencies = {
+					-- Useful status updates for LSP
+					-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
+					{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
+					-- Additional lua configuration, makes nvim stuff amazing!
+					{ "folke/neodev.nvim", opts = {} },
+				},
+				config = function()
+					require("config/nvim-lspconfig")
+				end,
+			},
 		},
 		-- lspの設定もここで実施しているのでlazyloadしない
 		-- cmd = {
@@ -106,20 +103,6 @@ return {
 			require("config/mason")
 		end,
 	},
-	-- LSP/補完
-	{
-		"neovim/nvim-lspconfig",
-		dependencies = {
-			-- Useful status updates for LSP
-			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-			{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
-			-- Additional lua configuration, makes nvim stuff amazing!
-			{ "folke/neodev.nvim", opts = {} },
-		},
-		config = function()
-			require("config/nvim-lspconfig")
-		end,
-	},
 	{
 		"mhartington/formatter.nvim",
 		cmd = {
@@ -132,6 +115,7 @@ return {
 			require("config/formatter")
 		end,
 	},
+	-- finder
 	{
 		"nvim-telescope/telescope.nvim",
 		tag = "0.1.2",
@@ -156,15 +140,15 @@ return {
 		end,
 	},
 	{
-		"folke/which-key.nvim",
-		cmd = {
-			"WhichKey",
-		},
-		init = function()
-			vim.o.timeout = true
-			vim.o.timeoutlen = 300
+		"ibhagwan/fzf-lua",
+		-- optional for icon support
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		config = function()
+			require("config/fzf-lua")
+			-- calling `setup` is optional for customization
 		end,
 	},
+	-- other
 	{
 		"windwp/nvim-autopairs",
 		event = "InsertEnter",
@@ -177,12 +161,30 @@ return {
 		"kevinhwang91/nvim-hlslens",
 	},
 	{
-		"ibhagwan/fzf-lua",
-		-- optional for icon support
-		dependencies = { "nvim-tree/nvim-web-devicons" },
+		"t9md/vim-quickhl",
 		config = function()
-			require("config/fzf-lua")
-			-- calling `setup` is optional for customization
+			require("config/vim-quickhl")
+		end,
+	},
+	{
+		"phaazon/hop.nvim",
+		config = function()
+			require("config/hop")
+		end,
+	},
+	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
+	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
+	{
+		"tpope/vim-sleuth",
+	},
+	{
+		"folke/which-key.nvim",
+		cmd = {
+			"WhichKey",
+		},
+		init = function()
+			vim.o.timeout = true
+			vim.o.timeoutlen = 300
 		end,
 	},
 }
