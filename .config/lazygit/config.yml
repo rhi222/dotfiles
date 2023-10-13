@@ -1,0 +1,4 @@
+gui:
+    showFileTree: false
+os:
+    editPreset: 'nvim'
