@@ -44,6 +44,9 @@ set PATH $PATH $GOPATH/bin
 set DENO_INSTALL $HOME/.deno
 set PATH $DENO_INSTALL/bin:$PATH
 
+# for pip3
+set PATH $PATH ~/.local/bin
+
 
 # set -x PATH $HOME/.pyenv/bin $PATH
 # eval (pyenv init - | source)
