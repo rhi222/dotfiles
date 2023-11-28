@@ -16,6 +16,7 @@ return {
 		config = function()
 			require("config/nvim-treesitter")
 		end,
+		tag = "v0.9.1",
 	},
 	{
 		"rebelot/kanagawa.nvim",
