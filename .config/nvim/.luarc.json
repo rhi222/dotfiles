@@ -3,6 +3,7 @@
     "// ": "明示的に定義されていない vim モジュールをよしとする場合",
     "globals": ["vim"],
     "indent_width": 2
-  }
+  },
+    "workspace.checkThirdParty": false
 }
 
