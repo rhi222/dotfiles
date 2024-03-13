@@ -21,7 +21,7 @@ return {
 	{
 		"rebelot/kanagawa.nvim",
 		config = function()
-			require('config/kanagawa')
+			require("config/kanagawa")
 		end,
 		lazy = true,
 	},
@@ -186,6 +186,14 @@ return {
 		init = function()
 			vim.o.timeout = true
 			vim.o.timeoutlen = 300
+		end,
+	},
+	{
+		"rest-nvim/rest.nvim",
+		dependencies = { { "nvim-lua/plenary.nvim" } },
+		ft = "http",
+		config = function()
+			require("config/rest-nvim")
 		end,
 	},
 }
