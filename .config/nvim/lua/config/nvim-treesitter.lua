@@ -21,6 +21,9 @@ require("nvim-treesitter.configs").setup({
 		"xml",
 		"yaml",
 	},
+	-- sync_install = false,
+	-- auto_install = true,
+	-- ignore_install = {},
 	highlight = {
 		enable = true,
 	},
