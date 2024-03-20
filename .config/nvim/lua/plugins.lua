@@ -16,7 +16,10 @@ return {
 		config = function()
 			require("config/nvim-treesitter")
 		end,
-		tag = "v0.9.1",
+		dependencies = {
+			"nvim-treesitter/playground",
+		},
+		tag = "v0.9.2",
 	},
 	{
 		"rebelot/kanagawa.nvim",
@@ -31,10 +34,19 @@ return {
 	},
 	{
 		"folke/tokyonight.nvim",
-		lazy = false,
-		priority = 1000,
+		lazy = true,
+		-- priority = 1000,
 		config = function()
 			require("config/tokyonight")
+		end,
+	},
+	-- nvim-treesitterのsyntax highlightが絶妙に見にくかったのでtokyonightから乗り換え
+	-- https://github.com/rockerBOO/awesome-neovim?tab=readme-ov-file#tree-sitter-supported-colorscheme からpickした
+	{
+		"Mofiqul/vscode.nvim",
+		lazy = false,
+		config = function()
+			require("config/vscode")
 		end,
 	},
 	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留

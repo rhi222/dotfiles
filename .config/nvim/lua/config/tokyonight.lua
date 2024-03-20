@@ -5,4 +5,4 @@ require("tokyonight").setup({
 	on_highlights = function(_, _) end,
 })
 
-vim.cmd([[colorscheme tokyonight]])
+-- vim.cmd([[colorscheme tokyonight]])
