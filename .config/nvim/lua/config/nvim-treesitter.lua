@@ -11,6 +11,7 @@ require("nvim-treesitter.configs").setup({
 		"json5",
 		"lua",
 		"markdown",
+		"mermaid",
 		"python",
 		"sql",
 		"tsv",
