@@ -35,7 +35,6 @@ return {
 	{
 		"folke/tokyonight.nvim",
 		lazy = true,
-		-- priority = 1000,
 		config = function()
 			require("config/tokyonight")
 		end,
