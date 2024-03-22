@@ -12,6 +12,13 @@ return {
 		end,
 	},
 	{
+		"lukas-reineke/indent-blankline.nvim",
+		main = "ibl",
+		config = function()
+			require("config/indent-blankline")
+		end,
+	},
+	{
 		"nvim-treesitter/nvim-treesitter",
 		config = function()
 			require("config/nvim-treesitter")
@@ -23,10 +30,10 @@ return {
 	},
 	{
 		"rebelot/kanagawa.nvim",
+		lazy = true,
 		config = function()
 			require("config/kanagawa")
 		end,
-		lazy = true,
 	},
 	{
 		"catppuccin/nvim",
@@ -43,7 +50,6 @@ return {
 	-- https://github.com/rockerBOO/awesome-neovim?tab=readme-ov-file#tree-sitter-supported-colorscheme からpickした
 	{
 		"Mofiqul/vscode.nvim",
-		lazy = false,
 		config = function()
 			require("config/vscode")
 		end,
@@ -58,13 +64,6 @@ return {
 	{
 		"github/copilot.vim",
 		event = "InsertEnter",
-	},
-	{
-		"lukas-reineke/indent-blankline.nvim",
-		main = "ibl",
-		config = function()
-			require("config/indent-blankline")
-		end,
 	},
 	{
 		"hrsh7th/nvim-cmp",
