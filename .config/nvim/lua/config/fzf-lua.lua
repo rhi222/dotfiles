@@ -5,3 +5,5 @@ require("fzf-lua").setup({
 	},
 })
 vim.keymap.set("n", "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", { silent = true })
+-- note: telescope.builtin.find_files() is not working
+vim.keymap.set("n", "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", { silent = true })
