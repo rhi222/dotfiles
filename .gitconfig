@@ -1,8 +1,8 @@
 [user]
-	email = xxxxxxxx
-	name = xxxxxxxx
+	email = ryouhei222@gmail.com
+	name = rhi222
 [core]
-	editor = nvim -c \"set fenc=utf-8\"
+	editor = nvim
 	whitespace = cr-at-eol
 	pager = delta
 [alias]
