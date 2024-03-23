@@ -42,10 +42,6 @@ end
 vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d "\n"')
 vim.g.python_host_prog = vim.call("system", 'which python2 | tr -d "\n"')
 vim.g.python3_host_prog = vim.call("system", 'which python3 | tr -d "\n"')
--- 特殊文字表示
--- https://qiita.com/pollenjp/items/459a08a2cc59485fa08b
-vim.opt.list = true
-vim.opt.listchars = { tab = ">-", trail = "*", nbsp = "+" }
 -- }}} -------------------------------
 
 -- -------------------- key mapping {{{
