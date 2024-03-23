@@ -36,7 +36,3 @@
 	conflictstyle = diff3
 [diff]
 	colorMoved = default
-
-[url "github:"]
-	InsteadOf = https://github.com/
-	InsteadOf = git@github.com:
