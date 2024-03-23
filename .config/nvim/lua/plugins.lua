@@ -129,7 +129,7 @@ return {
 	-- finder
 	{
 		"nvim-telescope/telescope.nvim",
-		tag = "0.1.6",
+		tag = "0.1.6", -- 公式READMEがtag指定推奨
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			{
@@ -198,12 +198,11 @@ return {
 			vim.o.timeoutlen = 300
 		end,
 	},
-	-- 2024/03/23 の最新はv2.0.1だがエラーが出るため、様子見
 	{
 		"rest-nvim/rest.nvim",
 		dependencies = { { "nvim-lua/plenary.nvim" } },
 		ft = "http",
-		tag = "v1.2.1",
+		tag = "v1.2.1", -- 2024/03/23 の最新はv2.0.1だがエラーが出るため、様子見
 		config = function()
 			require("config/rest-nvim")
 		end,
