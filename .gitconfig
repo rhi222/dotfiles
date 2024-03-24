@@ -31,7 +31,7 @@
 	# https://zenn.dev/sh090/articles/0796e6b3f4ed94beadc4
 	navigate = true    # use n and N to move between diff sections
 	light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
-	side-by-side = true
+	#side-by-side = true # lazygitに影響するため
 [merge]
 	conflictstyle = diff3
 [diff]
