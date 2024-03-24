@@ -216,7 +216,7 @@ return {
 			vim.fn["mkdp#util#install"]()
 		end,
 	},
-	-- -- 開発が活発な↓をつかいたいが、plantuml対応してないのでmarkdown-preview.nvimを使っている
+	-- -- 開発が活発な↓を使いたいが、plantuml非対応の為arkdown-preview.nvimを利用
 	-- {
 	-- 	"toppair/peek.nvim",
 	-- 	event = { "VeryLazy" },
