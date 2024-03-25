@@ -2,6 +2,7 @@
 require("nvim-treesitter.configs").setup({
 	ensure_installed = {
 		"bash",
+		-- "csv",
 		"fish",
 		"graphql",
 		"hcl",
@@ -12,9 +13,10 @@ require("nvim-treesitter.configs").setup({
 		"lua",
 		"markdown",
 		"mermaid",
+		"prisma",
 		"python",
 		"sql",
-		"tsv",
+		-- "tsv",
 		"tsx",
 		"typescript",
 		"vim",
@@ -26,3 +28,6 @@ require("nvim-treesitter.configs").setup({
 		enable = true,
 	},
 })
+-- NOTE: CSV highlighting broken
+-- https://github.com/nvim-treesitter/nvim-treesitter/issues/5330
+-- highlightは https://github.com/cameron-wags/rainbow_csv.nvim で対応
