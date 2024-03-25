@@ -8,15 +8,18 @@ alias tmux 'tmux -2'
 # jump to repository root
 alias cdrr "cd (git rev-parse --show-toplevel)"
 
-# alias for cocot
+# for cocot
 alias sshe 'cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP端末へのアクセス
 
-# alias for neovim
+# for neovim
 alias vi 'nvim'
 alias view 'nvim -R'
 
 # reload
 alias rf 'source ~/.config/fish/config.fish'
+
+# gitui
+alias gu 'gitui'
 # ------------- }}}
 
 # ------------- etc setting {{{
