@@ -78,16 +78,17 @@ function OpenGitURL(mode)
 	--repo_nameにgithubの文字列が入るか判定
 	local is_github = string.find(repo_name, "github")
 	local is_gitlab = string.find(repo_name, "gitlab")
-	-- githubとgitlab以外はエラー
-	if is_github == nil and is_gitlab == nil then
-		print("This repository is not github or gitlab")
+	local is_bitbucket = string.find(repo_name, "bitbucket")
+	-- 明示的に対応したレポジトリ管理ツール以外はエラーを出力
+	if is_github == nil and is_gitlab == nil and is_bitbucket == nil then
+		print("This repository is neither github nor gitlab nor bitbucket")
 		return
 	end
 	local filepath = GetFilePathFromRepoRoot()
 	-- local branch = vim.fn.systemlist("git rev-parse --abbrev-ref HEAD")[1]
 	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
 	local start_line, end_line = GetCurrentLine(mode)
-	local url = GenerateGitUrl(repo_name, hash, filepath, start_line, end_line, is_gitlab)
+	local url = GenerateGitUrl(repo_name, hash, filepath, start_line, end_line, is_gitlab, is_bitbucket)
 	print("Open: " .. url)
 	-- wsl-open
 	-- https://github.com/4U6U57/wsl-open/tree/master
@@ -119,20 +120,23 @@ function GetCurrentLine(mode)
 	return start_line, end_line
 end
 
-function GenerateGitUrl(repo_name, hash, filepath_from_root, start_line, end_line, is_gitlab)
+function GenerateGitUrl(repo_name, hash, filepath_from_root, start_line, end_line, is_gitlab, is_bitbucket)
 	-- gitlabの場合はhttp、fdevがhttps対応してないため
 	local url = (is_gitlab and "http://" or "https://")
 		.. repo_name
-		.. "/blob/"
+		.. (is_bitbucket and "/src/" or "/blob/")
 		.. hash
 		.. "/"
 		.. filepath_from_root
-		.. "#L"
+		.. (is_bitbucket and "#lines-" or "#L")
 		.. start_line
 		-- NOTE: gitlabとgithubで範囲選択の仕方が違うので注意
 		-- is_gitlabは - のみ
 		-- is_githubは -L となる
-		.. (is_gitlab and "-" or "-L")
+		.. (
+			-- gitlabのときは -, githubのときは -L, bitbucketのときは :
+			is_bitbucket and ":" or (is_gitlab and "-" or "-L")
+		)
 		.. end_line
 	return url
 end
