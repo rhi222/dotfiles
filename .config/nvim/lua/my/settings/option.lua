@@ -1,5 +1,14 @@
--- -------------------- general mapping {{{
+-- options
 vim.scriptencoding = "utf-8"
+
+-- path
+-- https://github.com/volta-cli/volta/issues/866
+vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d "\n"')
+vim.g.python_host_prog = vim.call("system", 'which python2 | tr -d "\n"')
+vim.g.python3_host_prog = vim.call("system", 'which python3 | tr -d "\n"')
+
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 vim.opt.number = true
 vim.opt.tabpagemax = 50
 -- indent
@@ -37,14 +46,3 @@ if vim.fn.has("wsl") then
 		cache_enable = 0,
 	}
 end
--- https://github.com/volta-cli/volta/issues/866
-vim.g.node_host_prog = vim.call("system", 'volta which neovim-node-host | tr -d "\n"')
-vim.g.python_host_prog = vim.call("system", 'which python2 | tr -d "\n"')
-vim.g.python3_host_prog = vim.call("system", 'which python3 | tr -d "\n"')
--- }}} -------------------------------
-
--- -------------------- key mapping {{{
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
--- }}} -------------------------------
-
