@@ -11,7 +11,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-local plugins = require("plugins")
+local plugins = require("my/plugin")
 
 -- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
 local opts = {
