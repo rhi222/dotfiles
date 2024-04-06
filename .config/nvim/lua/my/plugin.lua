@@ -2,26 +2,26 @@ return {
 	{
 		"nvim-lualine/lualine.nvim",
 		config = function()
-			require("config/lualine")
+			require("my/plugins/lualine")
 		end,
 	},
 	{
 		"lewis6991/gitsigns.nvim",
 		config = function()
-			require("config/gitsigns")
+			require("my/plugins/gitsigns")
 		end,
 	},
 	{
 		"lukas-reineke/indent-blankline.nvim",
 		main = "ibl",
 		config = function()
-			require("config/indent-blankline")
+			require("my/plugins/indent-blankline")
 		end,
 	},
 	{
 		"nvim-treesitter/nvim-treesitter",
 		config = function()
-			require("config/nvim-treesitter")
+			require("my/plugins/nvim-treesitter")
 		end,
 		dependencies = {
 			"nvim-treesitter/playground",
@@ -32,7 +32,7 @@ return {
 		"rebelot/kanagawa.nvim",
 		lazy = true,
 		config = function()
-			require("config/kanagawa")
+			require("my/plugins/kanagawa")
 		end,
 	},
 	{
@@ -43,7 +43,7 @@ return {
 		"folke/tokyonight.nvim",
 		lazy = true,
 		config = function()
-			require("config/tokyonight")
+			require("my/plugins/tokyonight")
 		end,
 	},
 	-- nvim-treesitterのsyntax highlightが絶妙に見にくかったのでtokyonightから乗り換え
@@ -51,14 +51,14 @@ return {
 	{
 		"Mofiqul/vscode.nvim",
 		config = function()
-			require("config/vscode")
+			require("my/plugins/vscode")
 		end,
 	},
 	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
 	-- {
 	-- 	'zbirenbaum/copilot.lua',
 	-- 	config = function()
-	-- 		require('config/copilot')
+	-- 		require('my/plugins/copilot')
 	-- 	end
 	-- },
 	{
@@ -79,7 +79,7 @@ return {
 			"onsails/lspkind.nvim", --補完欄にアイコンを表示
 		},
 		config = function()
-			require("config/nvim-cmp")
+			require("my/plugins/nvim-cmp")
 		end,
 	},
 	-- LSP
@@ -97,7 +97,7 @@ return {
 					{ "folke/neodev.nvim", opts = {} },
 				},
 				config = function()
-					require("config/nvim-lspconfig")
+					require("my/plugins/nvim-lspconfig")
 				end,
 			},
 		},
@@ -111,7 +111,7 @@ return {
 		-- 	"MasonUpdate",
 		-- },
 		config = function()
-			require("config/mason")
+			require("my/plugins/mason")
 		end,
 	},
 	{
@@ -123,7 +123,7 @@ return {
 			"FormatWriteLock",
 		},
 		config = function()
-			require("config/formatter")
+			require("my/plugins/formatter")
 		end,
 	},
 	-- finder
@@ -147,7 +147,7 @@ return {
 			},
 		},
 		config = function()
-			require("config/telescope")
+			require("my/plugins/telescope")
 		end,
 	},
 	{
@@ -155,7 +155,7 @@ return {
 		-- optional for icon support
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		config = function()
-			require("config/fzf-lua")
+			require("my/plugins/fzf-lua")
 			-- calling `setup` is optional for customization
 		end,
 	},
@@ -174,13 +174,13 @@ return {
 	{
 		"t9md/vim-quickhl",
 		config = function()
-			require("config/vim-quickhl")
+			require("my/plugins/vim-quickhl")
 		end,
 	},
 	{
 		"phaazon/hop.nvim",
 		config = function()
-			require("config/hop")
+			require("my/plugins/hop")
 		end,
 	},
 	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
@@ -204,7 +204,7 @@ return {
 		ft = "http",
 		tag = "v1.2.1", -- 2024/03/23 の最新はv2.0.1だがエラーが出るため、様子見
 		config = function()
-			require("config/rest-nvim")
+			require("my/plugins/rest-nvim")
 		end,
 	},
 	-- markdown preview
@@ -245,6 +245,78 @@ return {
 			"RainbowDelimSimple",
 			"RainbowDelimQuoted",
 			"RainbowMultiDelim",
+		},
+	},
+	-- fold
+	-- https://github.com/chrisgrieser/.my/plugins/blob/main/nvim/lua/plugins/folding-plugins.lua#L7
+	{
+		"kevinhwang91/nvim-ufo",
+		dependencies = "kevinhwang91/promise-async",
+		event = "VimEnter", -- needed for folds to load in time and comments closed
+		keys = {
+			-- stylua: ignore start
+			{ "zm", function() require("ufo").closeAllFolds() end, desc = "󱃄 Close All Folds" },
+			{ "zr", function() require("ufo").openFoldsExceptKinds { "comment", "imports" } end, desc = "󱃄 Open All Regular Folds" },
+			{ "zR", function() require("ufo").openFoldsExceptKinds {} end, desc = "󱃄 Open All Folds" },
+			{ "z1", function() require("ufo").closeFoldsWith(1) end, desc = "󱃄 Close L1 Folds" },
+			{ "z2", function() require("ufo").closeFoldsWith(2) end, desc = "󱃄 Close L2 Folds" },
+			{ "z3", function() require("ufo").closeFoldsWith(3) end, desc = "󱃄 Close L3 Folds" },
+			{ "z4", function() require("ufo").closeFoldsWith(4) end, desc = "󱃄 Close L4 Folds" },
+			-- stylua: ignore end
+		},
+		init = function()
+			-- INFO fold commands usually change the foldlevel, which fixes folds, e.g.
+			-- auto-closing them after leaving insert mode, however ufo does not seem to
+			-- have equivalents for zr and zm because there is no saved fold level.
+			-- Consequently, the vim-internal fold levels need to be disabled by setting
+			-- them to 99
+			vim.opt.foldlevel = 99
+			vim.opt.foldlevelstart = 99
+		end,
+		opts = {
+			provider_selector = function(_, ft, _)
+				-- INFO some filetypes only allow indent, some only LSP, some only
+				-- treesitter. However, ufo only accepts two kinds as priority,
+				-- therefore making this function necessary :/
+				local lspWithOutFolding = { "markdown", "sh", "css", "html", "python", "typescript", "tsx", "lua" }
+				if vim.tbl_contains(lspWithOutFolding, ft) then
+					return { "treesitter", "indent" }
+				end
+				return { "lsp", "indent" }
+			end,
+			-- when opening the buffer, close these fold kinds
+			-- use `:UfoInspect` to get available fold kinds from the LSP
+			close_fold_kinds_for_ft = {
+				default = { "imports", "comment" },
+			},
+			open_fold_hl_timeout = 800,
+			fold_virt_text_handler = function(virtText, lnum, endLnum, width, truncate)
+				local hlgroup = "NonText"
+				local newVirtText = {}
+				local suffix = "    " .. tostring(endLnum - lnum)
+				local sufWidth = vim.fn.strdisplaywidth(suffix)
+				local targetWidth = width - sufWidth
+				local curWidth = 0
+				for _, chunk in ipairs(virtText) do
+					local chunkText = chunk[1]
+					local chunkWidth = vim.fn.strdisplaywidth(chunkText)
+					if targetWidth > curWidth + chunkWidth then
+						table.insert(newVirtText, chunk)
+					else
+						chunkText = truncate(chunkText, targetWidth - curWidth)
+						local hlGroup = chunk[2]
+						table.insert(newVirtText, { chunkText, hlGroup })
+						chunkWidth = vim.fn.strdisplaywidth(chunkText)
+						if curWidth + chunkWidth < targetWidth then
+							suffix = suffix .. (" "):rep(targetWidth - curWidth - chunkWidth)
+						end
+						break
+					end
+					curWidth = curWidth + chunkWidth
+				end
+				table.insert(newVirtText, { suffix, hlgroup })
+				return newVirtText
+			end,
 		},
 	},
 }
