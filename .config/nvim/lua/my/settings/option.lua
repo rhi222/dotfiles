@@ -1,24 +1,24 @@
 -- -------------------- general mapping {{{
 vim.scriptencoding = "utf-8"
-vim.o.number = true
-vim.o.tabpagemax = 50
+vim.opt.number = true
+vim.opt.tabpagemax = 50
 -- indent
 -- filetype.luaで設定しているのでコメントアウト
--- vim.o.tabstop = 4
--- vim.o.softtabstop = 4
--- vim.o.shiftwidth = 4
-vim.o.autoindent = true
-vim.o.smartindent = true
+-- vim.opt.tabstop = 4
+-- vim.opt.softtabstop = 4
+-- vim.opt.shiftwidth = 4
+vim.opt.autoindent = true
+vim.opt.smartindent = true
 -- search
-vim.o.incsearch = true
-vim.o.ignorecase = true
-vim.o.smartcase = true
-vim.o.hlsearch = true
+vim.opt.incsearch = true
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.hlsearch = true
 -- https://qiita.com/shiena/items/3f51a2c0b4722427e430
-vim.o.cursorline = true
-vim.o.cursorcolumn = true
+vim.opt.cursorline = true
+vim.opt.cursorcolumn = true
 -- https://zenn.dev/shougo/articles/set-cmdheight-0
-vim.o.cmdheight = 0
+vim.opt.cmdheight = 0
 -- clipboard
 -- https://zenn.dev/koxya/articles/b71047cd88303b
 -- https://zenn.dev/renoinn/scraps/f64fe35a81b753
