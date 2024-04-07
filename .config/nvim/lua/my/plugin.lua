@@ -249,3 +249,9 @@ return {
 		},
 	},
 }
+
+-- 気になっているmodule
+-- https://github.com/sindrets/diffview.nvim
+-- https://github.com/kevinhwang91/nvim-bqf
+-- https://github.com/fdschmidt93/telescope-egrepify.nvim
+-- https://github.com/pwntester/octo.nvim
