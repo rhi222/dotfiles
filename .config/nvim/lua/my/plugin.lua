@@ -1,3 +1,4 @@
+-- TODO: https://github.com/skanehira/dotfiles/blob/master/vim/lua/my/plugins/list.lua を参考にファイル分割したい
 return {
 	{
 		"nvim-lualine/lualine.nvim",
