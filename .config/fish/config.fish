@@ -25,7 +25,7 @@ alias gu 'gitui'
 
 # ------------- etc setting {{{
 set PSQL_EDITOR 'nvim'
-set GIT_EDITOR="nvim -u $HOME/.config/nvim/init.lua"
+set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 # ------------- }}}
 
 
@@ -47,10 +47,8 @@ set PATH $DENO_INSTALL/bin:$PATH
 # for pip3
 set PATH $PATH ~/.local/bin
 
-
-# set -x PATH $HOME/.pyenv/bin $PATH
-# eval (pyenv init - | source)
-#. (pyenv init - | psub)
+# for fzf
+set -gx PATH $HOME/.fzf/bin $PATH
 
 # volta setting
 # https://docs.volta.sh/guide/getting-started
