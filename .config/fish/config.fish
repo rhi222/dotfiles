@@ -72,6 +72,9 @@ set PATH $PATH /mnt/c/Program\ Files/Docker/Docker/resources/bin
 set PATH $PATH $HOME/.cargo/bin
 
 set TERM screen-256color
+
+# for copilot at with zscaler credential
+set NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
 # ------------- }}}
 
 
