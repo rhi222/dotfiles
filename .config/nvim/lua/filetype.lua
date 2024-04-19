@@ -55,6 +55,10 @@ M.gitcommit = function()
 	set_indent(2, false)
 end
 
+M.sh = function()
+	set_indent(4, false)
+end
+
 return setmetatable(M, {
 	__index = function()
 		return function()
