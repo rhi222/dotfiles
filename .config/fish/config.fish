@@ -22,27 +22,23 @@ alias rf 'source ~/.config/fish/config.fish'
 alias gu 'gitui'
 # ------------- }}}
 
+
 # ------------- etc setting {{{
 set PSQL_EDITOR 'nvim'
 set GIT_EDITOR="nvim -u $HOME/.config/nvim/init.lua"
-# evalの設定方法
-# bashrc での rbenv の設定
-# eval "$(rbenv init -)" と同様のことを書きたい時
-# https://github.com/fish-shell/fish-shell/issues/1820
-# eval (rbenv init - | source)
 # ------------- }}}
+
 
 # ------------- path setting {{{
 # set JAVA_HOME /usr/local/java
 # set PATH $JAVA_HOME/bin $PATH
 # set PATH /home/forcia/.nvm/versions/node/v5.0.0/bin /home/forcia/bin /usr/local/java/bin /usr/local/java/bin /home/forcia/bin /usr/local/sbin /usr/local/bin /usr/local/pgsql/bin /home/forcia/.rbenv/bin /usr/local/python/bin /usr/local/python/bin /home/forcia/.rbenv/shims /usr/sbin /usr/bin /sbin /bin /usr/games /usr/local/games /home/forcia/.fzf/bin /home/forcia/anaconda3/bin $PATH
 
-# set GOROOT /usr/local/go
-# set PATH $PATH $GOROOT/bin
-
+# for golang
 # https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
 set GOPATH $HOME/go
 set PATH $PATH $GOPATH/bin
+set PATH $PATH $HOME/go/bin
 
 # for deno
 set DENO_INSTALL $HOME/.deno
@@ -78,11 +74,10 @@ set TERM screen-256color
 
 # for copilot at with zscaler credential
 set NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
-# ------------- }}}
 
-
-# ------------- nvm setting {{{
-#eval (nvm use v12.13.0 | source)
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH
 # ------------- }}}
 
 
@@ -119,6 +114,3 @@ set __fish_git_prompt_char_upstream_behind '-'
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
 
-# bun
-set --export BUN_INSTALL "$HOME/.bun"
-set --export PATH $BUN_INSTALL/bin $PATH
