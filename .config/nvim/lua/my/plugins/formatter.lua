@@ -1,6 +1,7 @@
 -- https://github.com/mhartington/formatter.nvim
 -- Provides the Format, FormatWrite, FormatLock, and FormatWriteLock commands
 local formatter_prettier = { require("formatter.defaults.prettier") }
+local formatter_biome = { require("formatter.defaults.biome") }
 require("formatter").setup({
 	-- Enable or disable logging
 	logging = true,
@@ -10,8 +11,8 @@ require("formatter").setup({
 	filetype = {
 		javascript = formatter_prettier,
 		javascriptreact = formatter_prettier,
-		typescript = formatter_prettier,
-		typescriptreact = formatter_prettier,
+		typescript = formatter_biome,
+		typescriptreact = formatter_biome,
 		json = {
 			require("formatter.filetypes.json").prettier,
 		},

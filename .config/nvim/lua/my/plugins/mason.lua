@@ -44,6 +44,7 @@ local handlers = {
 require("mason").setup()
 require("mason-lspconfig").setup({
 	ensure_installed = {
+		"biome",
 		"graphql",
 		"marksman",
 		"lua_ls",
