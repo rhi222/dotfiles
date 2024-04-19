@@ -24,6 +24,7 @@ alias gu 'gitui'
 
 # ------------- etc setting {{{
 set PSQL_EDITOR 'nvim'
+set GIT_EDITOR="nvim -u $HOME/.config/nvim/init.lua"
 # evalの設定方法
 # bashrc での rbenv の設定
 # eval "$(rbenv init -)" と同様のことを書きたい時
@@ -59,6 +60,8 @@ set PATH $PATH ~/.local/bin
 # https://docs.volta.sh/guide/getting-started
 # http://gitlab.fdev/webconnect/material/material_registration/-/merge_requests/6511
 set VOLTA_FEATURE_PNPM 1
+set -gx VOLTA_HOME "$HOME/.volta"
+set -gx PATH "$VOLTA_HOME/bin" $PATH
 
 # for win32yank
 # https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#%E3%83%9E%E3%82%A6%E3%82%B9%E6%93%8D%E4%BD%9C%E3%82%84%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%9C%E3%83%BC%E3%83%89%E5%85%B1%E6%9C%89%E3%82%92%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B
@@ -111,8 +114,6 @@ set __fish_git_prompt_char_upstream_behind '-'
 #     set_color normal
 # end
 # ------------- }}}
-set -gx VOLTA_HOME "$HOME/.volta"
-set -gx PATH "$VOLTA_HOME/bin" $PATH
 
 # tabtab source for packages
 # uninstall by removing these lines
