@@ -21,7 +21,12 @@ require("formatter").setup({
 		lua = {
 			require("formatter.filetypes.lua").stylua,
 		},
-
+		xml = {
+			require("formatter.filetypes.xml").xmlformat,
+		},
+		bash = {
+			require("formatter.filetypes.sh").shfmt,
+		},
 		-- Use the special '*' filetype for defining formatter configurations on any filetype
 		["*"] = {
 			require("formatter.filetypes.any").remove_trailing_whitespace,
