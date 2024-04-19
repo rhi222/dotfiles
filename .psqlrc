@@ -5,3 +5,68 @@
 \set VERBOSITY verbose
 \setenv EDITOR 'nvim'
 \set QUIET OFF
+-- BEGIN入力漏れ防止
+-- \set AUTOCOMMIT off
+-- \echo AUTOCOMMIT :AUTOCOMMIT
+
+-- PROMPT1：psqlが新しいコマンドを受け付ける際に発行される通常のプロンプト
+-- PROMPT2：コマンドがセミコロンで終わっていない、または、引用符が閉じていないなど、コマンドの入力中にさらなる入力が期待される際に発行されるプロンプト
+-- PROMPT3：SQLのCOPY FROM STDINコマンドを実行中で、端末上で行の値の入力が必要な際に発行されるプロンプト
+-- 予約語: https://www.postgresql.jp/docs/13/app-psql.html#APP-PSQL-PROMPTING
+/* color
+31 for red
+32 for green
+33 for yellow
+34 for blue
+35 for magenta
+36 for cyan
+37 for white
+*/
+SELECT current_database() ~ '.*_(stg|dev|stga|stgb)' as is_stg
+\gset
+SELECT current_database() ~ '.*_prod' as is_prod
+\gset
+\if :is_prod
+	-- \set PROMPT1 '%[%033[1;31m%]DANGER_PROD_ENV %n@%/%R%#%[%033[1;33m%]%x %[%033[1;31m%]'
+	\set PROMPT1 '%[%033[1;31m%]DANGER_PROD_ENV %> %n@%/%R%#%[%033[1;33m%]%x %[%033[1;31m%]'
+\elif :is_stg
+	\set PROMPT1 '%[%033[1;33m%]WARNING_STG_ENV %n@%/%R%#%[%033[1;31m%]%x %[%033[1;33m%]'
+\else
+	-- do nothing
+	\set PROMPT1 '%[%033[1;37m%]%n@%/%R%#%[%033[1;31m%]%x %[%033[1;37m%]'
+\endif
+
+SELECT current_database() ~ 'jtt_.*' as is_jtt
+\gset
+SELECT current_database() ~ 'jtb_.*' as is_jtb
+\gset
+\if :is_jtt
+	\echo                     █       █   █                                                        ███
+	\echo    ██  █████   ███████████   █  ███████   █  █    █    ██████████                 ██████ █  
+	\echo    ██  █    █   █████████      █          █  ██   █            █                       █    
+	\echo    ██  █    ██  █   █   █   █  ███████    ██  █  ██        █  █                        █    
+	\echo    ██  █    █   █████████    █  █ █  █     █     █         █ █                        █     
+	\echo    ██  █████    █   █   █     █████████         ██        ██       ███████████       ██     
+	\echo    ██  █   █    █████████    █  █ █  █          █         █                          ██     
+	\echo    ██  █    █      ███       █ █  █  █         ██         █                        ██  ██   
+	\echo    ██  █    ██    █ █ ██     █ ████████       ██         ██                       ██    ██  
+	\echo  ███   █     █  ██  █  ███  █  █     █      ██          ██                       ██      █  
+	\echo                █    █       █      ███                                                      
+\elif :is_jtb
+	\echo                                  █                                                       █                                                   
+	\echo                                  █ █     █████  █                     ████            █ █ █                                            █     
+	\echo   ██ ████████ █████         ██████████    ██    █       █████       ██  ██      █     █      ██           █                            █     
+	\echo   ██    █     █    █        ██████  █   ███████████    █  █  ██        ██       █     ███    █   █████    █     ██      ███████     ███████  
+	\echo   ██    █     █    █        █     █ █   ██████  █ █   █   █   █       ██        █  █████     █            █      █    ███     ██      ██     
+	\echo   ██    █     █    █        █████ ██    █  █ █  █ █  ██   █    █    ████████    █     █      █            █       █            █      █      
+	\echo   ██    █     █████        ███  █ ██ █  ██████  █ █  █   █     █   █   █       ██     █      █            █       █            █    ██████   
+	\echo   ██    █     █    █       █ ████ ██ █  ██████  █ █  █   █    ██      █        ███    █      ██           █       ██           █      █    ██
+	\echo   ██    █     █    ██      █     █  ██  ██████ █  █   █ █     █       █         ██ █████     ██ █         ██  █              ██       █     █
+	\echo   ██    █     █    ██         █ █   █      █   █  █   ███    ██       █         █  █  ████   ██ ██         █ █           █████        █     █
+	\echo ███     █     ██████        █ █     ██  ███████ ██         ██          ████     █  ████      █   █████      ██                        ██   █ 
+	\echo                            █  █   ██ █                                   █                                                             ████  
+	\echo                               █████  
+\else
+	-- do nothing
+\endif
+
