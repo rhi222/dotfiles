@@ -30,43 +30,42 @@ set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 
 
 # ------------- path setting {{{
-# set JAVA_HOME /usr/local/java
-# set PATH $JAVA_HOME/bin $PATH
-# set PATH /home/forcia/.nvm/versions/node/v5.0.0/bin /home/forcia/bin /usr/local/java/bin /usr/local/java/bin /home/forcia/bin /usr/local/sbin /usr/local/bin /usr/local/pgsql/bin /home/forcia/.rbenv/bin /usr/local/python/bin /usr/local/python/bin /home/forcia/.rbenv/shims /usr/sbin /usr/bin /sbin /bin /usr/games /usr/local/games /home/forcia/.fzf/bin /home/forcia/anaconda3/bin $PATH
+# path設定はfish_add_pathを利用
+# https://zenn.dev/estra/articles/zenn-fish-add-path-final-answer
 
 # for golang
 # https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
 set GOPATH $HOME/go
-set PATH $PATH $GOPATH/bin
-set PATH $PATH $HOME/go/bin
+fish_add_path $GOPATH/bin
+fish_add_path $HOME/go/bin
 
 # for deno
 set DENO_INSTALL $HOME/.deno
-set PATH $DENO_INSTALL/bin:$PATH
+fish_add_path $DENO_INSTALL/bin
 
 # for pip3
-set PATH $PATH ~/.local/bin
+fish_add_path $HOME/.local/bin
 
 # for fzf
-set -gx PATH $HOME/.fzf/bin $PATH
+fish_add_path $HOME/.fzf/bin
 
 # volta setting
 # https://docs.volta.sh/guide/getting-started
 # http://gitlab.fdev/webconnect/material/material_registration/-/merge_requests/6511
 set VOLTA_FEATURE_PNPM 1
 set -gx VOLTA_HOME "$HOME/.volta"
-set -gx PATH "$VOLTA_HOME/bin" $PATH
+fish_add_path $VOLTA_HOME/bin
 
 # for win32yank
 # https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#%E3%83%9E%E3%82%A6%E3%82%B9%E6%93%8D%E4%BD%9C%E3%82%84%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%9C%E3%83%BC%E3%83%89%E5%85%B1%E6%9C%89%E3%82%92%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B
-set PATH $PATH $HOME/bin
+fish_add_path $HOME/bin
 
 # docker setting
 # https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#wsl2%E3%81%AEpath%E3%81%8B%E3%82%89windows%E3%83%91%E3%82%B9%E3%82%92%E6%8A%9C%E3%81%8F
-set PATH $PATH /mnt/c/Program\ Files/Docker/Docker/resources/bin
+fish_add_path /mnt/c/Program\ Files/Docker/Docker/resources/bin
 
 # rust setting
-set PATH $PATH $HOME/.cargo/bin
+fish_add_path $HOME/.cargo/bin
 
 set TERM screen-256color
 
@@ -75,7 +74,7 @@ set NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
 
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
-set --export PATH $BUN_INSTALL/bin $PATH
+fish_add_path $BUN_INSTALL/bin
 # ------------- }}}
 
 
