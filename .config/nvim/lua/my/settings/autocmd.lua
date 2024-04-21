@@ -5,8 +5,6 @@ vim.filetype.add({
 	},
 })
 
-local M = {}
-
 -- tab/indent
 -- https://qiita.com/ysn/items/f4fc8f245ba50d5fb8b0
 -- https://vim-jp.org/vimdoc-ja/indent.html
@@ -34,6 +32,8 @@ local function set_indent(tab_length, is_hard_tab, is_auto_indent)
 	vim.bo.softtabstop = tab_length
 	vim.bo.tabstop = tab_length
 end
+
+local M = {}
 
 M.help = function()
 	vim.api.nvim_buf_set_keymap(0, "n", "q", "ZZ", { noremap = true })
