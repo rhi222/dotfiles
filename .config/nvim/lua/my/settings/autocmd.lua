@@ -15,24 +15,12 @@ vim.filetype.add({
 -- tabstop: タブ制御文字(\0x09 in ascii)に対する見た目上の空白数を設定する
 -- autoindent: 一つ前の行に基づくインデント
 -- smartindent: C言語のような構造化された言語のインデント
-local function set_indent(tab_length, is_hard_tab, is_auto_indent)
-
-	vim.bo.shiftwidth = tab_length
-	vim.bo.softtabstop = tab_length
-	vim.bo.tabstop = tab_length
-
-	if is_hard_tab then
-		vim.bo.expandtab = false
-	else
-		vim.bo.expandtab = true
-	end
-
-	if is_auto_indent then
-		vim.bo.autoindent = false
-	else
-		vim.bo.autoindent = true
-	end
-
+local function setup_indent(settings)
+	vim.bo.shiftwidth = settings.tab_length
+	vim.bo.softtabstop = settings.tab_length
+	vim.bo.tabstop = settings.tab_length
+	vim.bo.expandtab = not settings.is_hard_tab
+	vim.bo.autoindent = settings.is_auto_indent
 end
 
 local M = {}
@@ -41,40 +29,51 @@ M.help = function()
 	vim.api.nvim_buf_set_keymap(0, "n", "q", "ZZ", { noremap = true })
 end
 
-M.graphql = function()
-	set_indent(4, false, true)
+-- よく使われる設定をグループ化し、一行で複数のファイルタイプを設定
+for _, ft in ipairs({
+	"graphql",
+	"sh",
+	"typescript",
+	"typescriptreact",
+}) do
+	M[ft] = function()
+		setup_indent({
+			tab_length = 4,
+			is_hard_tab = true,
+			is_auto_indent = true,
+		})
+	end
 end
 
-M.python = function()
-	set_indent(4, true, true)
+for _, ft in ipairs({ "python" }) do
+	M[ft] = function()
+		setup_indent({
+			tab_length = 4,
+			is_hard_tab = false,
+			is_auto_indent = true,
+		})
+	end
 end
 
-M.typescript = function()
-	set_indent(4, false, true)
-end
-
-M.typescriptreact = function()
-	set_indent(4, false, true)
-end
-
-M.yaml = function()
-	set_indent(2, false, true)
-end
-
-M.gitcommit = function()
-	set_indent(2, false, true)
-end
-
-M.sh = function()
-	set_indent(4, false, true)
+for _, ft in ipairs({ "yaml", "gitcommit" }) do
+	M[ft] = function()
+		setup_indent({
+			tab_length = 2,
+			is_hard_tab = true,
+			is_auto_indent = true,
+		})
+	end
 end
 
 local my_filetype = setmetatable(M, {
 	__index = function()
 		return function()
 			print("Unexpected filetype!")
-			-- NOTE: デフォルトはタブインデント
-			set_indent(4, false, true)
+			setup_indent({
+				tab_length = 4,
+				is_hard_tab = true,
+				is_auto_indent = true,
+			})
 		end
 	end,
 })
