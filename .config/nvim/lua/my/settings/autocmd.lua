@@ -16,6 +16,11 @@ vim.filetype.add({
 -- autoindent: 一つ前の行に基づくインデント
 -- smartindent: C言語のような構造化された言語のインデント
 local function set_indent(tab_length, is_hard_tab, is_auto_indent)
+
+	vim.bo.shiftwidth = tab_length
+	vim.bo.softtabstop = tab_length
+	vim.bo.tabstop = tab_length
+
 	if is_hard_tab then
 		vim.bo.expandtab = false
 	else
@@ -28,9 +33,6 @@ local function set_indent(tab_length, is_hard_tab, is_auto_indent)
 		vim.bo.autoindent = true
 	end
 
-	vim.bo.shiftwidth = tab_length
-	vim.bo.softtabstop = tab_length
-	vim.bo.tabstop = tab_length
 end
 
 local M = {}
