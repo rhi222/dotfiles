@@ -2,16 +2,10 @@
 require('my/settings/option')
 
 -- -------------------- filetype {{{
+-- 参考: 
+-- https://github.com/skanehira/dotfiles/blob/master/vim/lua/my/settings/autocmd.lua
 -- https://zenn.dev/rapan931/articles/45b09b774512fc
-local my_filetype = require("filetype")
-vim.api.nvim_create_augroup("vimrc_augroup", {})
-vim.api.nvim_create_autocmd("FileType", {
-	group = "vimrc_augroup",
-	pattern = "*",
-	callback = function(args)
-		my_filetype[args.match]()
-	end,
-})
+require('my/settings/autocmd')
 -- }}} -------------------------------
 
 -- -------------------- lazy.nvim {{{
