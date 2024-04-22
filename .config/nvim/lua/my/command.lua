@@ -2,6 +2,13 @@
 -- https://github.com/willelz/nvim-lua-guide-ja/blob/master/README.ja.md#%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B
 -- TODO: コマンドが複数になる場合、コマンド毎にファイル分割
 
+-- Enum-like table for repository types
+local RepositoryType = {
+	GITHUB = "github",
+	GITLAB = "gitlab",
+	BITBUCKET = "bitbucket",
+}
+
 -- Retrieves the URL of the Git repository from the remote origin configuration.
 local function getRepositoryURL()
 	local repo_url = vim.fn.systemlist(
@@ -17,11 +24,11 @@ end
 -- Determines the type of repository based on the URL.
 local function getRepositoryType(repo_url)
 	if string.find(repo_url, "github") then
-		return "github"
+		return RepositoryType.GITHUB
 	elseif string.find(repo_url, "gitlab") then
-		return "gitlab"
+		return RepositoryType.GITLAB
 	elseif string.find(repo_url, "bitbucket") then
-		return "bitbucket"
+		return RepositoryType.BITBUCKET
 	else
 		return nil
 	end
@@ -53,13 +60,15 @@ end
 
 -- Generates a URL to the file in the Git hosting service.
 local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
-	local base_url = (repo_type == "gitlab" and "http://" or "https://") .. repo_url
-	local path = (repo_type == "bitbucket" and "/src/" or "/blob/") .. hash .. "/" .. filepath
-	local line_ref = (repo_type == "bitbucket" and "#lines-" or "#L") .. start_line
+	local base_url = (repo_type == RepositoryType.GITLAB and "http://" or "https://") .. repo_url
+	local path = (repo_type == RepositoryType.BITBUCKET and "/src/" or "/blob/") .. hash .. "/" .. filepath
+	local line_ref = (repo_type == RepositoryType.BITBUCKET and "#lines-" or "#L") .. start_line
 	-- NOTE: repo_typeで範囲選択の仕方が違うので注意
 	-- -- gitlabのときは -, githubのときは -L, bitbucketのときは :
 	if start_line ~= end_line then
-		line_ref = line_ref .. (repo_type == "gitlab" and "-" or (repo_type == "github" and "-L" or ":")) .. end_line
+		line_ref = line_ref
+			.. (repo_type == RepositoryType.GITLAB and "-" or (repo_type == RepositoryType.GITHUB and "-L" or ":"))
+			.. end_line
 	end
 	return base_url .. path .. line_ref
 end
