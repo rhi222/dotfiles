@@ -1,4 +1,5 @@
 -- TODO: https://github.com/skanehira/dotfiles/blob/master/vim/lua/my/plugins/list.lua を参考にファイル分割したい
+-- NOTE: https://github.com/yutkat/my-neovim-pluginlist
 return {
 	{
 		"nvim-lualine/lualine.nvim",
@@ -269,3 +270,12 @@ return {
 -- https://github.com/kevinhwang91/nvim-bqf
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 -- https://github.com/pwntester/octo.nvim
+--
+-- from: https://github.com/yutkat/my-neovim-pluginlist
+-- https://github.com/kevinhwang91/nvim-ufo
+-- https://github.com/numToStr/Comment.nvim
+-- https://github.com/folke/todo-comments.nvim
+-- https://github.com/stevearc/conform.nvim
+-- https://github.com/mfussenegger/nvim-dap
+-- https://github.com/kevinhwang91/nvim-bqf
+-- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
