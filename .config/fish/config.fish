@@ -94,3 +94,6 @@ set -U tide_right_prompt_items
 # tabtab source for packages
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
+
+# https://github.com/ajeetdsouza/zoxide
+zoxide init fish | source
