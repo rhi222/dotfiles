@@ -79,35 +79,18 @@ fish_add_path $BUN_INSTALL/bin
 
 
 # ------------- prompt setting {{{
-# https://github.com/oh-my-fish/oh-my-fish
-# https://github.com/oh-my-fish/theme-bobthefish
-
-# Fish git prompt
-set __fish_git_prompt_showdirtystate 'yes'
-set __fish_git_prompt_showstashstate 'yes'
-set __fish_git_prompt_showuntrackedfiles 'yes'
-set __fish_git_prompt_showupstream 'yes'
-set __fish_git_prompt_color_branch yellow
-set __fish_git_prompt_color_upstream_ahead green
-set __fish_git_prompt_color_upstream_behind red
-
-# Status Chars
-set __fish_git_prompt_char_dirtystate '⚡'
-set __fish_git_prompt_char_stagedstate '→'
-set __fish_git_prompt_char_untrackedfiles '☡'
-set __fish_git_prompt_char_stashstate '↩'
-set __fish_git_prompt_char_upstream_ahead '+'
-set __fish_git_prompt_char_upstream_behind '-'
-
-# function fish_right_prompt
-#     # Git
-#     set last_status $status
-#     printf '%s ' (__fish_git_prompt)
-#     set_color normal
-# end
+# now use tide. install via fisher
+# https://github.com/IlanCosman/tide
+# shorten current directory length
+# https://github.com/IlanCosman/tide/issues/227
+set -U tide_prompt_min_cols 10000
+# right promptは非表示
+# ターミナルコピペ時に不便なため
+# items(list)は空で設定
+# https://github.com/IlanCosman/tide/wiki/Configuration#right_prompt
+set -U tide_right_prompt_items
 # ------------- }}}
 
 # tabtab source for packages
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
-
