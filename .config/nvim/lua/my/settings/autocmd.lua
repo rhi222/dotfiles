@@ -63,7 +63,10 @@ for _, ft in ipairs({
 	end
 end
 
-for _, ft in ipairs({ "yaml", "gitcommit" }) do
+for _, ft in ipairs({
+	"gitcommit",
+	"yaml",
+}) do
 	M[ft] = function()
 		setup_indent({
 			tab_length = 2,
