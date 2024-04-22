@@ -32,9 +32,14 @@ end
 -- よく使われる設定をグループ化し、一行で複数のファイルタイプを設定
 for _, ft in ipairs({
 	"graphql",
+	"javascript",
+	"json",
+	"lua",
+	"markdown",
 	"sh",
 	"typescript",
 	"typescriptreact",
+	"xml",
 }) do
 	M[ft] = function()
 		setup_indent({
@@ -45,7 +50,10 @@ for _, ft in ipairs({
 	end
 end
 
-for _, ft in ipairs({ "python" }) do
+for _, ft in ipairs({
+	"python",
+	"rust",
+}) do
 	M[ft] = function()
 		setup_indent({
 			tab_length = 4,
@@ -68,7 +76,7 @@ end
 local my_filetype = setmetatable(M, {
 	__index = function()
 		return function()
-			print("Unexpected filetype!")
+			-- print("Unexpected filetype!")
 			setup_indent({
 				tab_length = 4,
 				is_hard_tab = true,
