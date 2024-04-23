@@ -53,6 +53,7 @@ end
 for _, ft in ipairs({
 	"python",
 	"rust",
+	"dockerfile",
 }) do
 	M[ft] = function()
 		setup_indent({
