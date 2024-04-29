@@ -8,12 +8,6 @@ return {
 		end,
 	},
 	{
-		"lewis6991/gitsigns.nvim",
-		config = function()
-			require("my/plugins/gitsigns")
-		end,
-	},
-	{
 		"lukas-reineke/indent-blankline.nvim",
 		main = "ibl",
 		config = function()
@@ -30,6 +24,7 @@ return {
 		},
 		tag = "v0.9.2",
 	},
+	-- colorscheme
 	{
 		"rebelot/kanagawa.nvim",
 		lazy = true,
@@ -249,6 +244,13 @@ return {
 			"RainbowDelimQuoted",
 			"RainbowMultiDelim",
 		},
+	},
+	-- git
+	{
+		"lewis6991/gitsigns.nvim",
+		config = function()
+			require("my/plugins/gitsigns")
+		end,
 	},
 	{
 		"NeogitOrg/neogit",
