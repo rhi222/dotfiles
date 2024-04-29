@@ -181,6 +181,7 @@ return {
 	},
 	{
 		"phaazon/hop.nvim",
+		branch = 'v2',
 		config = function()
 			require("my/plugins/hop")
 		end,
