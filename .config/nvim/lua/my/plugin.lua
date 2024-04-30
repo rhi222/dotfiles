@@ -52,16 +52,16 @@ return {
 		end,
 	},
 	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
-	-- {
-	-- 	'zbirenbaum/copilot.lua',
-	-- 	config = function()
-	-- 		require('my/plugins/copilot')
-	-- 	end
-	-- },
 	{
-		"github/copilot.vim",
-		event = "InsertEnter",
+		'zbirenbaum/copilot.lua',
+		config = function()
+			require('my/plugins/copilot')
+		end
 	},
+	-- {
+	-- 	"github/copilot.vim",
+	-- 	event = "InsertEnter",
+	-- },
 	{
 		"hrsh7th/nvim-cmp",
 		event = "InsertEnter",
@@ -260,7 +260,6 @@ return {
 
 			-- Only one of these is needed, not both.
 			"nvim-telescope/telescope.nvim", -- optional
-			"ibhagwan/fzf-lua", -- optional
 		},
 		config = function()
 			require("my/plugins/neogit")
