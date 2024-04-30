@@ -17,8 +17,12 @@ require("copilot").setup({
 	suggestion = {
 		auto_trigger = true,
 		keymap = {
-			-- TODO: 通常のtabが効かなくなる
-			accept = "<tab>",
+			accept = "<C-y>",
+			accept_word = false,
+			accept_line = false,
+			next = "<C-l>",
+			prev = "<C-h>",
+			dismiss = "<C-]>",
 		},
 	},
 })
