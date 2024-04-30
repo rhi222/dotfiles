@@ -1,8 +1,9 @@
 #! /bin/bash
 PWD=`pwd`
-ln -s $PWD/.vimrc ~/.vimrc
-ln -s $PWD/.zshrc ~/.zshrc
-ln -s $PWD/.vim ~/.vim
-ln -s $PWD/.tmux.conf ~/.tmux.conf
-ln -s $PWD/.psqlrc /home/postgres/.psqlrc
-echo $PWD
+ln -snf $PWD/.gitconfig ~/.gitconfig
+ln -snf $PWD/.tmux.conf ~/.tmux.conf
+ln -snf $PWD/.psqlrc ~/.psqlrc
+ln -snf $PWD/.config/fish/config.fish ~/.config/fish/config.fish
+ln -snf $PWD/.config/nvim ~/.config/nvim
+ln -snf $PWD/.config/gitui ~/.config/gitui
+ln -snf $PWD/.config/lazygit ~/.config/lazygit
