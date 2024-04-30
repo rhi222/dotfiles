@@ -52,16 +52,22 @@ return {
 		end,
 	},
 	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
-	{
-		'zbirenbaum/copilot.lua',
-		config = function()
-			require('my/plugins/copilot')
-		end
-	},
 	-- {
 	-- 	"github/copilot.vim",
 	-- 	event = "InsertEnter",
 	-- },
+	{
+		"zbirenbaum/copilot.lua",
+		config = function()
+			require("my/plugins/copilot")
+		end,
+	},
+	{
+		"zbirenbaum/copilot-cmp",
+		config = function()
+			require("my/plugins/copilot-cmp")
+		end,
+	},
 	{
 		"hrsh7th/nvim-cmp",
 		event = "InsertEnter",
@@ -176,7 +182,7 @@ return {
 	},
 	{
 		"phaazon/hop.nvim",
-		branch = 'v2',
+		branch = "v2",
 		config = function()
 			require("my/plugins/hop")
 		end,
@@ -281,3 +287,4 @@ return {
 -- https://github.com/mfussenegger/nvim-dap
 -- https://github.com/kevinhwang91/nvim-bqf
 -- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
+-- https://github.com/zbirenbaum/copilot-cmp
