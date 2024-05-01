@@ -22,6 +22,23 @@ alias rf 'source ~/.config/fish/config.fish'
 alias gu 'gitui'
 # ------------- }}}
 
+# ------------- abbr setting {{{
+abbr --add gbr "git for-each-ref --sort=committerdate refs/heads/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))'" # show recently touched branch
+abbr --add dc docker compose
+abbr --add ggr 'cd (git rev-parse --show-toplevel)'
+abbr --add dcl 'docker compose -f (find_docker_compose) logs -f --tail=500' # show current repository docker compose log
+abbr --add dcd 'docker compose -f (find_docker_compose) down'
+abbr --add dcu 'docker compose -f (find_docker_compose) up --build'
+function find_docker_compose
+	# レポジトリごとの差異をfindで頑張って吸収
+	# - docker/docker-compose.yml
+	# - docker/compose.yaml
+	# - etc/docker/docker-compose.yml
+	find (git rev-parse --show-toplevel) \( -path '*/etc/docker/*' -o -path '*/docker/*' \) \( -name 'docker-compose.yml' -o -name 'compose.yaml' \) -print
+end
+abbr --add cpe 'COMPOSE_PROFILES='
+# ------------- }}}
+
 
 # ------------- etc setting {{{
 set PSQL_EDITOR 'nvim'
