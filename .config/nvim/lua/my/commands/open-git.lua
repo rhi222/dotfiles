@@ -104,5 +104,5 @@ function OpenGitURL(mode)
 end
 
 vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
-vim.api.nvim_set_keymap("n", "<leader>og", ":lua OpenGitURL('n')<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("v", "<leader>og", ":lua OpenGitURL('v')<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>og", ":lua OpenGitURL('n')<CR>", { noremap = true, silent = true })
+vim.keymap.set("v", "<leader>og", ":lua OpenGitURL('v')<CR>", { noremap = true, silent = true })

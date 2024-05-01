@@ -15,5 +15,5 @@ require("rest-nvim").setup({
 	env_file = ".env",
 	yank_dry_run = true,
 })
-vim.api.nvim_set_keymap("n", "<C-e>", "<Plug>RestNvim", { noremap = true })
-vim.api.nvim_set_keymap("n", "<C-c>", "<Plug>RestNvimPreview", { noremap = true })
+vim.keymap.set("n", "<C-e>", "<Plug>RestNvim", { noremap = true })
+vim.keymap.set("n", "<C-c>", "<Plug>RestNvimPreview", { noremap = true })
