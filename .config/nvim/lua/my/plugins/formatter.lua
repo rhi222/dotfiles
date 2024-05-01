@@ -28,6 +28,9 @@ require("formatter").setup({
 		bash = {
 			require("formatter.filetypes.sh").shfmt,
 		},
+		html = {
+			require("formatter.filetypes.html").prettier,
+		},
 		-- Use the special '*' filetype for defining formatter configurations on any filetype
 		["*"] = {
 			require("formatter.filetypes.any").remove_trailing_whitespace,
