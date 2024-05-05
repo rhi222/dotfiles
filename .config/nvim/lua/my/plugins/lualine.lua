@@ -4,6 +4,6 @@ require("lualine").setup({
 		-- show fullpath
 		lualine_c = { { "filename", path = 2 } },
 		-- fileformatは非表示
-		lualine_x = {'filetype', 'encoding'},
+		lualine_x = { "filetype", "encoding" },
 	},
 })
