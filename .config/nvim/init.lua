@@ -1,11 +1,11 @@
 -- require nvim v0.9.0 or later
-require('my/settings/option')
+require("my/settings/option")
 
 -- -------------------- filetype {{{
--- 参考: 
+-- 参考:
 -- https://github.com/skanehira/dotfiles/blob/master/vim/lua/my/settings/autocmd.lua
 -- https://zenn.dev/rapan931/articles/45b09b774512fc
-require('my/settings/autocmd')
+require("my/settings/autocmd")
 -- }}} -------------------------------
 
 -- -------------------- lazy.nvim {{{
