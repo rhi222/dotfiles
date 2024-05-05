@@ -20,11 +20,10 @@ CopilotChatFunctions.askCopilotWithBuffer = function()
 		CopilotChat.ask(input, { selection = CopilotChatSelect.buffer })
 	end
 end
--- CopilotChat - Help actionsの関数
+-- telescopeで選択肢を表示する関数
 CopilotChatFunctions.showHelpActionsWithTelescope = function()
 	telescope.pick(CopilotActions.help_actions())
 end
--- CopilotChat - Prompt actionsの関数
 CopilotChatFunctions.showPromptActionsWithTelescope = function()
 	telescope.pick(CopilotActions.prompt_actions())
 end
