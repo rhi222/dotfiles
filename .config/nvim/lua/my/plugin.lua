@@ -70,6 +70,7 @@ return {
 		dependencies = {
 			{ "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
 			{ "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
+			{ "nvim-telescope/telescope.nvim" },
 		},
 		config = function()
 			require("my/plugins/copilot-chat")
