@@ -7,7 +7,12 @@ local telescope = require("CopilotChat.integrations.telescope")
 
 CopilotChat.setup({
 	debug = true,
-	prompts = {},
+	prompts = {
+		ExplainBuffer = {
+			prompt = "/COPILOT_EXPLAIN Write an explanation for the selection as paragraphs of text.",
+			selection = CopilotChatSelect.buffer,
+		},
+	},
 })
 
 CopilotChatFunctions = {}
