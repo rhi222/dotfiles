@@ -20,9 +20,15 @@ CopilotChatFunctions = {}
 -- https://github.com/CopilotC-Nvim/CopilotChat.nvim?tab=readme-ov-file#tips
 -- 現在のバッファを読み込んでCopilotChatに質問を投げる関数
 CopilotChatFunctions.askCopilotWithBuffer = function()
-	local input = vim.fn.input("Quick Chat: ")
+	local input = vim.fn.input("Quick Chat with Buffer: ")
 	if input ~= "" then
 		CopilotChat.ask(input, { selection = CopilotChatSelect.buffer })
+	end
+end
+CopilotChatFunctions.askCopilotWithVisual = function()
+	local input = vim.fn.input("Quick Chat with Visual: ")
+	if input ~= "" then
+		CopilotChat.ask(input, { selection = CopilotChatSelect.visual })
 	end
 end
 -- telescopeで選択肢を表示する関数
@@ -38,9 +44,15 @@ vim.keymap.set({ "n", "i", "v" }, "<C-a>", function()
 	vim.cmd("CopilotChatOpen")
 end)
 vim.keymap.set(
-	{ "n", "i", "v" },
+	{ "n" },
 	"<C-s>",
 	"<cmd>lua CopilotChatFunctions.askCopilotWithBuffer()<CR>",
+	{ noremap = true, silent = true }
+)
+vim.keymap.set(
+	{ "v" },
+	"<C-s>",
+	"<cmd>lua CopilotChatFunctions.askCopilotWithVisual()<CR>",
 	{ noremap = true, silent = true }
 )
 vim.keymap.set(
