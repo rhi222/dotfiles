@@ -55,15 +55,15 @@ vim.keymap.set(
 	"<cmd>lua CopilotChatFunctions.askCopilotWithVisual()<CR>",
 	{ noremap = true, silent = true }
 )
-vim.keymap.set(
+--[[ vim.keymap.set(
 	{ "n", "i", "v" },
 	"<C-d>",
 	"<cmd>lua CopilotChatFunctions.showHelpActionsWithTelescope()<CR>",
 	{ noremap = true, silent = true }
-)
+) ]]
 vim.keymap.set(
 	{ "n", "i", "v" },
-	"<C-f>",
+	"<C-d>",
 	"<cmd>lua CopilotChatFunctions.showPromptActionsWithTelescope()<CR>",
 	{ noremap = true, silent = true }
 )
