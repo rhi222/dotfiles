@@ -85,7 +85,7 @@ return {
 	},
 	{
 		"hrsh7th/nvim-cmp",
-		event = "InsertEnter",
+		event = { "InsertEnter", "CmdlineEnter" },
 		dependencies = {
 			-- TODO: 要精査
 			"hrsh7th/cmp-nvim-lsp", --LSPを補完ソースに
@@ -95,6 +95,7 @@ return {
 			"hrsh7th/vim-vsnip", --スニペットエンジン
 			-- 'hrsh7th/cmp-vsnip', --スニペットを補完ソースに
 			"onsails/lspkind.nvim", --補完欄にアイコンを表示
+			"zbirenbaum/copilot-cmp", --copilotを補完ソースに
 		},
 		config = function()
 			require("my/plugins/nvim-cmp")
