@@ -290,6 +290,13 @@ return {
 			require("my/plugins/neogit")
 		end,
 	},
+	{
+		"numToStr/Comment.nvim",
+		lazy = false,
+		config = function()
+			require("my/plugins/comment")
+		end,
+	},
 }
 
 -- 気になっているmodule
