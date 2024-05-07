@@ -39,8 +39,14 @@ function find_docker_compose
 	find (git rev-parse --show-toplevel) \( -path '*/etc/docker/*' -o -path '*/docker/*' \) \( -name 'docker-compose.yml' -o -name 'compose.yaml' \) -print
 end
 abbr --add cpe 'COMPOSE_PROFILES='
+abbr --add ld lazydocker
 # ------------- }}}
 
+# ------------- font color setting {{{
+# https://fishshell.com/docs/current/cmds/set_color.html
+# https://reiichii.hateblo.jp/entry/2022/01/05/194823
+set -U black brblack # 背景色と同化して読めないため
+# ------------- }}}
 
 # ------------- etc setting {{{
 set PSQL_EDITOR 'nvim'
