@@ -4,5 +4,6 @@
 return {
 	require("my/commands/open-git"),
 	require("my/commands/temporary-work"),
+	require("my/commands/cd"),
 }
 -- }}} -------------------------------
