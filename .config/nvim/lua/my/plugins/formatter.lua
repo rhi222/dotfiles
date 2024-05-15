@@ -16,6 +16,9 @@ require("formatter").setup({
 		json = {
 			require("formatter.filetypes.json").prettier,
 		},
+		json5 = {
+			require("formatter.filetypes.json").prettier,
+		},
 		python = {
 			require("formatter.filetypes.python").black,
 		},
