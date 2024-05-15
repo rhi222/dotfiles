@@ -297,20 +297,32 @@ return {
 			require("my/plugins/comment")
 		end,
 	},
+	{
+		"kevinhwang91/nvim-ufo",
+		lazy = false,
+		dependencies = {
+			"kevinhwang91/promise-async",
+		},
+		config = function()
+			require("my/plugins/nvim-ufo")
+		end,
+	},
+	{
+		"folke/todo-comments.nvim",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		config = function()
+			require("my/plugins/todo-comments")
+		end,
+	},
 }
 
 -- 気になっているmodule
+-- from: https://github.com/yutkat/my-neovim-pluginlist
 -- https://github.com/sindrets/diffview.nvim
 -- https://github.com/kevinhwang91/nvim-bqf
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 -- https://github.com/pwntester/octo.nvim
---
--- from: https://github.com/yutkat/my-neovim-pluginlist
 -- https://github.com/kevinhwang91/nvim-ufo
--- https://github.com/numToStr/Comment.nvim
--- https://github.com/folke/todo-comments.nvim
 -- https://github.com/stevearc/conform.nvim
 -- https://github.com/mfussenegger/nvim-dap
--- https://github.com/kevinhwang91/nvim-bqf
 -- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
--- https://github.com/zbirenbaum/copilot-cmp
