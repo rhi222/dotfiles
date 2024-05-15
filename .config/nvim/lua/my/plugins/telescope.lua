@@ -20,6 +20,7 @@ table.insert(vimgrep_arguments, "!**/.git/*")
 -- https://github.com/nvim-telescope/telescope-file-browser.nvim/issues/103
 local actions = require("telescope.actions")
 local fb_actions = require("telescope").extensions.file_browser.actions
+
 -- config recipe
 -- https://github.com/nvim-telescope/telescope.nvim/wiki/Configuration-Recipes
 require("telescope").setup({
