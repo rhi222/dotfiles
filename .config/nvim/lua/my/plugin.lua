@@ -318,11 +318,9 @@ return {
 
 -- 気になっているmodule
 -- from: https://github.com/yutkat/my-neovim-pluginlist
--- https://github.com/sindrets/diffview.nvim
--- https://github.com/kevinhwang91/nvim-bqf
--- https://github.com/fdschmidt93/telescope-egrepify.nvim
--- https://github.com/pwntester/octo.nvim
--- https://github.com/kevinhwang91/nvim-ufo
--- https://github.com/stevearc/conform.nvim
--- https://github.com/mfussenegger/nvim-dap
 -- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
+-- https://github.com/fdschmidt93/telescope-egrepify.nvim
+-- https://github.com/kevinhwang91/nvim-bqf
+-- https://github.com/mfussenegger/nvim-dap
+-- https://github.com/pwntester/octo.nvim
+-- https://github.com/stevearc/conform.nvim
