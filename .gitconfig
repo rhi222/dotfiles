@@ -36,3 +36,7 @@
 	conflictstyle = diff3
 [diff]
 	colorMoved = default
+[status]
+	showUntrackedFiles = normal
+[init]
+	defaultBranch = main
