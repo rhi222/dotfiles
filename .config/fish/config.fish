@@ -33,10 +33,14 @@ abbr --add dcd 'docker compose -f (find_docker_compose) down'
 abbr --add dcu 'docker compose -f (find_docker_compose) up --build'
 function find_docker_compose
 	# レポジトリごとの差異をfindで頑張って吸収
+	# - compose.yaml
 	# - docker/docker-compose.yml
-	# - docker/compose.yaml
+	# - docker/compose.yam
 	# - etc/docker/docker-compose.yml
-	find (git rev-parse --show-toplevel) \( -path '*/etc/docker/*' -o -path '*/docker/*' \) \( -name 'docker-compose.yml' -o -name 'compose.yaml' \) -print
+	find $(git rev-parse --show-toplevel) \
+\( -path '*/etc/docker/docker-compose.yml' -o -path '*/docker/docker-compose.yml' -o -path '*/docker/compose.yaml' -o -path '*/compose.yaml' \) \
+-name 'docker-compose.yml' -o -name 'compose.yaml' \
+	-print
 end
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
