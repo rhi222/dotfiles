@@ -37,10 +37,14 @@ function find_docker_compose
 	# - docker/docker-compose.yml
 	# - docker/compose.yam
 	# - etc/docker/docker-compose.yml
+	# 指定したパターンに一致するファイルを検索
 	find $(git rev-parse --show-toplevel) \
-\( -path '*/etc/docker/docker-compose.yml' -o -path '*/docker/docker-compose.yml' -o -path '*/docker/compose.yaml' -o -path '*/compose.yaml' \) \
--name 'docker-compose.yml' -o -name 'compose.yaml' \
-	-print
+		\( \
+			\( -path '*/etc/docker/docker-compose.yml' -o -path '*/docker/docker-compose.yml' -o -path '*/docker/compose.yaml' -o -path '*/compose.yaml' \) \
+			-and \
+			\( -name 'docker-compose.yml' -o -name 'compose.yaml' \) \
+		\) \
+		-print
 end
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
