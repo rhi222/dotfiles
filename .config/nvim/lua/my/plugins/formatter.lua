@@ -20,7 +20,7 @@ require("formatter").setup({
 			require("formatter.filetypes.json").prettier,
 		},
 		python = {
-			require("formatter.filetypes.python").black,
+			require("formatter.filetypes.python").ruff,
 		},
 		lua = {
 			require("formatter.filetypes.lua").stylua,
