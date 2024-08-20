@@ -2,6 +2,7 @@
 vim.filetype.add({
 	pattern = {
 		[".*sqltmpl"] = "sql",
+		[".env.*"] = "sh",
 	},
 })
 
