@@ -4,6 +4,7 @@ require("copilot").setup({
 	filetypes = {
 		javascript = true, -- allow specific filetype
 		typescript = true, -- allow specific filetype
+		python = true, -- allow specific filetype
 		markdown = true,
 		lua = true,
 		sh = function()
