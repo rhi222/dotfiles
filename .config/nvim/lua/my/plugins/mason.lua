@@ -54,7 +54,7 @@ require("mason-lspconfig").setup({
 		"ruff-lsp",
 		"sqlls",
 		"tailwindcss",
-		"tsserver",
+		"ts_ls",
 		"yamlls",
 	},
 	handlers = handlers,
