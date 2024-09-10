@@ -22,7 +22,6 @@ return {
 		dependencies = {
 			"nvim-treesitter/playground",
 		},
-		tag = "v0.9.2",
 	},
 	-- colorscheme
 	{
@@ -220,11 +219,9 @@ return {
 	},
 	{
 		"rest-nvim/rest.nvim",
-		dependencies = { { "nvim-lua/plenary.nvim" } },
 		ft = "http",
-		tag = "v1.2.1", -- 2024/03/23 の最新はv2.0.1だがエラーが出るため、様子見
 		config = function()
-			require("my/plugins/rest-nvim")
+			require("my/plugins/_rest-nvim")
 		end,
 	},
 	-- markdown preview
