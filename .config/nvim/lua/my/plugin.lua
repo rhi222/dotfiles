@@ -188,6 +188,9 @@ return {
 	},
 	{
 		"kevinhwang91/nvim-hlslens",
+		config = function()
+			require("my/plugins/nvim-hlslens")
+		end,
 	},
 	{
 		"t9md/vim-quickhl",
