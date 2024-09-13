@@ -99,3 +99,13 @@ vim.api.nvim_create_autocmd("FileType", {
 		my_filetype[args.match]()
 	end,
 })
+
+
+-- rese.nvimのformat
+-- https://github.com/rest-nvim/rest.nvim/issues/414#issuecomment-2308721227
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "json",
+    callback = function(ev)
+        vim.bo[ev.buf].formatprg = "jq"
+    end,
+})
