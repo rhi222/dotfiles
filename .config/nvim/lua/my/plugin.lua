@@ -163,6 +163,9 @@ return {
 			{
 				"nvim-telescope/telescope-file-browser.nvim",
 			},
+			{
+				"fdschmidt93/telescope-egrepify.nvim",
+			},
 		},
 		config = function()
 			require("my/plugins/telescope")
