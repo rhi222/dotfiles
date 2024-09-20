@@ -110,7 +110,7 @@ return {
 				dependencies = {
 					-- Useful status updates for LSP
 					-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-					{ "j-hui/fidget.nvim", tag = "legacy", opts = {} },
+					{ "j-hui/fidget.nvim", tag = "v1.4.5", opts = {} },
 					-- Additional lua configuration, makes nvim stuff amazing!
 					{ "folke/neodev.nvim", opts = {} },
 				},
@@ -177,7 +177,6 @@ return {
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		config = function()
 			require("my/plugins/fzf-lua")
-			-- calling `setup` is optional for customization
 		end,
 	},
 	-- other
