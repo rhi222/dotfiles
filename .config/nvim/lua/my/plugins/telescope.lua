@@ -95,3 +95,6 @@ vim.keymap.set(
 	":Telescope file_browser path=%:p:h select_buffer=true hidden=true<CR>",
 	{ noremap = true }
 )
+
+-- https://github.com/fdschmidt93/telescope-egrepify.nvim
+pcall(require("telescope").load_extension, "egrepify")
