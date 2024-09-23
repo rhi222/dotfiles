@@ -32,7 +32,7 @@ require("telescope").setup({
 				["q"] = actions.close,
 			},
 		},
-		layout_strategy = "horizontal", -- horizontal, center, vertical, flex, cursor
+		layout_strategy = "cursor", -- horizontal, center, vertical, flex, cursor
 		layout_config = {
 			vertical = {
 				width = 0.8,
@@ -41,7 +41,14 @@ require("telescope").setup({
 			center = {
 				height = 0.8,
 			},
-			-- other layout configuration here
+			horizontal = {
+				preview_width = 0.55,
+			},
+			cursor = {
+				width = 0.8,
+				height = 0.8,
+				preview_width = 0.55,
+			},
 		},
 		cache_picker = {
 			num_pickers = 10,
@@ -92,7 +99,7 @@ require("telescope").load_extension("file_browser")
 vim.keymap.set(
 	"n",
 	"<space>f",
-	":Telescope file_browser path=%:p:h select_buffer=true hidden=true<CR>",
+	":Telescope file_browser path=%:p:h select_buffer=true hidden=true layout_strategy=center<CR>",
 	{ noremap = true }
 )
 
