@@ -283,6 +283,9 @@ return {
 			"sindrets/diffview.nvim", -- optional - Diff integration
 			"nvim-telescope/telescope.nvim", -- optional
 		},
+		keys = {
+			{ "<leader>g", "<cmd>lua require('neogit').open()<CR>", mode = "n", desc = "neogit", noremap = true },
+		},
 		config = function()
 			require("my/plugins/neogit")
 		end,
