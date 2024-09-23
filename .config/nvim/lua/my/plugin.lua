@@ -308,6 +308,10 @@ return {
 		dependencies = {
 			"kevinhwang91/promise-async",
 		},
+		keys = {
+			{ "zR", "<cmd>lua require('ufo').openAllFolds()<CR>", mode = "n", desc = "open all folds" },
+			{ "zM", "<cmd>lua require('ufo').closeAllFolds()<CR>", mode = "n", desc = "close all folds" },
+		},
 		config = function()
 			require("my/plugins/nvim-ufo")
 		end,
