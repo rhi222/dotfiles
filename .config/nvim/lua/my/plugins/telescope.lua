@@ -32,7 +32,7 @@ require("telescope").setup({
 				["q"] = actions.close,
 			},
 		},
-		layout_strategy = "center", -- horizontal, center, vertical, flex, cursor
+		layout_strategy = "horizontal", -- horizontal, center, vertical, flex, cursor
 		layout_config = {
 			vertical = {
 				width = 0.8,
