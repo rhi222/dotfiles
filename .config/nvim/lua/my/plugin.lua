@@ -175,6 +175,11 @@ return {
 		"ibhagwan/fzf-lua",
 		-- optional for icon support
 		dependencies = { "nvim-tree/nvim-web-devicons" },
+		keys = {
+			{ "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", mode = "n", silent = true },
+			-- note: telescope.builtin.find_files() is not working
+			{ "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
+		},
 		config = function()
 			require("my/plugins/fzf-lua")
 		end,
