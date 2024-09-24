@@ -95,13 +95,6 @@ pcall(require("telescope").load_extension, "fzf")
 
 -- https://github.com/nvim-telescope/telescope-file-browser.nvim
 require("telescope").load_extension("file_browser")
--- open file_browser with the path of the current buffer
-vim.keymap.set(
-	"n",
-	"<space>f",
-	":Telescope file_browser path=%:p:h select_buffer=true hidden=true layout_strategy=center<CR>",
-	{ noremap = true }
-)
 
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 pcall(require("telescope").load_extension, "egrepify")
