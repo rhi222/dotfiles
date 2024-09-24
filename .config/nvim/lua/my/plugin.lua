@@ -212,6 +212,15 @@ return {
 	},
 	{
 		"t9md/vim-quickhl",
+		keys = {
+			{
+				"<leader>m",
+				"<Plug>(quickhl-manual-this)",
+				mode = "n",
+				desc = "highlight",
+				noremap = true,
+			},
+		},
 		config = function()
 			require("my/plugins/vim-quickhl")
 		end,
@@ -219,6 +228,9 @@ return {
 	{
 		"phaazon/hop.nvim",
 		branch = "v2",
+		keys = {
+			{ "<leader>j", ":HopWord<CR>", mode = "n", desc = "hop word", noremap = true },
+		},
 		config = function()
 			require("my/plugins/hop")
 		end,
