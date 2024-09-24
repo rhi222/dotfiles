@@ -73,6 +73,11 @@ require("telescope").setup({
 			case_mode = "smart_case", -- or "ignore_case" or "respect_case"
 		},
 		file_browser = {
+			select_buffer = true,
+			path = vim.loop.cwd(),
+			cwd = vim.loop.cwd(),
+			cwd_to_path = true,
+			no_ignore = true,
 			hijack_netrw = true,
 			-- theme = "ivy", -- ivy, dropdown, cursor
 			initial_mode = "normal",
