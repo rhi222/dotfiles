@@ -10,6 +10,7 @@ return {
 	{
 		"lukas-reineke/indent-blankline.nvim",
 		main = "ibl",
+		event = "VeryLazy",
 		config = function()
 			require("my/plugins/indent-blankline")
 		end,
@@ -165,6 +166,16 @@ return {
 			},
 			{
 				"fdschmidt93/telescope-egrepify.nvim",
+			},
+		},
+		keys = {
+			-- open file_browser with the path of the current buffer
+			{
+				"<space>f",
+				":Telescope file_browser path=%:p:h select_buffer=true hidden=true layout_strategy=center<CR>",
+				mode = "n",
+				silent = true,
+				noremap = true,
 			},
 		},
 		config = function()
