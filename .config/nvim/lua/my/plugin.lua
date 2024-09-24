@@ -206,6 +206,7 @@ return {
 	},
 	{
 		"kevinhwang91/nvim-hlslens",
+		event = "VeryLazy",
 		config = function()
 			require("my/plugins/nvim-hlslens")
 		end,
@@ -327,7 +328,7 @@ return {
 	},
 	{
 		"kevinhwang91/nvim-ufo",
-		lazy = false,
+		event = "BufRead",
 		dependencies = {
 			"kevinhwang91/promise-async",
 		},
