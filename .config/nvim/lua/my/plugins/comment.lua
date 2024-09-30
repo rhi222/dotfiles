@@ -1,5 +1,5 @@
 require("Comment").setup({
-	-- keymapの美貌のため、defaultの設定を明記
+	-- keymapの備忘のため、defaultの設定を明記
 	---LHS of operator-pending mappings in NORMAL and VISUAL mode
 	opleader = {
 		---Line-comment keymap
