@@ -1,5 +1,7 @@
 -- TODO: https://github.com/skanehira/dotfiles/blob/master/vim/lua/my/plugins/list.lua を参考にファイル分割したい
--- NOTE: https://github.com/yutkat/my-neovim-pluginlist
+-- NOTE: eventのdocument
+-- nvim events: https://gist.github.com/dtr2300/2f867c2b6c051e946ef23f92bd9d1180
+-- lazy.nvim events: https://github.com/folke/lazy.nvim/blob/main/doc/lazy.nvim.txt#L1050-L1070
 return {
 	{
 		"nvim-lualine/lualine.nvim",
@@ -229,7 +231,7 @@ return {
 				"<leader>m",
 				"<Plug>(quickhl-manual-this)",
 				mode = "n",
-				desc = "highlight",
+				desc = "quickhl manual this",
 				noremap = true,
 			},
 		},
@@ -254,9 +256,7 @@ return {
 	},
 	{
 		"folke/which-key.nvim",
-		cmd = {
-			"WhichKey",
-		},
+		event = "VeryLazy",
 		init = function()
 			vim.o.timeout = true
 			vim.o.timeoutlen = 300
@@ -360,7 +360,9 @@ return {
 	},
 }
 
--- 気になっているmodule
+-- NOTE: plugin一覧
+-- https://github.com/yutkat/my-neovim-pluginlist
+-- NOTE: 気になっているmodule
 -- from: https://github.com/yutkat/my-neovim-pluginlist
 -- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
