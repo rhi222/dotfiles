@@ -102,35 +102,45 @@ return {
 		end,
 	},
 	-- LSP
+-- mason -> mason-lspconfig -> lspconfigの順番で設定が必要
+-- https://github.com/williamboman/mason-lspconfig.nvim#setup
 	{
 		"williamboman/mason.nvim",
-		dependencies = {
-			"williamboman/mason-lspconfig",
-			{
-				"neovim/nvim-lspconfig",
-				dependencies = {
-					-- Useful status updates for LSP
-					-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-					{ "j-hui/fidget.nvim", tag = "v1.4.5", opts = {} },
-					-- Additional lua configuration, makes nvim stuff amazing!
-					{ "folke/neodev.nvim", opts = {} },
-				},
-				config = function()
-					require("my/plugins/nvim-lspconfig")
-				end,
-			},
+		cmd = {
+			"Mason",
+			"MasonInstall",
+			"MasonUninstall",
+			"MasonUninstallAll",
+			"MasonLog",
+			"MasonUpdate",
 		},
-		-- lspの設定もここで実施しているのでlazyloadしない
-		-- cmd = {
-		-- 	"Mason",
-		-- 	"MasonInstall",
-		-- 	"MasonUninstall",
-		-- 	"MasonUninstallAll",
-		-- 	"MasonLog",
-		-- 	"MasonUpdate",
-		-- },
 		config = function()
 			require("my/plugins/mason")
+		end,
+	},
+	{
+		"williamboman/mason-lspconfig.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = {
+			"williamboman/mason.nvim",
+			"neovim/nvim-lspconfig",
+		},
+		config = function()
+			require("my/plugins/mason-lspconfig")
+		end,
+	},
+	{
+		"neovim/nvim-lspconfig",
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = {
+			-- Useful status updates for LSP
+			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
+			{ "j-hui/fidget.nvim", tag = "v1.4.5", opts = {} },
+			-- Additional lua configuration, makes nvim stuff amazing!
+			{ "folke/neodev.nvim", opts = {} },
+		},
+		config = function()
+			require("my/plugins/nvim-lspconfig")
 		end,
 	},
 	{
