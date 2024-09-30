@@ -102,8 +102,8 @@ return {
 		end,
 	},
 	-- LSP
--- mason -> mason-lspconfig -> lspconfigの順番で設定が必要
--- https://github.com/williamboman/mason-lspconfig.nvim#setup
+	-- mason -> mason-lspconfig -> lspconfigの順番で設定が必要
+	-- https://github.com/williamboman/mason-lspconfig.nvim#setup
 	{
 		"williamboman/mason.nvim",
 		cmd = {
