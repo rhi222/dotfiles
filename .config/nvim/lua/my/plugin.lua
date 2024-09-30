@@ -17,6 +17,7 @@ return {
 	},
 	{
 		"nvim-treesitter/nvim-treesitter",
+		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			require("my/plugins/nvim-treesitter")
 		end,
