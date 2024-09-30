@@ -101,7 +101,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 
--- rese.nvimのformat
+-- rest.nvimのformat
 -- https://github.com/rest-nvim/rest.nvim/issues/414#issuecomment-2308721227
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "json",
