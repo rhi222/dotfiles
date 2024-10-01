@@ -350,13 +350,14 @@ return {
 	},
 	{
 		"numToStr/Comment.nvim",
-		lazy = false,
+		event = "BufRead",
 		config = function()
 			require("my/plugins/comment")
 		end,
 	},
 	{
 		"folke/todo-comments.nvim",
+		event = "BufRead",
 		dependencies = { "nvim-lua/plenary.nvim" },
 		config = function()
 			require("my/plugins/todo-comments")
