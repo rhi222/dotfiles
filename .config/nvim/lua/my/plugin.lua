@@ -187,7 +187,7 @@ return {
 			-- open file_browser with the path of the current buffer
 			{
 				"<space>f",
-				":Telescope file_browser layout_strategy=center<CR>",
+				":Telescope file_browser layout_strategy=center path=%:p:h select_buffer=true<CR>",
 				mode = "n",
 				silent = true,
 				noremap = true,
