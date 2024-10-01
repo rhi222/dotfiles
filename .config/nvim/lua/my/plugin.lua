@@ -208,15 +208,31 @@ return {
 			require("my/plugins/fzf-lua")
 		end,
 	},
-	-- other
+	-- git
 	{
-		"windwp/nvim-autopairs",
-		event = "InsertEnter",
-		opts = {}, -- this is equalent to setup({}) function
+		"lewis6991/gitsigns.nvim",
+		config = function()
+			require("my/plugins/gitsigns")
+		end,
+	},
+	{
+		"NeogitOrg/neogit",
+		dependencies = {
+			"nvim-lua/plenary.nvim", -- required
+			"sindrets/diffview.nvim", -- optional - Diff integration
+			"nvim-telescope/telescope.nvim", -- optional
+		},
+		keys = {
+			{ "<leader>g", "<cmd>lua require('neogit').open()<CR>", mode = "n", desc = "neogit", noremap = true },
+		},
+		config = function()
+			require("my/plugins/neogit")
+		end,
 	},
 	{
 		"nvim-tree/nvim-web-devicons",
 	},
+	-- highlight
 	{
 		"kevinhwang91/nvim-hlslens",
 		event = "VeryLazy",
@@ -239,6 +255,7 @@ return {
 			require("my/plugins/vim-quickhl")
 		end,
 	},
+	-- easymotion
 	{
 		"phaazon/hop.nvim",
 		branch = "v2",
@@ -249,19 +266,7 @@ return {
 			require("my/plugins/hop")
 		end,
 	},
-	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
-	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
-	{
-		"tpope/vim-sleuth",
-	},
-	{
-		"folke/which-key.nvim",
-		event = "VeryLazy",
-		init = function()
-			vim.o.timeout = true
-			vim.o.timeoutlen = 300
-		end,
-	},
+	-- http client
 	{
 		"rest-nvim/rest.nvim",
 		ft = "http",
@@ -309,33 +314,23 @@ return {
 			"RainbowMultiDelim",
 		},
 	},
-	-- git
+	-- other
+	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
+	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
 	{
-		"lewis6991/gitsigns.nvim",
-		config = function()
-			require("my/plugins/gitsigns")
-		end,
+		"tpope/vim-sleuth",
 	},
 	{
-		"NeogitOrg/neogit",
+		"folke/which-key.nvim",
+		event = "VeryLazy",
 		dependencies = {
-			"nvim-lua/plenary.nvim", -- required
-			"sindrets/diffview.nvim", -- optional - Diff integration
-			"nvim-telescope/telescope.nvim", -- optional
+			"nvim-tree/nvim-web-devicons",
 		},
-		keys = {
-			{ "<leader>g", "<cmd>lua require('neogit').open()<CR>", mode = "n", desc = "neogit", noremap = true },
-		},
-		config = function()
-			require("my/plugins/neogit")
-		end,
 	},
 	{
-		"numToStr/Comment.nvim",
-		lazy = false,
-		config = function()
-			require("my/plugins/comment")
-		end,
+		"windwp/nvim-autopairs",
+		event = "InsertEnter",
+		opts = {}, -- this is equalent to setup({}) function
 	},
 	{
 		"kevinhwang91/nvim-ufo",
@@ -349,6 +344,13 @@ return {
 		},
 		config = function()
 			require("my/plugins/nvim-ufo")
+		end,
+	},
+	{
+		"numToStr/Comment.nvim",
+		lazy = false,
+		config = function()
+			require("my/plugins/comment")
 		end,
 	},
 	{
