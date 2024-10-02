@@ -2,6 +2,11 @@
 -- NOTE: eventのdocument
 -- nvim events: https://gist.github.com/dtr2300/2f867c2b6c051e946ef23f92bd9d1180
 -- lazy.nvim events: https://github.com/folke/lazy.nvim/blob/main/doc/lazy.nvim.txt#L1050-L1070
+-- NOTE: vimのmode: 
+-- https://neovim.io/doc/user/intro.html#_modes,-introduction
+-- `:help map-table`で確認可能
+-- NOTE: keysのdocument
+-- https://github.com/folke/lazy.nvim/blob/main/doc/lazy.nvim.txt#L519-L568
 return {
 	{
 		"nvim-lualine/lualine.nvim",
@@ -267,6 +272,19 @@ return {
 		config = function()
 			require("my/plugins/hop")
 		end,
+	},
+	{
+		"folke/flash.nvim",
+		event = "VeryLazy",
+		opts = {},
+		-- stylua: ignore
+		keys = {
+			{ "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+			{ "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+			{ "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
+			{ "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
+			{ "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
+		},
 	},
 	-- http client
 	{
