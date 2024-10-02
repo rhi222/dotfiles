@@ -390,11 +390,3 @@ return {
 
 -- NOTE: plugin一覧
 -- https://github.com/yutkat/my-neovim-pluginlist
--- NOTE: 気になっているmodule
--- from: https://github.com/yutkat/my-neovim-pluginlist
--- https://github.com/ThePrimeagen/harpoon/tree/harpoon2
--- https://github.com/fdschmidt93/telescope-egrepify.nvim
--- https://github.com/kevinhwang91/nvim-bqf
--- https://github.com/mfussenegger/nvim-dap
--- https://github.com/pwntester/octo.nvim
--- https://github.com/stevearc/conform.nvim
