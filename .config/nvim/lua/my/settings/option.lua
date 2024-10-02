@@ -46,3 +46,5 @@ if vim.fn.has("wsl") then
 		cache_enable = 0,
 	}
 end
+-- TrueColor対応
+vim.opt.termguicolors =true
