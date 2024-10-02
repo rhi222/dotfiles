@@ -7,6 +7,11 @@
 -- `:help map-table`で確認可能
 -- NOTE: keysのdocument
 -- https://github.com/folke/lazy.nvim/blob/main/doc/lazy.nvim.txt#L519-L568
+-- FIXME: key map再考
+-- https://zenn.dev/vim_jp/articles/2023-05-19-vim-keybind-philosophy
+-- https://zenn.dev/nil2/articles/802f115673b9ba
+-- https://maku77.github.io/vim/keymap/current-map.html
+-- https://stackoverflow.com/questions/2239226/saving-output-of-map-in-vim
 return {
 	{
 		"nvim-lualine/lualine.nvim",
