@@ -2,7 +2,7 @@
 -- NOTE: eventのdocument
 -- nvim events: https://gist.github.com/dtr2300/2f867c2b6c051e946ef23f92bd9d1180
 -- lazy.nvim events: https://github.com/folke/lazy.nvim/blob/main/doc/lazy.nvim.txt#L1050-L1070
--- NOTE: vimのmode: 
+-- NOTE: vimのmode:
 -- https://neovim.io/doc/user/intro.html#_modes,-introduction
 -- `:help map-table`で確認可能
 -- NOTE: keysのdocument
