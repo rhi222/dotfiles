@@ -109,6 +109,10 @@ set NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
 fish_add_path $BUN_INSTALL/bin
+
+# Rye
+# https://github.com/astral-sh/rye
+set -Ua fish_user_paths "$HOME/.rye/shims"
 # ------------- }}}
 
 
