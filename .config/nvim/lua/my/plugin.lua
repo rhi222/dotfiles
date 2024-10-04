@@ -295,6 +295,7 @@ return {
 	{
 		"rest-nvim/rest.nvim",
 		ft = "http",
+		tag = "v3.8.2",
 		config = function()
 			require("my/plugins/_rest-nvim")
 		end,
