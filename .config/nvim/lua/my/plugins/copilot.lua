@@ -2,11 +2,14 @@
 require("copilot").setup({
 	enabled = true,
 	filetypes = {
-		javascript = true, -- allow specific filetype
-		typescript = true, -- allow specific filetype
-		python = true, -- allow specific filetype
+		-- allow specific filetype
+		javascript = true,
+		typescript = true,
+		python = true,
 		markdown = true,
 		lua = true,
+		sql = true,
+		txt = true,
 		sh = function()
 			if string.match(vim.fs.basename(vim.api.nvim_buf_get_name(0)), "^%.env.*") then
 				-- disable for .env files
