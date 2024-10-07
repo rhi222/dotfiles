@@ -22,7 +22,17 @@
 36 for cyan
 37 for white
 */
-SELECT current_database() ~ '.*_(stg|dev|stga|stgb)' as is_stg
+-- SELECT current_database() ~ '.*_(stg|dev|stga|stgb)' as is_stg
+SELECT 
+    current_database() ~ '.*_(stg|dev|stga|stgb)' OR (
+        (SELECT 
+            CASE
+                WHEN u.usename ~ 'wbcdev' AND current_database() ~ 'wbc_booking_record' THEN true
+                ELSE false
+            END
+         FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
+        )
+    ) AS is_stg
 \gset
 SELECT current_database() ~ '.*_prod' as is_prod
 \gset
