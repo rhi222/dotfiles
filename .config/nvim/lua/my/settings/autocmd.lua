@@ -100,12 +100,24 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+-- nvim-treesitterによるfolding
+vim.api.nvim_create_autocmd({ "FileType" }, {
+	callback = function()
+		if require("nvim-treesitter.parsers").has_parser() then
+			vim.opt.foldmethod = "expr"
+			vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+		else
+			vim.opt.foldmethod = "syntax"
+		end
+	end,
+})
+vim.o.foldenable = false -- Disable folding at default
 
 -- rest.nvimのformat
 -- https://github.com/rest-nvim/rest.nvim/issues/414#issuecomment-2308721227
 vim.api.nvim_create_autocmd("FileType", {
-    pattern = "json",
-    callback = function(ev)
-        vim.bo[ev.buf].formatprg = "jq"
-    end,
+	pattern = "json",
+	callback = function(ev)
+		vim.bo[ev.buf].formatprg = "jq"
+	end,
 })
