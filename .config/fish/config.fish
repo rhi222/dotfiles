@@ -62,6 +62,23 @@ set PSQL_EDITOR 'nvim'
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 # ------------- }}}
 
+# ------------- ssh agent setting {{{
+# git 操作時に毎回鍵のパスワード入力がめんどくさすぎた
+set -Ux SSH_AGENT_INFO_FILE ~/.ssh-agent-info
+if test -f ~/.ssh/github_rhi222
+	# エージェント情報を読み込む
+	if test -f $SSH_AGENT_INFO_FILE
+		source $SSH_AGENT_INFO_FILE > /dev/null
+	end
+	
+	# SSHエージェントが起動していない場合にのみ新しく起動
+	if not set -q SSH_AUTH_SOCK
+		eval (ssh-agent -c | tee $SSH_AGENT_INFO_FILE | source > /dev/null)
+		ssh-add ~/.ssh/github_rhi222 > /dev/null
+	end
+end
+# ------------- }}}
+
 
 # ------------- path setting {{{
 # path設定はfish_add_pathを利用
