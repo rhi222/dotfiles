@@ -358,6 +358,9 @@ return {
 		event = "InsertEnter",
 		opts = {}, -- this is equalent to setup({}) function
 	},
+	-- NOTE: folodingをnvim-ufo -> nvim-treesitterに変えてみる
+	-- - ufoの誤作動がきになる
+	-- - nvim-treesitterで十分な機能に見え、ufoをinstallしなくてよさそう
 	-- {
 	-- 	"kevinhwang91/nvim-ufo",
 	-- 	dependencies = {
