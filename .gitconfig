@@ -10,6 +10,7 @@
 	# ch  = checkout
 	ch  = !echo "Use git switch/restore instead!"
 	sw = switch
+	fsw = !git branch -a | fzf | xargs git switch
 	co  = commit
 	me  = merge
 	re  = rebase
@@ -20,6 +21,7 @@
 	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
 	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
+	current-hash="show --format='%H' --no-patch"
 [ghq]
 	root = /data/git-repos
 [credential]
