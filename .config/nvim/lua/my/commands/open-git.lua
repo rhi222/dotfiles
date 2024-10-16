@@ -54,6 +54,17 @@ local function getCurrentLineRange(mode)
 	return nil, nil
 end
 
+-- URLエンコード関数（スラッシュは対象外）
+local function urlencode(str)
+	if str then
+		str = string.gsub(str, "\n", "\r\n")
+		str = string.gsub(str, "([^%w%-%.%_%~%/])", function(c)
+			return string.format("%%%02X", string.byte(c))
+		end)
+	end
+	return str
+end
+
 -- Generates a URL to the file in the Git hosting service.
 local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
 	local base_url = (repo_type == RepositoryType.GITLAB and "http://" or "https://") .. repo_url
@@ -66,7 +77,8 @@ local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, e
 			.. (repo_type == RepositoryType.GITLAB and "-" or (repo_type == RepositoryType.GITHUB and "-L" or ":"))
 			.. end_line
 	end
-	return base_url .. path .. line_ref
+	local encoded_path = urlencode(path)
+	return base_url .. encoded_path .. line_ref
 end
 
 -- Main function to handle the open URL command.
