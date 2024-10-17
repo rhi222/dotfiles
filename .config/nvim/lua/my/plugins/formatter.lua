@@ -34,6 +34,25 @@ require("formatter").setup({
 		html = {
 			require("formatter.filetypes.html").prettier,
 		},
+		sql = {
+			-- https://github.com/mhartington/formatter.nvim/blob/master/lua/formatter/filetypes/sql.lua
+			-- require("formatter.filetypes.sql").sqlfluff(),
+			-- 本体の実装だと、--dialectの指定ができないのでoverwridte
+			function()
+				return {
+					exe = "sqlfluff",
+					args = {
+						"format",
+						"--dialect postgres",
+						"--disable-progress-bar",
+						"--nocolor",
+						"-",
+					},
+					stdin = true,
+					ignore_exitcode = false,
+				}
+			end,
+		},
 		-- Use the special '*' filetype for defining formatter configurations on any filetype
 		["*"] = {
 			require("formatter.filetypes.any").remove_trailing_whitespace,
