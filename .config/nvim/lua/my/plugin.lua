@@ -299,6 +299,9 @@ return {
 		config = function()
 			require("my/plugins/_rest-nvim")
 		end,
+		keys = {
+			{ "<C-e>", "<cmd>Rest run<CR>", mode = "n", desc = "Run rest command" },
+		},
 	},
 	-- markdown preview
 	{
