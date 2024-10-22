@@ -7,4 +7,3 @@ vim.g.rest_nvim = {
 		skip_ssl_verification = true,
 	},
 }
-vim.keymap.set("n", "<C-e>", "<cmd>Rest run<CR>", { desc = "Run rest command" })
