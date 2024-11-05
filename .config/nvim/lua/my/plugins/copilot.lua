@@ -1,6 +1,5 @@
 -- https://github.com/zbirenbaum/copilot.lua
 require("copilot").setup({
-	enabled = true,
 	filetypes = {
 		-- allow specific filetype
 		javascript = true,
@@ -20,6 +19,7 @@ require("copilot").setup({
 		["*"] = false, -- disable for all other filetypes and ignore default `filetypes`
 	},
 	suggestion = {
+		enabled = true,
 		auto_trigger = true,
 		keymap = {
 			accept = "<C-y>",
