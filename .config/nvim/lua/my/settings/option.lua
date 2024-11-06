@@ -47,4 +47,4 @@ if vim.fn.has("wsl") then
 	}
 end
 -- TrueColor対応
-vim.opt.termguicolors =true
+vim.opt.termguicolors = true
