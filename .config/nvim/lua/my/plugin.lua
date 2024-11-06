@@ -164,6 +164,7 @@ return {
 		config = function()
 			require("my/plugins/conform")
 		end,
+		event = { "BufWritePre" },
 		cmd = {
 			"ConformInfo",
 			"Format",
@@ -273,6 +274,9 @@ return {
 				desc = "quickhl manual this",
 				noremap = true,
 			},
+		},
+		cmd = {
+			"QuickhlManualAdd",
 		},
 		config = function()
 			require("my/plugins/vim-quickhl")
