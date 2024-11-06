@@ -66,7 +66,14 @@ myプレフィックスがない場合、たとえばcmp.luaという設定フ�
 - C-g
 	- fzf grep
 
-	
+### 確認したい
+- [ ] copilot chatのkeymap
+- [ ] copilotのacceptのkeymap
+- [ ] comment toggle
+- [ ] flash
+- [ ] git blame忘れちゃう
+- [ ] cmp周りの整理
+
 ## 参考
 - https://zenn.dev/vim_jp/articles/2023-05-19-vim-keybind-philosophy
 - https://zenn.dev/nil2/articles/802f115673b9ba
