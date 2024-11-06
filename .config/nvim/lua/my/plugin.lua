@@ -158,7 +158,17 @@ return {
 			require("my/plugins/nvim-lspconfig")
 		end,
 	},
+	-- formatter: star数の多いconform.nvimに移行
 	{
+		"stevearc/conform.nvim",
+		config = function()
+			require("my/plugins/conform")
+		end,
+		cmd = {
+			"Format",
+		},
+	},
+	--[[ {
 		"mhartington/formatter.nvim",
 		cmd = {
 			"Format",
@@ -169,7 +179,7 @@ return {
 		config = function()
 			require("my/plugins/formatter")
 		end,
-	},
+	}, ]]
 	-- finder
 	{
 		"nvim-telescope/telescope.nvim",
