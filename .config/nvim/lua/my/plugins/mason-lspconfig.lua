@@ -41,7 +41,7 @@ require("mason-lspconfig").setup({
 		"marksman",
 		"prismals",
 		"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
-		"ruff-lsp",
+		"ruff",
 		"sqlls",
 		"tailwindcss",
 		"ts_ls",
