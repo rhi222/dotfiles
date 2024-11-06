@@ -6,22 +6,22 @@ local formatter_js = { "biome", "prettier", stop_after_first = true }
 
 -- 現在のファイルがあるGitリポジトリのルートを取得する関数
 local function get_git_root()
-    local git_dir = vim.fn.finddir(".git", vim.fn.fnamemodify(vim.fn.expand("%:p:h"), ":h") .. ";")
-    if git_dir == "" then
-        return nil  -- `.git`ディレクトリが見つからない場合
-    else
-        return vim.fn.fnamemodify(git_dir, ":h")
-    end
+	local git_dir = vim.fn.finddir(".git", vim.fn.fnamemodify(vim.fn.expand("%:p:h"), ":h") .. ";")
+	if git_dir == "" then
+		return nil -- `.git`ディレクトリが見つからない場合
+	else
+		return vim.fn.fnamemodify(git_dir, ":h")
+	end
 end
 
 -- Gitリポジトリのルートに`biome.json`があるかを確認し、フォーマッタを設定
 local function get_js_formatter()
-    local root_dir = get_git_root()
-    if root_dir and vim.fn.filereadable(root_dir .. "/biome.json") == 1 then
-        return { "biome" }  -- `biome.json`がある場合は`biome`を使う
-    else
-        return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
-    end
+	local root_dir = get_git_root()
+	if root_dir and vim.fn.filereadable(root_dir .. "/biome.json") == 1 then
+		return { "biome" } -- `biome.json`がある場合は`biome`を使う
+	else
+		return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
+	end
 end
 
 require("conform").setup({
@@ -57,4 +57,3 @@ vim.api.nvim_create_user_command("Format", function(args)
 	end
 	require("conform").format({ async = true, lsp_format = "fallback", range = range })
 end, { range = true })
-
