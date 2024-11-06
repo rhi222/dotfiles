@@ -49,4 +49,3 @@ require("mason-lspconfig").setup({
 	},
 	handlers = handlers,
 })
-

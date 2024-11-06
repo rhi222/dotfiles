@@ -45,6 +45,6 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagn
 	},
 })
 
--- 参考記事: 
+-- 参考記事:
 -- https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
 -- https://zenn.dev/ryoppippi/articles/8aeedded34c914
