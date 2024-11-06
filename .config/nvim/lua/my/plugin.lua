@@ -165,6 +165,7 @@ return {
 			require("my/plugins/conform")
 		end,
 		cmd = {
+			"ConformInfo",
 			"Format",
 		},
 	},
