@@ -1,7 +1,7 @@
 -- https://github.com/stevearc/conform.nvim
--- Conform will run multiple formatters sequentially, run the first available formatter
 -- NOTE: 開いているバッファにどのFormatterが割り当てられているか確認するコマンド:ConformInfo
 
+-- Conform will run multiple formatters sequentially, run the first available formatter
 local formatter_js = { "biome", "prettier", stop_after_first = true }
 
 -- 現在のファイルがあるGitリポジトリのルートを取得する関数
