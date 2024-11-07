@@ -26,7 +26,7 @@ end
 
 require("conform").setup({
 	format_on_save = {
-		timeout_ms = 500,
+		timeout_ms = 5000,
 		lsp_format = "fallback",
 	},
 	formatters_by_ft = {
@@ -37,15 +37,27 @@ require("conform").setup({
 		json = { "prettier" },
 		json5 = { "prettier" },
 		lua = { "stylua" },
+		markdown = { "prettier" },
 		python = { "ruff", "black", stop_after_first = true },
 		rust = { "rustfmt", lsp_format = "fallback" },
-		sql = { "sqlfluff" },
+		sql = { "sqlfluff", "injected" },
 		typescript = get_js_formatter,
 		typescriptreact = get_js_formatter,
 		xml = { "xmlformat" },
 		-- Use the "_" filetype to run formatters on filetypes that don't
 		-- have other formatters configured.
 		["_"] = { "trim_whitespace" },
+	},
+	formatters = {
+		sqlfluff = {
+			-- note: configファイル指定
+			command = "sqlfluff",
+			args = { "format", "--dialect", "postgres", "-" },
+			stdin = true,
+			condition = function()
+				return true
+			end,
+		},
 	},
 })
 
