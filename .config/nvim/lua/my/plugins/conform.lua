@@ -44,6 +44,8 @@ require("conform").setup({
 		typescript = get_js_formatter,
 		typescriptreact = get_js_formatter,
 		xml = { "xmlformat" },
+		-- NOTE: yamlfmtを検討してもよいかも
+		yaml = { "prettier" },
 		-- Use the "_" filetype to run formatters on filetypes that don't
 		-- have other formatters configured.
 		["_"] = { "trim_whitespace" },
