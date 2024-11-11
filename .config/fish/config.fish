@@ -87,18 +87,51 @@ set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 
 # ------------- ssh agent setting {{{
 # git 操作時に毎回鍵のパスワード入力がめんどくさすぎた
+# SSH エージェント情報を保存するファイル
+# SSH エージェント情報を保存するファイル
 set -Ux SSH_AGENT_INFO_FILE ~/.ssh-agent-info
-if test -f ~/.ssh/github_rhi222
-	# エージェント情報を読み込む
-	if test -f $SSH_AGENT_INFO_FILE
-		source $SSH_AGENT_INFO_FILE > /dev/null
-	end
+set -l SSH_KEY_PATH ~/.ssh/github_rhi222
+set -l SSH_AGENT_FLAG_FILE ~/.ssh-agent-flag
 
-	# SSHエージェントが起動していない場合にのみ新しく起動
-	if not set -q SSH_AUTH_SOCK
-		eval (ssh-agent -c | tee $SSH_AGENT_INFO_FILE | source > /dev/null)
-		ssh-add ~/.ssh/github_rhi222 > /dev/null
-	end
+# GitHub 用の SSH 鍵が存在する場合のみ処理を実行
+if test -f $SSH_KEY_PATH
+    # エージェント情報を読み込み（古い情報があれば）
+    if test -f $SSH_AGENT_INFO_FILE
+        . $SSH_AGENT_INFO_FILE
+    end
+
+    # フラグファイルが存在する場合は処理をスキップ
+    if test -f $SSH_AGENT_FLAG_FILE
+        echo "SSH agent is already set up."
+        return
+    end
+
+    # SSH エージェントが無効、または鍵が追加されていない場合に処理
+    if not set -q SSH_AUTH_SOCK; or not ssh-add -l | grep -q github_rhi222
+        echo "Starting new ssh-agent..."
+
+        # 古いエージェントを停止
+        if set -q SSH_AGENT_PID
+            echo "Killing old ssh-agent (PID: $SSH_AGENT_PID)..."
+            kill $SSH_AGENT_PID
+        end
+
+        # 新しいエージェントを起動
+        eval (ssh-agent -c | tee $SSH_AGENT_INFO_FILE)
+
+        # サイレントモードで鍵を追加
+        echo "Adding SSH key..."
+        if ssh-add -q $SSH_KEY_PATH
+            echo "SSH key added successfully."
+            # フラグファイルを作成して再実行を防止
+            touch $SSH_AGENT_FLAG_FILE
+        else
+            echo "Failed to add SSH key." >&2
+            rm -f $SSH_AGENT_FLAG_FILE
+        end
+    else
+        echo "SSH key is already added."
+    end
 end
 # ------------- }}}
 
