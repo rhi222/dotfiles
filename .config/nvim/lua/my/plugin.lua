@@ -66,7 +66,7 @@ return {
 			require("my/plugins/vscode")
 		end,
 	},
-	-- copilot.lua使ってみたいが、keymapがうまく出来ずに保留
+	-- copilot: 処理が早く、最近のプラグインとの統合が容易(と言っている)ため、.vimでなく.luaを採用
 	-- {
 	-- 	"github/copilot.vim",
 	-- 	event = "InsertEnter",
