@@ -31,6 +31,7 @@ require("conform").setup({
 	},
 	formatters_by_ft = {
 		bash = { "shfmt" },
+		fish = { "fish_indent" },
 		html = { "prettier" },
 		javascript = get_js_formatter,
 		javascriptreact = get_js_formatter,
