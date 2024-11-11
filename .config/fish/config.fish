@@ -31,25 +31,15 @@ abbr --add dc docker compose
 abbr --add dcl 'docker compose -f (find_docker_compose) logs -f --tail=500 # show current repository docker compose log'
 abbr --add dcd 'docker compose -f (find_docker_compose) down'
 abbr --add dcu 'docker compose -f (find_docker_compose) up --build'
-# function find_docker_compose
-# 	# レポジトリごとの差異をfindで頑張って吸収
-# 	# - compose.yaml
-# 	# - docker/docker-compose.yml
-# 	# - docker/compose.yaml
-# 	# - etc/docker/docker-compose.yml
-# 	# - docker-compose/docker-compose.yml
-# 	# 指定したパターンに一致するファイルを検索
-# 	find $(git rev-parse --show-toplevel) \
-# 		\( \
-# 			\( -path '*/etc/docker/docker-compose.yml' -o -path '*/docker/docker-compose.yml' -o -path '*/docker/compose.yaml' -o -path '*/compose.yaml' -o -path '*/docker-compose/docker-compose.yml' \) \
-# 			-and \
-# 			\( -name 'docker-compose.yml' -o -name 'compose.yaml' \) \
-# 		\) \
-# 		-print
-# end
-
 function find_docker_compose
+	# Git リポジトリのルートディレクトリを取得
 	set search_dir (git rev-parse --show-toplevel)
+
+	# Git リポジトリ外の場合のエラーメッセージ
+	if test -z "$search_dir"
+		echo "Error: Not inside a Git repository." >&2
+		return 1
+	end
 
 	# Docker Compose ファイルの候補リスト
 	set patterns \
@@ -60,14 +50,24 @@ function find_docker_compose
 		'*/docker-compose/docker-compose.*'
 
 	# パターンに一致するファイルを検索 (yml または yaml)
-	find $search_dir -type f \( \
+	set result (find $search_dir -type f \( \
 		-path $patterns[1] -o \
 		-path $patterns[2] -o \
 		-path $patterns[3] -o \
 		-path $patterns[4] -o \
 		-path $patterns[5] \
-	\) \( -name '*.yml' -o -name '*.yaml' \) -print | head -n 1
+	\) \( -name '*.yml' -o -name '*.yaml' \) -print | head -n 1)
+
+	# Docker Compose ファイルが見つからなかった場合のエラーメッセージ
+	if test -z "$result"
+		echo "Error: Docker Compose file not found." >&2
+		return 1
+	end
+
+	# 見つかった Docker Compose ファイルのパスを表示
+	echo $result
 end
+
 
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
