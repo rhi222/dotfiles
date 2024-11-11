@@ -12,14 +12,14 @@ alias cdrr "cd (git rev-parse --show-toplevel)"
 alias sshe 'cocot -t UTF-8 -p EUC-JP -- ssh' #EUC-JP端末へのアクセス
 
 # for neovim
-alias vi 'nvim'
+alias vi nvim
 alias view 'nvim -R'
 
 # reload
 alias rf 'source ~/.config/fish/config.fish'
 
 # gitui
-alias gu 'gitui'
+alias gu gitui
 # ------------- }}}
 
 # ------------- abbr setting {{{
@@ -32,40 +32,40 @@ abbr --add dcl 'docker compose -f (find_docker_compose) logs -f --tail=500 # sho
 abbr --add dcd 'docker compose -f (find_docker_compose) down'
 abbr --add dcu 'docker compose -f (find_docker_compose) up --build'
 function find_docker_compose
-	# Git リポジトリのルートディレクトリを取得
-	set search_dir (git rev-parse --show-toplevel)
+    # Git リポジトリのルートディレクトリを取得
+    set search_dir (git rev-parse --show-toplevel)
 
-	# Git リポジトリ外の場合のエラーメッセージ
-	if test -z "$search_dir"
-		echo "Error: Not inside a Git repository." >&2
-		return 1
-	end
+    # Git リポジトリ外の場合のエラーメッセージ
+    if test -z "$search_dir"
+        echo "Error: Not inside a Git repository." >&2
+        return 1
+    end
 
-	# Docker Compose ファイルの候補リスト
-	set patterns \
-		'*/etc/docker/docker-compose.*' \
-		'*/docker/docker-compose.*' \
-		'*/docker/compose.*' \
-		'*/compose.*' \
-		'*/docker-compose/docker-compose.*'
+    # Docker Compose ファイルの候補リスト
+    set patterns \
+        '*/etc/docker/docker-compose.*' \
+        '*/docker/docker-compose.*' \
+        '*/docker/compose.*' \
+        '*/compose.*' \
+        '*/docker-compose/docker-compose.*'
 
-	# パターンに一致するファイルを検索 (yml または yaml)
-	set result (find $search_dir -type f \( \
-		-path $patterns[1] -o \
-		-path $patterns[2] -o \
-		-path $patterns[3] -o \
-		-path $patterns[4] -o \
-		-path $patterns[5] \
-	\) \( -name '*.yml' -o -name '*.yaml' \) -print | head -n 1)
+    # パターンに一致するファイルを検索 (yml または yaml)
+    set result (find $search_dir -type f \( \
+        -path $patterns[1] -o \
+        -path $patterns[2] -o \
+        -path $patterns[3] -o \
+        -path $patterns[4] -o \
+        -path $patterns[5] \
+    \) \( -name '*.yml' -o -name '*.yaml' \) -print | head -n 1)
 
-	# Docker Compose ファイルが見つからなかった場合のエラーメッセージ
-	if test -z "$result"
-		echo "Error: Docker Compose file not found." >&2
-		return 1
-	end
+    # Docker Compose ファイルが見つからなかった場合のエラーメッセージ
+    if test -z "$result"
+        echo "Error: Docker Compose file not found." >&2
+        return 1
+    end
 
-	# 見つかった Docker Compose ファイルのパスを表示
-	echo $result
+    # 見つかった Docker Compose ファイルのパスを表示
+    echo $result
 end
 
 
@@ -81,13 +81,12 @@ set -U black brblack # 背景色と同化して読めないため
 # ------------- }}}
 
 # ------------- etc setting {{{
-set PSQL_EDITOR 'nvim'
+set PSQL_EDITOR nvim
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 # ------------- }}}
 
 # ------------- ssh agent setting {{{
 # git 操作時に毎回鍵のパスワード入力がめんどくさすぎた
-# SSH エージェント情報を保存するファイル
 # SSH エージェント情報を保存するファイル
 set -Ux SSH_AGENT_INFO_FILE ~/.ssh-agent-info
 set -l SSH_KEY_PATH ~/.ssh/github_rhi222
@@ -133,6 +132,7 @@ if test -f $SSH_KEY_PATH
         echo "SSH key is already added."
     end
 end
+
 # ------------- }}}
 
 
