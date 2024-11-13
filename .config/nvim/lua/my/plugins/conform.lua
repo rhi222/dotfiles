@@ -6,8 +6,9 @@ local formatter_js = { "biome", "prettier", stop_after_first = true }
 
 -- 現在のファイルがあるGitリポジトリのルートを取得する関数
 local function get_git_root()
-	local git_dir = vim.fn.finddir(".git", vim.fn.fnamemodify(vim.fn.expand("%:p:h"), ":h") .. ";")
+	local git_dir = vim.fn.finddir(".git", ".;")
 	if git_dir == "" then
+		print("Error: .git directory not found")
 		return nil -- `.git`ディレクトリが見つからない場合
 	else
 		return vim.fn.fnamemodify(git_dir, ":h")
@@ -17,10 +18,17 @@ end
 -- Gitリポジトリのルートに`biome.json`があるかを確認し、フォーマッタを設定
 local function get_js_formatter()
 	local root_dir = get_git_root()
-	if root_dir and vim.fn.filereadable(root_dir .. "/biome.json") == 1 then
-		return { "biome" } -- `biome.json`がある場合は`biome`を使う
+	if root_dir then
+		local biome_path = root_dir .. "/biome.json"
+		if vim.fn.filereadable(biome_path) == 1 then
+			return { "biome" } -- `biome.json`がある場合は`biome`を使う
+		else
+			print("Warning: biome.json not found, using prettier")
+			return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
+		end
 	else
-		return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
+		print("Error: Git root not found, using prettier")
+		return { "prettier" } -- Gitリポジトリのルートが見つからない場合も`prettier`を使う
 	end
 end
 
@@ -35,8 +43,8 @@ require("conform").setup({
 		html = { "prettier" },
 		javascript = get_js_formatter,
 		javascriptreact = get_js_formatter,
-		json = { "prettier" },
-		json5 = { "prettier" },
+		json = get_js_formatter,
+		json5 = get_js_formatter,
 		lua = { "stylua" },
 		markdown = { "prettier" },
 		python = { "ruff", "black", stop_after_first = true },
@@ -45,7 +53,7 @@ require("conform").setup({
 		typescript = get_js_formatter,
 		typescriptreact = get_js_formatter,
 		xml = { "xmlformat" },
-		-- NOTE: yamlfmtを検討してもよいかも
+		-- NOTE: yamlfmtを検討してもよいかも, なんならbiome?
 		yaml = { "prettier" },
 		-- Use the "_" filetype to run formatters on filetypes that don't
 		-- have other formatters configured.
