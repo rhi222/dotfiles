@@ -168,6 +168,8 @@ return {
 		cmd = {
 			"ConformInfo",
 			"Format",
+			"FormatDisable",
+			"FormatEnable",
 		},
 	},
 	--[[ {
