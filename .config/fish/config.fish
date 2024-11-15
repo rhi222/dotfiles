@@ -28,9 +28,10 @@ alias gu gitui
 abbr --add gbr "git for-each-ref --sort=committerdate refs/heads/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))' # show recently touched branch"
 abbr --add ggr 'cd (git rev-parse --show-toplevel)'
 abbr --add dc docker compose
-abbr --add dcl 'docker compose -f (find_docker_compose) logs -f --tail=500 # show current repository docker compose log'
-abbr --add dcd 'docker compose -f (find_docker_compose) down'
-abbr --add dcu 'docker compose -f (find_docker_compose) up --build -d'
+# docker composeのオプション指定しやすいようにset-cursor
+abbr --add dcl --set-cursor 'docker compose -f (find_docker_compose) logs -f --tail=500 % # show current repository docker compose log'
+abbr --add dcd --set-cursor 'docker compose % -f (find_docker_compose) down'
+abbr --add dcu --set-cursor 'docker compose % -f (find_docker_compose) up --build -d'
 function find_docker_compose
     # Git リポジトリのルートディレクトリを取得
     set search_dir (git rev-parse --show-toplevel)
