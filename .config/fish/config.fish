@@ -30,7 +30,7 @@ abbr --add ggr 'cd (git rev-parse --show-toplevel)'
 abbr --add dc docker compose
 abbr --add dcl 'docker compose -f (find_docker_compose) logs -f --tail=500 # show current repository docker compose log'
 abbr --add dcd 'docker compose -f (find_docker_compose) down'
-abbr --add dcu 'docker compose -f (find_docker_compose) up --build'
+abbr --add dcu 'docker compose -f (find_docker_compose) up --build -d'
 function find_docker_compose
     # Git リポジトリのルートディレクトリを取得
     set search_dir (git rev-parse --show-toplevel)
