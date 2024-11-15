@@ -50,13 +50,11 @@ function find_docker_compose
         './docker-compose/docker-compose.*'
 
     # パターンに一致するファイルを検索 (yml または yaml)
-    set result (find $search_dir -type f \( \
-        -path $patterns[1] -o \
-        -path $patterns[2] -o \
-        -path $patterns[3] -o \
-        -path $patterns[4] -o \
-        -path $patterns[5] \
-    \) \( -name '*.yml' -o -name '*.yaml' \) -print | head -n 1)
+    set result (
+        find $search_dir -type f \( -name '*.yml' -o -name '*.yaml' \) -print \
+        | grep -E "$patterns[1]|$patterns[2]|$patterns[3]|$patterns[4]|$patterns[5]" \
+        | head -n 1
+    )
 
     # Docker Compose ファイルが見つからなかった場合のエラーメッセージ
     if test -z "$result"
