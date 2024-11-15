@@ -328,6 +328,9 @@ return {
 		build = function()
 			vim.fn["mkdp#util#install"]()
 		end,
+		config = function()
+			require("my/plugins/markdown-preview")
+		end,
 	},
 	-- -- 開発が活発な↓を使いたいが、plantuml非対応の為arkdown-preview.nvimを利用
 	-- {
