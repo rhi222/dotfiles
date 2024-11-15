@@ -43,11 +43,11 @@ function find_docker_compose
 
     # Docker Compose ファイルの候補リスト
     set patterns \
-        '*/etc/docker/docker-compose.*' \
-        '*/docker/docker-compose.*' \
-        '*/docker/compose.*' \
-        '*/compose.*' \
-        '*/docker-compose/docker-compose.*'
+        './etc/docker/docker-compose.*' \
+        './docker/docker-compose.*' \
+        './docker/compose.*' \
+        './compose.*' \
+        './docker-compose/docker-compose.*'
 
     # パターンに一致するファイルを検索 (yml または yaml)
     set result (find $search_dir -type f \( \
