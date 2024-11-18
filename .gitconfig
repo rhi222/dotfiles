@@ -2,7 +2,7 @@
 	email = ryouhei222@gmail.com
 	name = rhi222
 [core]
-	editor = nvim
+	editor = nvim +1 -c 'startinsert'
 	whitespace = cr-at-eol
 	pager = delta
 [alias]
@@ -42,3 +42,5 @@
 	showUntrackedFiles = normal
 [init]
 	defaultBranch = main
+[commit]
+	template = /home/nishiyama/.config/git/commit-conventions.txt
