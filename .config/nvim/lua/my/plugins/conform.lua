@@ -19,8 +19,9 @@ end
 local function get_js_formatter()
 	local root_dir = get_git_root()
 	if root_dir then
-		local biome_path = root_dir .. "/biome.json"
-		if vim.fn.filereadable(biome_path) == 1 then
+		local biome_json_path = root_dir .. "/biome.json"
+		local biome_jsonc_path = root_dir .. "/biome.jsonc"
+		if vim.fn.filereadable(biome_json_path) == 1 or vim.fn.filereadable(biome_jsonc_path) == 1 then
 			return { "biome" } -- `biome.json`がある場合は`biome`を使う
 		else
 			print("Warning: biome.json not found, using prettier")
