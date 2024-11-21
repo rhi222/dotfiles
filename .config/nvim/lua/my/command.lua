@@ -5,5 +5,6 @@ return {
 	require("my/commands/open-git"),
 	require("my/commands/temporary-work"),
 	require("my/commands/cd"),
+	require("my/commands/cp-current-file-path"),
 }
 -- }}} -------------------------------
