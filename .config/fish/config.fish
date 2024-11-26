@@ -1,6 +1,6 @@
 # ------------- alias setting {{{
-alias gr 'cd (ghq root)/(ghq list | fzf)'
-#alias v 'code $(ghq root)/$(ghq list | peco)'
+# Git Fuzzy
+alias gf 'cd (ghq root)/(ghq list | fzf)'
 
 # open tmux in 256color
 alias tmux 'tmux -2'
