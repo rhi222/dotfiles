@@ -48,3 +48,8 @@ if vim.fn.has("wsl") then
 end
 -- TrueColor対応
 vim.opt.termguicolors = true
+
+-- wslで貼り付けにC-vを割り当てたためremap
+-- Ctrl+Shift+VでVisual Blockモードに入る
+vim.api.nvim_set_keymap("n", "<C-S-v>", "<C-v>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("v", "<C-S-v>", "<C-v>", { noremap = true, silent = true })
