@@ -86,6 +86,7 @@ return {
 			{ "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
 			{ "nvim-telescope/telescope.nvim" },
 		},
+		version = "v3.3.0",
 		build = "make tiktoken",
 		config = function()
 			require("my/plugins/copilot-chat")
