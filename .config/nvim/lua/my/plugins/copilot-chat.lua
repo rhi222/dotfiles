@@ -5,7 +5,15 @@ local CopilotActions = require("CopilotChat.actions")
 local CopilotChatSelect = require("CopilotChat.select")
 local telescope = require("CopilotChat.integrations.telescope")
 
--- CopilotChat.setup()
+CopilotChat.setup({
+	debug = true,
+	prompts = {
+		ExplainBuffer = {
+			prompt = "/COPILOT_EXPLAIN Write an explanation for the selection as paragraphs of text.",
+			selection = CopilotChatSelect.buffer,
+		},
+	},
+})
 
 CopilotChatFunctions = {}
 
