@@ -80,13 +80,13 @@ return {
 	},
 	{
 		"CopilotC-Nvim/CopilotChat.nvim",
-		branch = "canary",
 		event = "VeryLazy",
 		dependencies = {
 			{ "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
 			{ "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
 			{ "nvim-telescope/telescope.nvim" },
 		},
+		build = "make tiktoken",
 		config = function()
 			require("my/plugins/copilot-chat")
 		end,
