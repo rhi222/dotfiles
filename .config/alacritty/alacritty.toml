@@ -1,0 +1,49 @@
+[general]
+live_config_reload = true
+# https://github.com/alacritty/alacritty-theme
+import = [
+    "~/.config/alacritty/themes/themes/afterglow.toml"
+]
+
+[terminal.shell]
+program = "/Windows/System32/wsl.exe ~ -d Ubuntu"
+
+
+[window]
+# https://alacritty.org/config-alacritty.html#window
+dimensions = { columns = 200, lines = 60 }
+padding = { x = 8, y = 4 }
+opacity = 0.85
+# decorations = "None"
+decorations = "Full"
+
+[keyboard]
+bindings = [
+	{key="v", mods="Control", action="paste"}
+]
+
+
+[cursor]
+style = "Beam"
+
+[font]
+# https://github.com/yuru7/HackGen/releases
+normal ={ family = "HackGen35 Console NF"}
+bold ={ family = "HackGen35 Console NF"}
+italic ={ family = "HackGen35 Console NF"}
+bold_italic ={ family = "HackGen35 Console NF"}
+size = 9.0
+
+[mouse]
+hide_when_typing = false
+
+
+[[mouse.bindings]]
+action = "Copy"
+mods = "Shift"
+mouse = "Left"
+
+[[mouse.bindings]]
+action = "Paste"
+mods = "Shift"
+mouse = "Right"
