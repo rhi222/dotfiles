@@ -19,9 +19,8 @@ decorations = "Full"
 
 [keyboard]
 bindings = [
-	{key="v", mods="Control", action="paste"}
+	{key="v", mods="Control", action="paste"},
 ]
-
 
 [cursor]
 style = "Beam"
@@ -36,7 +35,6 @@ size = 9.0
 
 [mouse]
 hide_when_typing = false
-
 
 [[mouse.bindings]]
 action = "Copy"
