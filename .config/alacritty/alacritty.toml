@@ -38,12 +38,8 @@ size = 9.0
 [mouse]
 hide_when_typing = false
 
-[[mouse.bindings]]
-action = "Copy"
-mods = "Shift"
-mouse = "Left"
+bindings = [
+    { mouse = "Left", mods = "Control", action = "Copy" },
+    { mouse = "Right", mods = "Control", action = "Paste" }
 
-[[mouse.bindings]]
-action = "Paste"
-mods = "Shift"
-mouse = "Right"
+]
