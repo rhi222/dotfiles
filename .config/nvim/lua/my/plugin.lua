@@ -13,6 +13,8 @@
 -- https://maku77.github.io/vim/keymap/current-map.html
 -- https://stackoverflow.com/questions/2239226/saving-output-of-map-in-vim
 return {
+	-- TODO: lualineがalacrittyで表示崩れ。代替を探す
+	-- https://github.com/yutkat/my-neovim-pluginlist/blob/main/statusline.md
 	{
 		"nvim-lualine/lualine.nvim",
 		dependencies = { "nvim-tree/nvim-web-devicons" },
