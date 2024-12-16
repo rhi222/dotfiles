@@ -44,8 +44,8 @@ bindings = [
 
 [[hints.enabled]]
 # open url: # nvim上ではgf, terminalではCtrl+Shift+o
-# note: なぜか明示的にコマンド指定するとエラーになる
-# command = "xdg-open"
+# note: alacrittyはwindowsにインストールしているので`cmd`
+command = { program = "cmd", args = [ "/c", "start", "" ] }
 hyperlinks = true
 post_processing = true
 persist = false
