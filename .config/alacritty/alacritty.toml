@@ -20,8 +20,8 @@ decorations = "Full"
 
 [keyboard]
 bindings = [
-	{key="v", mods="Control", action="paste"},
-	{key="v", mods="Control|Shift", action="ReceiveChar"},
+    {key="v", mods="Control", action="paste"},
+    {key="v", mods="Control|Shift", action="ReceiveChar"},
 ]
 
 [cursor]
@@ -37,9 +37,18 @@ size = 9.0
 
 [mouse]
 hide_when_typing = false
-
 bindings = [
     { mouse = "Left", mods = "Control", action = "Copy" },
-    { mouse = "Right", mods = "Control", action = "Paste" }
-
+    { mouse = "Right", mods = "Control", action = "Paste" },
 ]
+
+[[hints.enabled]]
+# open url: # nvim上ではgf, terminalではCtrl+Shift+o
+# note: なぜか明示的にコマンド指定するとエラーになる
+# command = "xdg-open"
+hyperlinks = true
+post_processing = true
+persist = false
+mouse.enabled = true
+binding = { key = "O", mods = "Control|Shift" }
+regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩`]+"
