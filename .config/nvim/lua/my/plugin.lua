@@ -289,8 +289,10 @@ return {
 	},
 	-- easymotion
 	{
-		"phaazon/hop.nvim",
-		branch = "v2",
+		-- NOTE: 本家はneovim 0.11対応しないためforkを採用
+		-- "phaazon/hop.nvim",
+		"smoka7/hop.nvim",
+		version = "*",
 		keys = {
 			{ "<leader>j", ":HopWord<CR>", mode = "n", desc = "hop word", noremap = true },
 		},
