@@ -88,7 +88,7 @@ return {
 			{ "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
 			{ "nvim-telescope/telescope.nvim" },
 		},
-		version = "v3.3.0",
+		version = "v3.3.2",
 		build = "make tiktoken",
 		config = function()
 			require("my/plugins/copilot-chat")
@@ -153,7 +153,7 @@ return {
 		dependencies = {
 			-- Useful status updates for LSP
 			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-			{ "j-hui/fidget.nvim", tag = "v1.4.5", opts = {} },
+			{ "j-hui/fidget.nvim", tag = "v1.5.0", opts = {} },
 			-- Additional lua configuration, makes nvim stuff amazing!
 			{ "folke/neodev.nvim", opts = {} },
 		},
