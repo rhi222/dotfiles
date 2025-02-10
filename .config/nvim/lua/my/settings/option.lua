@@ -24,6 +24,7 @@ vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.hlsearch = true
 -- https://qiita.com/shiena/items/3f51a2c0b4722427e430
+-- cursorlineとcursorcolumnのhighlightはcolerschemaとして採用しているvscode.luaで設定
 vim.opt.cursorline = true
 vim.opt.cursorcolumn = true
 -- https://zenn.dev/shougo/articles/set-cmdheight-0
