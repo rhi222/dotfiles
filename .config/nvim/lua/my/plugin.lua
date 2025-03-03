@@ -153,7 +153,7 @@ return {
 		dependencies = {
 			-- Useful status updates for LSP
 			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-			{ "j-hui/fidget.nvim", tag = "v1.5.0", opts = {} },
+			{ "j-hui/fidget.nvim", tag = "v1.6.1", opts = {} },
 			-- Additional lua configuration, makes nvim stuff amazing!
 			{ "folke/neodev.nvim", opts = {} },
 		},
@@ -230,7 +230,7 @@ return {
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		keys = {
 			{ "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", mode = "n", silent = true },
-			-- note: telescope.builtin.find_files() is not working
+			-- note: fzf-lua updateで動かなくなったのでtelescopeに移行
 			{ "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
 		},
 		config = function()
@@ -317,7 +317,7 @@ return {
 	{
 		"rest-nvim/rest.nvim",
 		ft = "http",
-		tag = "v3.9.1",
+		tag = "v3.11.2",
 		config = function()
 			require("my/plugins/_rest-nvim")
 		end,
