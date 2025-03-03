@@ -8,6 +8,7 @@ table.insert(vimgrep_arguments, "--glob")
 table.insert(vimgrep_arguments, "!**/.git/*")
 
 -- https://github.com/nvim-telescope/telescope.nvim#usage
+-- fzf-luaが動かなくなったのでこちらを利用
 -- local builtin = require("telescope.builtin")
 -- vim.keymap.set("n", "<C-p>", builtin.find_files, {})
 -- grepはfzf-luaを利用
