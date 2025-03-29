@@ -13,6 +13,8 @@ CopilotChat.setup({
 			selection = CopilotChatSelect.buffer,
 		},
 	},
+	-- CopilotChatModels
+	model = "claude-3.7-sonnet"
 })
 
 CopilotChatFunctions = {}
