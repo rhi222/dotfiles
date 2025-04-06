@@ -88,7 +88,6 @@ return {
 			{ "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
 			{ "nvim-telescope/telescope.nvim" },
 		},
-		version = "v3.3.2",
 		build = "make tiktoken",
 		config = function()
 			require("my/plugins/copilot-chat")
@@ -317,7 +316,7 @@ return {
 	{
 		"rest-nvim/rest.nvim",
 		ft = "http",
-		tag = "v3.11.2",
+		tag = "v3.12.0",
 		config = function()
 			require("my/plugins/_rest-nvim")
 		end,
