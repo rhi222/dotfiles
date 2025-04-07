@@ -33,18 +33,18 @@ local handlers = {
 }
 
 local ensure_installed = {
-		"biome",
-		"graphql",
-		"jsonls",
-		"lua_ls",
-		"marksman",
-		"prismals",
-		"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
-		"ruff",
-		"sqlls",
-		"tailwindcss",
-		"ts_ls",
-		"yamlls",
+	"biome",
+	"graphql",
+	"jsonls",
+	"lua_ls",
+	"marksman",
+	"prismals",
+	"pylsp", -- 動かすためにvirtualenvが必要だった: https://qiita.com/hwatahik/items/788e26e8d61e42d4d837
+	"ruff",
+	"sqlls",
+	"tailwindcss",
+	"ts_ls",
+	"yamlls",
 }
 
 require("mason-lspconfig").setup({
