@@ -32,8 +32,7 @@ local handlers = {
 	end,
 }
 
-require("mason-lspconfig").setup({
-	ensure_installed = {
+local ensure_installed = {
 		"biome",
 		"graphql",
 		"jsonls",
@@ -46,6 +45,10 @@ require("mason-lspconfig").setup({
 		"tailwindcss",
 		"ts_ls",
 		"yamlls",
-	},
+}
+
+require("mason-lspconfig").setup({
+	ensure_installed = ensure_installed,
+	automatic_installation = true,
 	handlers = handlers,
 })
