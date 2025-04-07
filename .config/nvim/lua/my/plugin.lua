@@ -316,7 +316,13 @@ return {
 	{
 		"rest-nvim/rest.nvim",
 		ft = "http",
-		tag = "v3.12.0",
+		dependencies = {
+			"nvim-treesitter/nvim-treesitter",
+			opts = function(_, opts)
+				opts.ensure_installed = opts.ensure_installed or {}
+				table.insert(opts.ensure_installed, "http")
+			end,
+		},
 		config = function()
 			require("my/plugins/_rest-nvim")
 		end,
