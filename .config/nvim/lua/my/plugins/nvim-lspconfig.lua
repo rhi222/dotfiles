@@ -1,37 +1,59 @@
 -- see: https://github.com/neovim/nvim-lspconfig#suggested-configuration
--- Global mappings.
+-- Global diagnostic key mappings
 -- See `:help vim.diagnostic.*` for documentation on any of the below functions
-vim.keymap.set("n", "<space>e", vim.diagnostic.open_float)
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev)
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next)
-vim.keymap.set("n", "<space>q", vim.diagnostic.setloclist)
+local diagnostic = vim.diagnostic
+vim.keymap.set("n", "<space>e", diagnostic.open_float, { desc = "Open diagnostic float" })
+vim.keymap.set("n", "[d", diagnostic.goto_prev, { desc = "Previous diagnostic" })
+vim.keymap.set("n", "]d", diagnostic.goto_next, { desc = "Next diagnostic" })
+vim.keymap.set("n", "<space>q", diagnostic.setloclist, { desc = "Diagnostics to location list" })
+
+-- LSP attachment時にバッファローカルのキー設定を行う関数
+local on_lsp_attach = function(ev)
+	local buf = ev.buf
+	-- Enable omni-completion
+	vim.bo[buf].omnifunc = "v:lua.vim.lsp.omnifunc"
+
+	-- 定義したマッピングをテーブルでまとめる
+	local mappings = {
+		{ mode = "n", key = "gD", func = vim.lsp.buf.declaration, desc = "LSP: Declaration" },
+		{ mode = "n", key = "gd", func = vim.lsp.buf.definition, desc = "LSP: Definition" },
+		{ mode = "n", key = "K", func = vim.lsp.buf.hover, desc = "LSP: Hover" },
+		{ mode = "n", key = "gi", func = vim.lsp.buf.implementation, desc = "LSP: Implementation" },
+		{ mode = "n", key = "<C-k>", func = vim.lsp.buf.signature_help, desc = "LSP: Signature Help" },
+		{ mode = "n", key = "<space>wa", func = vim.lsp.buf.add_workspace_folder, desc = "LSP: Add workspace folder" },
+		{
+			mode = "n",
+			key = "<space>wr",
+			func = vim.lsp.buf.remove_workspace_folder,
+			desc = "LSP: Remove workspace folder",
+		},
+		{
+			mode = "n",
+			key = "<space>wl",
+			func = function()
+				print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+			end,
+			desc = "LSP: List workspace folders",
+		},
+		{ mode = "n", key = "<space>D", func = vim.lsp.buf.type_definition, desc = "LSP: Type definition" },
+		{ mode = "n", key = "<space>rn", func = vim.lsp.buf.rename, desc = "LSP: Rename" },
+		{ mode = { "n", "v" }, key = "<space>ca", func = vim.lsp.buf.code_action, desc = "LSP: Code action" },
+		{ mode = "n", key = "gr", func = vim.lsp.buf.references, desc = "LSP: References" },
+	}
+
+	local opts = { buffer = buf }
+	for _, map in ipairs(mappings) do
+		opts.desc = map.desc
+		vim.keymap.set(map.mode, map.key, map.func, opts)
+	end
+end
 
 -- Use LspAttach autocommand to only map the following keys
 -- after the language server attaches to the current buffer
+-- LspAttachイベント時に上記関数を呼び出す
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
-	callback = function(ev)
-		-- Enable completion triggered by <c-x><c-o>
-		vim.bo[ev.buf].omnifunc = "v:lua.vim.lsp.omnifunc"
-
-		-- Buffer local mappings.
-		-- See `:help vim.lsp.*` for documentation on any of the below functions
-		local opts = { buffer = ev.buf }
-		vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-		vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-		vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-		vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-		vim.keymap.set("n", "<C-k>", vim.lsp.buf.signature_help, opts)
-		vim.keymap.set("n", "<space>wa", vim.lsp.buf.add_workspace_folder, opts)
-		vim.keymap.set("n", "<space>wr", vim.lsp.buf.remove_workspace_folder, opts)
-		vim.keymap.set("n", "<space>wl", function()
-			print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-		end, opts)
-		vim.keymap.set("n", "<space>D", vim.lsp.buf.type_definition, opts)
-		vim.keymap.set("n", "<space>rn", vim.lsp.buf.rename, opts)
-		vim.keymap.set({ "n", "v" }, "<space>ca", vim.lsp.buf.code_action, opts)
-		vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
-	end,
+	callback = on_lsp_attach,
 })
 
 -- Diagnosticの表示方法を変更
