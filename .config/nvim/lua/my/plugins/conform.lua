@@ -46,6 +46,7 @@ require("conform").setup({
 		bash = { "shfmt" },
 		fish = { "fish_indent" },
 		html = { "prettier" },
+		http = { "kulala" },
 		javascript = get_js_formatter,
 		javascriptreact = get_js_formatter,
 		json = get_js_formatter,
@@ -65,6 +66,11 @@ require("conform").setup({
 		["_"] = { "trim_whitespace" },
 	},
 	formatters = {
+		kulala = {
+			command = "kulala-fmt",
+			args = { "format", "$FILENAME" },
+			stdin = false,
+		},
 		sqlfluff = {
 			-- note: configファイル指定
 			command = "sqlfluff",
