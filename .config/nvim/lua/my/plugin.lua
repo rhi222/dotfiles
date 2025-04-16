@@ -218,7 +218,17 @@ return {
 				silent = true,
 				noremap = true,
 			},
-			{ "<c-p>", ":Telescope smart_open<CR>", mode = "n", silent = true, noremap = true },
+			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
+			{ "<C-p>f", ":Telescope find_files find_command=rg,--files,--hidden,--glob,!*.git <CR>", silent = true },
+			-- { "<C-p>z", ":Telescope frecency<CR>", silent = true },
+			{ "<C-p>e", ":Telescope smart_open<CR>", silent = true },
+			{ "<C-p>g", ":Telescope live_grep<CR>", silent = true },
+			{ "<C-p>l", ":Telescope current_buffer_fuzzy_find<CR>", silent = true },
+			{ "<C-p>p", ":Telescope commands<CR>", silent = true },
+			{ "<C-p>:", ":Telescope command_history<CR>", silent = true },
+			{ "<C-p>m", ":Telescope vim_bookmarks all<CR>", silent = true },
+			{ "<C-p>s", ":Telescope lsp_dynamic_workspace_symbols<CR>", silent = true },
+			{ "<C-p>c", ":lua require'telescope.builtin'.git_status{}<CR>", silent = true },
 		},
 		config = function()
 			require("my/plugins/telescope")
@@ -247,7 +257,7 @@ return {
 		keys = {
 			{ "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", mode = "n", silent = true },
 			-- note: telescopeのsmart-openが賢そうなので移行してみる
-			{ "<c-[>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
+			-- { "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
 		},
 		config = function()
 			require("my/plugins/fzf-lua")
