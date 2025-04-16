@@ -94,6 +94,9 @@ require("telescope").setup({
 				},
 			},
 		},
+		smart_open = {
+			disable_devicons = false,
+		},
 	},
 })
 -- Enable telescope fzf native, if installed
