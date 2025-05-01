@@ -1,9 +1,7 @@
 -- https://github.com/CopilotC-Nvim/CopilotChat.nvim?tab=readme-ov-file#configuration
 -- Group all requires at the top
 local chat = require("CopilotChat")
-local actions = require("CopilotChat.actions")
 local select = require("CopilotChat.select")
-local telescope = require("CopilotChat.integrations.telescope")
 
 chat.setup({
 	debug = true,
@@ -62,17 +60,9 @@ vim.api.nvim_create_autocmd("BufEnter", {
 
 -- Telescopeでプロンプトアクションの選択肢を表示するコマンド
 vim.api.nvim_create_user_command("CopilotChatShowPrompt", function()
-	telescope.pick(actions.prompt_actions())
-end, { nargs = 0 })
-
--- Telescopeでヘルプアクションの選択肢を表示するコマンド
-vim.api.nvim_create_user_command("CopilotChatShowHelp", function()
-	telescope.pick(actions.help_actions())
-end, { nargs = 0 })
-
--- キーマッピングの例（必要に応じてお好みで設定してください）
-vim.keymap.set("n", "<C-s>", ":CopilotChatBuffer<CR>", { noremap = true, silent = true })
-vim.keymap.set("v", "<C-s>", ":CopilotChatVisual<CR>", { noremap = true, silent = true })
-vim.keymap.set({ "n", "i", "v" }, "<C-d>", ":CopilotChatShowPrompt<CR>", { noremap = true, silent = true })
--- ヘルプアクションを使う場合は以下のように設定できます
--- vim.keymap.set({ "n", "i", "v" }, "<C-d>", ":CopilotChatShowHelp<CR>", { noremap = true, silent = true })
+	chat.select_prompt()
+end, {})
+-- note: 動かなくなったので一時的にコメントアウト
+-- -- キーマッピングの例（必要に応じてお好みで設定してください）
+-- vim.keymap.set("n", "<C-a>", ":CopilotChatBuffer<CR>", { noremap = true, silent = true })
+-- vim.keymap.set("v", "<C-a>", ":CopilotChatVisual<CR>", { noremap = true, silent = true })
