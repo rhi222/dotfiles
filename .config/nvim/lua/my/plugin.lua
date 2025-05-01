@@ -94,7 +94,29 @@ return {
 		config = function()
 			require("my/plugins/copilot-chat")
 		end,
-		-- See Commands section for default commands if you want to lazy load on them
+		keys = {
+			{
+				"<leader>ap",
+				function()
+					require("CopilotChat").select_prompt({ context = { "buffers" } })
+				end,
+				desc = "CopilotChat - Prompts",
+			},
+			{
+				"<leader>ap",
+				function()
+					require("CopilotChat").select_prompt()
+				end,
+				mode = "x",
+				desc = "CopilotChat - Prompts",
+			},
+			{
+				"<leader>ad",
+				":CopilotChatShowPrompt<CR>",
+				mode = { "x", "n", "i" },
+				desc = "CopilotChat - show Prompts",
+			},
+		},
 	},
 	{
 		"zbirenbaum/copilot-cmp",
