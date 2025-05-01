@@ -21,6 +21,7 @@ table.insert(vimgrep_arguments, "!**/.git/*")
 -- https://github.com/nvim-telescope/telescope-file-browser.nvim/issues/103
 local actions = require("telescope.actions")
 local fb_actions = require("telescope").extensions.file_browser.actions
+local buf_dir = vim.fn.expand("%:p:h")
 
 -- config recipe
 -- https://github.com/nvim-telescope/telescope.nvim/wiki/Configuration-Recipes
@@ -75,8 +76,9 @@ require("telescope").setup({
 		},
 		file_browser = {
 			select_buffer = true,
-			path = vim.loop.cwd(),
-			cwd = vim.loop.cwd(),
+			-- 関数呼び出しで文字列を取得
+			path = buf_dir,
+			cwd = buf_dir,
 			cwd_to_path = true,
 			no_ignore = true,
 			hijack_netrw = true,
