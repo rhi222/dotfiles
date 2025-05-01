@@ -83,6 +83,7 @@ return {
 	{
 		"CopilotC-Nvim/CopilotChat.nvim",
 		event = "VeryLazy",
+		-- note: 未指定の場合、deprecatedなcanaryブランチを参照していた。明示的にmainブランチを指定
 		branch = "main",
 		dependencies = {
 			{ "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
