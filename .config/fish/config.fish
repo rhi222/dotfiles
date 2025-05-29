@@ -68,7 +68,6 @@ function find_docker_compose
     echo $result
 end
 
-
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
 abbr --add lg lazygit
@@ -83,8 +82,12 @@ set -U black brblack # 背景色と同化して読めないため
 # ------------- etc setting {{{
 set PSQL_EDITOR nvim
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
-# ------------- }}}
 
+# https://github.com/ajeetdsouza/zoxide
+zoxide init fish | source
+# mise
+~/.local/bin/mise activate fish | source
+# ------------- }}}
 
 # ------------- path setting {{{
 # path設定はfish_add_pathを利用
@@ -138,7 +141,6 @@ fish_add_path $BUN_INSTALL/bin
 set -Ua fish_user_paths "$HOME/.rye/shims"
 # ------------- }}}
 
-
 # ------------- prompt setting {{{
 # now use tide. install via fisher
 # https://github.com/IlanCosman/tide
@@ -155,6 +157,3 @@ set -U tide_right_prompt_items
 # tabtab source for packages
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
-
-# https://github.com/ajeetdsouza/zoxide
-zoxide init fish | source
