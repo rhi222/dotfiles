@@ -53,7 +53,13 @@ require("conform").setup({
 		json5 = get_js_formatter,
 		lua = { "stylua" },
 		markdown = { "prettier" },
-		python = { "ruff", "black", stop_after_first = true },
+		python = function(bufnr)
+			if require("conform").get_formatter_info("ruff_format", bufnr).available then
+				return { "ruff_format" }
+			else
+				return { "isort", "black" }
+			end
+		end,
 		rust = { "rustfmt", lsp_format = "fallback" },
 		sql = { "sqlfluff", "injected" },
 		typescript = get_js_formatter,
