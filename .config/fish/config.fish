@@ -71,6 +71,18 @@ end
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
 abbr --add lg lazygit
+
+function fkill
+    ps aux \
+        | fzf \
+        --header-lines=1 \
+        --multi \
+        --preview 'echo {}' \
+        --preview-window=down:40%:wrap \
+        | awk '{print $2}' \
+        | xargs kill -9
+end
+
 # ------------- }}}
 
 # ------------- font color setting {{{
