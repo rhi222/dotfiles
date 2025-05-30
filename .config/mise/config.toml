@@ -1,4 +1,6 @@
 [tools]
+aws = "latest"
+bun = "latest"
 go = "1.24.3"
 node = "22"
 "npm:pnpm" = "latest"
