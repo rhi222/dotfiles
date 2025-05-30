@@ -45,6 +45,7 @@ require("conform").setup({
 	formatters_by_ft = {
 		bash = { "shfmt" },
 		fish = { "fish_indent" },
+		go = { "goimports", "gofmt" },
 		html = { "prettier" },
 		http = { "kulala" },
 		javascript = get_js_formatter,
