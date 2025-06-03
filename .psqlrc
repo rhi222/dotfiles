@@ -22,20 +22,29 @@
 36 for cyan
 37 for white
 */
--- SELECT current_database() ~ '.*_(stg|dev|stga|stgb)' as is_stg
-SELECT 
+SELECT
     current_database() ~ '.*_(stg|dev|stga|stgb)' OR (
-        (SELECT 
+        (SELECT
             CASE
-                WHEN u.usename ~ 'wbcdev' AND current_database() ~ 'wbc_booking_record' THEN true
+                WHEN u.usename ~ '.*(dev|stg)' AND current_database() ~ 'wbc_booking_record' THEN true
                 ELSE false
             END
          FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
         )
     ) AS is_stg
 \gset
-SELECT current_database() ~ '.*_prod' as is_prod
+SELECT
+    current_database() ~ '.*_prod' OR (
+        (SELECT
+            CASE
+                WHEN u.usename ~ '.*prod' AND current_database() ~ 'wbc_booking_record' THEN true
+                ELSE false
+            END
+         FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
+        )
+    ) AS is_prod
 \gset
+
 \if :is_prod
 	-- \set PROMPT1 '%[%033[1;31m%]DANGER_PROD_ENV %n@%/%R%#%[%033[1;33m%]%x %[%033[1;31m%]'
 	\set PROMPT1 '%[%033[1;31m%]DANGER_PROD_ENV %> %n@%/%R%#%[%033[1;33m%]%x %[%033[1;31m%]'
