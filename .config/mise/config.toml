@@ -1,7 +1,10 @@
 [tools]
 aws = "latest"
 bun = "latest"
-go = "1.24.3"
-node = "22"
+go = "latest"
+node = "latest"
 "npm:pnpm" = "latest"
-python = "3.13"
+python = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["python"]
