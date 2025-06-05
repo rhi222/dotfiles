@@ -2,8 +2,7 @@
 vim.scriptencoding = "utf-8"
 
 -- path
--- https://github.com/volta-cli/volta/issues/866
-vim.g.node_host_prog = vim.fn.trim(vim.fn.system("volta which neovim-node-host"))
+vim.g.node_host_prog = vim.fn.trim(vim.fn.system("which node"))
 vim.g.python_host_prog = vim.fn.trim(vim.fn.system("which python2"))
 vim.g.python3_host_prog = vim.fn.trim(vim.fn.system("which python3"))
 
