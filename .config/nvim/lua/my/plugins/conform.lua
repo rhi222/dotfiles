@@ -15,16 +15,32 @@ local function get_git_root()
 	end
 end
 
+-- cwdからrepo rootの間のどこかにbiome.json/biome.jsoncがあればbiomeを使う
+local function find_biome_config_between_cwd_and_root(root_dir)
+	local cwd = vim.fn.getcwd()
+	local path = cwd
+	while true do
+		local biome_json = path .. "/biome.json"
+		local biome_jsonc = path .. "/biome.jsonc"
+		if vim.fn.filereadable(biome_json) == 1 or vim.fn.filereadable(biome_jsonc) == 1 then
+			return true
+		end
+		if path == root_dir or path == "/" then
+			break
+		end
+		path = vim.fn.fnamemodify(path, ":h")
+	end
+	return false
+end
+
 -- Gitリポジトリのルートに`biome.json`があるかを確認し、フォーマッタを設定
 local function get_js_formatter()
 	local root_dir = get_git_root()
 	if root_dir then
-		local biome_json_path = root_dir .. "/biome.json"
-		local biome_jsonc_path = root_dir .. "/biome.jsonc"
-		if vim.fn.filereadable(biome_json_path) == 1 or vim.fn.filereadable(biome_jsonc_path) == 1 then
-			return { "biome" } -- `biome.json`がある場合は`biome`を使う
+		if find_biome_config_between_cwd_and_root(root_dir) then
+			return { "biome" }
 		else
-			print("Warning: biome.json not found, using prettier")
+			print("Warning: biome.json not found between cwd and git root, using prettier")
 			return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
 		end
 	else
