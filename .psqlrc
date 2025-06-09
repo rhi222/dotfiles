@@ -34,7 +34,7 @@ SELECT
     ) AS is_stg
 \gset
 SELECT
-    current_database() ~ '.*_prod' OR (
+    (current_database() ~ '.*_prod' OR (
         (SELECT
             CASE
                 WHEN u.usename ~ '.*prod' AND current_database() ~ 'wbc_booking_record' THEN true
@@ -42,7 +42,8 @@ SELECT
             END
          FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
         )
-    ) AS is_prod
+    ) OR (SELECT :PORT = '64321')
+) AS is_prod
 \gset
 
 \if :is_prod
@@ -76,7 +77,7 @@ SELECT current_database() ~ 'jtb_.*' as is_jtb
 	\echo                                  █ █     █████  █                     ████            █ █ █                                            █     
 	\echo   ██ ████████ █████         ██████████    ██    █       █████       ██  ██      █     █      ██           █                            █     
 	\echo   ██    █     █    █        ██████  █   ███████████    █  █  ██        ██       █     ███    █   █████    █     ██      ███████     ███████  
-	\echo   ██    █     █    █        █     █ █   ██████  █ █   █   █   █       ██        █  █████     █            █      █    ███     ██      ██     
+	\echo   ██    █     █    █        █     █ █   ██████  █ █   █   █   █       ██        █  █████     █            █      █    ███    ██      ██     
 	\echo   ██    █     █    █        █████ ██    █  █ █  █ █  ██   █    █    ████████    █     █      █            █       █            █      █      
 	\echo   ██    █     █████        ███  █ ██ █  ██████  █ █  █   █     █   █   █       ██     █      █            █       █            █    ██████   
 	\echo   ██    █     █    █       █ ████ ██ █  ██████  █ █  █   █    ██      █        ███    █      ██           █       ██           █      █    ██
