@@ -184,6 +184,14 @@ return {
 			require("my/plugins/nvim-lspconfig")
 		end,
 	},
+	{
+		"RubixDev/mason-update-all",
+		dependencies = { "williamboman/mason.nvim" },
+		cmd = { "MasonUpdateAll" },
+		config = function()
+			require("my/plugins/mason-update-all")
+		end,
+	},
 	-- formatter: star数の多いconform.nvimに移行
 	{
 		"stevearc/conform.nvim",
