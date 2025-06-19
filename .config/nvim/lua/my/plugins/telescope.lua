@@ -75,6 +75,7 @@ require("telescope").setup({
 			case_mode = "smart_case", -- or "ignore_case" or "respect_case"
 		},
 		file_browser = {
+			hidden = true,
 			select_buffer = true,
 			-- 関数呼び出しで文字列を取得
 			path = buf_dir,
