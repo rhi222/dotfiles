@@ -1,0 +1,5 @@
+github.com/jesseduffield/lazydocker@latest
+github.com/jesseduffield/lazygit@latest
+github.com/x-motemen/ghq@latest
+golang.org/x/tools/cmd/goimports@latest
+mvdan.cc/sh/v3/cmd/shfmt@latest
