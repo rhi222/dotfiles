@@ -91,14 +91,21 @@ end
 set -U black brblack # 背景色と同化して読めないため
 # ------------- }}}
 
+# ------------- mise setting {{{
+~/.local/bin/mise activate fish | source
+
+# default pacakges
+set MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
+set MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
+set MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
+# ------------- }}}
+
 # ------------- etc setting {{{
 set PSQL_EDITOR nvim
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 
 # https://github.com/ajeetdsouza/zoxide
 zoxide init fish | source
-# mise
-~/.local/bin/mise activate fish | source
 # ------------- }}}
 
 # ------------- path setting {{{
