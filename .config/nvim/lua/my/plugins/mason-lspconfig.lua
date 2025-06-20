@@ -18,6 +18,21 @@ local ensure_installed = {
 
 require("mason-lspconfig").setup({
 	ensure_installed = ensure_installed,
-	automatic_enable = true,
+	automatic_enable = {
+		exclude = { "pylsp" },
+	},
 })
 
+-- pylspの個別設定
+require("lspconfig").pylsp.setup({
+	capabilities = capabilities,
+	settings = {
+		pylsp = {
+			plugins = {
+				pycodestyle = {
+					maxLineLength = 150,
+				},
+			},
+		},
+	},
+})
