@@ -1,5 +1,7 @@
 #! /bin/bash
 PWD=`pwd`
+ln -snf $PWD/.claude/settings.json ~/.claude/settings.json
+ln -snf $PWD/.claude/CLAUDE.md ~/.claude/CLAUDE.md
 ln -snf $PWD/.gitconfig ~/.gitconfig
 ln -snf $PWD/.tmux.conf ~/.tmux.conf
 ln -snf $PWD/.psqlrc ~/.psqlrc
