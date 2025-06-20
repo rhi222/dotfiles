@@ -31,6 +31,9 @@ require("lspconfig").pylsp.setup({
 			plugins = {
 				pycodestyle = {
 					maxLineLength = 150,
+					ignore = {
+						"E402", -- module level import not at top of file
+					},
 				},
 			},
 		},
