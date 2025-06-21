@@ -12,9 +12,8 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm test:*)"
     ],
-    "deny": [
-      "Bash(git:*)"
-    ]
+    "deny": ["Bash(git:*)"]
   },
-  "includeCoAuthoredBy": false
+  "includeCoAuthoredBy": false,
+  "editor": "nvim"
 }
