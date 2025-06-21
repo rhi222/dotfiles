@@ -1,52 +1,34 @@
 -- https://github.com/stevearc/conform.nvim
 -- NOTE: 開いているバッファにどのFormatterが割り当てられているか確認するコマンド:ConformInfo
 
--- Conform will run multiple formatters sequentially, run the first available formatter
-local formatter_js = { "biome", "prettier", stop_after_first = true }
-
--- 現在のファイルがあるGitリポジトリのルートを取得する関数
-local function get_git_root()
-	local git_dir = vim.fn.finddir(".git", ".;")
-	if git_dir == "" then
-		print("Error: .git directory not found")
-		return nil -- `.git`ディレクトリが見つからない場合
-	else
-		return vim.fn.fnamemodify(git_dir, ":h")
-	end
-end
-
--- cwdからrepo rootの間のどこかにbiome.json/biome.jsoncがあればbiomeを使う
-local function find_biome_config_between_cwd_and_root(root_dir)
-	local cwd = vim.fn.getcwd()
-	local path = cwd
-	while true do
-		local biome_json = path .. "/biome.json"
-		local biome_jsonc = path .. "/biome.jsonc"
-		if vim.fn.filereadable(biome_json) == 1 or vim.fn.filereadable(biome_jsonc) == 1 then
-			return true
-		end
-		if path == root_dir or path == "/" then
-			break
-		end
-		path = vim.fn.fnamemodify(path, ":h")
-	end
-	return false
-end
-
--- Gitリポジトリのルートに`biome.json`があるかを確認し、フォーマッタを設定
+-- LSPベースのJavaScript/TypeScriptフォーマッター検出
 local function get_js_formatter()
-	local root_dir = get_git_root()
-	if root_dir then
-		if find_biome_config_between_cwd_and_root(root_dir) then
-			return { "biome" }
-		else
-			print("Warning: biome.json not found between cwd and git root, using prettier")
-			return { "prettier" } -- `biome.json`がない場合は`prettier`を使う
+	local buf = vim.api.nvim_get_current_buf()
+	local clients = vim.lsp.get_active_clients({ bufnr = buf })
+
+	-- JS/TS関連のLSPクライアントを探す
+	for _, client in ipairs(clients) do
+		if
+			client.name:match("typescript")
+			or client.name:match("javascript")
+			or client.name == "volar"
+			or client.name == "ts_ls"
+		then
+			local root = client.config.root_dir
+			if root then
+				-- プロジェクトルートでbiome設定を確認
+				if
+					vim.fn.filereadable(root .. "/biome.json") == 1
+					or vim.fn.filereadable(root .. "/biome.jsonc") == 1
+				then
+					return { "biome" }
+				end
+			end
 		end
-	else
-		print("Error: Git root not found, using prettier")
-		return { "prettier" } -- Gitリポジトリのルートが見つからない場合も`prettier`を使う
 	end
+
+	-- LSPクライアントがない場合やbiome設定がない場合はprettierを使用
+	return { "prettier" }
 end
 
 require("conform").setup({
