@@ -1,10 +1,16 @@
 -- options
 vim.scriptencoding = "utf-8"
 
--- path
-vim.g.node_host_prog = vim.fn.trim(vim.fn.system("which node"))
-vim.g.python_host_prog = vim.fn.trim(vim.fn.system("which python2"))
-vim.g.python3_host_prog = vim.fn.trim(vim.fn.system("which python3"))
+-- path: 起動時のパフォーマンス最適化のため遅延実行
+vim.api.nvim_create_autocmd("VimEnter", {
+	callback = function()
+		vim.schedule(function()
+			vim.g.node_host_prog = vim.fn.trim(vim.fn.system("which node"))
+			vim.g.python_host_prog = vim.fn.trim(vim.fn.system("which python2"))
+			vim.g.python3_host_prog = vim.fn.trim(vim.fn.system("which python3"))
+		end)
+	end,
+})
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
