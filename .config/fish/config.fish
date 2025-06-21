@@ -121,6 +121,8 @@ end
 # ------------- etc setting {{{
 set PSQL_EDITOR nvim
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
+set EDITOR nvim
+set VISUAL nvim
 
 # https://github.com/ajeetdsouza/zoxide
 zoxide init fish | source
