@@ -58,7 +58,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 -- Diagnosticの表示方法を変更
 -- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
-vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.handlers["textDocument/publishDiagnostics"], {
 	update_in_insert = false,
 	virtual_text = {
 		format = function(diagnostic)
