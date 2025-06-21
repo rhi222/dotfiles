@@ -4,7 +4,6 @@ local chat = require("CopilotChat")
 local select = require("CopilotChat.select")
 
 chat.setup({
-	debug = true,
 	prompts = {
 		ExplainBuffer = {
 			prompt = "/COPILOT_EXPLAIN Write an explanation for the selection as paragraphs of text.",
