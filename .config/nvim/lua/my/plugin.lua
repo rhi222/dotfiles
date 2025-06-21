@@ -206,18 +206,6 @@ return {
 			"FormatEnable",
 		},
 	},
-	--[[ {
-		"mhartington/formatter.nvim",
-		cmd = {
-			"Format",
-			"FormatWrite",
-			"FormatLock",
-			"FormatWriteLock",
-		},
-		config = function()
-			require("my/plugins/formatter")
-		end,
-	}, ]]
 	-- finder
 	{
 		"nvim-telescope/telescope.nvim",
