@@ -43,13 +43,6 @@ return {
 	},
 	-- colorscheme
 	{
-		"rebelot/kanagawa.nvim",
-		lazy = true,
-		config = function()
-			require("my/plugins/kanagawa")
-		end,
-	},
-	{
 		"catppuccin/nvim",
 		lazy = true,
 	},
