@@ -83,6 +83,7 @@ function fkill
         | xargs kill -9
 end
 
+
 # ------------- }}}
 
 # ------------- font color setting {{{
@@ -98,6 +99,23 @@ set -U black brblack # 背景色と同化して読めないため
 set MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
 set MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
 set MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
+# ------------- }}}
+
+# ------------- history setting {{{
+# historyサイズ制限を拡大
+set -g fish_history_max 100000
+
+# 重複するコマンドを履歴に保存しない
+set -g fish_history_ignore_duplicates 1
+
+# 先頭にスペースがあるコマンドを履歴に保存しない（秘密情報入力時に便利）
+set -g fish_history_ignore_space 1
+
+# 複数セッション間でのhistory共有を有効化
+function __fish_shared_history --on-event fish_prompt
+    history --save
+    history --merge
+end
 # ------------- }}}
 
 # ------------- etc setting {{{
@@ -177,3 +195,4 @@ set -U tide_right_prompt_items
 # tabtab source for packages
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
+alias claude="/home/nishiyama/.claude/local/claude"
