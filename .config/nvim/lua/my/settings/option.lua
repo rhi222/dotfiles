@@ -5,6 +5,8 @@ vim.scriptencoding = "utf-8"
 vim.api.nvim_create_autocmd("VimEnter", {
 	callback = function()
 		vim.schedule(function()
+			-- checkhelathするとErrorになるが、:echo g:node_host_progすると設定できている
+			-- checkhealthはVimEnterより前に実行されるため
 			vim.g.node_host_prog = vim.fn.trim(vim.fn.system("which node"))
 			vim.g.python_host_prog = vim.fn.trim(vim.fn.system("which python2"))
 			vim.g.python3_host_prog = vim.fn.trim(vim.fn.system("which python3"))
