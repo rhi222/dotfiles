@@ -83,7 +83,6 @@ function fkill
         | xargs kill -9
 end
 
-
 # ------------- }}}
 
 # ------------- font color setting {{{
@@ -96,9 +95,9 @@ set -U black brblack # 背景色と同化して読めないため
 ~/.local/bin/mise activate fish | source
 
 # default pacakges
-set MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
-set MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
-set MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
+set -gx MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
+set -gx MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
+set -gx MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
 # ------------- }}}
 
 # ------------- history setting {{{
@@ -121,8 +120,8 @@ end
 # ------------- etc setting {{{
 set PSQL_EDITOR nvim
 set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
-set EDITOR nvim
-set VISUAL nvim
+set -gx EDITOR nvim
+set -gx VISUAL nvim
 
 # https://github.com/ajeetdsouza/zoxide
 zoxide init fish | source
@@ -197,4 +196,3 @@ set -U tide_right_prompt_items
 # tabtab source for packages
 # uninstall by removing these lines
 [ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
-alias claude="/home/nishiyama/.claude/local/claude"
