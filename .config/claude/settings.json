@@ -12,7 +12,17 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm test:*)"
     ],
-    "deny": ["Bash(git:*)"]
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git:*)",
+      "Bash(psql:*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm:*)",
+      "Bash(ssh:*)",
+      "Bash(sudo:*)",
+      "Read(.env.*)",
+      "Read(id_rsa)"
+    ]
   },
   "includeCoAuthoredBy": false,
   "editor": "nvim"
