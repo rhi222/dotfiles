@@ -26,7 +26,11 @@ SELECT
     current_database() ~ '.*_(stg|dev|stga|stgb)' OR (
         (SELECT
             CASE
-                WHEN u.usename ~ '.*(dev|stg)' AND current_database() ~ 'wbc_booking_record' THEN true
+                WHEN
+			u.usename ~ '.*(dev|stg)'
+			AND u.usename not like 'wbcbookingrecorddev'
+			AND current_database() ~ 'wbc_booking_record'
+		THEN true
                 ELSE false
             END
          FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
