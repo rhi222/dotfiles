@@ -3,7 +3,6 @@
     "allow": [
       "Bash(cp:*)",
       "Bash(find:*)",
-      "Bash(git diff:)",
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
@@ -14,7 +13,6 @@
     ],
     "deny": [
       "Bash(git push:*)",
-      "Bash(git:*)",
       "Bash(psql:*)",
       "Bash(rm -rf:*)",
       "Bash(rm:*)",
