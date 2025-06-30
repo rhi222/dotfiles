@@ -2,5 +2,6 @@
 aws-cdk
 biome
 neovim
+npm-check-updates
 prettier
 wsl-open
