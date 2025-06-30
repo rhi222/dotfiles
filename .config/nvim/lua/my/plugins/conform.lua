@@ -4,7 +4,7 @@
 -- LSPベースのJavaScript/TypeScriptフォーマッター検出
 local function get_js_formatter()
 	local buf = vim.api.nvim_get_current_buf()
-	local clients = vim.lsp.get_active_clients({ bufnr = buf })
+	local clients = vim.lsp.get_clients({ bufnr = buf })
 
 	-- JS/TS関連のLSPクライアントを探す
 	for _, client in ipairs(clients) do
