@@ -1,33 +1,29 @@
 -- https://github.com/stevearc/conform.nvim
 -- NOTE: 開いているバッファにどのFormatterが割り当てられているか確認するコマンド:ConformInfo
 
--- LSPベースのJavaScript/TypeScriptフォーマッター検出
+-- JavaScript/TypeScriptフォーマッター検出
 local function get_js_formatter()
 	local buf = vim.api.nvim_get_current_buf()
-	local clients = vim.lsp.get_clients({ bufnr = buf })
+	local filename = vim.api.nvim_buf_get_name(buf)
 
-	-- JS/TS関連のLSPクライアントを探す
-	for _, client in ipairs(clients) do
+	-- プロジェクトルートを検出
+	local root = vim.fs.find({ "package.json", ".git", "biome.json", "biome.jsonc" }, {
+		upward = true,
+		path = filename,
+	})[1]
+
+	if root then
+		local root_dir = vim.fs.dirname(root)
+		-- biome設定を確認
 		if
-			client.name:match("typescript")
-			or client.name:match("javascript")
-			or client.name == "volar"
-			or client.name == "ts_ls"
+			vim.fn.filereadable(root_dir .. "/biome.json") == 1
+			or vim.fn.filereadable(root_dir .. "/biome.jsonc") == 1
 		then
-			local root = client.config.root_dir
-			if root then
-				-- プロジェクトルートでbiome設定を確認
-				if
-					vim.fn.filereadable(root .. "/biome.json") == 1
-					or vim.fn.filereadable(root .. "/biome.jsonc") == 1
-				then
-					return { "biome" }
-				end
-			end
+			return { "biome" }
 		end
 	end
 
-	-- LSPクライアントがない場合やbiome設定がない場合はprettierを使用
+	-- biome設定がない場合はprettierを使用
 	return { "prettier" }
 end
 
