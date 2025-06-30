@@ -4,6 +4,5 @@
     "globals": ["vim"],
     "indent_width": 2
   },
-    "workspace.checkThirdParty": false
+  "workspace.checkThirdParty": false
 }
-
