@@ -3,19 +3,23 @@
     "allow": [
       "Bash(cp:*)",
       "Bash(find:*)",
+      "Bash(find:*)",
       "Bash(grep:*)",
+      "Bash(ls:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(rg:*)"
     ],
     "deny": [
       "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
       "Bash(psql:*)",
       "Bash(rm -rf:*)",
-      "Bash(rm:*)",
       "Bash(ssh:*)",
       "Bash(sudo:*)",
       "Read(.env.*)",
