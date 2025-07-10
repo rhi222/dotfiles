@@ -35,7 +35,7 @@ abbr --add dcd --set-cursor 'docker compose % -f (find_docker_compose) down'
 abbr --add dcu --set-cursor 'docker compose % -f (find_docker_compose) up --build -d'
 function find_docker_compose
     # Git リポジトリのルートディレクトリを取得
-    set search_dir (git rev-parse --show-toplevel)
+    set search_dir (git rev-parse --show-toplevel 2>/dev/null)
 
     # Git リポジトリ外の場合のエラーメッセージ
     if test -z "$search_dir"
@@ -43,29 +43,26 @@ function find_docker_compose
         return 1
     end
 
-    # Docker Compose ファイルの候補リスト
-    set patterns \
-        './etc/docker/docker-compose.*' \
-        './docker/docker-compose.*' \
-        './docker/compose.*' \
-        './compose.*' \
-        './docker-compose/docker-compose.*'
+    # Docker Compose ファイルの候補パターンを統合
+    set compose_patterns \
+        "*/etc/docker/docker-compose.y*ml" \
+        "*/docker/docker-compose.y*ml" \
+        "*/docker/compose.y*ml" \
+        "*/compose.y*ml" \
+        "*/docker-compose/docker-compose.y*ml"
 
-    # パターンに一致するファイルを検索 (yml または yaml)
-    set result (
-        find $search_dir -type f \( -name '*.yml' -o -name '*.yaml' \) -print \
-        | grep -E "$patterns[1]|$patterns[2]|$patterns[3]|$patterns[4]|$patterns[5]" \
-        | head -n 1
-    )
-
-    # Docker Compose ファイルが見つからなかった場合のエラーメッセージ
-    if test -z "$result"
-        echo "Error: Docker Compose file not found." >&2
-        return 1
+    # パターンに一致するファイルを検索
+    for pattern in $compose_patterns
+        set result (find $search_dir -path "$pattern" -type f 2>/dev/null | head -n 1)
+        if test -n "$result"
+            echo $result
+            return 0
+        end
     end
 
-    # 見つかった Docker Compose ファイルのパスを表示
-    echo $result
+    # Docker Compose ファイルが見つからなかった場合のエラーメッセージ
+    echo "Error: Docker Compose file not found." >&2
+    return 1
 end
 
 abbr --add cpe 'COMPOSE_PROFILES='
@@ -94,7 +91,7 @@ set -U black brblack # 背景色と同化して読めないため
 # ------------- mise setting {{{
 ~/.local/bin/mise activate fish | source
 
-# default pacakges
+# default packages
 set -gx MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
 set -gx MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
 set -gx MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
@@ -112,8 +109,8 @@ set -g fish_history_ignore_space 1
 
 # 複数セッション間でのhistory共有を有効化
 function __fish_shared_history --on-event fish_prompt
-    history --save
-    history --merge
+    history --save 2>/dev/null
+    history --merge 2>/dev/null
 end
 # ------------- }}}
 
@@ -135,7 +132,6 @@ zoxide init fish | source
 # https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
 set GOPATH $HOME/go
 fish_add_path $GOPATH/bin
-fish_add_path $HOME/go/bin
 
 # for deno
 set DENO_INSTALL $HOME/.deno
