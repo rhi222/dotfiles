@@ -1,5 +1,6 @@
+'python-lsp-server[all]'
 boto3
+requests
 ruff
 sqlfluff
 xmlformatter
-'python-lsp-server[all]'
