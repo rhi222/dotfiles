@@ -22,8 +22,8 @@
 
 - `git cherry -v`でcommit済み, push漏れを検知
 - 異常終了条件: `git cherry -v`の出力が空でない場合はエラー終了
-- `git log <base_branch>..HEAD --oneline`でコミット存在を確認
-- 異常終了条件: ベースブランチとの間にコミットがない場合はエラー終了
+- `git log <default_branch>..HEAD --oneline`でコミット存在を確認
+- 異常終了条件: デフォルトブランチとの間にコミットがない場合はエラー終了
 
 ### 4. リポジトリルートの特定
 
@@ -39,8 +39,8 @@
 
 ### 6. ベースブランチとの差分をgit diffとgit logで分析
 
-- `git log <base_branch>..HEAD`でコミット履歴の確認
-- `git diff <base_branch>...HEAD`でベースブランチとの差分分析
+- `git log <default_branch>..HEAD`でコミット履歴の確認
+- `git diff <default_branch>...HEAD`でデフォルトブランチとの差分分析
 - 変更されたファイルの種類と目的の特定
 - テストやドキュメントの更新状況
 
@@ -49,5 +49,9 @@
 ### 8. 適切なPRタイトルと説明文を生成
 
 ### 9. `gh pr create`を使用してPRを作成
+
+- `gh pr create --base <default_branch> --head <current_branch> --title "..." --body "..."`
+  - default_branch: 手順2で取得したブランチをbaseブランチとして明示してください
+  - current_branch: 手順1で取得したブランチをheadブランチとして明示してください
 
 - コマンド実行前にuserに確認をもとめること
