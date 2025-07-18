@@ -20,8 +20,8 @@
 
 ### 3. 事前チェック
 
-- `git cherry -v`でcommit済み, push漏れを検知
-- 異常終了条件: `git cherry -v`の出力が空でない場合はエラー終了
+- `git log origin/$(git rev-parse --abbrev-ref HEAD)..HEAD`でcommit済み, push漏れを検知
+- 異常終了条件: `git log origin/$(git rev-parse --abbrev-ref HEAD)..HEAD`の出力が空でない場合はエラー終了
 - `git log <default_branch>..HEAD --oneline`でコミット存在を確認
 - 異常終了条件: デフォルトブランチとの間にコミットがない場合はエラー終了
 
