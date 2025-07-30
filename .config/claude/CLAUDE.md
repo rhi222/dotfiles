@@ -23,6 +23,18 @@ EOF
 
 Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Claude`）は含めない。
 
+## Test-Driven Development (TDD)
+
+- 原則としてテスト駆動開発（TDD）で進める
+
+- 期待される入出力に基づき、まずテストを作成する
+- 実装コードは書かず、テストのみを用意する
+- テストを実行し、失敗を確認する
+- テストが正しいことを確認できた段階でコミットする
+- その後、テストをパスさせる実装を進める
+- 実装中はテストを変更せず、コードを修正し続ける
+- すべてのテストが通過するまで繰り返す
+
 # Claude Code Spec-Driven Development
 
 This project implements Kiro-style Spec-Driven Development for Claude Code using hooks and slash commands.
@@ -199,3 +211,7 @@ The `/kiro:steering` command manages these files automatically. Manual updates t
 - **Conditional files**: Loaded when working on matching file patterns
 - **Manual files**: Reference explicitly with `@filename.md` syntax when needed
 - **Updating**: Use `/kiro:steering` or `/kiro:steering-custom` commands to modify this configuration
+
+## Slash Commands
+
+- **`/exit`**: Explicitly exit the current session or context. This command ensures a clean and intentional termination of the current interaction or workflow.
