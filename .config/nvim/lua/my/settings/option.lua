@@ -56,6 +56,8 @@ if vim.fn.has("wsl") then
 end
 -- TrueColor対応
 vim.opt.termguicolors = true
+-- ファイル末尾のEOLを自動追加しない
+vim.opt.fixendofline = false
 
 -- wslで貼り付けにC-vを割り当てたためremap
 -- Ctrl+Shift+VでVisual Blockモードに入る
