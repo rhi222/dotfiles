@@ -6,7 +6,7 @@
 
 ```
 .config/fish/
-├── config.fish          # メイン設定ファイル（エイリアス・略語・読み込み制御）
+├── config.fish          # メイン設定ファイル（読み込み制御のみ）
 ├── README.md            # このファイル
 ├── conf.d/              # プラグイン由来の自動読み込み設定（空/プラグイン専用）
 ├── functions/           # プラグイン由来の関数（空/プラグイン専用）
@@ -17,7 +17,9 @@
     │   ├── 03-environment.fish # 環境変数・ツール統合
     │   ├── 04-paths.fish     # PATH設定
     │   ├── 05-colors.fish    # 色設定
-    │   └── 06-prompt.fish    # プロンプト設定（tide）
+    │   ├── 06-prompt.fish    # プロンプト設定（tide）
+    │   ├── 07-aliases.fish   # エイリアス
+    │   └── 08-abbr.fish      # 略語
     └── functions/       # カスタム関数
         ├── find_docker_compose.fish # Docker Compose自動発見
         └── fkill.fish              # プロセス選択終了
@@ -37,6 +39,8 @@
 - **04-paths.fish**: 各種ツールのPATH設定
 - **05-colors.fish**: ターミナル色設定
 - **06-prompt.fish**: tideプロンプト設定
+- **07-aliases.fish**: エイリアス（Git、ツール、SSH関連）
+- **08-abbr.fish**: 略語（Git、Docker、開発ツール関連）
 
 ### 3. 読み込み順序制御
 `config.fish`で明示的に読み込み順序を制御：
@@ -66,9 +70,10 @@ set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 ## メンテナンス
 
 ### 新しい設定の追加
-1. 機能に応じて`my/conf.d/`に新ファイル作成
-2. 番号プレフィックスで読み込み順序制御
-3. 新しい関数は`my/functions/`に個別ファイル作成
+1. **エイリアス**: `07-aliases.fish`に追加
+2. **略語**: `08-abbr.fish`に追加
+3. **その他設定**: 機能に応じて`my/conf.d/`に新ファイル作成（番号プレフィックス付き）
+4. **新しい関数**: `my/functions/`に個別ファイル作成
 
 ### プラグインの追加
 Fisherやその他のプラグイン管理ツールは自動的に標準の`conf.d/`と`functions/`を使用。

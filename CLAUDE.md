@@ -27,9 +27,24 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - **キーバインド哲学**: Space、Ctrl、特殊キーを使用した覚えやすいプレフィックスベースのキーマップを優先
 
 ### Fish Shell設定
-`.config/fish/config.fish` に配置：
-- **エイリアス**: Gitショートカット、開発ツールエイリアス (tmux, nvim, etc.)
-- **略語**: よく使用するコマンドのスマート展開 (git, docker compose)
+モジュラー構造でカテゴリ別に整理：
+
+```
+.config/fish/
+├── config.fish                 # メイン設定
+└── my/conf.d/
+    ├── 01-mise.fish            # mise（ランタイム管理）
+    ├── 02-history.fish         # 履歴設定
+    ├── 03-environment.fish     # 環境変数
+    ├── 04-paths.fish          # PATH設定
+    ├── 05-colors.fish         # 色設定
+    ├── 06-prompt.fish         # プロンプト設定
+    ├── 07-aliases.fish        # エイリアス
+    └── 08-abbr.fish           # 略語
+```
+
+- **エイリアス（07-aliases.fish）**: Gitショートカット、開発ツールエイリアス (tmux, nvim, etc.)
+- **略語（08-abbr.fish）**: よく使用するコマンドのスマート展開 (git, docker compose)
 - **ツール統合**: ランタイム管理用mise、ディレクトリナビゲーション用zoxide
 - **Docker Compose ヘルパー**: プロジェクトディレクトリ内のcomposeファイルの自動発見
 
@@ -62,6 +77,7 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - ルートのシステム全体設定 (`.gitconfig`, `.tmux.conf`)
 - XDG Base Directory Specificationに従った `.config/` のユーザー設定
 - 各ツールディレクトリの言語固有設定
+- **Fish設定**: 機能別にモジュール分割（エイリアス、略語、環境変数など）
 
 ### Neovim Luaモジュール
 - `my/settings/`: コアNeovim設定とautocmds
