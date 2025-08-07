@@ -1,4 +1,4 @@
-# ------------- alias setting {{{
+# Aliases
 # Git Fuzzy
 alias gf 'cd (ghq root)/(ghq list | fzf)'
 
@@ -20,9 +20,8 @@ alias rf 'source ~/.config/fish/config.fish'
 
 # gitui
 alias gu gitui
-# ------------- }}}
 
-# ------------- abbr setting {{{
+# Abbreviations
 # コマンドにコメントをつけておく、fzfでのgrepability上がるため
 # https://qiita.com/wataash/items/ab0a8b86b60e782f537f#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%81%AB%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%92%E3%81%A4%E3%81%91%E3%81%A6%E3%81%8A%E3%81%8F
 abbr --add g git
@@ -33,201 +32,17 @@ abbr --add dc docker compose
 abbr --add dcl --set-cursor 'docker compose -f (find_docker_compose) logs -f --tail=500 % # show current repository docker compose log'
 abbr --add dcd --set-cursor 'docker compose % -f (find_docker_compose) down'
 abbr --add dcu --set-cursor 'docker compose % -f (find_docker_compose) up --build -d'
-function find_docker_compose
-    # ───────────────────────────────────────────────────────────────────
-    # 1) Gitリポジトリ or worktree ルートを取得
-
-    set -l repo_root (git rev-parse --show-toplevel 2>/dev/null)
-    if test -z "$repo_root"
-        echo "Error: Not inside a Git repository." >&2
-        return 1
-    end
-
-    # ───────────────────────────────────────────────────────────────────
-    # 2) 一箇所にまとめたファイル名パターンと典型ディレクトリリスト
-    set -l patterns docker-compose.yml docker-compose.yaml compose.yml compose.yaml
-    set -l dirs \
-        $repo_root \
-        $repo_root/etc/docker \
-        $repo_root/docker \
-        $repo_root/docker-compose
-
-    # ───────────────────────────────────────────────────────────────────
-    # 3) 超高速チェック: 典型ディレクトリの下を順に探す
-    for d in $dirs
-        for p in $patterns
-            set -l candidate "$d/$p"
-            if test -f "$candidate"
-                echo $candidate
-
-                return 0
-            end
-        end
-    end
-
-    # ───────────────────────────────────────────────────────────────────
-    # 4) 深さ制限付きサーチ (fd があれば fd、なければ find)
-    if type -q fd
-        # fd にパターンを渡す
-        set -l fd_args --hidden --max-depth 4 --type f
-        for p in $patterns
-            set fd_args $fd_args --glob $p
-        end
-        set -l result (fd $fd_args $repo_root | head -n1)
-    else
-        # find 用に "-name X -o -name Y ..." を準備
-        set -l name_args
-        for p in $patterns
-            set name_args $name_args -name $p -o
-        end
-        # 末尾の "-o" を削除
-        set name_args $name_args[1..-2]
-
-        set -l result (find $repo_root -maxdepth 4 -type f \( $name_args \) | head -n1)
-    end
-
-    if test -n "$result"
-        echo $result
-        return 0
-    end
-
-    echo "Error: Docker Compose file not found." >&2
-    return 1
-end
 
 abbr --add cpe 'COMPOSE_PROFILES='
 abbr --add ld lazydocker
 abbr --add lg lazygit
 
-function fkill
-    ps aux \
-        | fzf \
-        --header-lines=1 \
-        --multi \
-        --preview 'echo {}' \
-        --preview-window=down:40%:wrap \
-        | awk '{print $2}' \
-        | xargs kill -9
-end
-
-# ------------- }}}
-
-# ------------- font color setting {{{
-# https://fishshell.com/docs/current/cmds/set_color.html
-# https://reiichii.hateblo.jp/entry/2022/01/05/194823
-set -U black brblack # 背景色と同化して読めないため
-# ------------- }}}
-
-# ------------- mise setting {{{
-if type -q mise
-    ~/.local/bin/mise activate fish | source
-end
-
-# default packages
-set -gx MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
-set -gx MISE_NODE_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-npm-packages
-set -gx MISE_GO_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-go-packages
-# ------------- }}}
-
-# ------------- history setting {{{
-# historyサイズ制限を拡大
-set -g fish_history_max 100000
-
-# 重複するコマンドを履歴に保存しない
-set -g fish_history_ignore_duplicates 1
-
-# 先頭にスペースがあるコマンドを履歴に保存しない（秘密情報入力時に便利）
-set -g fish_history_ignore_space 1
-
-# 複数セッション間でのhistory共有を有効化（パフォーマンス最適化）
-function __fish_shared_history --on-event fish_prompt
-    # 過度な頻度での実行を避けるため、10コマンドに1回実行
-    if test (math (random) % 10) -eq 0
-        history --save 2>/dev/null
-        history --merge 2>/dev/null
+# Load my custom configurations in order
+for file in ~/.config/fish/my/conf.d/*.fish
+    if test -r $file
+        source $file
     end
 end
-# ------------- }}}
 
-# ------------- etc setting {{{
-set PSQL_EDITOR nvim
-set GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
-set -gx EDITOR nvim
-set -gx VISUAL nvim
-
-# https://github.com/ajeetdsouza/zoxide
-if type -q zoxide
-    zoxide init fish | source
-end
-# ------------- }}}
-
-# ------------- path setting {{{
-# path設定はfish_add_pathを利用
-# https://zenn.dev/estra/articles/zenn-fish-add-path-final-answer
-
-# for golang
-# https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
-set GOPATH $HOME/go
-fish_add_path $GOPATH/bin
-
-# for deno
-set DENO_INSTALL $HOME/.deno
-fish_add_path $DENO_INSTALL/bin
-
-# for pip3
-fish_add_path $HOME/.local/bin
-
-# for fzf
-fish_add_path $HOME/.fzf/bin
-
-# volta setting
-# nodeのバージョン管理はmiseに移行しているためコメントアウト
-# https://docs.volta.sh/guide/getting-started
-# http://gitlab.fdev/webconnect/material/material_registration/-/merge_requests/6511
-# set VOLTA_FEATURE_PNPM 1
-# set -gx VOLTA_HOME "$HOME/.volta"
-# fish_add_path $VOLTA_HOME/bin
-
-# for win32yank
-# https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#%E3%83%9E%E3%82%A6%E3%82%B9%E6%93%8D%E4%BD%9C%E3%82%84%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%9C%E3%83%BC%E3%83%89%E5%85%B1%E6%9C%89%E3%82%92%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B
-fish_add_path $HOME/bin
-
-# docker setting
-# https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#wsl2%E3%81%AEpath%E3%81%8B%E3%82%89windows%E3%83%91%E3%82%B9%E3%82%92%E6%8A%9C%E3%81%8F
-fish_add_path /mnt/c/Program\ Files/Docker/Docker/resources/bin
-
-# rust setting
-fish_add_path $HOME/.cargo/bin
-
-set TERM screen-256color
-
-# for copilot at with zscaler credential
-set NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
-
-# bun
-set --export BUN_INSTALL "$HOME/.bun"
-fish_add_path $BUN_INSTALL/bin
-
-# Rye
-# https://github.com/astral-sh/rye
-set -Ua fish_user_paths "$HOME/.rye/shims"
-# ------------- }}}
-
-# ------------- prompt setting {{{
-# now use tide. install via fisher
-# https://github.com/IlanCosman/tide
-# shorten current directory length
-# https://github.com/IlanCosman/tide/issues/227
-set -U tide_prompt_min_cols 10000
-# right promptは非表示
-# ターミナルコピペ時に不便なため
-# items(list)は空で設定
-# https://github.com/IlanCosman/tide/wiki/Configuration#right_prompt
-set -U tide_right_prompt_items
-# ------------- }}}
-
-# tabtab source for packages
-# uninstall by removing these lines
-if test -f ~/.config/tabtab/fish/__tabtab.fish
-    source ~/.config/tabtab/fish/__tabtab.fish
-end
+# Add my functions directory to fish_function_path
+set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
