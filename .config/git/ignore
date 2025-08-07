@@ -1,2 +1,9 @@
-.local_memo/
-nishiyama_work/
+# レポジトリ直下の個人作業dir
+.local_memo/*
+nishiyama_work/*
+
+# worktree利用時のパス
+git-worktrees/*
+
+# claude
+**/.claude/settings.local.json
