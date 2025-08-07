@@ -75,7 +75,6 @@ function find_docker_compose
         end
         set -l result (fd $fd_args $repo_root | head -n1)
     else
-
         # find 用に "-name X -o -name Y ..." を準備
         set -l name_args
         for p in $patterns
@@ -120,7 +119,9 @@ set -U black brblack # 背景色と同化して読めないため
 # ------------- }}}
 
 # ------------- mise setting {{{
-~/.local/bin/mise activate fish | source
+if type -q mise
+    ~/.local/bin/mise activate fish | source
+end
 
 # default packages
 set -gx MISE_PYTHON_DEFAULT_PACKAGES_FILE $HOME/.config/mise/.default-python-packages
@@ -138,10 +139,13 @@ set -g fish_history_ignore_duplicates 1
 # 先頭にスペースがあるコマンドを履歴に保存しない（秘密情報入力時に便利）
 set -g fish_history_ignore_space 1
 
-# 複数セッション間でのhistory共有を有効化
+# 複数セッション間でのhistory共有を有効化（パフォーマンス最適化）
 function __fish_shared_history --on-event fish_prompt
-    history --save 2>/dev/null
-    history --merge 2>/dev/null
+    # 過度な頻度での実行を避けるため、10コマンドに1回実行
+    if test (math (random) % 10) -eq 0
+        history --save 2>/dev/null
+        history --merge 2>/dev/null
+    end
 end
 # ------------- }}}
 
@@ -152,7 +156,9 @@ set -gx EDITOR nvim
 set -gx VISUAL nvim
 
 # https://github.com/ajeetdsouza/zoxide
-zoxide init fish | source
+if type -q zoxide
+    zoxide init fish | source
+end
 # ------------- }}}
 
 # ------------- path setting {{{
@@ -222,4 +228,6 @@ set -U tide_right_prompt_items
 
 # tabtab source for packages
 # uninstall by removing these lines
-[ -f ~/.config/tabtab/fish/__tabtab.fish ]; and . ~/.config/tabtab/fish/__tabtab.fish; or true
+if test -f ~/.config/tabtab/fish/__tabtab.fish
+    source ~/.config/tabtab/fish/__tabtab.fish
+end
