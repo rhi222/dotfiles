@@ -5,47 +5,54 @@ local RepositoryType = {
 	BITBUCKET = "bitbucket",
 }
 
--- Retrieves the URL of the Git repository from the remote origin configuration.
+-- 1) リモート URL のパースを Lua 文字列操作に置き換え
 local function getRepositoryURL()
-	local repo_url = vim.fn.systemlist(
-		"git config --get remote.origin.url | grep -oP '(?<=git@|https://)(.*)(?=.git)' | sed 's/:/\\//'"
-	)[1]
-	if repo_url == "" then
+	-- 1) リモート URL を取得
+	local raw = vim.fn.system("git remote get-url origin 2> /dev/null"):gsub("%s+", "")
+	if raw == "" then
 		print("Unable to retrieve repository URL")
 		return nil
 	end
-	return repo_url
+
+	-- 2) SSH のパターンを HTTPS 風に正規化
+	--    git@github.com:owner/repo.git      → github.com/owner/repo
+	--    ssh://git@github.com/owner/repo.git → github.com/owner/repo
+	--    https://github.com/owner/repo.git   → github.com/owner/repo
+	local host_path = raw
+		-- strip protocol prefixes
+		:gsub("^git@", "")
+		:gsub("^ssh://git@", "")
+		:gsub("^ssh://", "")
+		:gsub("^https?://", "")
+		-- strip .git suffix
+		:gsub("%.git$", "")
+		-- convert ":" (SSH のパス区切り) を "/"
+		:gsub(":", "/")
+
+	return host_path
 end
 
--- Determines the type of repository based on the URL.
-local function getRepositoryType(repo_url)
-	if string.find(repo_url, "github") then
-		return RepositoryType.GITHUB
-	elseif string.find(repo_url, "gitlab") then
-		return RepositoryType.GITLAB
-	elseif string.find(repo_url, "bitbucket") then
-		return RepositoryType.BITBUCKET
-	else
+-- 2) ファイルパスの取得を Lua だけで完結
+
+local function getFilePathFromRepoRoot()
+	local repo_root = vim.fn.systemlist("git rev-parse --show-toplevel 2> /dev/null")[1]
+	if repo_root == "" then
+		print("Unable to find repository root")
 		return nil
 	end
-end
-
--- Gets the file path from the repository root.
-local function getFilePathFromRepoRoot()
-	local filename = vim.fn.expand("%")
-	local filepath = vim.fn.systemlist("git ls-files --full-name " .. filename)[1]
-	if filepath == "" then
+	local fullpath = vim.fn.expand("%:p")
+	-- repo_root + "/" の長さを取って切り出し
+	local prefix = repo_root:gsub("/+$", "") .. "/"
+	if not fullpath:find(prefix, 1, true) then
 		print("Unable to find file in repository")
 		return nil
 	end
-	return filepath
+	return fullpath:sub(#prefix + 1)
 end
 
--- normalモードの場合はカーソル位置の行数を取得
--- visualモードの場合は選択範囲の行数を取得
+-- normal/visual で行範囲を取る部分はそのまま
 local function getCurrentLineRange(mode)
 	if mode == "n" then
-		-- normalモードの場合はカーソル位置の行数を取得
 		local line = vim.fn.line(".")
 		return line, line
 	elseif mode == "v" then
@@ -54,67 +61,81 @@ local function getCurrentLineRange(mode)
 	return nil, nil
 end
 
--- URLエンコード関数（スラッシュは対象外）
+-- URL エンコード（スラッシュは除外）
+
 local function urlencode(str)
-	if str then
-		str = string.gsub(str, "\n", "\r\n")
-		str = string.gsub(str, "([^%w%-%.%_%~%/])", function(c)
-			return string.format("%%%02X", string.byte(c))
-		end)
+	if not str then
+		return ""
 	end
-	return str
+	str = str:gsub("\n", "\r\n")
+	return (str:gsub("([^%w%-%.%_%~%/])", function(c)
+		return string.format("%%%02X", string.byte(c))
+	end))
 end
 
--- Generates a URL to the file in the Git hosting service.
+-- URL 組み立て
 local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
-	local base_url = (repo_type == RepositoryType.GITLAB and "http://" or "https://") .. repo_url
-	local path = (repo_type == RepositoryType.BITBUCKET and "/src/" or "/blob/") .. hash .. "/" .. filepath
+	-- いつでも HTTPS
+	local base = "https://" .. repo_url
+
+	-- ブラブ部はそのまま
+	local blob = (repo_type == RepositoryType.BITBUCKET) and "/src/" or "/blob/"
+
+	local path = blob .. hash .. "/" .. filepath
+
 	local line_ref = (repo_type == RepositoryType.BITBUCKET and "#lines-" or "#L") .. start_line
-	-- NOTE: repo_typeで範囲選択の仕方が違うので注意
-	-- -- gitlabのときは -, githubのときは -L, bitbucketのときは :
 	if start_line ~= end_line then
-		line_ref = line_ref
-			.. (repo_type == RepositoryType.GITLAB and "-" or (repo_type == RepositoryType.GITHUB and "-L" or ":"))
-			.. end_line
+		local sep = (repo_type == RepositoryType.GITLAB and "-" or (repo_type == RepositoryType.GITHUB and "-L" or ":"))
+		line_ref = line_ref .. sep .. end_line
 	end
-	local encoded_path = urlencode(path)
-	return base_url .. encoded_path .. line_ref
+
+	return base .. urlencode(path) .. line_ref
 end
 
--- Main function to handle the open URL command.
+-- Main
 function OpenGitURL(mode)
 	local repo_url = getRepositoryURL()
 	if not repo_url then
 		return
 	end
 
-	local repo_type = getRepositoryType(repo_url)
-	-- 明示的に対応したレポジトリ管理ツール以外はエラーを出力
+	local repo_type = nil
+
+	if repo_url:match("github") then
+		repo_type = RepositoryType.GITHUB
+	elseif repo_url:match("gitlab") then
+		repo_type = RepositoryType.GITLAB
+	elseif repo_url:match("bitbucket") then
+		repo_type = RepositoryType.BITBUCKET
+	end
 	if not repo_type then
-		print("This repository is not supported. only github, gitlab, bitbucket are supported.")
+		print("Unsupported repository (only GitHub/GitLab/Bitbucket)")
 		return
 	end
 
 	local filepath = getFilePathFromRepoRoot()
+
 	if not filepath then
 		return
 	end
 
-	local hash = vim.fn.systemlist("git rev-parse HEAD")[1]
+	local hash = vim.fn.systemlist("git rev-parse HEAD 2> /dev/null")[1]
 	if hash == "" then
 		print("Unable to retrieve Git hash")
 		return
 	end
 
-	local start_line, end_line = getCurrentLineRange(mode)
-	local url = generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
+	local s, e = getCurrentLineRange(mode)
+	local url = generateGitUrl(repo_type, repo_url, hash, filepath, s, e)
 
 	print("Opening URL: " .. url)
-	-- wsl-open
-	-- https://github.com/4U6U57/wsl-open/tree/master
-	vim.fn.jobstart("wsl-open " .. url)
+	-- 3) jobstart を引数テーブルで呼び出し
+	vim.fn.jobstart({ "wsl-open", url }, { detach = true })
 end
 
-vim.api.nvim_create_user_command("OpenGit", OpenGitURL, { nargs = 0 })
-vim.keymap.set("n", "<leader>og", ":lua OpenGitURL('n')<CR>", { noremap = true, silent = true })
+-- コマンド／マッピング登録
+vim.api.nvim_create_user_command("OpenGit", function()
+	OpenGitURL("n")
+end, {})
+vim.keymap.set("n", "<leader>og", ":OpenGit<CR>", { noremap = true, silent = true })
 vim.keymap.set("v", "<leader>og", ":lua OpenGitURL('v')<CR>", { noremap = true, silent = true })
