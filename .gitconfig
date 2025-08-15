@@ -7,10 +7,9 @@
 	pager = delta
 [alias]
 	st  = status
-	# ch  = checkout
 	ch  = !echo "Use git switch/restore instead!"
 	sw = switch
-	fsw = !git branch -a | fzf | xargs git switch
+	fsw = "!fish -c git-fsw" # branch 選択 + プレビュー + 自動追跡ブランチ作成
 	co  = commit
 	me  = merge
 	re  = rebase
