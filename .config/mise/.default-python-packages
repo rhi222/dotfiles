@@ -1,4 +1,4 @@
-'python-lsp-server[all]'
+"python-lsp-server[all]"
 boto3
 requests
 ruff
