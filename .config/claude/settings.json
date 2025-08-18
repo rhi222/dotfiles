@@ -1,9 +1,12 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
+      "Bash(awk:*)",
       "Bash(cp:*)",
       "Bash(find:*)",
       "Bash(find:*)",
+      "Bash(git remote show:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(ls:*)",
@@ -25,7 +28,5 @@
       "Read(.env.*)",
       "Read(id_rsa)"
     ]
-  },
-  "includeCoAuthoredBy": false,
-  "editor": "nvim"
+  }
 }
