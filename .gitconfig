@@ -6,21 +6,22 @@
 	whitespace = cr-at-eol
 	pager = delta
 [alias]
-	st  = status
 	ch  = !echo "Use git switch/restore instead!"
-	sw = switch
-	fsw = "!fish -c git-fsw" # branch 選択 + プレビュー + 自動追跡ブランチ作成
 	co  = commit
-	me  = merge
-	re  = rebase
-	fe  = fetch
-	l  = log
-	ss = status -s
-	sh = show
-	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
-	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
 	current-hash="show --format='%H' --no-patch"
+	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
+	fe  = fetch
+	fsw = "!fish -c git-fsw" # branch 選択 + プレビュー + 自動追跡ブランチ作成
+	l  = log
+	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
+	me  = merge
+	pl = !git pull origin $(git branch --show-current)
+	re  = rebase
+	sh = show
+	ss = status -s
+	st  = status
+	sw = switch
 [ghq]
 	root = /data/git-repos
 [credential]
