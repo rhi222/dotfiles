@@ -75,8 +75,9 @@ end
 
 -- URL 組み立て
 local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
-	-- いつでも HTTPS
-	local base = "https://" .. repo_url
+	-- gitlab.fdev ドメインの場合は HTTP、それ以外は HTTPS
+	local protocol = repo_url:match("gitlab%.fdev") and "http://" or "https://"
+	local base = protocol .. repo_url
 
 	-- ブラブ部はそのまま
 	local blob = (repo_type == RepositoryType.BITBUCKET) and "/src/" or "/blob/"
