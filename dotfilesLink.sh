@@ -26,6 +26,7 @@ ln -snf $PWD/.config/fish/my ~/.config/fish/my
 ln -snf $PWD/.config/ccmanager ~/.config/ccmanager
 ln -snf $PWD/.config/nvim ~/.config/nvim
 ln -snf $PWD/.config/git ~/.config/git
+ln -snf $PWD/.config/gwq ~/.config/gwq
 ln -snf $PWD/.config/mise ~/.config/mise
 ln -snf $PWD/.config/gitui ~/.config/gitui
 ln -snf $PWD/.config/lazygit ~/.config/lazygit
