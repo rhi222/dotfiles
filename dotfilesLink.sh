@@ -23,6 +23,7 @@ ln -snf $PWD/.config/fish/config.fish ~/.config/fish/config.fish
 ln -snf $PWD/.config/fish/my ~/.config/fish/my
 
 # Development tools configuration
+ln -snf $PWD/.config/ccmanager ~/.config/ccmanager
 ln -snf $PWD/.config/nvim ~/.config/nvim
 ln -snf $PWD/.config/git ~/.config/git
 ln -snf $PWD/.config/mise ~/.config/mise
