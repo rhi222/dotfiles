@@ -2,6 +2,7 @@
 @mistweaverco/kulala-fmt
 aws-cdk
 biome
+ccmanager
 neovim
 npm-check-updates
 prettier
