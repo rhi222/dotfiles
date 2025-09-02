@@ -1,0 +1,36 @@
+{
+  "shortcuts": {
+    "returnToMenu": {
+      "key": "e",
+      "ctrl": true,
+      "alt": false,
+      "shift": false
+    },
+    "cancel": {
+      "key": "escape",
+      "ctrl": false,
+      "alt": false,
+      "shift": false
+    }
+  },
+  "statusHooks": {},
+  "worktree": {
+    "autoDirectory": true,
+    "autoDirectoryPattern": "/home/nishiyama/git-worktrees/{branch}",
+    "copySessionData": true
+  },
+  "command": {
+    "command": "claude"
+  },
+  "commandPresets": {
+    "presets": [
+      {
+        "id": "1",
+        "name": "Main",
+        "command": "claude"
+      }
+    ],
+    "defaultPresetId": "1"
+  },
+  "worktreeHooks": {}
+}
