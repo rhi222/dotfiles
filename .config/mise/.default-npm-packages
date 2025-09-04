@@ -1,5 +1,6 @@
 @anthropic-ai/claude-code
 @mistweaverco/kulala-fmt
+@openai/codex
 aws-cdk
 biome
 ccmanager
