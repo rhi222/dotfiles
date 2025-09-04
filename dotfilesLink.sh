@@ -17,6 +17,9 @@ ln -snf $PWD/.config/claude/settings.json ~/.claude/settings.json
 ln -snf $PWD/.config/claude/commands ~/.claude/commands
 ln -snf $PWD/.config/claude/agents ~/.claude/agents
 
+# codex
+ln -snf $PWD/.config/codex/config.toml ~/.codex/config.toml
+
 # Fish shell configuration
 # Create fish config directory and link individual components
 ln -snf $PWD/.config/fish/config.fish ~/.config/fish/config.fish
