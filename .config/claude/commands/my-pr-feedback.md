@@ -1,4 +1,7 @@
-## PR Feedback
+---
+description: "Pull Request のレビューコメントを効率的に対応するためのガイド"
+allowed-tools: Bash(gh:*)
+---
 
 Pull Request のレビューコメントを効率的に対応し、エラー分析 3 段階アプローチで根本解決を図ります。
 

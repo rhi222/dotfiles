@@ -1,4 +1,7 @@
-# PR生成コマンド
+---
+description: "Pull Request を自動生成するコマンド"
+allowed-tools: Bash(gh:*)
+---
 
 現在のブランチの変更内容を分析し、適切なPull Requestを生成します。
 
