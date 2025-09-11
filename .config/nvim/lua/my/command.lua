@@ -6,5 +6,6 @@ return {
 	require("my/commands/temporary-work"),
 	require("my/commands/cd"),
 	require("my/commands/cp-current-file-path"),
+	require("my/commands/cp-to-host"),
 }
 -- }}} -------------------------------
