@@ -5,8 +5,20 @@ local function copy_current_file_path()
 		vim.notify("No file path available", vim.log.levels.WARN)
 		return
 	end
-	vim.fn.setreg("+", path)
-	vim.notify("Copied to clipboard: " .. path, vim.log.levels.INFO)
+
+	-- Get repository root path
+	local git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
+	local final_path = path
+
+	if vim.v.shell_error == 0 and git_root ~= "" then
+		-- We're in a git repository, get relative path from repo root
+		local full_path = vim.fn.expand("%:p")
+		local repo_relative_path = vim.fn.fnamemodify(full_path, ":s?" .. vim.fn.escape(git_root, "?\\") .. "/??")
+		final_path = repo_relative_path
+	end
+
+	vim.fn.setreg("+", final_path)
+	vim.notify("Copied to clipboard: " .. final_path, vim.log.levels.INFO)
 end
 
 vim.api.nvim_create_user_command(
