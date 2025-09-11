@@ -1,4 +1,7 @@
-## PR Auto Update
+---
+description: "Pull Request の説明とラベルを自動更新するコマンド"
+allowed-tools: Bash(gh:*)
+---
 
 ## 概要
 
