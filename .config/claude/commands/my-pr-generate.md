@@ -1,6 +1,6 @@
 ---
 description: "Pull Request を自動生成するコマンド"
-allowed-tools: Bash(gh:*)
+allowed-tools: Bash(gh:*),Bash(git rev-parse:*),Bash(git log:*),Bash(git diff:*),Bash(git remote show:*),Bash(awk:*),Bash(grep:*),Bash(glob:*)
 ---
 
 現在のブランチの変更内容を分析し、適切なPull Requestを生成します。
