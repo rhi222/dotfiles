@@ -172,6 +172,8 @@ return {
 			{ "j-hui/fidget.nvim", tag = "v1.6.1", opts = {} },
 			-- Additional lua configuration, makes nvim stuff amazing!
 			{ "folke/neodev.nvim", opts = {} },
+			-- Ensure cmp capabilities are available before servers attach
+			"hrsh7th/cmp-nvim-lsp",
 		},
 		config = function()
 			require("my/plugins/nvim-lspconfig")

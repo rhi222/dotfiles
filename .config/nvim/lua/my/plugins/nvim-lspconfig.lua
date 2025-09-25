@@ -1,6 +1,3 @@
--- see: https://github.com/neovim/nvim-lspconfig#suggested-configuration
--- Global diagnostic key mappings
--- See `:help vim.diagnostic.*` for documentation on any of the below functions
 local diagnostic = vim.diagnostic
 vim.keymap.set("n", "<space>e", diagnostic.open_float, { desc = "Open diagnostic float" })
 vim.keymap.set("n", "[d", diagnostic.goto_prev, { desc = "Previous diagnostic" })
@@ -8,10 +5,100 @@ vim.keymap.set("n", "]d", diagnostic.goto_next, { desc = "Next diagnostic" })
 vim.keymap.set("n", "<space>q", diagnostic.setloclist, { desc = "Diagnostics to location list" })
 
 -- LSP attachment時にバッファローカルのキー設定を行う関数
+
+-- Diagnosticの表示方法を変更
+-- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
+local function format_virtual_text(entry)
+	local segments = { entry.message }
+	if entry.source then
+		table.insert(segments, string.format("%s", entry.source))
+	end
+	if entry.code then
+		table.insert(segments, string.format("%s", entry.code))
+	end
+	if #segments == 1 then
+		return segments[1]
+	end
+	return string.format("%s (%s)", segments[1], table.concat(segments, ": ", 2))
+end
+
+diagnostic.config({
+	float = { border = "rounded" },
+	severity_sort = true,
+	signs = true,
+	update_in_insert = false,
+	virtual_text = { format = format_virtual_text },
+})
+
+local function get_capabilities()
+	local capabilities = vim.lsp.protocol.make_client_capabilities()
+	local ok, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+	if ok then
+		capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
+	end
+	capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFoldingOnly = true }
+	return capabilities
+end
+
+local default_capabilities = get_capabilities()
+
+local servers_without_formatting = { ts_ls = true }
+
+local has_new_lsp = vim.fn.has("nvim-0.11") == 1 and type(vim.lsp) == "table" and vim.lsp.config
+
+local legacy_lspconfig = nil
+if not has_new_lsp then
+	local ok, mod = pcall(require, "lspconfig")
+	if ok then
+		legacy_lspconfig = mod
+	end
+end
+
+local function setup_server(server, opts)
+	if has_new_lsp then
+		local overrides = opts and vim.tbl_deep_extend("force", {}, opts) or nil
+		if overrides then
+			vim.lsp.config(server, overrides)
+		end
+		if type(vim.lsp.enable) == "function" then
+			vim.lsp.enable(server)
+		end
+		return true
+	end
+	if legacy_lspconfig and type(legacy_lspconfig[server]) == "table" and type(legacy_lspconfig[server].setup) == "function" then
+		legacy_lspconfig[server].setup(opts)
+		return true
+	end
+	vim.notify_once(
+		string.format("LSP server '%s' is unavailable in this Neovim setup", server),
+		vim.log.levels.WARN
+	)
+	return false
+end
+
+local function enable_inlay_hints(buf)
+	local ih = vim.lsp.inlay_hint
+	if type(ih) ~= "table" then
+		return
+	end
+	if type(ih.enable) ~= "function" then
+		return
+	end
+	local ok = pcall(ih.enable, buf, true)
+	if not ok then
+		pcall(ih.enable, true, { bufnr = buf })
+	end
+end
+
 local on_lsp_attach = function(ev)
 	local buf = ev.buf
+	local client = vim.lsp.get_client_by_id(ev.data.client_id)
+	if not client then
+		return
+	end
 	-- Enable omni-completion
 	vim.bo[buf].omnifunc = "v:lua.vim.lsp.omnifunc"
+	vim.bo[buf].formatexpr = "v:lua.vim.lsp.formatexpr()"
 
 	-- 定義したマッピングをテーブルでまとめる
 	local mappings = {
@@ -43,8 +130,31 @@ local on_lsp_attach = function(ev)
 
 	local opts = { buffer = buf }
 	for _, map in ipairs(mappings) do
-		opts.desc = map.desc
-		vim.keymap.set(map.mode, map.key, map.func, opts)
+		local map_opts = vim.tbl_extend("force", opts, { desc = map.desc })
+		vim.keymap.set(map.mode, map.key, map.func, map_opts)
+	end
+
+	if servers_without_formatting[client.name] then
+		client.server_capabilities.documentFormattingProvider = false
+		client.server_capabilities.documentRangeFormattingProvider = false
+	end
+
+	if client.supports_method("textDocument/documentHighlight") then
+		local group = vim.api.nvim_create_augroup("UserLspDocumentHighlight" .. buf, { clear = true })
+		vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+			group = group,
+			buffer = buf,
+			callback = vim.lsp.buf.document_highlight,
+		})
+		vim.api.nvim_create_autocmd("CursorMoved", {
+			group = group,
+			buffer = buf,
+			callback = vim.lsp.buf.clear_references,
+		})
+	end
+
+	if client.supports_method("textDocument/inlayHint") then
+		enable_inlay_hints(buf)
 	end
 end
 
@@ -56,17 +166,24 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	callback = on_lsp_attach,
 })
 
--- Diagnosticの表示方法を変更
--- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
-vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(vim.lsp.handlers["textDocument/publishDiagnostics"], {
-	update_in_insert = false,
-	virtual_text = {
-		format = function(diagnostic)
-			return string.format("%s (%s: %s)", diagnostic.message, diagnostic.source, diagnostic.code)
-		end,
+-- pylsp は自動有効化から除外したので、ここで個別設定
+setup_server("pylsp", {
+	capabilities = default_capabilities,
+	settings = {
+		pylsp = {
+			plugins = {
+				pycodestyle = {
+					maxLineLength = 150,
+					ignore = { "E402" }, -- module level import not at top of file
+				},
+				ruff = { enabled = false }, -- use dedicated ruff_lsp server when available
+			},
+		},
 	},
 })
 
--- 参考記事:
--- https://zenn.dev/fukakusa_kadoma/articles/99e8f3ab855a56
--- https://zenn.dev/ryoppippi/articles/8aeedded34c914
+-- 他サーバを上書きしたい場合の雛形（必要なときだけ追記）
+-- vim.lsp.config.ts_ls.setup({
+--   on_attach = function(client, bufnr) ... end,
+--   capabilities = capabilities,
+-- })
