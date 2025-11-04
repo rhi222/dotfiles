@@ -1,10 +1,12 @@
 [tools]
+"npm:pnpm" = "latest"
 aws = "latest"
 bun = "latest"
 go = "latest"
 node = "latest"
-"npm:pnpm" = "latest"
 python = "latest"
+rust = "latest"
+uv = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
