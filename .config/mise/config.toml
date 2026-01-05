@@ -3,10 +3,15 @@
 aws = "latest"
 bun = "latest"
 go = "latest"
-node = "latest"
+node = "24"
 python = "latest"
 rust = "latest"
 uv = "latest"
 
 [settings]
-idiomatic_version_file_enable_tools = ["python"]
+# idiomatic version files を尊重（repo 単位で pin できる）
+idiomatic_version_file_enable_tools = [
+  "node",
+  "python",
+  "go",
+]
