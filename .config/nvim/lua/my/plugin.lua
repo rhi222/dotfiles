@@ -204,7 +204,7 @@ return {
 	-- finder
 	{
 		"nvim-telescope/telescope.nvim",
-		tag = "0.1.8", -- 公式READMEがtag指定推奨
+		tag = "v0.2.1", -- 公式READMEがtag指定推奨
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			{
