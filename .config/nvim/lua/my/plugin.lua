@@ -89,14 +89,14 @@ return {
 		end,
 		keys = {
 			{
-				"<leader>ap",
+				"<leader>cp",
 				function()
 					require("CopilotChat").select_prompt({ context = { "buffers" } })
 				end,
 				desc = "CopilotChat - Prompts",
 			},
 			{
-				"<leader>ap",
+				"<leader>cp",
 				function()
 					require("CopilotChat").select_prompt()
 				end,
@@ -104,7 +104,7 @@ return {
 				desc = "CopilotChat - Prompts",
 			},
 			{
-				"<leader>ad",
+				"<leader>cd",
 				":CopilotChatShowPrompt<CR>",
 				mode = { "x", "n", "i" },
 				desc = "CopilotChat - show Prompts",
@@ -465,6 +465,101 @@ return {
 		config = function()
 			require("my/plugins/todo-comments")
 		end,
+	},
+	-- https://github.com/folke/sidekick.nvim?tab=readme-ov-file
+	{
+		"folke/sidekick.nvim",
+		opts = {
+			-- add any options here
+			cli = {
+				mux = {
+					backend = "tmux",
+					enabled = true,
+				},
+			},
+		},
+		keys = {
+			{
+				"<tab>",
+				function()
+					-- if there is a next edit, jump to it, otherwise apply it if any
+					if not require("sidekick").nes_jump_or_apply() then
+						return "<Tab>" -- fallback to normal tab
+					end
+				end,
+
+				expr = true,
+				desc = "Goto/Apply Next Edit Suggestion",
+			},
+			{
+				"<c-.>",
+				function()
+					require("sidekick.cli").toggle()
+				end,
+				desc = "Sidekick Toggle",
+				mode = { "n", "t", "i", "x" },
+			},
+
+			{
+				"<leader>st",
+				function()
+					require("sidekick.cli").toggle()
+				end,
+				desc = "Sidekick Toggle CLI",
+			},
+			{
+				"<leader>ss",
+				function()
+					require("sidekick.cli").select()
+				end,
+				desc = "Select CLI",
+			},
+			{
+				"<leader>sd",
+				function()
+					require("sidekick.cli").close()
+				end,
+				desc = "Detach a CLI Session",
+			},
+			{
+				"<leader>se",
+				function()
+					require("sidekick.cli").send({ msg = "{this}" })
+				end,
+				mode = { "x", "n" },
+				desc = "Send This",
+			},
+			{
+				"<leader>sf",
+				function()
+					require("sidekick.cli").send({ msg = "{file}" })
+				end,
+				desc = "Send File",
+			},
+			{
+				"<leader>sv",
+				function()
+					require("sidekick.cli").send({ msg = "{selection}" })
+				end,
+				mode = { "x" },
+				desc = "Send Visual Selection",
+			},
+			{
+				"<leader>sp",
+				function()
+					require("sidekick.cli").prompt()
+				end,
+				mode = { "n", "x" },
+				desc = "Sidekick Select Prompt",
+			},
+			{
+				"<leader>sc",
+				function()
+					require("sidekick.cli").toggle({ name = "claude", focus = true })
+				end,
+				desc = "Sidekick Toggle Claude",
+			},
+		},
 	},
 }
 
