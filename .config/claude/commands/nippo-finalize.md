@@ -31,12 +31,11 @@ description: "日報を完成させる"
 
 ## 入力・出力
 
-| 項目             | パス                                                       | 説明                             |
-| ---------------- | ---------------------------------------------------------- | -------------------------------- |
-| **入力**         | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`                  | 日報ドラフトファイル             |
-| **参照**         | `~/Obsidian/02_Daily/nippo-goals.txt`                      | 目標設定ファイル（オプション）   |
-| **出力**         | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記)           | 分析結果が追記された完成日報     |
-| **バックアップ** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md.backup.timestamp` | 追記前のバックアップ（安全性確保） |
+| 項目     | パス                                          | 説明                           |
+| -------- | --------------------------------------------- | ------------------------------ |
+| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`     | 日報ドラフトファイル           |
+| **参照** | `~/Obsidian/02_Daily/nippo-goals.txt`         | 目標設定ファイル（オプション） |
+| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | 分析結果が追記された完成日報   |
 
 ## 処理フロー
 
@@ -183,23 +182,6 @@ description: "日報を完成させる"
     # ==========================================================================
 
     echo "📝 Phase 4: 結果追記"
-
-    # バックアップ作成
-    echo "💾 バックアップを作成中..."
-    BACKUP_FILE="${NIPPO_FILE}.backup.$(date +%s)"
-    if cp "$NIPPO_FILE" "$BACKUP_FILE" 2>/dev/null; then
-        echo "✓ バックアップ保持: $BACKUP_FILE"
-
-        # 元ファイル削除
-        if rm "$NIPPO_FILE" 2>/dev/null; then
-            echo "✓ 日報ファイル削除（バックアップは保持）"
-        else
-            echo "⚠️ 日報ファイルの削除に失敗（バックアップは作成済み）"
-        fi
-    else
-        echo "⚠️ バックアップの作成に失敗。元ファイルは保持されます"
-    fi
-
     echo "✅ Phase 4 完了: 結果追記"
     echo ""
 
@@ -211,7 +193,6 @@ description: "日報を完成させる"
     echo ""
     echo "📊 結果サマリー:"
     echo "  • 完成日報: $NIPPO_FILE (分析結果追記済み)"
-    echo "  • バックアップ: $BACKUP_FILE"
     echo "  • 処理時刻: $(date '+%Y年%m月%d日 %H:%M:%S')"
     echo ""
     echo "次のステップ:"
