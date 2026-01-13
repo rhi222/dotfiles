@@ -29,5 +29,8 @@
       "Read(id_rsa)"
     ]
   },
-  "language": "Japanese"
+  "language": "Japanese",
+  "enabledPlugins": {
+    "domain-model@forcia-claude-marketplace": true
+  }
 }
