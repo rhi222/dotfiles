@@ -3,10 +3,9 @@
 ; ============================================================
 ; AutoHotkey v2 - Snippet Paster (WSL share)
 ; ============================================================
-#Requires AutoHotkey v2.0
-#SingleInstance Force
-SendMode "Input"
-SetWorkingDir A_ScriptDir
+; NOTE:
+; - #SingleInstance / SendMode / SetWorkingDir は書かない
+; - include される前提のモジュール
 
 ; ----------------------------
 ; Config
@@ -184,7 +183,3 @@ for trig, meta in SNIPPETS {
 
     rootMenu.Show()
 }
-
-; (Optional) quick reload
-^!r::Reload
-
