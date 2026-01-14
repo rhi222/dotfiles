@@ -1,0 +1,3 @@
+AutoHotKey用の設定ファイル
+
+AutoHotKeyはwindows用のアプリケーションなので、本ディレクトリ配下はwindows環境にcpして利用すべし
