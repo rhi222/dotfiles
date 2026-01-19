@@ -418,6 +418,13 @@ return {
 		},
 	},
 	-- other
+	{
+		"rmagatti/auto-session",
+		lazy = false,
+		config = function()
+			require("my/plugins/auto-session")
+		end,
+	},
 	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
 	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
 	{

@@ -58,6 +58,8 @@ end
 vim.opt.termguicolors = true
 -- ファイル末尾のEOLを自動追加しない
 vim.opt.fixendofline = false
+-- auto-session: ensure multiple buffers are persisted
+vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
 
 -- wslで貼り付けにC-vを割り当てたためremap
 -- Ctrl+Shift+VでVisual Blockモードに入る
