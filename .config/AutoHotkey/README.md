@@ -14,10 +14,14 @@ C:\Users\<user>\Documents\AutoHotkey\
 └── text-snippet.ahk
 ```
 
+- `cp AutoHotkey/scripts/* /mnt/c/Users/<user>/Documents/AutoHotkey/`
+
 ```
 C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\
 └── main.ahkへのショートカット
 ```
+
+- Win + R → `shell:startup` でスタートアップフォルダを開けます。
 
 # ahk-snippets
 

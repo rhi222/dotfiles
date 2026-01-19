@@ -32,7 +32,9 @@ SNIPPETS := Map(
     ";cp-vi", Map("label", "Prompt: chatGPT-voice-input",   "rel", "prompts\chatGPT-voice-input.md"),
 
     ";js-fa", Map("label", "JS: forcast承認",              "rel", "js\forcast-approve.js"),
-    ";js-fk", Map("label", "JS: 出社状況登録",              "rel", "js\forcast-kintai.js")
+    ";js-fk", Map("label", "JS: 出社状況登録",              "rel", "js\forcast-kintai.js"),
+
+    ";md-sd", Map("label", "Markdown: summary-detail tag",              "rel", "markdown\summary-detail.md")
 )
 
 ; ============================================================
@@ -52,6 +54,8 @@ InferGroup(rel) {
         return "Prompts"
     if InStr(rel, "js\") = 1
         return "JavaScript"
+    if InStr(rel, "markdown\") = 1
+        return "Markdown"
     return "Other"
 }
 
