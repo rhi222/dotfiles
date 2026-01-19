@@ -22,3 +22,7 @@ abbr --add ld lazydocker
 abbr --add lg lazygit
 abbr --add gf 'cd (ghq root)/(ghq list | fzf)'
 abbr --add gw 'cd (gwq get)'
+
+# nvim
+abbr --add vi nvim
+abbr --add view 'nvim -R'
