@@ -8,6 +8,17 @@ python = "latest"
 rust = "latest"
 uv = "latest"
 
+# rustのグローバルパッケージ
+# go, node, pythonのように、.default-x-packagesがないため本ファイルで管理
+# https://mise.jdx.dev/dev-tools/backends/cargo.html
+"cargo:bottom" = "latest"
+"cargo:cargo-update" = "latest"
+"cargo:fd-find" = "latest"
+"cargo:git-delta" = "latest"
+"cargo:gitui" = "latest"
+"cargo:ripgrep" = "latest"
+"cargo:stylua" = "latest"
+
 [settings]
 # idiomatic version files を尊重（repo 単位で pin できる）
 idiomatic_version_file_enable_tools = [
