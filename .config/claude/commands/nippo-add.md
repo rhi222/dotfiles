@@ -48,6 +48,8 @@ Date: $(date +%Y-%m-%d)
 - [ ] タスク③
   - 期待アウトカム：
 
+参考: notionカンバンボード: https://www.notion.so/forcia-1dca17662dc7807b99bdc73aaa42d3c0?p=2e2a17662dc780e28825de9d4bfcfdb4&pm=s
+
 ---
 
 ## 作業ログ（分報・思考メモ）
