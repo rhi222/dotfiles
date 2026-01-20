@@ -5,6 +5,7 @@
 aws-cdk
 biome
 ccmanager
+ccusage
 neovim
 npm-check-updates
 prettier
