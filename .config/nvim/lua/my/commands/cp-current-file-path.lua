@@ -1,5 +1,5 @@
 -- Copy the current file path to the clipboard
-local function copy_current_file_path()
+local function copy_current_file_path(opts)
 	local path = vim.fn.expand("%")
 	if path == "" then
 		vim.notify("No file path available", vim.log.levels.WARN)
@@ -17,6 +17,15 @@ local function copy_current_file_path()
 		final_path = repo_relative_path
 	end
 
+	-- Add line numbers if in visual mode
+	if opts.range > 0 then
+		if opts.line1 == opts.line2 then
+			final_path = final_path .. ":" .. opts.line1
+		else
+			final_path = final_path .. ":" .. opts.line1 .. "-" .. opts.line2
+		end
+	end
+
 	vim.fn.setreg("+", final_path)
 	vim.notify("Copied to clipboard: " .. final_path, vim.log.levels.INFO)
 end
@@ -24,5 +33,5 @@ end
 vim.api.nvim_create_user_command(
 	"CpCurrentFilePath",
 	copy_current_file_path,
-	{ desc = "Copy the current file path to the clipboard" }
+	{ desc = "Copy the current file path to the clipboard", range = true }
 )
