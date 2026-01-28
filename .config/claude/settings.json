@@ -5,10 +5,9 @@
       "Bash(awk:*)",
       "Bash(cp:*)",
       "Bash(find:*)",
-      "Bash(find:*)",
+      "Bash(gh pr diff:*)",
       "Bash(git remote show:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
@@ -29,10 +28,10 @@
       "Read(id_rsa)"
     ]
   },
-  "plansDirectory": "./plans",
   "enabledPlugins": {
     "domain-model@forcia-claude-marketplace": true,
     "superpowers@claude-plugins-official": true
   },
-  "language": "Japanese"
+  "language": "Japanese",
+  "plansDirectory": "./plans"
 }
