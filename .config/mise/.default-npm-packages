@@ -1,5 +1,6 @@
 @anthropic-ai/claude-code
 @google/gemini-cli
+@marp-team/marp-cli
 @mistweaverco/kulala-fmt
 @openai/codex
 aws-cdk
