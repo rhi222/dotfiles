@@ -29,9 +29,10 @@
       "Read(id_rsa)"
     ]
   },
+  "plansDirectory": "./plans",
   "enabledPlugins": {
-    "domain-model@example-org-claude-marketplace": true
+    "domain-model@example-org-claude-marketplace": true,
+    "superpowers@claude-plugins-official": true
   },
-  "language": "Japanese",
-  "model": "sonnet"
+  "language": "Japanese"
 }
