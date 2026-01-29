@@ -34,7 +34,7 @@ description: "日報を完成させる"
 | 項目     | パス                                             | 説明                           |
 | -------- | ------------------------------------------------ | ------------------------------ |
 | **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ドラフトファイル           |
-| **参照** | `~/Obsidian/02_Daily/nippo-goals.txt`            | 目標設定ファイル（オプション） |
+| **参照** | `~/Obsidian/02_Daily/nippo-goals.md`            | 目標設定ファイル（オプション） |
 | **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | 分析結果が追記された完成日報   |
 
 ## 目標ファイルのフォーマット（OKR）
@@ -103,7 +103,7 @@ KR2.2: 重大指摘を0に
     # 基本変数の設定
     TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
     REPORT_FILE="$HOME/Obsidian/02_Daily/nippo-report_${TIMESTAMP}.md"
-    GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.txt"
+    GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.md"
 
     echo "📝 日報完成化処理を開始します..."
     echo "日付: $(date '+%Y年%m月%d日 %H:%M:%S')"
@@ -231,7 +231,7 @@ KR2.2: 重大指摘を0に
 #### 目標設定表示
 
 ```bash
-!GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.txt" && if [ -f "$GOALS_FILE" ]; then echo "=== 目標設定 ==="; cat "$GOALS_FILE"; echo ""; else echo "=== 目標設定 ==="; echo "目標が設定されていません。/nippo-goals で設定してください。"; echo ""; fi
+!GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.md" && if [ -f "$GOALS_FILE" ]; then echo "=== 目標設定 ==="; cat "$GOALS_FILE"; echo ""; else echo "=== 目標設定 ==="; echo "目標が設定されていません。/nippo-goals で設定してください。"; echo ""; fi
 ```
 
 #### 日報ドラフト参照
