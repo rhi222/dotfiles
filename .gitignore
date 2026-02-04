@@ -1,2 +1,3 @@
 .config/nvim/after
 .config/nvim/pack
+.config/codex/config.toml
