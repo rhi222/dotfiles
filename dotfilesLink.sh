@@ -18,6 +18,11 @@ ln -snf $PWD/.config/claude/commands ~/.claude/commands
 ln -snf $PWD/.config/claude/agents ~/.claude/agents
 
 # codex
+# Keep local config at ~/.codex/config.toml per official docs.
+mkdir -p ~/.codex
+if [ -e ~/.codex/config.toml ] && [ ! -L ~/.codex/config.toml ]; then
+  mv ~/.codex/config.toml ~/.codex/config.toml.bak.$(date +%Y%m%d%H%M%S)
+fi
 ln -snf $PWD/.config/codex/config.toml ~/.codex/config.toml
 
 # Fish shell configuration
