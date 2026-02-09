@@ -1,0 +1,14 @@
+# deck configuration
+# https://github.com/k1LoW/deck
+
+# テンプレート用のGoogleスライドID
+# basePresentationID: "YOUR_TEMPLATE_ID"
+
+# プレゼンテーション保存先のGoogle DriveフォルダID
+# folderID: "YOUR_FOLDER_ID"
+
+# 改行の処理（true: 改行を維持, false: 改行を無視）
+breaks: false
+
+# コードブロックを画像に変換するコマンド（オプション）
+# codeBlockToImageCommand: "silicon --output - --no-window-controls"
