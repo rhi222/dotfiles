@@ -38,3 +38,4 @@ ln -snf $PWD/.config/gwq ~/.config/gwq
 ln -snf $PWD/.config/mise ~/.config/mise
 ln -snf $PWD/.config/gitui ~/.config/gitui
 ln -snf $PWD/.config/lazygit ~/.config/lazygit
+ln -snf $PWD/.config/deck ~/.config/deck
