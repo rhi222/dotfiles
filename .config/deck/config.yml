@@ -2,10 +2,12 @@
 # https://github.com/k1LoW/deck
 
 # テンプレート用のGoogleスライドID
-# basePresentationID: "YOUR_TEMPLATE_ID"
+# https://docs.google.com/presentation/d/1-TNu-WYgCfnQsDO3LDaC0w9HPItDxo3GUh0_kYoN8vI/edit?slide=id.g9622d99dca_1_252#slide=id.g9622d99dca_1_252
+basePresentationID: "1-TNu-WYgCfnQsDO3LDaC0w9HPItDxo3GUh0_kYoN8vI"
 
 # プレゼンテーション保存先のGoogle DriveフォルダID
-# folderID: "YOUR_FOLDER_ID"
+# https://drive.google.com/drive/folders/1uF5XeAfEbZI6Jw51JA-LKjiKyf6OshCj
+folderID: "1uF5XeAfEbZI6Jw51JA-LKjiKyf6OshCj"
 
 # 改行の処理（true: 改行を維持, false: 改行を無視）
 breaks: false
