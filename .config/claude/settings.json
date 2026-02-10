@@ -33,5 +33,27 @@
     "superpowers@claude-plugins-official": true
   },
   "language": "Japanese",
-  "plansDirectory": "./plans"
+  "plansDirectory": "./plans",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.config/claude/hooks/notify-windows.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.config/claude/hooks/notify-windows.sh"
+          }
+        ]
+      }
+    ]
+  }
 }

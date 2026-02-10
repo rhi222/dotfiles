@@ -386,7 +386,7 @@ return {
 			require("my/plugins/markdown-preview")
 		end,
 	},
-	-- -- 開発が活発な↓を使いたいが、plantuml非対応の為arkdown-preview.nvimを利用
+	-- -- 開発が活発な↓を使いたいが、plantuml非対応の為markdown-preview.nvimを利用
 	-- {
 	-- 	"toppair/peek.nvim",
 	-- 	event = { "VeryLazy" },
