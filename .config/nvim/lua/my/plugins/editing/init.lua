@@ -1,3 +1,4 @@
+local km = require("my.plugins.keymaps")
 return {
 	{
 		"nvim-treesitter/nvim-treesitter",
@@ -16,7 +17,7 @@ return {
 		"smoka7/hop.nvim",
 		version = "*",
 		keys = {
-			{ "<leader>j", ":HopWord<CR>", mode = "n", desc = "hop word", noremap = true },
+			km.lazy_key("editing", "hop_word", ":HopWord<CR>", { noremap = true }),
 		},
 		opts = {
 			keys = "asdghklqwertyuiopzxcvbnmfj",
@@ -29,11 +30,11 @@ return {
 		opts = {},
 		-- stylua: ignore
 		keys = {
-			{ "gs", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
-			{ "gS", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
-			{ "gr", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
-			{ "gR", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
-			{ "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
+			km.lazy_key("editing", "flash_jump", function() require("flash").jump() end),
+			km.lazy_key("editing", "flash_treesitter", function() require("flash").treesitter() end),
+			km.lazy_key("editing", "flash_remote", function() require("flash").remote() end),
+			km.lazy_key("editing", "flash_ts_search", function() require("flash").treesitter_search() end),
+			km.lazy_key("editing", "flash_toggle", function() require("flash").toggle() end),
 		},
 	},
 	{
@@ -58,13 +59,7 @@ return {
 	{
 		"t9md/vim-quickhl",
 		keys = {
-			{
-				"<leader>m",
-				"<Plug>(quickhl-manual-this)",
-				mode = "n",
-				desc = "quickhl manual this",
-				noremap = true,
-			},
+			km.lazy_key("editing", "quickhl_this", "<Plug>(quickhl-manual-this)", { noremap = true }),
 		},
 		cmd = {
 			"QuickhlManualAdd",
