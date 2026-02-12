@@ -13,7 +13,7 @@ end
 ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
-local plugins = require("my/plugin")
+local plugins = require("my/plugins")
 
 -- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
 local opts = {
