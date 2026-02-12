@@ -1,3 +1,4 @@
+local km = require("my.plugins.keymaps")
 return {
 	-- copilot: 処理が早く、最近のプラグインとの統合が容易(と言っている)ため、.vimでなく.luaを採用
 	{
@@ -22,27 +23,13 @@ return {
 			require("my/plugins/completion/copilot-chat")
 		end,
 		keys = {
-			{
-				"<leader>cp",
-				function()
-					require("CopilotChat").select_prompt({ context = { "buffers" } })
-				end,
-				desc = "CopilotChat - Prompts",
-			},
-			{
-				"<leader>cp",
-				function()
-					require("CopilotChat").select_prompt()
-				end,
-				mode = "x",
-				desc = "CopilotChat - Prompts",
-			},
-			{
-				"<leader>cd",
-				":CopilotChatShowPrompt<CR>",
-				mode = { "x", "n", "i" },
-				desc = "CopilotChat - show Prompts",
-			},
+			km.lazy_key("completion", "chat_prompts_n", function()
+				require("CopilotChat").select_prompt({ context = { "buffers" } })
+			end),
+			km.lazy_key("completion", "chat_prompts_x", function()
+				require("CopilotChat").select_prompt()
+			end),
+			km.lazy_key("completion", "chat_show_prompt", ":CopilotChatShowPrompt<CR>"),
 		},
 	},
 	{

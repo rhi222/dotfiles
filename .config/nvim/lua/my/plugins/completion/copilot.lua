@@ -1,4 +1,10 @@
 -- https://github.com/zbirenbaum/copilot.lua
+local km = require("my.plugins.keymaps")
+local accept_key = km.get("completion", "copilot_accept")
+local next_key = km.get("completion", "copilot_next")
+local prev_key = km.get("completion", "copilot_prev")
+local dismiss_key = km.get("completion", "copilot_dismiss")
+
 require("copilot").setup({
 	filetypes = {
 		-- allow specific filetype
@@ -23,12 +29,12 @@ require("copilot").setup({
 		enabled = true,
 		auto_trigger = true,
 		keymap = {
-			accept = "<C-y>",
+			accept = accept_key,
 			accept_word = false,
 			accept_line = false,
-			next = "<C-l>",
-			prev = "<C-h>",
-			dismiss = "<C-]>",
+			next = next_key,
+			prev = prev_key,
+			dismiss = dismiss_key,
 		},
 	},
 })
