@@ -6,7 +6,7 @@ if not package.loaded["mason"] then
 end
 
 local mlsp = require("mason-lspconfig")
-local lsp_utils = require("my.plugins.lsp-utils")
+local lsp_utils = require("my.plugins.lsp.utils")
 
 local capabilities = lsp_utils.get_capabilities()
 
