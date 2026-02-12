@@ -30,7 +30,7 @@ diagnostic.config({
 	virtual_text = { format = format_virtual_text },
 })
 
-local lsp_utils = require("my.plugins.lsp-utils")
+local lsp_utils = require("my.plugins.lsp.utils")
 
 local default_capabilities = lsp_utils.get_capabilities()
 
