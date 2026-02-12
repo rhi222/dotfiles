@@ -16,5 +16,5 @@ require("lazy_nvim")
 -- }}} -------------------------------
 
 -- -------------------- user command {{{
-require("my/command")
+require("my/commands")
 -- }}} -------------------------------
