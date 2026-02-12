@@ -1,8 +1,14 @@
+local km = require("my.plugins.keymaps")
 local diagnostic = vim.diagnostic
-vim.keymap.set("n", "<space>e", diagnostic.open_float, { desc = "Open diagnostic float" })
-vim.keymap.set("n", "[d", diagnostic.goto_prev, { desc = "Previous diagnostic" })
-vim.keymap.set("n", "]d", diagnostic.goto_next, { desc = "Next diagnostic" })
-vim.keymap.set("n", "<space>q", diagnostic.setloclist, { desc = "Diagnostics to location list" })
+
+local diag_float_lhs, diag_float_mode, diag_float_desc = km.get("lsp", "diagnostic_float")
+vim.keymap.set(diag_float_mode, diag_float_lhs, diagnostic.open_float, { desc = diag_float_desc })
+local diag_prev_lhs, diag_prev_mode, diag_prev_desc = km.get("lsp", "diagnostic_prev")
+vim.keymap.set(diag_prev_mode, diag_prev_lhs, diagnostic.goto_prev, { desc = diag_prev_desc })
+local diag_next_lhs, diag_next_mode, diag_next_desc = km.get("lsp", "diagnostic_next")
+vim.keymap.set(diag_next_mode, diag_next_lhs, diagnostic.goto_next, { desc = diag_next_desc })
+local diag_loclist_lhs, diag_loclist_mode, diag_loclist_desc = km.get("lsp", "diagnostic_loclist")
+vim.keymap.set(diag_loclist_mode, diag_loclist_lhs, diagnostic.setloclist, { desc = diag_loclist_desc })
 
 -- LSP attachment時にバッファローカルのキー設定を行う関数
 
@@ -52,6 +58,27 @@ local function enable_inlay_hints(buf)
 	end
 end
 
+-- LSP keymapの定義テーブル (keymaps.luaからlhsを取得)
+local lsp_keymap_defs = {
+	{ name = "declaration", func = vim.lsp.buf.declaration },
+	{ name = "definition", func = vim.lsp.buf.definition },
+	{ name = "hover", func = vim.lsp.buf.hover },
+	{ name = "implementation", func = vim.lsp.buf.implementation },
+	{ name = "signature_help", func = vim.lsp.buf.signature_help },
+	{ name = "workspace_add", func = vim.lsp.buf.add_workspace_folder },
+	{ name = "workspace_remove", func = vim.lsp.buf.remove_workspace_folder },
+	{
+		name = "workspace_list",
+		func = function()
+			print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+		end,
+	},
+	{ name = "type_definition", func = vim.lsp.buf.type_definition },
+	{ name = "rename", func = vim.lsp.buf.rename },
+	{ name = "code_action", func = vim.lsp.buf.code_action },
+	{ name = "references", func = vim.lsp.buf.references },
+}
+
 local on_lsp_attach = function(ev)
 	local buf = ev.buf
 	local client = vim.lsp.get_client_by_id(ev.data.client_id)
@@ -62,38 +89,11 @@ local on_lsp_attach = function(ev)
 	vim.bo[buf].omnifunc = "v:lua.vim.lsp.omnifunc"
 	vim.bo[buf].formatexpr = "v:lua.vim.lsp.formatexpr()"
 
-	-- 定義したマッピングをテーブルでまとめる
-	local mappings = {
-		{ mode = "n", key = "gD", func = vim.lsp.buf.declaration, desc = "LSP: Declaration" },
-		{ mode = "n", key = "gd", func = vim.lsp.buf.definition, desc = "LSP: Definition" },
-		{ mode = "n", key = "K", func = vim.lsp.buf.hover, desc = "LSP: Hover" },
-		{ mode = "n", key = "gi", func = vim.lsp.buf.implementation, desc = "LSP: Implementation" },
-		{ mode = "n", key = "<C-k>", func = vim.lsp.buf.signature_help, desc = "LSP: Signature Help" },
-		{ mode = "n", key = "<space>wa", func = vim.lsp.buf.add_workspace_folder, desc = "LSP: Add workspace folder" },
-		{
-			mode = "n",
-			key = "<space>wr",
-			func = vim.lsp.buf.remove_workspace_folder,
-			desc = "LSP: Remove workspace folder",
-		},
-		{
-			mode = "n",
-			key = "<space>wl",
-			func = function()
-				print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-			end,
-			desc = "LSP: List workspace folders",
-		},
-		{ mode = "n", key = "<space>D", func = vim.lsp.buf.type_definition, desc = "LSP: Type definition" },
-		{ mode = "n", key = "<space>rn", func = vim.lsp.buf.rename, desc = "LSP: Rename" },
-		{ mode = { "n", "v" }, key = "<space>ca", func = vim.lsp.buf.code_action, desc = "LSP: Code action" },
-		{ mode = "n", key = "gr", func = vim.lsp.buf.references, desc = "LSP: References" },
-	}
-
 	local opts = { buffer = buf }
-	for _, map in ipairs(mappings) do
-		local map_opts = vim.tbl_extend("force", opts, { desc = map.desc })
-		vim.keymap.set(map.mode, map.key, map.func, map_opts)
+	for _, map in ipairs(lsp_keymap_defs) do
+		local lhs, mode, desc = km.get("lsp", map.name)
+		local map_opts = vim.tbl_extend("force", opts, { desc = desc })
+		vim.keymap.set(mode, lhs, map.func, map_opts)
 	end
 
 	if servers_without_formatting[client.name] then
@@ -143,9 +143,3 @@ setup_server("pylsp", {
 		},
 	},
 })
-
--- 他サーバを上書きしたい場合の雛形（必要なときだけ追記）
--- vim.lsp.config.ts_ls.setup({
---   on_attach = function(client, bufnr) ... end,
---   capabilities = capabilities,
--- })

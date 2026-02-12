@@ -1,29 +1,31 @@
 -- https://github.com/hrsh7th/nvim-cmp
+local km = require("my.plugins.keymaps")
 local cmp = require("cmp")
+
+local scroll_up_lhs = km.get("completion", "cmp_scroll_up")
+local scroll_down_lhs = km.get("completion", "cmp_scroll_down")
+local complete_lhs = km.get("completion", "cmp_complete")
+local abort_lhs = km.get("completion", "cmp_abort")
+local confirm_lhs = km.get("completion", "cmp_confirm")
+
 cmp.setup({
 	snippet = {
 		-- REQUIRED - you must specify a snippet engine
 		expand = function(args)
 			vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
-			-- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
-			-- require('snippy').expand_snippet(args.body) -- For `snippy` users.
-			-- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
 		end,
 	},
 	mapping = cmp.mapping.preset.insert({
-		["<C-b>"] = cmp.mapping.scroll_docs(-4),
-		["<C-f>"] = cmp.mapping.scroll_docs(4),
-		["<C-Space>"] = cmp.mapping.complete(),
-		["<C-e>"] = cmp.mapping.abort(),
-		["<CR>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+		[scroll_up_lhs] = cmp.mapping.scroll_docs(-4),
+		[scroll_down_lhs] = cmp.mapping.scroll_docs(4),
+		[complete_lhs] = cmp.mapping.complete(),
+		[abort_lhs] = cmp.mapping.abort(),
+		[confirm_lhs] = cmp.mapping.confirm({ select = true }),
 	}),
 	sources = cmp.config.sources({
 		{ name = "copilot" },
 		{ name = "nvim_lsp" },
 		{ name = "vsnip" }, -- For vsnip users.
-		-- { name = 'luasnip' }, -- For luasnip users.
-		-- { name = 'ultisnips' }, -- For ultisnips users.
-		-- { name = 'snippy' }, -- For snippy users.
 	}, {
 		{ name = "buffer" },
 	}),

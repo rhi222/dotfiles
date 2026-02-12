@@ -1,3 +1,4 @@
+local km = require("my.plugins.keymaps")
 return {
 	{
 		"nvim-telescope/telescope.nvim",
@@ -23,31 +24,48 @@ return {
 		},
 		keys = {
 			-- open file_browser with the path of the current buffer
-			{
-				"<space>f",
+			km.lazy_key(
+				"finder",
+				"telescope_file_browser",
 				":Telescope file_browser layout_strategy=center path=%:p:h select_buffer=true<CR>",
-				mode = "n",
-				silent = true,
-				noremap = true,
-			},
+				{ silent = true, noremap = true }
+			),
 			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
-			{ "<C-p>f", ":Telescope find_files find_command=rg,--files,--hidden,--glob,!*.git <CR>", silent = true },
-			-- { "<C-p>z", ":Telescope frecency<CR>", silent = true },
-			{ "<C-p>e", ":Telescope smart_open<CR>", silent = true },
-			{ "<C-p>g", ":Telescope live_grep<CR>", silent = true },
-			{ "<C-p>l", ":Telescope current_buffer_fuzzy_find<CR>", silent = true },
-			{ "<C-p>p", ":Telescope commands<CR>", silent = true },
-			{ "<C-p>:", ":Telescope command_history<CR>", silent = true },
-			{ "<C-p>m", ":Telescope vim_bookmarks all<CR>", silent = true },
-			{ "<C-p>s", ":Telescope lsp_dynamic_workspace_symbols<CR>", silent = true },
-			{ "<C-p>c", ":lua require'telescope.builtin'.git_status{}<CR>", silent = true },
+			km.lazy_key(
+				"finder",
+				"telescope_find_files",
+				":Telescope find_files find_command=rg,--files,--hidden,--glob,!*.git <CR>",
+				{ silent = true }
+			),
+			km.lazy_key("finder", "telescope_smart_open", ":Telescope smart_open<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_live_grep", ":Telescope live_grep<CR>", { silent = true }),
+			km.lazy_key(
+				"finder",
+				"telescope_fuzzy_find",
+				":Telescope current_buffer_fuzzy_find<CR>",
+				{ silent = true }
+			),
+			km.lazy_key("finder", "telescope_commands", ":Telescope commands<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_cmd_history", ":Telescope command_history<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_bookmarks", ":Telescope vim_bookmarks all<CR>", { silent = true }),
+			km.lazy_key(
+				"finder",
+				"telescope_symbols",
+				":Telescope lsp_dynamic_workspace_symbols<CR>",
+				{ silent = true }
+			),
+			km.lazy_key(
+				"finder",
+				"telescope_git_status",
+				":lua require'telescope.builtin'.git_status{}<CR>",
+				{ silent = true }
+			),
 		},
 		config = function()
 			require("my/plugins/finder/telescope")
 		end,
 	},
 	-- https://github.com/danielfalk/smart-open.nvim
-	-- https://minerva.mamansoft.net/%F0%9F%93%98Articles/%F0%9F%93%98%E3%81%82%E3%81%BE%E3%82%8A%E7%B4%B9%E4%BB%8B%E3%81%95%E3%82%8C%E3%81%A6%E3%81%84%E3%81%AA%E3%81%84%E3%81%91%E3%81%A9+%E3%81%8B%E3%81%91%E3%81%8C%E3%81%88%E3%81%AE%E3%81%AA%E3%81%84Neovim%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%9F%E3%81%A1#smart-open.nvim
 	{
 		"danielfalk/smart-open.nvim",
 		branch = "0.2.x",
@@ -68,9 +86,7 @@ return {
 		-- optional for icon support
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		keys = {
-			{ "<c-g>", "<cmd>lua require('fzf-lua').grep()<CR>", mode = "n", silent = true },
-			-- note: telescopeのsmart-openが賢そうなので移行してみる
-			-- { "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
+			km.lazy_key("finder", "fzf_grep", "<cmd>lua require('fzf-lua').grep()<CR>", { silent = true }),
 		},
 		config = function()
 			require("my/plugins/finder/fzf-lua")

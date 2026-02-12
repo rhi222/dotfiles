@@ -1,3 +1,4 @@
+local km = require("my.plugins.keymaps")
 return {
 	{
 		"rmagatti/auto-session",
@@ -21,7 +22,7 @@ return {
 			require("my/plugins/tools/rest-nvim")
 		end,
 		keys = {
-			{ "<C-e>", "<cmd>Rest run<CR>", mode = "n", desc = "Run rest command" },
+			km.lazy_key("tools", "rest_run", "<cmd>Rest run<CR>"),
 		},
 	},
 	-- markdown preview
@@ -70,86 +71,39 @@ return {
 			},
 		},
 		keys = {
-			{
-				"<tab>",
-				function()
-					-- if there is a next edit, jump to it, otherwise apply it if any
-					if not require("sidekick").nes_jump_or_apply() then
-						return "<Tab>" -- fallback to normal tab
-					end
-				end,
-
-				expr = true,
-				desc = "Goto/Apply Next Edit Suggestion",
-			},
-			{
-				"<c-.>",
-				function()
-					require("sidekick.cli").toggle()
-				end,
-				desc = "Sidekick Toggle",
-				mode = { "n", "t", "i", "x" },
-			},
-
-			{
-				"<leader>st",
-				function()
-					require("sidekick.cli").toggle()
-				end,
-				desc = "Sidekick Toggle CLI",
-			},
-			{
-				"<leader>ss",
-				function()
-					require("sidekick.cli").select()
-				end,
-				desc = "Select CLI",
-			},
-			{
-				"<leader>sd",
-				function()
-					require("sidekick.cli").close()
-				end,
-				desc = "Detach a CLI Session",
-			},
-			{
-				"<leader>se",
-				function()
-					require("sidekick.cli").send({ msg = "{this}" })
-				end,
-				mode = { "x", "n" },
-				desc = "Send This",
-			},
-			{
-				"<leader>sf",
-				function()
-					require("sidekick.cli").send({ msg = "{file}" })
-				end,
-				desc = "Send File",
-			},
-			{
-				"<leader>sv",
-				function()
-					require("sidekick.cli").send({ msg = "{selection}" })
-				end,
-				mode = { "x" },
-				desc = "Send Visual Selection",
-			},
-			{
-				"<leader>sp",
-				function()
-					require("sidekick.cli").prompt()
-				end,
-				mode = { "n", "x" },
-				desc = "Sidekick Select Prompt",
-			},
-			{
-				"<leader>sc",
-				function()
-					require("sidekick.cli").toggle({ name = "claude", focus = true })
-				end,
-				desc = "Sidekick Toggle Claude",
-			},
+			km.lazy_key("tools", "sidekick_jump", function()
+				-- if there is a next edit, jump to it, otherwise apply it if any
+				if not require("sidekick").nes_jump_or_apply() then
+					return "<Tab>" -- fallback to normal tab
+				end
+			end, { expr = true }),
+			km.lazy_key("tools", "sidekick_toggle", function()
+				require("sidekick.cli").toggle()
+			end),
+			km.lazy_key("tools", "sidekick_toggle2", function()
+				require("sidekick.cli").toggle()
+			end),
+			km.lazy_key("tools", "sidekick_select", function()
+				require("sidekick.cli").select()
+			end),
+			km.lazy_key("tools", "sidekick_close", function()
+				require("sidekick.cli").close()
+			end),
+			km.lazy_key("tools", "sidekick_send", function()
+				require("sidekick.cli").send({ msg = "{this}" })
+			end),
+			km.lazy_key("tools", "sidekick_file", function()
+				require("sidekick.cli").send({ msg = "{file}" })
+			end),
+			km.lazy_key("tools", "sidekick_visual", function()
+				require("sidekick.cli").send({ msg = "{selection}" })
+			end),
+			km.lazy_key("tools", "sidekick_prompt", function()
+				require("sidekick.cli").prompt()
+			end),
+			km.lazy_key("tools", "sidekick_claude", function()
+				require("sidekick.cli").toggle({ name = "claude", focus = true })
+			end),
 		},
 	},
 	{

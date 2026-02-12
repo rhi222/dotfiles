@@ -1,3 +1,4 @@
+local km = require("my.plugins.keymaps")
 return {
 	{
 		"lewis6991/gitsigns.nvim",
@@ -13,7 +14,12 @@ return {
 			"nvim-telescope/telescope.nvim", -- optional
 		},
 		keys = {
-			{ "<leader>g", "<cmd>lua require('neogit').open()<CR>", mode = "n", desc = "neogit", noremap = true },
+			km.lazy_key(
+				"git",
+				"neogit_open",
+				"<cmd>lua require('neogit').open()<CR>",
+				{ noremap = true }
+			),
 		},
 		opts = {
 			disable_line_numbers = false,
