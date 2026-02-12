@@ -6,7 +6,6 @@
 	whitespace = cr-at-eol
 	pager = delta
 [alias]
-	ch  = !echo "Use git switch/restore instead!"
 	co  = commit
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
 	current-hash="show --format='%H' --no-patch"
