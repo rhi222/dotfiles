@@ -3,7 +3,7 @@ return {
 		"rmagatti/auto-session",
 		lazy = false,
 		config = function()
-			require("my/plugins/auto-session")
+			require("my/plugins/tools/auto-session")
 		end,
 	},
 	-- http client
@@ -18,7 +18,7 @@ return {
 			end,
 		},
 		config = function()
-			require("my/plugins/rest-nvim")
+			require("my/plugins/tools/rest-nvim")
 		end,
 		keys = {
 			{ "<C-e>", "<cmd>Rest run<CR>", mode = "n", desc = "Run rest command" },

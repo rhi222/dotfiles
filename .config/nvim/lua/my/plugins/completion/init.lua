@@ -4,7 +4,7 @@ return {
 		"zbirenbaum/copilot.lua",
 		event = "InsertEnter",
 		config = function()
-			require("my/plugins/copilot")
+			require("my/plugins/completion/copilot")
 		end,
 	},
 	{
@@ -19,7 +19,7 @@ return {
 		},
 		build = "make tiktoken",
 		config = function()
-			require("my/plugins/copilot-chat")
+			require("my/plugins/completion/copilot-chat")
 		end,
 		keys = {
 			{
@@ -64,7 +64,7 @@ return {
 			"zbirenbaum/copilot-cmp", --copilotを補完ソースに
 		},
 		config = function()
-			require("my/plugins/nvim-cmp")
+			require("my/plugins/completion/nvim-cmp")
 		end,
 	},
 }

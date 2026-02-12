@@ -43,7 +43,7 @@ return {
 			{ "<C-p>c", ":lua require'telescope.builtin'.git_status{}<CR>", silent = true },
 		},
 		config = function()
-			require("my/plugins/telescope")
+			require("my/plugins/finder/telescope")
 		end,
 	},
 	-- https://github.com/danielfalk/smart-open.nvim
@@ -73,7 +73,7 @@ return {
 			-- { "<c-p>", "<cmd>lua require('fzf-lua').files()<CR>", mode = "n", silent = true },
 		},
 		config = function()
-			require("my/plugins/fzf-lua")
+			require("my/plugins/finder/fzf-lua")
 		end,
 	},
 }

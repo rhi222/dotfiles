@@ -21,7 +21,7 @@ return {
 			"neovim/nvim-lspconfig",
 		},
 		config = function()
-			require("my/plugins/mason-lspconfig")
+			require("my/plugins/lsp/mason-lspconfig")
 		end,
 	},
 	{
@@ -37,7 +37,7 @@ return {
 			"hrsh7th/cmp-nvim-lsp",
 		},
 		config = function()
-			require("my/plugins/nvim-lspconfig")
+			require("my/plugins/lsp/nvim-lspconfig")
 		end,
 	},
 	{
@@ -53,7 +53,7 @@ return {
 	{
 		"stevearc/conform.nvim",
 		config = function()
-			require("my/plugins/conform")
+			require("my/plugins/lsp/conform")
 		end,
 		event = { "BufWritePre" },
 		cmd = {

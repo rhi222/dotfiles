@@ -1,3 +1,8 @@
+if vim.g.vscode then
+  -- VSCode Neovim拡張ではvscode.nvimをロードしない
+  return
+end
+
 -- https://github.com/Mofiqul/vscode.nvim?tab=readme-ov-file#-usage
 -- Lua:
 -- For dark theme (neovim's default)
