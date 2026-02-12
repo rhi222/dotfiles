@@ -47,9 +47,7 @@ return {
 	},
 	{
 		"zbirenbaum/copilot-cmp",
-		config = function()
-			require("my/plugins/copilot-cmp")
-		end,
+		opts = {},
 	},
 	{
 		"hrsh7th/nvim-cmp",

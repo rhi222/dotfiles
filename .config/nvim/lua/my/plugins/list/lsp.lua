@@ -11,9 +11,7 @@ return {
 			"MasonLog",
 			"MasonUpdate",
 		},
-		config = function()
-			require("my/plugins/mason")
-		end,
+		opts = {},
 	},
 	{
 		"williamboman/mason-lspconfig.nvim",
@@ -47,7 +45,8 @@ return {
 		dependencies = { "williamboman/mason.nvim" },
 		cmd = { "MasonUpdateAll" },
 		config = function()
-			require("my/plugins/mason-update-all")
+			require("mason").setup()
+			require("mason-update-all").setup()
 		end,
 	},
 	-- formatter: star数の多いconform.nvimに移行

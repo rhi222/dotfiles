@@ -18,9 +18,10 @@ return {
 		keys = {
 			{ "<leader>j", ":HopWord<CR>", mode = "n", desc = "hop word", noremap = true },
 		},
-		config = function()
-			require("my/plugins/hop")
-		end,
+		opts = {
+			keys = "asdghklqwertyuiopzxcvbnmfj",
+			create_hl_autocmd = true,
+		},
 	},
 	{
 		"folke/flash.nvim",
@@ -46,9 +47,7 @@ return {
 		"folke/todo-comments.nvim",
 		event = "BufRead",
 		dependencies = { "nvim-lua/plenary.nvim" },
-		config = function()
-			require("my/plugins/todo-comments")
-		end,
+		opts = {},
 	},
 	-- filetype.luaと衝突するが、チーム開発する上でPJごとの設定を都度しなくて良いので、こちらを優先
 	-- automatically adjusts 'shiftwidth' and 'expandtab' heuristically based on the current file
@@ -70,15 +69,10 @@ return {
 		cmd = {
 			"QuickhlManualAdd",
 		},
-		config = function()
-			require("my/plugins/vim-quickhl")
-		end,
 	},
 	{
 		"kevinhwang91/nvim-hlslens",
 		event = "VeryLazy",
-		config = function()
-			require("my/plugins/nvim-hlslens")
-		end,
+		opts = {},
 	},
 }
