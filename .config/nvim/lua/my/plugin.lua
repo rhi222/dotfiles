@@ -62,10 +62,6 @@ return {
 		end,
 	},
 	-- copilot: 処理が早く、最近のプラグインとの統合が容易(と言っている)ため、.vimでなく.luaを採用
-	-- {
-	-- 	"github/copilot.vim",
-	-- 	event = "InsertEnter",
-	-- },
 	{
 		"zbirenbaum/copilot.lua",
 		event = "InsertEnter",
@@ -386,17 +382,6 @@ return {
 			require("my/plugins/markdown-preview")
 		end,
 	},
-	-- -- 開発が活発な↓を使いたいが、plantuml非対応の為markdown-preview.nvimを利用
-	-- {
-	-- 	"toppair/peek.nvim",
-	-- 	event = { "VeryLazy" },
-	-- 	build = "deno task --quiet build:fast",
-	-- 	config = function()
-	-- 		require("peek").setup()
-	-- 		vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
-	-- 		vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
-	-- 	end,
-	-- },
 	-- https://github.com/cameron-wags/rainbow_csv.nvim
 	{
 		"cameron-wags/rainbow_csv.nvim",
@@ -442,22 +427,6 @@ return {
 		event = "InsertEnter",
 		opts = {}, -- this is equalent to setup({}) function
 	},
-	-- NOTE: folodingをnvim-ufo -> nvim-treesitterに変えてみる
-	-- - ufoの誤作動がきになる
-	-- - nvim-treesitterで十分な機能に見え、ufoをinstallしなくてよさそう
-	-- {
-	-- 	"kevinhwang91/nvim-ufo",
-	-- 	dependencies = {
-	-- 		"kevinhwang91/promise-async",
-	-- 	},
-	-- 	keys = {
-	-- 		{ "zR", "<cmd>lua require('ufo').openAllFolds()<CR>", mode = "n", desc = "open all folds" },
-	-- 		{ "zM", "<cmd>lua require('ufo').closeAllFolds()<CR>", mode = "n", desc = "close all folds" },
-	-- 	},
-	-- 	config = function()
-	-- 		require("my/plugins/nvim-ufo")
-	-- 	end,
-	-- },
 	{
 		"numToStr/Comment.nvim",
 		event = "BufRead",
