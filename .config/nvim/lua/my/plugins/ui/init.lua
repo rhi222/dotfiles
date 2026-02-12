@@ -6,7 +6,7 @@ return {
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
-			require("my/plugins/lualine")
+			require("my/plugins/ui/lualine")
 		end,
 	},
 	{
@@ -14,7 +14,7 @@ return {
 		main = "ibl",
 		event = "VeryLazy",
 		config = function()
-			require("my/plugins/indent-blankline")
+			require("my/plugins/ui/indent-blankline")
 		end,
 	},
 	{
@@ -29,7 +29,7 @@ return {
 		"folke/tokyonight.nvim",
 		lazy = true,
 		config = function()
-			require("my/plugins/tokyonight")
+			require("my/plugins/ui/tokyonight")
 		end,
 	},
 	-- nvim-treesitterのsyntax highlightが絶妙に見にくかったのでtokyonightから乗り換え
@@ -37,7 +37,7 @@ return {
 	{
 		"Mofiqul/vscode.nvim",
 		config = function()
-			require("my/plugins/vscode")
+			require("my/plugins/ui/vscode")
 		end,
 	},
 	{

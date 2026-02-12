@@ -3,7 +3,7 @@ return {
 		"nvim-treesitter/nvim-treesitter",
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
-			require("my/plugins/nvim-treesitter")
+			require("my/plugins/editing/nvim-treesitter")
 		end,
 		dependencies = {
 			"nvim-treesitter/playground",
@@ -40,7 +40,7 @@ return {
 		"numToStr/Comment.nvim",
 		event = "BufRead",
 		config = function()
-			require("my/plugins/comment")
+			require("my/plugins/editing/comment")
 		end,
 	},
 	{
