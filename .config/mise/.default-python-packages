@@ -1,4 +1,5 @@
 boto3
+pynvim
 python-lsp-server[all]
 requests
 ruff
