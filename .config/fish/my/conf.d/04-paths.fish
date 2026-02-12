@@ -4,11 +4,11 @@
 
 # for golang
 # https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
-set GOPATH $HOME/go
+set -gx GOPATH $HOME/go
 fish_add_path $GOPATH/bin
 
 # for deno
-set DENO_INSTALL $HOME/.deno
+set -gx DENO_INSTALL $HOME/.deno
 fish_add_path $DENO_INSTALL/bin
 
 # for pip3
@@ -42,4 +42,4 @@ fish_add_path $BUN_INSTALL/bin
 
 # Rye
 # https://github.com/astral-sh/rye
-set -Ua fish_user_paths "$HOME/.rye/shims"
+fish_add_path $HOME/.rye/shims
