@@ -18,7 +18,7 @@ return {
 			end,
 		},
 		config = function()
-			require("my/plugins/_rest-nvim")
+			require("my/plugins/rest-nvim")
 		end,
 		keys = {
 			{ "<C-e>", "<cmd>Rest run<CR>", mode = "n", desc = "Run rest command" },
