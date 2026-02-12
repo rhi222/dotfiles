@@ -1,7 +1,6 @@
 # Aliases
 
 # Git
-alias cdrr "cd (git rev-parse --show-toplevel)"
 alias gu gitui
 
 # Terminal & Tools
