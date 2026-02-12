@@ -63,5 +63,4 @@ vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpo
 
 -- wslで貼り付けにC-vを割り当てたためremap
 -- Ctrl+Shift+VでVisual Blockモードに入る
-vim.api.nvim_set_keymap("n", "<C-S-v>", "<C-v>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("v", "<C-S-v>", "<C-v>", { noremap = true, silent = true })
+vim.keymap.set({ "n", "v" }, "<C-S-v>", "<C-v>", { silent = true })
