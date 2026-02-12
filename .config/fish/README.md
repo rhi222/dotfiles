@@ -12,17 +12,22 @@
 ├── functions/           # プラグイン由来の関数（空/プラグイン専用）
 └── my/                  # 個人設定専用ディレクトリ
     ├── conf.d/          # 機能別設定ファイル（番号順で読み込み）
-    │   ├── 01-mise.fish      # ランタイム管理（mise）
-    │   ├── 02-history.fish   # 履歴設定
-    │   ├── 03-environment.fish # 環境変数・ツール統合
-    │   ├── 04-paths.fish     # PATH設定
-    │   ├── 05-colors.fish    # 色設定
-    │   ├── 06-prompt.fish    # プロンプト設定（tide）
-    │   ├── 07-aliases.fish   # エイリアス
-    │   └── 08-abbr.fish      # 略語
+    │   ├── 01-mise.fish           # ランタイム管理（mise）
+    │   ├── 02-history.fish        # 履歴設定
+    │   ├── 03-environment.fish    # 環境変数・ツール統合
+    │   ├── 04-paths.fish          # PATH設定
+    │   ├── 05-colors.fish         # 色設定
+    │   ├── 06-prompt.fish         # プロンプト設定（tide）
+    │   ├── 07-aliases.fish        # エイリアス
+    │   ├── 08-abbr.fish           # 略語
+    │   └── 09-custom-prompt.fish  # カスタムプロンプト設定
     └── functions/       # カスタム関数
         ├── find_docker_compose.fish # Docker Compose自動発見
-        └── fkill.fish              # プロセス選択終了
+        ├── fkill.fish               # プロセス選択終了
+        ├── ftmux.fish               # tmuxセッション選択
+        ├── git-fsw.fish             # Gitブランチ選択・切り替え
+        ├── mv2main.fish             # mainブランチへの移動
+        └── mvuntracked.fish         # 未追跡ファイルの移動
 ```
 
 ## 設計思想
