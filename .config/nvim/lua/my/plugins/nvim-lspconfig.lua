@@ -30,51 +30,13 @@ diagnostic.config({
 	virtual_text = { format = format_virtual_text },
 })
 
-local function get_capabilities()
-	local capabilities = vim.lsp.protocol.make_client_capabilities()
-	local ok, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
-	if ok then
-		capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
-	end
-	capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFoldingOnly = true }
-	return capabilities
-end
+local lsp_utils = require("my.plugins.lsp-utils")
 
-local default_capabilities = get_capabilities()
+local default_capabilities = lsp_utils.get_capabilities()
 
 local servers_without_formatting = { ts_ls = true }
 
-local has_new_lsp = vim.fn.has("nvim-0.11") == 1 and type(vim.lsp) == "table" and vim.lsp.config
-
-local legacy_lspconfig = nil
-if not has_new_lsp then
-	local ok, mod = pcall(require, "lspconfig")
-	if ok then
-		legacy_lspconfig = mod
-	end
-end
-
-local function setup_server(server, opts)
-	if has_new_lsp then
-		local overrides = opts and vim.tbl_deep_extend("force", {}, opts) or nil
-		if overrides then
-			vim.lsp.config(server, overrides)
-		end
-		if type(vim.lsp.enable) == "function" then
-			vim.lsp.enable(server)
-		end
-		return true
-	end
-	if legacy_lspconfig and type(legacy_lspconfig[server]) == "table" and type(legacy_lspconfig[server].setup) == "function" then
-		legacy_lspconfig[server].setup(opts)
-		return true
-	end
-	vim.notify_once(
-		string.format("LSP server '%s' is unavailable in this Neovim setup", server),
-		vim.log.levels.WARN
-	)
-	return false
-end
+local setup_server = lsp_utils.setup_server
 
 local function enable_inlay_hints(buf)
 	local ih = vim.lsp.inlay_hint
