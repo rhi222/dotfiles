@@ -34,7 +34,7 @@ return {
 			vim.g.mkdp_filetypes = { "markdown" }
 		end,
 		config = function()
-			require("my/plugins/markdown-preview")
+			vim.g.mkdp_theme = "light"
 		end,
 	},
 	-- https://github.com/cameron-wags/rainbow_csv.nvim
