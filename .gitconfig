@@ -43,4 +43,4 @@
 [init]
 	defaultBranch = main
 [commit]
-	template = /home/nishiyama/.config/git/commit-conventions.txt
+	template = ~/.config/git/commit-conventions.txt
