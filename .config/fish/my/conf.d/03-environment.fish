@@ -11,9 +11,6 @@ set -gx TERM screen-256color
 # https://reiichii.hateblo.jp/entry/2022/01/05/194823
 set -U black brblack # 背景色と同化して読めないため
 
-# for copilot at with zscaler credential
-set -gx NODE_EXTRA_CA_CERTS /usr/local/share/ca-certificates/zscaler.cer
-
 # zoxide integration
 if type -q zoxide
     zoxide init fish | source
