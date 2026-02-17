@@ -28,12 +28,6 @@
       "Read(id_rsa)"
     ]
   },
-  "enabledPlugins": {
-    "domain-model@forcia-claude-marketplace": true,
-    "superpowers@claude-plugins-official": true
-  },
-  "language": "Japanese",
-  "plansDirectory": "./plans",
   "hooks": {
     "Stop": [
       {
@@ -55,5 +49,18 @@
         ]
       }
     ]
-  }
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "teammateMode": "tmux",
+  "enabledPlugins": {
+    "cdk@forcia-claude-marketplace": true,
+    "commit-commands@forcia-claude-marketplace": true,
+    "domain-model@forcia-claude-marketplace": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript@forcia-claude-marketplace": true
+  },
+  "language": "Japanese",
+  "plansDirectory": "./plans"
 }
