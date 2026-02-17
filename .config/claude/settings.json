@@ -28,12 +28,6 @@
       "Read(id_rsa)"
     ]
   },
-  "enabledPlugins": {
-    "domain-model@example-org-claude-marketplace": true,
-    "superpowers@claude-plugins-official": true
-  },
-  "language": "Japanese",
-  "plansDirectory": "./plans",
   "hooks": {
     "Stop": [
       {
@@ -55,5 +49,18 @@
         ]
       }
     ]
-  }
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "teammateMode": "tmux",
+  "enabledPlugins": {
+    "cdk@example-org-claude-marketplace": true,
+    "commit-commands@example-org-claude-marketplace": true,
+    "domain-model@example-org-claude-marketplace": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript@example-org-claude-marketplace": true
+  },
+  "language": "Japanese",
+  "plansDirectory": "./plans"
 }
