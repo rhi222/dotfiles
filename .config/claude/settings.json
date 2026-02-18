@@ -28,6 +28,12 @@
       "Read(id_rsa)"
     ]
   },
+  "mcpServers": {
+    "drawio": {
+      "command": "npx",
+      "args": ["@drawio/mcp"]
+    }
+  },
   "hooks": {
     "Stop": [
       {
