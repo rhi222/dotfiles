@@ -2,6 +2,7 @@ github.com/d-kuro/gwq/cmd/gwq@latest
 github.com/jesseduffield/lazydocker@latest
 github.com/jesseduffield/lazygit@latest
 github.com/k1LoW/deck/cmd/deck@latest
+github.com/k1LoW/tcmux@latest
 github.com/k1LoW/git-wt@latest
 github.com/x-motemen/ghq@latest
 golang.org/x/tools/cmd/goimports@latest
