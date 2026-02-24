@@ -3,7 +3,7 @@
 nishiyama_work/*
 
 # worktree利用時のパス
-git-worktrees/*
+.wt/*
 
 # claude
 **/.claude/settings.local.json
