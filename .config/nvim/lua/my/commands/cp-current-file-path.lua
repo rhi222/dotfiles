@@ -35,3 +35,30 @@ vim.api.nvim_create_user_command(
 	copy_current_file_path,
 	{ desc = "Copy the current file path to the clipboard", range = true }
 )
+
+-- Copy the full (absolute) file path to the clipboard
+local function copy_full_file_path(opts)
+	local path = vim.fn.expand("%:p")
+	if path == "" then
+		vim.notify("No file path available", vim.log.levels.WARN)
+		return
+	end
+
+	-- Add line numbers if in visual mode
+	if opts.range > 0 then
+		if opts.line1 == opts.line2 then
+			path = path .. ":" .. opts.line1
+		else
+			path = path .. ":" .. opts.line1 .. "-" .. opts.line2
+		end
+	end
+
+	vim.fn.setreg("+", path)
+	vim.notify("Copied to clipboard: " .. path, vim.log.levels.INFO)
+end
+
+vim.api.nvim_create_user_command(
+	"CpFullFilePath",
+	copy_full_file_path,
+	{ desc = "Copy the full file path to the clipboard", range = true }
+)
