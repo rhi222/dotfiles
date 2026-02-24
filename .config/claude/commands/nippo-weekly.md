@@ -44,7 +44,7 @@ description: "週次振り返りを生成"
 
 2. **🤖 Phase 2: AI分析**
    - 週次ハイライトの抽出
-   - 5軸評価のトレンド分析
+   - 重点4軸評価のトレンド分析
    - 来週のアクションプラン生成
 
 3. **📝 Phase 3: レポート保存**
@@ -74,7 +74,7 @@ WEEKLY_DIR="$HOME/Obsidian/02_Daily" &&
 WEEK_NUM=$(date +%Y-W%V) &&
 WEEKLY_FILE="$WEEKLY_DIR/nippo-weekly.$WEEK_NUM.md" &&
 NIPPO_DIR="$HOME/Obsidian/02_Daily" &&
-GOALS_FILE="$NIPPO_DIR/nippo-goals.txt" && {
+GOALS_FILE="$NIPPO_DIR/nippo-goals.md" && {
 
     echo "📊 週次振り返り生成"
     echo "週番号: $WEEK_NUM"
