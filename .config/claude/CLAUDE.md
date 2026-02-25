@@ -87,7 +87,8 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 
 - Steering: `.kiro/steering/`
 - Specs: `.kiro/specs/`
-- Commands: `.claude/commands/`
+- Kiro Commands: `.claude/commands/kiro/` (Kiro Spec-Driven Development用)
+- Skills: `.claude/skills/` (カスタムスキル)
 
 ### Steering vs Specification
 
