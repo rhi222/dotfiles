@@ -1,19 +1,26 @@
 ---
-description: "Pull Request のレビューコメントを効率的に対応するためのガイド"
+name: pr-feedback
+description: Pull Requestのレビューコメントを効率的に対応するためのガイド
 allowed-tools: Bash(gh:*)
+disable-model-invocation: true
+argument-hint: "<PR番号>"
 ---
 
 Pull Request のレビューコメントを効率的に対応し、エラー分析 3 段階アプローチで根本解決を図ります。
 
-### 使い方
+## 使い方
+
+`$ARGUMENTS` でPR番号を指定します。
+
+### 基本例
 
 ```bash
 # レビューコメントの取得と分析
-gh pr view --comments
+gh pr view $ARGUMENTS --comments
 「レビューコメントを優先度別に分類して対応計画を作成してください」
 
 # エラー関連コメントの詳細分析
-gh pr checks
+gh pr checks $ARGUMENTS
 「CI エラーを 3 段階アプローチで分析して根本原因を特定してください」
 
 # 修正完了後の品質確認
@@ -21,20 +28,11 @@ npm test && npm run lint
 「修正が完了したので回帰テストとコード品質をチェックしてください」
 ```
 
-### 基本例
+### コメント分類の実行
 
 ```bash
-# コメント分類の実行
-gh pr view 123 --comments | head -20
+gh pr view $ARGUMENTS --comments | head -20
 "レビューコメントを must/imo/nits/q に分類して対応順序を決めてください"
-
-# エラー情報の収集
-npm run build 2>&1 | tee error.log
-"ビルドエラーの根本原因を特定し、適切な修正方法を提案してください"
-
-# 修正実装の確認
-git diff HEAD~1
-"この修正がレビュー指摘事項を適切に解決しているか評価してください"
 ```
 
 ### コメント分類体系

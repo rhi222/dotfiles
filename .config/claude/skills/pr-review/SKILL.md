@@ -1,33 +1,38 @@
 ---
-description: "GitHubのPull Requestをレビューするためのコマンド集"
+name: pr-review
+description: GitHubのPull Requestをレビューする
 allowed-tools: Bash(gh:*)
+disable-model-invocation: true
+argument-hint: "<PR番号>"
 ---
 
-あなたはGitHubのPull Requestをレビューするエキスパートです。ghコマンドを使って以下の手順でPRをレビューしてください：
+あなたはGitHubのPull Requestをレビューするエキスパートです。ghコマンドを使って以下の手順でPRをレビューしてください。
+
+`$ARGUMENTS` で指定されたPR番号を対象とします。
 
 ## レビュー手順
 
 1. **PRの基本情報を取得**
 
    ```bash
-   gh pr view <PR番号> --json title,body,state,author,commits,files
+   gh pr view $ARGUMENTS --json title,body,state,author,commits,files
    ```
 
 2. **変更ファイルの差分を確認**
 
    ```bash
-   gh pr diff <PR番号>
+   gh pr diff $ARGUMENTS
    ```
 
 3. **PR内のファイル一覧を取得**
 
    ```bash
-   gh pr view <PR番号> --json files --jq '.files[].path'
+   gh pr view $ARGUMENTS --json files --jq '.files[].path'
    ```
 
 4. **コミット履歴を確認**
    ```bash
-   gh pr view <PR番号> --json commits --jq '.commits[].messageHeadline'
+   gh pr view $ARGUMENTS --json commits --jq '.commits[].messageHeadline'
    ```
 
 ## レビューポイント
@@ -67,31 +72,21 @@ allowed-tools: Bash(gh:*)
 
 ```bash
 # 承認の場合
-gh pr review <PR番号> --approve --body "レビューコメント"
+gh pr review $ARGUMENTS --approve --body "レビューコメント"
 
 # 変更要求の場合
-gh pr review <PR番号> --request-changes --body "変更が必要な理由"
+gh pr review $ARGUMENTS --request-changes --body "変更が必要な理由"
 
 # コメントのみの場合
-gh pr review <PR番号> --comment --body "一般的なコメント"
-
-# 特定行にコメント
-gh pr review <PR番号> --body "全体コメント" --comment-body "行コメント" --comment-file "ファイルパス" --comment-line 行番号
+gh pr review $ARGUMENTS --comment --body "一般的なコメント"
 ```
 
 ## 使用例
 
-特定のPRをレビューする場合：
-
 ```bash
-gh pr view 123
-gh pr diff 123
+# 特定のPRをレビュー
+/pr-review 123
+
+# レビュー後に承認
 gh pr review 123 --approve --body "LGTM! 良い実装です。"
-```
-
-最新のPRをレビューする場合：
-
-```bash
-gh pr list --limit 1
-gh pr view --json number --jq '.number' | xargs -I {} gh pr review {} --comment --body "レビュー中です"
 ```
