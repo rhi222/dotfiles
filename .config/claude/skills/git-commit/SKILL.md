@@ -1,6 +1,8 @@
 ---
-description: ステージされている内容からコミットを作成するコマンド
+name: git-commit
+description: ステージされている内容からConventional Commitコミットを作成する
 allowed-tools: Bash(git commit:*)
+disable-model-invocation: true
 ---
 
 ## 重要事項

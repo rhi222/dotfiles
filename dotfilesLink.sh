@@ -27,6 +27,13 @@ safe_link "$DOTFILES_DIR/.config/claude" ~/.config/claude
 safe_link "$DOTFILES_DIR/.config/claude/CLAUDE.md" ~/.claude/CLAUDE.md
 safe_link "$DOTFILES_DIR/.config/claude/settings.json" ~/.claude/settings.json
 safe_link "$DOTFILES_DIR/.config/claude/commands" ~/.claude/commands
+# Skills: link each skill directory individually to avoid nesting
+mkdir -p ~/.claude/skills
+for skill_dir in "$DOTFILES_DIR/.config/claude/skills"/*/; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
+done
 safe_link "$DOTFILES_DIR/.config/claude/agents" ~/.claude/agents
 
 # codex
