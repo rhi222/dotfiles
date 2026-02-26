@@ -1,4 +1,6 @@
 -- require nvim v0.9.0 or later
+vim.loader.enable()
+
 require("my/settings/option")
 
 -- -------------------- filetype {{{
