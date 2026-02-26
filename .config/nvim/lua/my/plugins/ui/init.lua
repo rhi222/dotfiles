@@ -36,6 +36,8 @@ return {
 	-- https://github.com/rockerBOO/awesome-neovim?tab=readme-ov-file#tree-sitter-supported-colorscheme からpickした
 	{
 		"Mofiqul/vscode.nvim",
+		lazy = false,
+		priority = 1000,
 		config = function()
 			require("my/plugins/ui/vscode")
 		end,
