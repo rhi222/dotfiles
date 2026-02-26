@@ -17,9 +17,9 @@ local plugins = require("my/plugins")
 
 -- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
 local opts = {
-	-- defaults = {
-	-- 	lazy = true,
-	-- },
+	defaults = {
+		lazy = true,
+	},
 }
 
 require("lazy").setup(plugins, opts)

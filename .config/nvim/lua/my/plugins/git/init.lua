@@ -2,6 +2,7 @@ local km = require("my.plugins.keymaps")
 return {
 	{
 		"lewis6991/gitsigns.nvim",
+		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			require("my/plugins/git/gitsigns")
 		end,
