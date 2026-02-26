@@ -44,5 +44,6 @@ function open-pr --description "Open pull request page in browser via gh"
     end
 
     echo "open-pr: no open pull request found for branch '$branch'" >&2
+    gh pr list --web 2>/dev/null
     return 1
 end
