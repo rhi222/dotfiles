@@ -1,14 +1,9 @@
 # git worktree切り替え（git-wtとfzfを使用）
 # 参考: https://koic.hatenablog.com/entry/introduce-git-wt
 function wt
-    set selection (git wt | tail -n +2 | fzf --ansi --reverse --height=80% \
-        --prompt="worktree > " \
-        --preview 'echo {} | awk "{print \$1}" | xargs -I{} git log --oneline -10 {}')
+    set selection (__wt_select worktree)
+    or return 0
 
-    if test -z "$selection"
-        return 0
-    end
-
-    set branch (echo $selection | awk '{print $(NF-1)}')
+    set branch (echo $selection | awk '{if ($1 == "*") print $3; else print $2}')
     git wt "$branch"
 end
