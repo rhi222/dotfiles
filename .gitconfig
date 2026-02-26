@@ -47,5 +47,4 @@
 	relative = true
 	nocd = create
 	copy = CLAUDE.md
-	hook = tmux neww -c \"$PWD\" -n \"$(basename \"$(git worktree list | head -1 | awk '{print $1}')\"):$(git branch --show-current):shell\"
-	hook = tmux neww -c \"$PWD\" -n \"$(basename \"$(git worktree list | head -1 | awk '{print $1}')\"):$(git branch --show-current):cc\" 'claude'
+	hook = "tmux neww -c \"$PWD\" -n \"$(basename \"$(git worktree list | head -1 | awk '{print $1}')\"):$(git branch --show-current)\" \\; splitw -h -c \"$PWD\" 'claude'"
