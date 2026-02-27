@@ -27,18 +27,18 @@ return {
 			km.lazy_key(
 				"finder",
 				"telescope_file_browser",
-				":Telescope file_browser layout_strategy=center path=%:p:h select_buffer=true<CR>",
+				":Telescope file_browser path=%:p:h<CR>",
 				{ silent = true, noremap = true }
 			),
 			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
 			km.lazy_key(
 				"finder",
 				"telescope_find_files",
-				":Telescope find_files find_command=rg,--files,--hidden,--glob,!*.git <CR>",
+				":Telescope find_files<CR>",
 				{ silent = true }
 			),
 			km.lazy_key("finder", "telescope_smart_open", ":Telescope smart_open<CR>", { silent = true }),
-			km.lazy_key("finder", "telescope_live_grep", ":Telescope live_grep<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_live_grep", ":Telescope egrepify<CR>", { silent = true }),
 			km.lazy_key(
 				"finder",
 				"telescope_fuzzy_find",
@@ -57,9 +57,14 @@ return {
 			km.lazy_key(
 				"finder",
 				"telescope_git_status",
-				":lua require'telescope.builtin'.git_status{}<CR>",
+				":Telescope git_status<CR>",
 				{ silent = true }
 			),
+			km.lazy_key("finder", "telescope_resume", ":Telescope resume<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_buffers", ":Telescope buffers<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_oldfiles", ":Telescope oldfiles<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_help", ":Telescope help_tags<CR>", { silent = true }),
+			km.lazy_key("finder", "telescope_diagnostics", ":Telescope diagnostics<CR>", { silent = true }),
 		},
 		config = function()
 			require("my/plugins/finder/telescope")
