@@ -34,7 +34,7 @@ local M = {}
 -- ============================================================
 
 M.finder = {
-	mini_files_open = { "<space>f", desc = "File explorer (mini.files)" },
+	yazi_open = { "<space>f", desc = "File explorer (yazi)" },
 	telescope_find_files = { "<C-p>f", desc = "Find files" },
 	telescope_smart_open = { "<C-p>e", desc = "Smart open" },
 	telescope_live_grep = { "<C-p>g", desc = "Live grep (egrepify)" },
