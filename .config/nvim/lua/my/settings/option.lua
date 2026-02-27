@@ -40,7 +40,7 @@ vim.opt.cmdheight = 0
 -- https://zenn.dev/koxya/articles/b71047cd88303b
 -- https://zenn.dev/renoinn/scraps/f64fe35a81b753
 vim.opt.clipboard = "unnamedplus"
-if vim.fn.has("wsl") then
+if vim.fn.has("wsl") == 1 then
 	vim.g.clipboard = {
 		name = "win32yank-wsl",
 		copy = {
