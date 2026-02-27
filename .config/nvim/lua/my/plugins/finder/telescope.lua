@@ -7,9 +7,7 @@ table.insert(vimgrep_arguments, "--hidden")
 table.insert(vimgrep_arguments, "--glob")
 table.insert(vimgrep_arguments, "!**/.git/*")
 
--- https://github.com/nvim-telescope/telescope-file-browser.nvim/issues/103
 local actions = require("telescope.actions")
-local fb_actions = require("telescope").extensions.file_browser.actions
 
 -- config recipe
 -- https://github.com/nvim-telescope/telescope.nvim/wiki/Configuration-Recipes
@@ -28,9 +26,6 @@ require("telescope").setup({
 				width = 0.8,
 				height = 0.8,
 			},
-			center = {
-				height = 0.8,
-			},
 			horizontal = {
 				preview_width = 0.55,
 			},
@@ -43,6 +38,7 @@ require("telescope").setup({
 		cache_picker = {
 			num_pickers = 10,
 		},
+		sorting_strategy = "ascending",
 	},
 	pickers = {
 		find_files = {
@@ -58,23 +54,6 @@ require("telescope").setup({
 			override_file_sorter = true, -- override the file sorter
 			case_mode = "smart_case", -- or "ignore_case" or "respect_case"
 		},
-		file_browser = {
-			hidden = true,
-			select_buffer = true,
-			layout_strategy = "center",
-			cwd_to_path = true,
-			no_ignore = true,
-			hijack_netrw = true,
-			-- theme = "ivy", -- ivy, dropdown, cursor
-			initial_mode = "normal",
-			mappings = {
-				["n"] = {
-					["h"] = fb_actions.goto_parent_dir,
-					["l"] = actions.select_default,
-					["q"] = actions.close,
-				},
-			},
-		},
 		smart_open = {
 			disable_devicons = false,
 		},
@@ -82,9 +61,6 @@ require("telescope").setup({
 })
 -- Enable telescope fzf native, if installed
 pcall(require("telescope").load_extension, "fzf")
-
--- https://github.com/nvim-telescope/telescope-file-browser.nvim
-pcall(require("telescope").load_extension, "file_browser")
 
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 pcall(require("telescope").load_extension, "egrepify")
