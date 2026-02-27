@@ -16,8 +16,8 @@ local M = {}
 --   空き:   ga gc gd ge gf... など多数
 --
 -- <C-p> + char (Finder):
---   使用中: f e g l p : m s c
---   空き:   a b d h i j k n o q r t u v w x y z
+--   使用中: f e g l p : m s c r b o h d
+--   空き:   a i j k n q t u v w x y z
 --
 -- <space> + char (LSP/Diagnostics):
 --   使用中: e f q D
@@ -37,13 +37,18 @@ M.finder = {
 	telescope_file_browser = { "<space>f", desc = "file_browser" },
 	telescope_find_files = { "<C-p>f", desc = "Find files" },
 	telescope_smart_open = { "<C-p>e", desc = "Smart open" },
-	telescope_live_grep = { "<C-p>g", desc = "Live grep" },
+	telescope_live_grep = { "<C-p>g", desc = "Live grep (egrepify)" },
 	telescope_fuzzy_find = { "<C-p>l", desc = "Buffer fuzzy find" },
 	telescope_commands = { "<C-p>p", desc = "Commands" },
 	telescope_cmd_history = { "<C-p>:", desc = "Command history" },
 	telescope_bookmarks = { "<C-p>m", desc = "Vim bookmarks" },
 	telescope_symbols = { "<C-p>s", desc = "LSP workspace symbols" },
 	telescope_git_status = { "<C-p>c", desc = "Git status" },
+	telescope_resume = { "<C-p>r", desc = "Resume last picker" },
+	telescope_buffers = { "<C-p>b", desc = "Buffers" },
+	telescope_oldfiles = { "<C-p>o", desc = "Old files" },
+	telescope_help = { "<C-p>h", desc = "Help tags" },
+	telescope_diagnostics = { "<C-p>d", desc = "Diagnostics" },
 	fzf_grep = { "<c-g>", desc = "FZF grep" },
 }
 
