@@ -33,13 +33,32 @@ M.help = function()
 	vim.api.nvim_buf_set_keymap(0, "n", "q", "ZZ", { noremap = true })
 end
 
+M.markdown = function()
+	setup_indent({
+		tab_length = 4,
+		is_hard_tab = true,
+		is_auto_indent = true,
+	})
+	-- チェックボックス入力補助: cb + スペース → - [ ]
+	vim.cmd("iabbrev <buffer> cb - [ ]")
+	-- チェックボックストグル: <leader>x で [ ] ↔ [x] 切り替え
+	vim.keymap.set("n", "<leader>x", function()
+		local line = vim.api.nvim_get_current_line()
+		if line:match("%[x%]") then
+			line = line:gsub("%[x%]", "[ ]", 1)
+		elseif line:match("%[ %]") then
+			line = line:gsub("%[ %]", "[x]", 1)
+		end
+		vim.api.nvim_set_current_line(line)
+	end, { buffer = 0, desc = "Toggle checkbox" })
+end
+
 -- よく使われる設定をグループ化し、一行で複数のファイルタイプを設定
 for _, ft in ipairs({
 	"graphql",
 	"javascript",
 	"json",
 	"lua",
-	"markdown",
 	"sh",
 	"typescript",
 	"typescriptreact",
