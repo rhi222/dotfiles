@@ -105,11 +105,11 @@ lazy_nvim.lua
 
 ### ヘルパー関数
 
-| 関数 | 用途 |
-|------|------|
-| `km.get(category, name)` | lhs, mode, desc を返す。`vim.keymap.set` で使用 |
-| `km.lazy_key(category, name, rhs, opts?)` | lazy.nvim の `keys` spec用エントリを生成 |
-| `km.find_duplicates()` | 全keymapの重複を検出 |
+| 関数                                      | 用途                                            |
+| ----------------------------------------- | ----------------------------------------------- |
+| `km.get(category, name)`                  | lhs, mode, desc を返す。`vim.keymap.set` で使用 |
+| `km.lazy_key(category, name, rhs, opts?)` | lazy.nvim の `keys` spec用エントリを生成        |
+| `km.find_duplicates()`                    | 全keymapの重複を検出                            |
 
 ### 使い分け
 
@@ -129,22 +129,22 @@ require("copilot").setup({ suggestion = { keymap = { accept = accept_key } } })
 
 ### ユーザーコマンド
 
-| コマンド | 説明 |
-|----------|------|
-| `:KeymapList` | 全keymapをカテゴリ・prefix別に一覧表示 |
-| `:KeymapCheck` | 重複keymapを検出して警告表示 |
+| コマンド       | 説明                                   |
+| -------------- | -------------------------------------- |
+| `:KeymapList`  | 全keymapをカテゴリ・prefix別に一覧表示 |
+| `:KeymapCheck` | 重複keymapを検出して警告表示           |
 
 ## keymap設計方針
 
 ### prefix体系
 
-| prefix | 用途 | 例 |
-|--------|------|-----|
-| `<C-p>` + char | Finder系 | `<C-p>f` find files, `<C-p>g` live grep |
-| `<space>` + char | LSP/Diagnostics | `<space>e` diagnostic, `<space>rn` rename |
-| `<leader>` + char | プラグイン操作 | `<leader>g` neogit, `<leader>j` hop |
-| `<leader>` + 2char | 機能グループ | `<leader>cp` copilot, `<leader>gb` blame |
-| `g` + char | Go-to/Motion | `gd` definition, `gs` flash |
+| prefix             | 用途            | 例                                        |
+| ------------------ | --------------- | ----------------------------------------- |
+| `<C-p>` + char     | Finder系        | `<C-p>f` find files, `<C-p>g` live grep   |
+| `<space>` + char   | LSP/Diagnostics | `<space>e` diagnostic, `<space>rn` rename |
+| `<leader>` + char  | プラグイン操作  | `<leader>g` neogit, `<leader>j` hop       |
+| `<leader>` + 2char | 機能グループ    | `<leader>cp` copilot, `<leader>gb` blame  |
+| `g` + char         | Go-to/Motion    | `gd` definition, `gs` flash               |
 
 ### 方針
 
