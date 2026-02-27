@@ -16,20 +16,10 @@ return {
 				end,
 			},
 			{
-				"nvim-telescope/telescope-file-browser.nvim",
-			},
-			{
 				"fdschmidt93/telescope-egrepify.nvim",
 			},
 		},
 		keys = {
-			-- open file_browser with the path of the current buffer
-			km.lazy_key(
-				"finder",
-				"telescope_file_browser",
-				":Telescope file_browser path=%:p:h<CR>",
-				{ silent = true, noremap = true }
-			),
 			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
 			km.lazy_key(
 				"finder",
@@ -95,6 +85,20 @@ return {
 		},
 		config = function()
 			require("my/plugins/finder/fzf-lua")
+		end,
+	},
+	-- https://github.com/nvim-mini/mini.files
+	{
+		"echasnovski/mini.files",
+		keys = {
+			km.lazy_key("finder", "mini_files_open", function()
+				local buf_name = vim.api.nvim_buf_get_name(0)
+				local path = vim.fn.fnamemodify(buf_name, ":p:h")
+				require("mini.files").open(path)
+			end, { silent = true }),
+		},
+		config = function()
+			require("my/plugins/finder/mini-files")
 		end,
 	},
 }
