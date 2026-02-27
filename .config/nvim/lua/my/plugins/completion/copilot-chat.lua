@@ -11,7 +11,7 @@ chat.setup({
 		},
 	},
 	-- CopilotChatModels
-	model = "claude-3.7-sonnet",
+	model = "claude-sonnet-4",
 })
 
 -- 公式: https://github.com/CopilotC-Nvim/CopilotChat.nvim?tab=readme-ov-file#lazynvim
