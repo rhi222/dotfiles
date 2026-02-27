@@ -1,3 +1,6 @@
 .config/nvim/after
 .config/nvim/pack
 .config/codex/config.toml
+.config/AutoHotkey/ahk-snippets/passwords/*
+!.config/AutoHotkey/ahk-snippets/passwords/.gitkeep
+!.config/AutoHotkey/ahk-snippets/passwords/README.md
