@@ -1,8 +1,8 @@
 {
   "diagnostics": {
-    "// ": "明示的に定義されていない vim モジュールをよしとする場合",
-    "globals": ["vim"],
-    "indent_width": 2
+    "globals": ["vim"]
   },
-  "workspace.checkThirdParty": false
+  "workspace": {
+    "checkThirdParty": false
+  }
 }
