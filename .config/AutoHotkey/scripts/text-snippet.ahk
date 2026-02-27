@@ -56,6 +56,8 @@ InferGroup(rel) {
         return "JavaScript"
     if InStr(rel, "markdown\") = 1
         return "Markdown"
+    if InStr(rel, "passwords\") = 1
+        return "Passwords"
     return "Other"
 }
 
@@ -139,9 +141,50 @@ PasteFile(path, *) {
 }
 
 ; ============================================================
+; Password Snippets (auto-scan)
+; ============================================================
+ScanPasswordSnippets() {
+    pwDir := JoinPath(SNIPPET_ROOT, "passwords")
+    results := Map()
+
+    if !DirExist(pwDir)
+        return results
+
+    ; サブシステム → 環境 → ファイルの3層を走査
+    loop Files, pwDir "\*", "D" {          ; サブシステムディレクトリ
+        subsys := A_LoopFileName
+        subsysDir := A_LoopFilePath
+        loop Files, subsysDir "\*", "D" {  ; 環境ディレクトリ
+            env := A_LoopFileName
+            envDir := A_LoopFilePath
+            loop Files, envDir "\*.*" {    ; 認証ファイル
+                if (A_LoopFileName = ".gitkeep" || A_LoopFileName = "README.md")
+                    continue
+                name := RegExReplace(A_LoopFileName, "\.[^.]+$", "")
+                trigger := ";pw-" subsys "-" env "-" name
+                results[trigger] := Map(
+                    "label", name,
+                    "rel", "passwords\" subsys "\" env "\" A_LoopFileName,
+                    "group", "Passwords",
+                    "pw_subsys", subsys,
+                    "pw_env", env
+                )
+            }
+        }
+    }
+    return results
+}
+
+EnsureWSLRunning(WSL_DISTRO)
+for trig, meta in ScanPasswordSnippets()
+    SNIPPETS[trig] := meta
+
+; ============================================================
 ; Hotstrings
 ; ============================================================
 for trig, meta in SNIPPETS {
+    if (StrLen(trig) > 40)  ; AHK hotstring上限=40文字。超過分はGUIメニューのみ利用可
+        continue
     fullPath := JoinPath(SNIPPET_ROOT, meta["rel"])
     ; :*: = trigger immediately when typed (no ending char needed)
     ; If you prefer safer boundary behavior, consider :*?:
@@ -157,8 +200,10 @@ for trig, meta in SNIPPETS {
     rootMenu := Menu()
     groups := Map() ; groupName -> Menu
 
-    ; Build group menus dynamically
+    ; Build group menus dynamically (Passwords以外)
     for trig, meta in SNIPPETS {
+        if meta.Has("pw_subsys")
+            continue
         rel      := meta["rel"]
         label    := meta["label"]
         fullPath := JoinPath(SNIPPET_ROOT, rel)
@@ -183,6 +228,46 @@ for trig, meta in SNIPPETS {
         if (preferred.Has(g))
             continue
         rootMenu.Add(g, m)
+    }
+
+    ; --- Passwords: ネストメニュー構築 ---
+    ; メニュー表示時に毎回スキャン（EnsureWSLRunning 後なので \\wsl$ アクセス可能）
+    pwSnippets := ScanPasswordSnippets()
+    pwSubMenus := Map()   ; subsys -> Menu (環境サブメニューを持つ)
+    pwEnvMenus := Map()   ; "subsys\env" -> Menu
+
+    for trig, meta in pwSnippets {
+
+        subsys := meta["pw_subsys"]
+        env    := meta["pw_env"]
+        key    := subsys "\" env
+        fullPath := JoinPath(SNIPPET_ROOT, meta["rel"])
+        cb       := PasteFile.Bind(fullPath)
+
+        ; 環境メニュー（最下層）
+        if !pwEnvMenus.Has(key)
+            pwEnvMenus[key] := Menu()
+        pwEnvMenus[key].Add(meta["label"] " (" trig ")", cb)
+
+        ; サブシステムメニュー（中間層）
+        if !pwSubMenus.Has(subsys)
+            pwSubMenus[subsys] := Menu()
+    }
+
+    ; 環境メニューをサブシステムメニューに登録
+    for key, envMenu in pwEnvMenus {
+        parts := StrSplit(key, "\")
+        subsys := parts[1]
+        env := parts[2]
+        pwSubMenus[subsys].Add(env, envMenu)
+    }
+
+    ; Passwordsルートメニュー
+    if (pwSubMenus.Count > 0) {
+        pwRootMenu := Menu()
+        for subsys, subMenu in pwSubMenus
+            pwRootMenu.Add(subsys, subMenu)
+        rootMenu.Add("Passwords", pwRootMenu)
     }
 
     rootMenu.Show()
