@@ -369,7 +369,7 @@ end, {
 --------------------------------------------------------------------------------
 -- カレントディレクトリが変わったらバッファキャッシュだけ消す
 vim.api.nvim_create_autocmd({ "DirChanged" }, {
-	callback = function(args)
+	callback = function()
 		-- 現在のウィンドウのバッファのみリセット（必要に応じて全バッファでもOK）
 		local bufnr = vim.api.nvim_get_current_buf()
 		clear_buffer_formatter_cache(bufnr)
