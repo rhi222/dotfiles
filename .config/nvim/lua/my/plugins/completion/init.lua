@@ -41,6 +41,7 @@ return {
 			"hrsh7th/cmp-cmdline", -- vimのコマンド
 			"hrsh7th/cmp-path", --pathを補完ソースに
 			"onsails/lspkind.nvim", --補完欄にアイコンを表示
+			"folke/lazydev.nvim", -- Neovim Lua API補完
 		},
 		config = function()
 			require("my/plugins/completion/nvim-cmp")

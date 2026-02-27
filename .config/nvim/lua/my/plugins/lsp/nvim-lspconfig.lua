@@ -10,10 +10,7 @@ vim.keymap.set(diag_next_mode, diag_next_lhs, diagnostic.goto_next, { desc = dia
 local diag_loclist_lhs, diag_loclist_mode, diag_loclist_desc = km.get("lsp", "diagnostic_loclist")
 vim.keymap.set(diag_loclist_mode, diag_loclist_lhs, diagnostic.setloclist, { desc = diag_loclist_desc })
 
--- LSP attachment時にバッファローカルのキー設定を行う関数
-
--- Diagnosticの表示方法を変更
--- https://dev.classmethod.jp/articles/eetann-change-neovim-lsp-diagnostics-format/
+-- Diagnosticの表示方法
 local function format_virtual_text(entry)
 	local segments = { entry.message }
 	if entry.source then
@@ -36,29 +33,19 @@ diagnostic.config({
 	virtual_text = { format = format_virtual_text },
 })
 
+-- グローバルcapabilities (全サーバーに適用)
 local lsp_utils = require("my.plugins.lsp.utils")
-
-local default_capabilities = lsp_utils.get_capabilities()
+vim.lsp.config("*", {
+	capabilities = lsp_utils.get_capabilities(),
+})
 
 local servers_without_formatting = { ts_ls = true }
 
-local setup_server = lsp_utils.setup_server
-
-local function enable_inlay_hints(buf)
-	local ih = vim.lsp.inlay_hint
-	if type(ih) ~= "table" then
-		return
-	end
-	if type(ih.enable) ~= "function" then
-		return
-	end
-	local ok = pcall(ih.enable, buf, true)
-	if not ok then
-		pcall(ih.enable, true, { bufnr = buf })
-	end
+local function enable_inlay_hints(bufnr)
+	vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
 end
 
--- LSP keymapの定義テーブル (keymaps.luaからlhsを取得)
+-- LSP keymapの定義テーブル
 local lsp_keymap_defs = {
 	{ name = "declaration", func = vim.lsp.buf.declaration },
 	{ name = "definition", func = vim.lsp.buf.definition },
@@ -85,7 +72,6 @@ local on_lsp_attach = function(ev)
 	if not client then
 		return
 	end
-	-- Enable omni-completion
 	vim.bo[buf].omnifunc = "v:lua.vim.lsp.omnifunc"
 	vim.bo[buf].formatexpr = "v:lua.vim.lsp.formatexpr()"
 
@@ -120,26 +106,7 @@ local on_lsp_attach = function(ev)
 	end
 end
 
--- Use LspAttach autocommand to only map the following keys
--- after the language server attaches to the current buffer
--- LspAttachイベント時に上記関数を呼び出す
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
 	callback = on_lsp_attach,
-})
-
--- pylsp は自動有効化から除外したので、ここで個別設定
-setup_server("pylsp", {
-	capabilities = default_capabilities,
-	settings = {
-		pylsp = {
-			plugins = {
-				pycodestyle = {
-					maxLineLength = 150,
-					ignore = { "E402" }, -- module level import not at top of file
-				},
-				ruff = { enabled = false }, -- use dedicated ruff_lsp server when available
-			},
-		},
-	},
 })
