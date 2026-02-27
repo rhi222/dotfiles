@@ -1,27 +1,15 @@
 local telescopeConfig = require("telescope.config")
 -- Clone the default Telescope configuration
-local vimgrep_arguments = { unpack(telescopeConfig.values.vimgrep_arguments) }
+local vimgrep_arguments = vim.list_extend({}, telescopeConfig.values.vimgrep_arguments)
 -- I want to search in hidden/dot files.
 table.insert(vimgrep_arguments, "--hidden")
 -- I don't want to search in the `.git` directory.
 table.insert(vimgrep_arguments, "--glob")
 table.insert(vimgrep_arguments, "!**/.git/*")
 
--- https://github.com/nvim-telescope/telescope.nvim#usage
--- fzf-luaが動かなくなったのでこちらを利用
--- local builtin = require("telescope.builtin")
--- vim.keymap.set("n", "<C-p>", builtin.find_files, {})
--- grepはfzf-luaを利用
--- https://github.com/ibhagwan/fzf-lua
--- vim.keymap.set("n", "<C-g>", builtin.live_grep, {})
--- vim.keymap.set("n", "<C-g>", builtin.grep_string, {})
--- vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
--- vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
-
 -- https://github.com/nvim-telescope/telescope-file-browser.nvim/issues/103
 local actions = require("telescope.actions")
 local fb_actions = require("telescope").extensions.file_browser.actions
-local buf_dir = vim.fn.expand("%:p:h")
 
 -- config recipe
 -- https://github.com/nvim-telescope/telescope.nvim/wiki/Configuration-Recipes
@@ -77,20 +65,14 @@ require("telescope").setup({
 		file_browser = {
 			hidden = true,
 			select_buffer = true,
-			-- 関数呼び出しで文字列を取得
-			path = buf_dir,
-			cwd = buf_dir,
+			layout_strategy = "center",
 			cwd_to_path = true,
 			no_ignore = true,
 			hijack_netrw = true,
 			-- theme = "ivy", -- ivy, dropdown, cursor
 			initial_mode = "normal",
 			mappings = {
-				["i"] = {
-					-- your custom insert mode mappings
-				},
 				["n"] = {
-					-- your custom normal mode mappings
 					["h"] = fb_actions.goto_parent_dir,
 					["l"] = actions.select_default,
 					["q"] = actions.close,
@@ -106,7 +88,7 @@ require("telescope").setup({
 pcall(require("telescope").load_extension, "fzf")
 
 -- https://github.com/nvim-telescope/telescope-file-browser.nvim
-require("telescope").load_extension("file_browser")
+pcall(require("telescope").load_extension, "file_browser")
 
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 pcall(require("telescope").load_extension, "egrepify")
