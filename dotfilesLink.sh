@@ -59,3 +59,4 @@ safe_link "$DOTFILES_DIR/.config/gitui" ~/.config/gitui
 safe_link "$DOTFILES_DIR/.config/lazygit" ~/.config/lazygit
 safe_link "$DOTFILES_DIR/.config/deck" ~/.config/deck
 safe_link "$DOTFILES_DIR/.config/alacritty" ~/.config/alacritty
+safe_link "$DOTFILES_DIR/.config/yazi" ~/.config/yazi
