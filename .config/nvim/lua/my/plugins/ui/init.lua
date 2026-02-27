@@ -18,6 +18,14 @@ return {
 		end,
 	},
 	{
+		"shellRaining/hlchunk.nvim",
+		enabled = false,
+		event = { "BufReadPre", "BufNewFile" },
+		config = function()
+			require("my/plugins/ui/hlchunk")
+		end,
+	},
+	{
 		"nvim-tree/nvim-web-devicons",
 	},
 	-- colorscheme
