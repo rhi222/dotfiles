@@ -87,18 +87,21 @@ return {
 			require("my/plugins/finder/fzf-lua")
 		end,
 	},
-	-- https://github.com/nvim-mini/mini.files
+	-- https://github.com/mikavilpas/yazi.nvim
 	{
-		"echasnovski/mini.files",
+		"mikavilpas/yazi.nvim",
+		version = "*",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+		},
 		keys = {
-			km.lazy_key("finder", "mini_files_open", function()
-				local buf_name = vim.api.nvim_buf_get_name(0)
-				local path = vim.fn.fnamemodify(buf_name, ":p:h")
-				require("mini.files").open(path)
+			km.lazy_key("finder", "yazi_open", function()
+				require("yazi").yazi()
 			end, { silent = true }),
 		},
+		event = "BufEnter",
 		config = function()
-			require("my/plugins/finder/mini-files")
+			require("my/plugins/finder/yazi")
 		end,
 	},
 }
