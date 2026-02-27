@@ -28,17 +28,21 @@ return {
 		"neovim/nvim-lspconfig",
 		event = { "BufReadPre", "BufNewFile" },
 		dependencies = {
-			-- Useful status updates for LSP
-			-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
 			{ "j-hui/fidget.nvim", tag = "v1.6.1", opts = {} },
-			-- Additional lua configuration, makes nvim stuff amazing!
-			{ "folke/neodev.nvim", opts = {} },
-			-- Ensure cmp capabilities are available before servers attach
 			"hrsh7th/cmp-nvim-lsp",
 		},
 		config = function()
 			require("my/plugins/lsp/nvim-lspconfig")
 		end,
+	},
+	{
+		"folke/lazydev.nvim",
+		ft = "lua",
+		opts = {
+			library = {
+				{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
+			},
+		},
 	},
 	{
 		"RubixDev/mason-update-all",
