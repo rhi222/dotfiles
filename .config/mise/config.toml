@@ -18,6 +18,7 @@ uv = "latest"
 "cargo:gitui" = "latest"
 "cargo:ripgrep" = "latest"
 "cargo:stylua" = "latest"
+"cargo:yazi-build" = "latest"
 
 [settings]
 # idiomatic version files を尊重（repo 単位で pin できる）
