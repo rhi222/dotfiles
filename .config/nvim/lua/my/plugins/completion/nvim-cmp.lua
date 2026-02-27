@@ -1,6 +1,7 @@
 -- https://github.com/hrsh7th/nvim-cmp
 local km = require("my.plugins.keymaps")
 local cmp = require("cmp")
+local lspkind = require("lspkind")
 
 local scroll_up_lhs = km.get("completion", "cmp_scroll_up")
 local scroll_down_lhs = km.get("completion", "cmp_scroll_down")
@@ -9,11 +10,11 @@ local abort_lhs = km.get("completion", "cmp_abort")
 local confirm_lhs = km.get("completion", "cmp_confirm")
 
 cmp.setup({
-	snippet = {
-		-- REQUIRED - you must specify a snippet engine
-		expand = function(args)
-			vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
-		end,
+	formatting = {
+		format = lspkind.cmp_format({
+			mode = "symbol_text",
+			maxwidth = 50,
+		}),
 	},
 	mapping = cmp.mapping.preset.insert({
 		[scroll_up_lhs] = cmp.mapping.scroll_docs(-4),
@@ -23,17 +24,7 @@ cmp.setup({
 		[confirm_lhs] = cmp.mapping.confirm({ select = true }),
 	}),
 	sources = cmp.config.sources({
-		{ name = "copilot" },
 		{ name = "nvim_lsp" },
-		{ name = "vsnip" }, -- For vsnip users.
-	}, {
-		{ name = "buffer" },
-	}),
-})
--- Set configuration for specific filetype.
-cmp.setup.filetype("gitcommit", {
-	sources = cmp.config.sources({
-		{ name = "git" }, -- You can specify the `git` source if [you were installed it](https://github.com/petertriho/cmp-git).
 	}, {
 		{ name = "buffer" },
 	}),
