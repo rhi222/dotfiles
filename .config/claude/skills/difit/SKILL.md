@@ -18,7 +18,6 @@ difit（GitHub-likeなdiffビューア）を使って、変更内容をブラウ
    ```
 
 2. **difitを起動する**
-
    - `$ARGUMENTS` が指定されている場合: `difit $ARGUMENTS` を実行
    - ステージされた変更がある場合: `difit staged` を実行
    - ステージされた変更がない場合: `difit .` を実行（全未コミット変更を表示）
