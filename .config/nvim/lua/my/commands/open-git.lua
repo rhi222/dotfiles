@@ -35,19 +35,14 @@ end
 -- 2) ファイルパスの取得を Lua だけで完結
 
 local function getFilePathFromRepoRoot()
-	local repo_root = vim.fn.systemlist("git rev-parse --show-toplevel 2> /dev/null")[1]
-	if repo_root == "" then
+	local fullpath = vim.fn.expand("%:p")
+	local git_dir = vim.fs.find(".git", { upward = true, path = vim.fn.expand("%:p:h") })[1]
+	if not git_dir then
 		print("Unable to find repository root")
 		return nil
 	end
-	local fullpath = vim.fn.expand("%:p")
-	-- repo_root + "/" の長さを取って切り出し
-	local prefix = repo_root:gsub("/+$", "") .. "/"
-	if not fullpath:find(prefix, 1, true) then
-		print("Unable to find file in repository")
-		return nil
-	end
-	return fullpath:sub(#prefix + 1)
+	local repo_root = vim.fs.dirname(git_dir)
+	return fullpath:sub(#repo_root + 2) -- +2 for trailing "/"
 end
 
 -- normal/visual で行範囲を取る部分はそのまま
