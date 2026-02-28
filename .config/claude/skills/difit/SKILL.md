@@ -2,7 +2,7 @@
 name: difit
 description: difitでステージされた変更をブラウザでレビューする。「差分を見せて」「diffを確認」「変更をレビュー」「ブラウザで見たい」「difit」などで使用。
 allowed-tools: Bash(difit:*), Bash(npx difit:*), Bash(git status:*), Bash(git diff:*)
-argument-hint: "[引数] (例: staged, ., path/to/file)"
+argument-hint: "[staged / . / その他difitオプション]"
 ---
 
 ## 概要
