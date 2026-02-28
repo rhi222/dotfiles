@@ -2,6 +2,7 @@
 name: tmux-sender
 description: tmux の別ペインにコマンドを送信する。「ペインで実行して」「tmuxで送信」などのリクエストで使用。
 allowed-tools: Bash(tmux:*)
+argument-hint: "<送信するコマンド>"
 ---
 
 # tmux コマンド送信スキル
