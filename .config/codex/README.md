@@ -10,16 +10,16 @@ CLI と IDE 拡張は同じ `config.toml` を共有し、CLI フラグやプロ�
 
 ## 運用フロー（最小・安全）
 
-1) テンプレートから実体を作成（初回のみ）
+1. テンプレートから実体を作成（初回のみ）
 
    ```bash
    mkdir -p ~/.codex
    cp .config/codex/config.example.toml ~/.codex/config.toml
    ```
 
-2) ローカル設定を編集（Trusted Roots など）
+2. ローカル設定を編集（Trusted Roots など）
 
-3) 1回だけの上書きは CLI で実行
+3. 1回だけの上書きは CLI で実行
 
    ```bash
    codex --config model='"gpt-5.2"'
@@ -31,14 +31,14 @@ CLI と IDE 拡張は同じ `config.toml` を共有し、CLI フラグやプロ�
 
 ローカル設定は手元の裁量で変わるため、テンプレートの差分だけを安全に取り込みます。
 
-1) テンプレートを退避して比較
+1. テンプレートを退避して比較
 
    ```bash
    cp ~/.codex/config.toml /tmp/codex.config.toml.bak
    diff -u /tmp/codex.config.toml.bak .config/codex/config.example.toml
    ```
 
-2) 必要な差分だけを手動で反映
+2. 必要な差分だけを手動で反映
 
 ## よくある運用パターン
 

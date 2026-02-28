@@ -33,11 +33,14 @@
 ## 設計思想
 
 ### 1. プラグイン分離
+
 - **プラグイン用**: `conf.d/`, `functions/` （Fisher、Oh My Fishなどが使用）
 - **個人設定用**: `my/conf.d/`, `my/functions/` （手動管理）
 
 ### 2. 機能別モジュール化
+
 個人設定を機能ごとに分割して管理性を向上：
+
 - **01-mise.fish**: ランタイム管理とデフォルトパッケージ
 - **02-history.fish**: 履歴サイズ・重複・共有設定
 - **03-environment.fish**: エディタ・zoxide・tabtab統合
@@ -48,7 +51,9 @@
 - **08-abbr.fish**: 略語（Git、Docker、開発ツール関連）
 
 ### 3. 読み込み順序制御
+
 `config.fish`で明示的に読み込み順序を制御：
+
 ```fish
 # 個人設定を順次読み込み
 for file in ~/.config/fish/my/conf.d/*.fish
@@ -64,30 +69,37 @@ set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 ## パフォーマンス最適化
 
 ### 条件付きツール初期化
+
 未インストールツールによるエラー回避：
+
 - `type -q mise` - miseの存在確認後に初期化
 - `type -q zoxide` - zoxideの存在確認後に初期化
 - `test -f ~/.config/tabtab/fish/__tabtab.fish` - tabtabファイル存在確認
 
 ### 履歴同期の最適化
+
 過度な頻度での実行を避けるため、10回に1回の頻度で履歴同期を実行。
 
 ## メンテナンス
 
 ### 新しい設定の追加
+
 1. **エイリアス**: `07-aliases.fish`に追加
 2. **略語**: `08-abbr.fish`に追加
 3. **その他設定**: 機能に応じて`my/conf.d/`に新ファイル作成（番号プレフィックス付き）
 4. **新しい関数**: `my/functions/`に個別ファイル作成
 
 ### プラグインの追加
+
 Fisherやその他のプラグイン管理ツールは自動的に標準の`conf.d/`と`functions/`を使用。
 個人設定との競合は発生しません。
 
 ### 設定の反映
+
 ```fish
 source ~/.config/fish/config.fish
 ```
+
 または新しいセッションを開始してください。
 
 ## 利点

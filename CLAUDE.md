@@ -9,7 +9,9 @@
 ## セットアップとインストール
 
 ### メインセットアップスクリプト
+
 `./dotfilesLink.sh` を実行して、すべての設定ファイルのシンボリックリンクを作成：
+
 - Git設定 (`.gitconfig`, `.config/git/`)
 - Neovim設定 (`.config/nvim/`)
 - Fish shell設定 (`.config/fish/`)
@@ -20,13 +22,16 @@
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
+
 Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従っています：
+
 - **名前空間戦略**: プラグイン名との競合を避けるため `my/` プレフィックスを使用
 - **プラグイン管理**: lazy.nvimを使用してプラグイン管理
 - **モジュラー設計**: 設定、プラグイン、コマンドを個別のモジュールに分離
 - **キーバインド哲学**: Space、Ctrl、特殊キーを使用した覚えやすいプレフィックスベースのキーマップを優先
 
 ### Fish Shell設定
+
 モジュラー構造でカテゴリ別に整理：
 
 ```
@@ -49,6 +54,7 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - **Docker Compose ヘルパー**: プロジェクトディレクトリ内のcomposeファイルの自動発見
 
 ### 開発環境
+
 - **ランタイム管理**: Node.js、Python、Go等のランタイム管理にmise（旧rtx）を使用
 - **Git設定**: 従来のコミット形式を使用するカスタムコミットメッセージテンプレート
 - **ターミナル設定**: tideプロンプトテーマで256色サポート設定
@@ -56,16 +62,19 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 ## 主要ツールとコマンド
 
 ### Gitワークフロー
+
 - コミットメッセージは従来のコミット形式に従う (feat, fix, docs, etc.)
 - `.config/git/commit-conventions.txt` でテンプレート利用可能
 - 最近のブランチ用 `gbr` 略語でブランチ管理
 
 ### Docker開発
+
 - `find_docker_compose` 関数でcomposeファイルを自動検出
 - 略語: `dc` (docker compose), `dcl` (logs), `dcu` (up), `dcd` (down)
 - 複数のcomposeファイルの場所と命名パターンをサポート
 
 ### Neovimプラグイン管理
+
 - `lazy-lock.json` のロックファイルでlazy.nvimを使用したプラグイン管理
 - `lua/my/plugins/` で機能別にプラグインを整理
 - LSPサーバー管理用Mason
@@ -74,12 +83,14 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 ## ファイル構造パターン
 
 ### 設定の整理
+
 - ルートのシステム全体設定 (`.gitconfig`, `.tmux.conf`)
 - XDG Base Directory Specificationに従った `.config/` のユーザー設定
 - 各ツールディレクトリの言語固有設定
 - **Fish設定**: 機能別にモジュール分割（エイリアス、略語、環境変数など）
 
 ### Neovim Luaモジュール
+
 - `my/settings/`: コアNeovim設定とautocmds
 - `my/plugins/`: 個別プラグイン設定
 - `my/commands/`: カスタムユーザーコマンド
