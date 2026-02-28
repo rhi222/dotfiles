@@ -1,4 +1,14 @@
 # https://yazi-rs.github.io/docs/configuration/yazi
 [mgr]
+ratio = [1, 3, 3]
+sort_by = "natural"
+sort_dir_first = true
+sort_sensitive = false
+show_hidden = true
+show_symlink = true
 linemode = "mtime"
-show_hidden=true
+
+[preview]
+tab_size = 2
+max_width = 1000
+max_height = 1000
