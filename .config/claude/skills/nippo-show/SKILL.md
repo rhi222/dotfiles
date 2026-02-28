@@ -2,6 +2,7 @@
 name: nippo-show
 description: 日報内容を確認する。「日報を見せて」「今日の日報は？」などで使用。
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
+allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(stat:*), Bash(head:*)
 ---
 
 # 日報内容を確認する
