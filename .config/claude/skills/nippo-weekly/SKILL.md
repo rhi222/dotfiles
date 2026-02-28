@@ -1,7 +1,8 @@
 ---
 name: nippo-weekly
-description: 週次振り返りレポートを生成する
+description: 週次振り返りレポートを生成する。「今週の振り返り」「ウィークリー」「weekly」「週次レポート」「1週間のまとめ」などで使用。過去7日間の日報を分析し、4軸評価トレンドと来週のアクションプランを含む成長レポートを生成する。
 disable-model-invocation: true
+argument-hint: "[週番号 YYYY-Wnn] (省略時は今週)"
 ---
 
 # 週次振り返りコマンド

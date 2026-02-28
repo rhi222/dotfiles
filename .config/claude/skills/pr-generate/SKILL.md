@@ -1,6 +1,6 @@
 ---
 name: pr-generate
-description: Pull Requestを自動生成する
+description: Pull Requestを自動生成する。「PR作成」「プルリク」「pull request」「PRを出して」「PRを作って」などで使用。差分・コミット分析からタイトル・説明文を自動生成し、gh pr createで作成する。
 allowed-tools: Bash(gh:*),Bash(git rev-parse:*),Bash(git log:*),Bash(git diff:*),Bash(git remote show:*)
 disable-model-invocation: true
 argument-hint: "[base-branch]"

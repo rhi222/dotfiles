@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: GitHubのPull Requestをレビューする
+description: GitHubのPull Requestをレビューする。「PRレビュー」「コードレビュー」「PR見て」「レビューして」「PR #123をチェック」などで使用。コード品質・設計・セキュリティ・パフォーマンス・テストの多軸でレビューする。
 allowed-tools: Bash(gh:*)
 disable-model-invocation: true
 argument-hint: "<PR番号>"

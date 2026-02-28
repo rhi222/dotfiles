@@ -1,6 +1,6 @@
 ---
 name: pr-auto-update
-description: Pull Requestの説明とラベルを自動更新する
+description: Pull Requestの説明文とラベルを自動更新する。「PR更新」「PRの説明を書いて」「ラベルをつけて」「PR description」などで使用。既存PRの説明が不足・未記入の場合にも使用すること。
 allowed-tools: Bash(gh:*)
 disable-model-invocation: true
 argument-hint: "[--pr <番号>] [--description-only] [--labels-only] [--dry-run]"
@@ -72,11 +72,7 @@ gh pr list --head $(git branch --show-current) --json number,title,url
 
 #### 既存内容の保持ルール
 
-**重要**: 既存の内容は変更しない
-
-- 書かれているセクションは保持
-- 空のセクションのみ補完
-- 機能的なコメント（Copilot review rule など）は保持
+既存の内容は変更しない — ユーザーが手動で書いた説明はその人の意図を反映しており、AIが上書きすると情報が失われる。空セクションのみ補完することで、ユーザーの記述を尊重しつつ不足箇所を埋める。機能的なコメント（Copilot review rule など）も保持する。
 
 #### プロジェクトテンプレートの使用
 
@@ -100,112 +96,11 @@ parse_template_structure() {
 
 ### 4. ラベルの自動設定
 
-#### ラベル取得の仕組み
-
-**優先順位**:
-
-1. **`.github/labels.yml`**: プロジェクト固有のラベル定義から取得
-2. **GitHub API**: `gh api repos/{OWNER}/{REPO}/labels --jq '.[].name'` で既存ラベルを取得
-
-#### 自動判定ルール
-
-**ファイルパターンベース**:
-
-- ドキュメント: `*.md`, `README`, `docs/` → `documentation|docs|doc` を含むラベル
-- テスト: `test`, `spec` → `test|testing` を含むラベル
-- CI/CD: `.github/`, `*.yml`, `Dockerfile` → `ci|build|infra|ops` を含むラベル
-- 依存関係: `package.json`, `pubspec.yaml`, `requirements.txt` → `dependencies|deps` を含むラベル
-
-**変更内容ベース**:
-
-- バグ修正: `fix|bug|error|crash|修正` → `bug|fix` を含むラベル
-- 新機能: `feat|feature|add|implement|新機能|実装` → `feature|enhancement|feat` を含むラベル
-- リファクタリング: `refactor|clean|リファクタ` → `refactor|cleanup|clean` を含むラベル
-- パフォーマンス: `performance|perf|optimize|パフォーマンス` → `performance|perf` を含むラベル
-- セキュリティ: `security|secure|セキュリティ` → `security` を含むラベル
-
-#### 制約
-
-- **最大 3 個まで**: 自動選択されるラベル数の上限
-- **既存ラベルのみ**: 新しいラベルの作成は禁止
-- **部分マッチ**: ラベル名にキーワードが含まれているかで判定
+ファイルパターンと変更内容に基づいてラベルを自動判定する。詳細は `references/label-rules.md` を参照。
 
 ### 5. 実行フロー
 
-```bash
-#!/bin/bash
-
-# 1. PR の検出・取得
-detect_pr() {
-  if [ -n "$PR_NUMBER" ]; then
-    echo $PR_NUMBER
-  else
-    gh pr list --head $(git branch --show-current) --json number --jq '.[0].number'
-  fi
-}
-
-# 2. 変更内容の分析
-analyze_changes() {
-  local pr_number=$1
-  gh pr diff $pr_number --name-only
-  gh pr diff $pr_number | head -1000
-}
-
-# 3. 説明文の生成
-generate_description() {
-  local pr_number=$1
-  local current_body=$(gh pr view $pr_number --json body --jq -r .body)
-
-  if [ -n "$current_body" ]; then
-    echo "$current_body"
-  else
-    local template_file=".github/PULL_REQUEST_TEMPLATE.md"
-    if [ -f "$template_file" ]; then
-      generate_from_template "$(cat "$template_file")" "$changes"
-    else
-      generate_from_template "" "$changes"
-    fi
-  fi
-}
-
-# 4. ラベルの決定
-determine_labels() {
-  local changes=$1 file_list=$2 pr_number=$3
-
-  # 利用可能なラベルを取得
-  if [ -f ".github/labels.yml" ]; then
-    grep "^- name:" .github/labels.yml | sed "s/^- name: '\?\([^']*\)'\?/\1/"
-  else
-    local repo_info=$(gh repo view --json owner,name)
-    local owner=$(echo "$repo_info" | jq -r .owner.login)
-    local repo=$(echo "$repo_info" | jq -r .name)
-    gh api "repos/$owner/$repo/labels" --jq '.[].name'
-  fi
-  # 最大 3 個に制限
-}
-
-# 5. PR の更新
-update_pr() {
-  local pr_number=$1 description="$2" labels="$3"
-
-  if [ "$DRY_RUN" = "true" ]; then
-    echo "=== DRY RUN ==="
-    echo "Description:" && echo "$description"
-    echo "Labels: $labels"
-  else
-    local repo_info=$(gh repo view --json owner,name)
-    local owner=$(echo "$repo_info" | jq -r .owner.login)
-    local repo=$(echo "$repo_info" | jq -r .name)
-
-    gh api --method PATCH "/repos/$owner/$repo/pulls/$pr_number" \
-      --field body="$description"
-
-    if [ -n "$labels" ]; then
-      gh pr edit $pr_number --add-label "$labels"
-    fi
-  fi
-}
-```
+PR検出 → 変更分析 → 説明文生成 → ラベル決定 → PR更新の順で処理する。詳細は `references/execution-flow.md` を参照。
 
 ## プロジェクト別テンプレート例
 

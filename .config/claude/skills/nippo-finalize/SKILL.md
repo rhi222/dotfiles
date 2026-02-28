@@ -1,7 +1,8 @@
 ---
 name: nippo-finalize
-description: 日報を完成させる（4軸評価の振り返りレポートを自動生成）
+description: 日報を完成させる（4軸評価の振り返りレポートを自動生成）。「日報を仕上げて」「振り返り」「finalize」「今日のまとめ」「1日の振り返り」など業務終了時の振り返り生成で使用。
 disable-model-invocation: true
+argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
 ---
 
 # 日報完成化コマンド
