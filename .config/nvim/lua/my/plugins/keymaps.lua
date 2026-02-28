@@ -6,22 +6,22 @@ local M = {}
 -- ============================================================
 -- PREFIX MAP (空きキー一覧)
 -- ============================================================
--- <leader>(Space) + 1char:
---   使用中: g(neogit) j(hop) m(quickhl)
---   空き:   a b c d e f h i k l n o p q r s t u v w x y z
+-- NOTE: <leader> = Space なので <leader>x と <space>x は同一
+--
+-- <leader> + 1char:
+--   使用中: D(type-def) e(diag) f(yazi) g(neogit) j(hop) m(quickhl) q(loclist)
+--   2charプレフィクス: c(copilot) g(git) o(open) r(lsp) s(sidekick) w(workspace)
+--   空き:   a b d h i k l n p t u v x y z
 --
 -- <leader> + 2char:
---   使用中: cp cd(copilot) gb(blame) og(git-url)
+--   使用中: ca(code-action) cd cp(copilot) gb(blame) og(git-url)
+--           rn(rename) wa wr wl(workspace)
 --           st ss sd se sf sv sp sc(sidekick)
 --   空き:   ga gc gd ge gf... など多数
 --
 -- <C-p> + char (Finder):
 --   使用中: f e g l p : m s c r b o h d
 --   空き:   a i j k n q t u v w x y z
---
--- <space> + char (LSP/Diagnostics):
---   使用中: e f q D
---   空き:   a b c d g h i j k l m n o p r s t u v w x y z
 --
 -- g + char (Go-to/Motion):
 --   使用中: d D i r(LSP:ref) s S R(flash) c b(comment)
