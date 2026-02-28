@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: ステージされている内容からConventional Commitコミットを作成する
+description: ステージされた変更からConventional Commitメッセージを作成してコミットする。「コミットして」「commit」「変更をコミット」「git commit」などで使用。コミットメッセージの作成やステージ済み変更の確定が必要な場面で常に使用すること。
 allowed-tools: Bash(git commit:*)
 disable-model-invocation: true
 ---
@@ -8,8 +8,8 @@ disable-model-invocation: true
 ## 重要事項
 
 - コミット対象は**ステージングされている内容**のみです。
-  - ステージングされていないファイルを見つけてもgit add したりは絶対にしないでください。
-- コミット時にpre-commitでエラーになった場合は修正は行わず、エラー内容をまとめて報告して処理を終了してください。
+  - ステージングされていないファイルをgit addしない。コミット対象はユーザーが意図的にステージした変更のみであり、意図しないファイルの追加はコミット履歴を汚染する。
+- pre-commitでエラーが発生した場合は、自動修正せずにエラー内容を報告して終了する。pre-commitエラーの原因はこのスキルの責務外であり、ユーザーが修正方針を判断すべきため。
 
 ## コミット作成の手順
 

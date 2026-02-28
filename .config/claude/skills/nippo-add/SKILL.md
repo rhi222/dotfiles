@@ -1,6 +1,6 @@
 ---
 name: nippo-add
-description: 日報に追記する
+description: 日報に追記する（作業ログ、タスク開始/終了の時間計測、フォーカス設定）。「日報」「にっぽ」「作業記録」「ログ追加」「start:」「end:」などで使用。新規日報の作成、前日からの引き継ぎ、目標逆算タスクの提案も行う。
 disable-model-invocation: true
 argument-hint: "<追記内容> (例: start:PRレビュー, end:PRレビュー, フォーカス:横断)"
 ---
