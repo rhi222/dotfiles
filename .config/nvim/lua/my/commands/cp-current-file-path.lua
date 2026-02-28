@@ -7,14 +7,12 @@ local function copy_current_file_path(opts)
 	end
 
 	-- Get repository root path
-	local git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
 	local final_path = path
-
-	if vim.v.shell_error == 0 and git_root ~= "" then
-		-- We're in a git repository, get relative path from repo root
-		local full_path = vim.fn.expand("%:p")
-		local repo_relative_path = vim.fn.fnamemodify(full_path, ":s?" .. vim.fn.escape(git_root, "?\\") .. "/??")
-		final_path = repo_relative_path
+	local full_path = vim.fn.expand("%:p")
+	local git_dir = vim.fs.find(".git", { upward = true, path = vim.fs.dirname(full_path) })[1]
+	if git_dir then
+		local git_root = vim.fs.dirname(git_dir)
+		final_path = full_path:sub(#git_root + 2) -- +2 for trailing "/"
 	end
 
 	-- Add line numbers if in visual mode
