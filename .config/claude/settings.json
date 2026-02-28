@@ -14,16 +14,23 @@
       "Bash(pnpm add:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm test:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)"
     ],
     "deny": [
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git rebase:*)",
       "Bash(psql:*)",
+      "Bash(rm -r:*)",
       "Bash(rm -rf:*)",
       "Bash(ssh:*)",
       "Bash(sudo:*)",
+      "Read(.env)",
       "Read(.env.*)",
       "Read(id_rsa)"
     ]
