@@ -2,71 +2,35 @@
 # Global Preferences #
 ######################
 model = "gpt-5.2-codex"
-# hide_agent_reasoning = true
-network_access = true
-
-# 許可マッチ方法: prefix にする
-matching_strategy = "prefix"
-
-# 許可にマッチしたら自動実行（未掲載のみ確認）
-ask_on_match = false
-ask_on_unlisted = true
-
-# 許可コマンド（prefix一致）
-allowed_commands = [
-  "gh api",
-  "gh pr checkout",
-  "gh pr diff",
-  "gh pr review",
-  "gh pr view",
-  "git commit",
-  "git log",
-  "git status",
-]
-
-#################
-# Network Rules #
-#################
-[network]
-policy = "allowlist"
-allow = [
-  "api.github.com",
-  "github.com",
-  "objects.githubusercontent.com",
-  "raw.githubusercontent.com",
-  "ssh.github.com",
-]
-auto_approve = true
-
+model_reasoning_effort = "high"
+personality = "pragmatic"
+# show_raw_agent_reasoning = true
 web_search = "cached"
 
-#################
-# Trusted Roots #
-#################
-# 適宜追加
+###########################
+# Sandbox & Network Rules #
+###########################
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+network_access = true
+
+#########################
+# Shell Env Policy      #
+#########################
+[shell_environment_policy]
+inherit = "all"
 
 ############
 # Profiles #
 ############
 [profiles.auto]
+model = "gpt-5.2-codex"
 sandbox_mode = "workspace-write"
-approval_policy = "on-failure"
-network_access = "allow"
+approval_policy = "on-request"
 
 [profiles.gh]
+model = "gpt-5.2-codex"
 sandbox_mode = "workspace-write"
-approval_policy = "on-failure"
-network_access = "allow"
-allowed_commands = [
-  "gh api",
-  "gh pr checkout",
-  "gh pr diff",
-  "gh pr review",
-  "gh pr view",
-  "git commit",
-  "git log",
-  "git status",
-]
-
-[notice.model_migrations]
-gpt-5-codex = "gpt-5.2-codex"
+approval_policy = "on-request"
