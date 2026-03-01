@@ -13,4 +13,12 @@ require("auto-session").setup({
 	args_allow_files_auto_save = false,
 	-- 削除済みworktree等の孤児セッションファイルを自動削除（30日）
 	purge_after_minutes = 43200,
+	-- tmux kill-server等でSIGHUP/SIGTERM受信中のセッション保存をスキップ
+	pre_save_cmds = {
+		function()
+			if vim.v.dying > 0 then
+				return false
+			end
+		end,
+	},
 })
