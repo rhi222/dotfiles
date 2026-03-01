@@ -61,6 +61,7 @@ return {
 	-- https://github.com/folke/sidekick.nvim?tab=readme-ov-file
 	{
 		"folke/sidekick.nvim",
+		enabled = false,
 		opts = {
 			-- add any options here
 			cli = {

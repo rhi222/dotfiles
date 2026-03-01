@@ -1,6 +1,13 @@
 local km = require("my.plugins.keymaps")
 return {
 	{
+		"sindrets/diffview.nvim",
+		lazy = true,
+		opts = {
+			hg_cmd = {},
+		},
+	},
+	{
 		"lewis6991/gitsigns.nvim",
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()

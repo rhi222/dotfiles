@@ -28,7 +28,6 @@ return {
 		"neovim/nvim-lspconfig",
 		event = { "BufReadPre", "BufNewFile" },
 		dependencies = {
-			{ "j-hui/fidget.nvim", tag = "v1.6.1", opts = {} },
 			"hrsh7th/cmp-nvim-lsp",
 		},
 		config = function()
