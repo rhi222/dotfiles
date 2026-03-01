@@ -56,6 +56,7 @@ return {
 		priority = 1000,
 		opts = {
 			image = { enabled = false },
+			notifier = { enabled = false },
 		},
 		config = function(_, opts)
 			require("snacks").setup(opts)
