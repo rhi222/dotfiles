@@ -91,7 +91,7 @@ local on_lsp_attach = function(ev)
 		client.server_capabilities.documentRangeFormattingProvider = false
 	end
 
-	if client.supports_method("textDocument/documentHighlight") then
+	if client:supports_method("textDocument/documentHighlight") then
 		local group = vim.api.nvim_create_augroup("UserLspDocumentHighlight" .. buf, { clear = true })
 		vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 			group = group,
@@ -105,7 +105,7 @@ local on_lsp_attach = function(ev)
 		})
 	end
 
-	if client.supports_method("textDocument/inlayHint") then
+	if client:supports_method("textDocument/inlayHint") then
 		enable_inlay_hints(buf)
 	end
 end
