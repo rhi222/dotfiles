@@ -31,11 +31,12 @@ cmp.setup({
 	}),
 })
 
--- cmdline 共通: 補完メニュー表示中はEnterで補完確定のみ（コマンド実行しない）
+-- cmdline 共通: 明示的に候補を選択した場合のみ確定、それ以外は入力をそのまま実行
 local cmdline_cr = cmp.mapping(function(fallback)
-	if cmp.visible() then
-		cmp.confirm({ select = true })
+	if cmp.visible() and cmp.get_selected_entry() then
+		cmp.confirm({ select = false })
 	else
+		cmp.close()
 		fallback()
 	end
 end, { "c" })
