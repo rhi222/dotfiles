@@ -54,14 +54,21 @@ return {
 		"folke/snacks.nvim",
 		lazy = false,
 		priority = 1000,
-		opts = {
-			image = { enabled = false },
-			notifier = { enabled = false },
-		},
-		config = function(_, opts)
+		config = function()
+			-- 使用しないモジュールを無効化しcheckhealthも抑制
+			local disabled = {
+				"bigfile", "dashboard", "explorer", "image", "input",
+				"notifier", "picker", "quickfile", "scope", "scroll",
+				"statuscolumn", "words",
+			}
+			local opts = {}
+			for _, mod in ipairs(disabled) do
+				opts[mod] = { enabled = false }
+			end
 			require("snacks").setup(opts)
-			-- WSL2+tmux環境ではkitty graphics protocol非対応のためcheckhealthも抑制
-			require("snacks.image").meta.health = false
+			for _, mod in ipairs(disabled) do
+				require("snacks." .. mod).meta.health = false
+			end
 		end,
 	},
 	{
