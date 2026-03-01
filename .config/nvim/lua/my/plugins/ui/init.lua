@@ -51,10 +51,31 @@ return {
 		end,
 	},
 	{
+		"folke/snacks.nvim",
+		lazy = false,
+		priority = 1000,
+		opts = {},
+	},
+	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
 		dependencies = {
 			"nvim-tree/nvim-web-devicons",
 		},
+		opts = {
+			icons = {
+				mappings = false,
+			},
+		},
+	},
+	{
+		"folke/noice.nvim",
+		event = "VeryLazy",
+		dependencies = {
+			"MunifTanjim/nui.nvim",
+		},
+		config = function()
+			require("my/plugins/ui/noice")
+		end,
 	},
 }

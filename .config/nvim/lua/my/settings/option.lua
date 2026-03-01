@@ -14,6 +14,10 @@ vim.api.nvim_create_autocmd("VimEnter", {
 	end,
 })
 
+-- checkhealthの警告抑制
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
+
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.opt.number = true
@@ -60,6 +64,14 @@ vim.opt.termguicolors = true
 vim.opt.fixendofline = false
 -- auto-session: ensure multiple buffers are persisted
 vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+
+-- html filetype に formatprg を設定（rest-nvim の checkhealth 警告回避）
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "html",
+	callback = function()
+		vim.bo.formatprg = "prettier --parser html"
+	end,
+})
 
 -- wslで貼り付けにC-vを割り当てたためremap
 -- Ctrl+Shift+VでVisual Blockモードに入る

@@ -16,6 +16,7 @@ require("nvim-treesitter.configs").setup({
 		"mermaid",
 		"prisma",
 		"python",
+		"regex",
 		"sql",
 		-- "tsv",
 		"tsx",

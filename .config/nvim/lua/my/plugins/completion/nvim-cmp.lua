@@ -31,9 +31,21 @@ cmp.setup({
 	}),
 })
 
+-- cmdline 共通: 補完メニュー表示中はEnterで補完確定のみ（コマンド実行しない）
+local cmdline_cr = cmp.mapping(function(fallback)
+	if cmp.visible() then
+		cmp.confirm({ select = true })
+	else
+		fallback()
+	end
+end, { "c" })
+
+local cmdline_mapping = cmp.mapping.preset.cmdline()
+cmdline_mapping["<CR>"] = cmdline_cr
+
 -- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
 cmp.setup.cmdline({ "/", "?" }, {
-	mapping = cmp.mapping.preset.cmdline(),
+	mapping = cmdline_mapping,
 	sources = {
 		{ name = "buffer" },
 	},
@@ -41,6 +53,6 @@ cmp.setup.cmdline({ "/", "?" }, {
 
 -- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
 cmp.setup.cmdline(":", {
-	mapping = cmp.mapping.preset.cmdline(),
+	mapping = cmdline_mapping,
 	sources = cmp.config.sources({ { name = "path" } }, { { name = "cmdline" } }),
 })
