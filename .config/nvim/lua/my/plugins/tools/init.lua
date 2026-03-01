@@ -106,6 +106,18 @@ return {
 			end),
 		},
 	},
+	-- plantuml syntax + preview
+	-- 前提: sudo apt install plantuml wslu
+	{
+		"aklt/plantuml-syntax",
+		ft = "plantuml",
+		config = function()
+			require("my/plugins/tools/plantuml")
+		end,
+		keys = {
+			km.lazy_key("tools", "plantuml_preview", "<cmd>PlantumlPreview<CR>"),
+		},
+	},
 	{
 		"windwp/nvim-autopairs",
 		event = "InsertEnter",
