@@ -3,7 +3,6 @@
 ## 基本ルール
 
 - 思考は英語、回答の生成は日本語で行う
-- ローカルシェルはfish。shellコマンドの例示はfish準拠で記述する（POSIX/bash構文ではなくfish構文を使うこと）
 
 ## コミットメッセージ
 
@@ -24,6 +23,11 @@ git commit -m "feat: 新機能を追加
 ```
 
 Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Claude`）は含めない。
+
+## shellコマンド
+
+- ユーザーへの回答でコマンド例を示す際はfish構文で記述すること（開発者のログインシェルがfishのため）
+- Claude Code自身がBashツールで実行するコマンドはPOSIX/Bash構文のままでよい
 
 ## Test-Driven Development (TDD)
 
