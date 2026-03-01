@@ -54,7 +54,14 @@ return {
 		"folke/snacks.nvim",
 		lazy = false,
 		priority = 1000,
-		opts = {},
+		opts = {
+			image = { enabled = false },
+		},
+		config = function(_, opts)
+			require("snacks").setup(opts)
+			-- WSL2+tmux環境ではkitty graphics protocol非対応のためcheckhealthも抑制
+			require("snacks.image").meta.health = false
+		end,
 	},
 	{
 		"folke/which-key.nvim",
