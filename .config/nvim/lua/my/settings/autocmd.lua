@@ -2,6 +2,9 @@
 vim.filetype.add({
 	extension = {
 		tsv = "tsv",
+		puml = "plantuml",
+		plantuml = "plantuml",
+		pu = "plantuml",
 	},
 	pattern = {
 		[".*sqltmpl"] = "sql",
