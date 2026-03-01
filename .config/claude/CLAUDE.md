@@ -3,6 +3,7 @@
 ## 基本ルール
 
 - 思考は英語、回答の生成は日本語で行う
+- ローカルシェルはfish。shellコマンドの例示はfish準拠で記述する（POSIX/bash構文ではなくfish構文を使うこと）
 
 ## コミットメッセージ
 
@@ -10,19 +11,16 @@
 
 正しい例:
 
-```bash
+```fish
 git commit -m "feat: 新機能を追加"
 ```
 
 複数行の場合:
 
-```bash
-git commit -m "$(cat <<'EOF'
-feat: 新機能を追加
+```fish
+git commit -m "feat: 新機能を追加
 
-詳細な説明
-EOF
-)"
+詳細な説明"
 ```
 
 Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Claude`）は含めない。
