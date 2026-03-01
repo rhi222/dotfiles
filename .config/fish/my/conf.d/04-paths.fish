@@ -2,12 +2,10 @@
 # path設定はfish_add_pathを利用
 # https://zenn.dev/estra/articles/zenn-fish-add-path-final-answer
 
-# for golang
-# https://tech.librastudio.co.jp/entry/index.php/2018/02/20/post-1792/
-set -gx GOPATH $HOME/go
-fish_add_path $GOPATH/bin
+# go install でインストールしたバイナリ用（Go自体はmiseで管理）
+fish_add_path $HOME/go/bin
 
-# for pip3
+# pipx等が使う共通バイナリディレクトリ
 fish_add_path $HOME/.local/bin
 
 # for win32yank
@@ -17,10 +15,3 @@ fish_add_path $HOME/bin
 # docker setting
 # https://qiita.com/v2okimochi/items/f53edcf79a4b71f519b1#wsl2%E3%81%AEpath%E3%81%8B%E3%82%89windows%E3%83%91%E3%82%B9%E3%82%92%E6%8A%9C%E3%81%8F
 fish_add_path /mnt/c/Program\ Files/Docker/Docker/resources/bin
-
-# rust setting
-fish_add_path $HOME/.cargo/bin
-
-# Rye
-# https://github.com/astral-sh/rye
-fish_add_path $HOME/.rye/shims
