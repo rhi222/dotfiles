@@ -20,6 +20,7 @@ safe_link() {
 # Root configuration files
 safe_link "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
 safe_link "$DOTFILES_DIR/.config/tmux" ~/.config/tmux
+safe_link "$DOTFILES_DIR/.config/tmux/tmux.conf" ~/.tmux.conf
 safe_link "$DOTFILES_DIR/.psqlrc" ~/.psqlrc
 
 # Claude Code configuration
