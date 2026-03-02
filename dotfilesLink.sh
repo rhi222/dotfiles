@@ -19,9 +19,7 @@ safe_link() {
 
 # Root configuration files
 safe_link "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
-safe_link "$DOTFILES_DIR/.tmux.conf" ~/.tmux.conf
-mkdir -p ~/.tmux/scripts
-safe_link "$DOTFILES_DIR/.tmux/scripts/fix-resurrect-defunct.sh" ~/.tmux/scripts/fix-resurrect-defunct.sh
+safe_link "$DOTFILES_DIR/.config/tmux" ~/.config/tmux
 safe_link "$DOTFILES_DIR/.psqlrc" ~/.psqlrc
 
 # Claude Code configuration
