@@ -4,3 +4,4 @@
 .config/AutoHotkey/ahk-snippets/passwords/*
 !.config/AutoHotkey/ahk-snippets/passwords/.gitkeep
 !.config/AutoHotkey/ahk-snippets/passwords/README.md
+.config/tmux/plugins/
