@@ -57,6 +57,11 @@ if vim.fn.has("wsl") == 1 then
 		},
 		cache_enable = 0,
 	}
+	-- xdg-openのtimeout問題を回避するためwslviewを使用
+	vim.keymap.set("n", "gx", function()
+		local url = vim.fn.expand("<cfile>")
+		vim.fn.jobstart({ "wslview", url }, { detach = true })
+	end, { silent = true, desc = "Open URL with wslview" })
 end
 -- TrueColor対応
 vim.opt.termguicolors = true
