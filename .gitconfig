@@ -1,10 +1,45 @@
 [include]
 	# userは開発端末ごとに代わりうるのでgitignoreされた別ファイルで管理
 	path = ~/.config/git/config-local
+
+# --- Core ---
 [core]
 	editor = nvim +1 -c 'startinsert'
 	whitespace = cr-at-eol
 	pager = delta
+[init]
+	defaultBranch = main
+[credential]
+	helper = cache
+
+# --- Operations ---
+[push]
+	autoSetupRemote = true
+[pull]
+	rebase = true
+[fetch]
+	prune = true
+[merge]
+	conflictstyle = diff3
+[commit]
+	template = ~/.config/git/commit-conventions.txt
+[status]
+	showUntrackedFiles = normal
+
+# --- Diff / Delta ---
+[diff]
+	colorMoved = default
+	algorithm = histogram
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	# https://github.com/dandavison/delta
+	# https://zenn.dev/sh090/articles/0796e6b3f4ed94beadc4
+	navigate = true    # use n and N to move between diff sections
+	light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+	#side-by-side = true # lazygitに影響するため
+
+# --- Aliases ---
 [alias]
 	co  = commit
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
@@ -21,37 +56,12 @@
 	ss = status -s
 	st  = status
 	sw = switch
+
+# --- External Tools ---
 [ghq]
 	root = /data/git-repos
-[credential]
-	helper = cache
-[interactive]
-	diffFilter = delta --color-only
-[delta]
-	# https://github.com/dandavison/delta
-	# https://zenn.dev/sh090/articles/0796e6b3f4ed94beadc4
-	navigate = true    # use n and N to move between diff sections
-	light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
-	#side-by-side = true # lazygitに影響するため
-[merge]
-	conflictstyle = diff3
-[diff]
-	colorMoved = default
-	algorithm = histogram
-[status]
-	showUntrackedFiles = normal
-[init]
-	defaultBranch = main
-[commit]
-	template = ~/.config/git/commit-conventions.txt
 [wt]
 	relative = true
 	nocd = create
 	copy = CLAUDE.md
 	hook = "tmux neww -c \"$PWD\" -n \"$(basename \"$(git worktree list | head -1 | awk '{print $1}')\"):$(git branch --show-current)\" \\; splitw -h -c \"$PWD\" 'claude'"
-[push]
-	autoSetupRemote = true
-[fetch]
-	prune = true
-[pull]
-	rebase = true
