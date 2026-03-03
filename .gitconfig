@@ -41,7 +41,10 @@
 
 # --- Aliases ---
 [alias]
+	ap  = add -p
+	bd  = branch -D
 	co  = commit
+	cp  = cherry-pick
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
 	current-hash="show --format='%H' --no-patch"
 	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
@@ -51,11 +54,11 @@
 	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
 	me  = merge
 	pl = !git pull origin $(git branch --show-current)
-	re  = rebase
-	sh = show
+	rs  = restore
 	ss = status -s
-	st  = status
 	sw = switch
+	swc = switch -C
+	undo = reset --soft HEAD^
 
 # --- External Tools ---
 [ghq]
