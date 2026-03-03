@@ -1,6 +1,6 @@
-[user]
-	email = ryouhei222@gmail.com
-	name = rhi222
+[include]
+	# userは開発端末ごとに代わりうるのでgitignoreされた別ファイルで管理
+	path = ~/.config/git/config-local
 [core]
 	editor = nvim +1 -c 'startinsert'
 	whitespace = cr-at-eol
