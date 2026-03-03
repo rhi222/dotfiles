@@ -4,6 +4,7 @@ require("yazi").setup({
 	yazi_floating_window_border = "rounded",
 	use_ya_as_event_reader = true,
 	highlight_hovered_buffers_in_same_directory = true,
+	clipboard_register = "+",
 	integrations = {
 		grep_in_directory = function(directory)
 			require("fzf-lua").live_grep({ cwd = directory })
