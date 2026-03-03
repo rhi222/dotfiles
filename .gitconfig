@@ -37,6 +37,7 @@
 	conflictstyle = diff3
 [diff]
 	colorMoved = default
+	algorithm = histogram
 [status]
 	showUntrackedFiles = normal
 [init]
@@ -48,3 +49,9 @@
 	nocd = create
 	copy = CLAUDE.md
 	hook = "tmux neww -c \"$PWD\" -n \"$(basename \"$(git worktree list | head -1 | awk '{print $1}')\"):$(git branch --show-current)\" \\; splitw -h -c \"$PWD\" 'claude'"
+[push]
+	autoSetupRemote = true
+[fetch]
+	prune = true
+[pull]
+	rebase = true
