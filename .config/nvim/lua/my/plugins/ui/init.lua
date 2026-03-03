@@ -55,7 +55,7 @@ return {
 		lazy = false,
 		priority = 1000,
 		config = function()
-			-- 使用しないモジュールを無効化しcheckhealthも抑制
+			-- 使用しないモジュールを無効化
 			local disabled = {
 				"bigfile", "dashboard", "explorer", "image", "input",
 				"notifier", "picker", "quickfile", "scope", "scroll",
@@ -66,9 +66,6 @@ return {
 				opts[mod] = { enabled = false }
 			end
 			require("snacks").setup(opts)
-			for _, mod in ipairs(disabled) do
-				require("snacks." .. mod).meta.health = false
-			end
 		end,
 	},
 	{
