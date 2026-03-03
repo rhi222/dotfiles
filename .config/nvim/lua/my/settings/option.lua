@@ -63,7 +63,7 @@ vim.opt.termguicolors = true
 -- ファイル末尾のEOLを自動追加しない
 vim.opt.fixendofline = false
 -- auto-session: ensure multiple buffers are persisted
-vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
 
 -- html filetype に formatprg を設定（rest-nvim の checkhealth 警告回避）
 vim.api.nvim_create_autocmd("FileType", {

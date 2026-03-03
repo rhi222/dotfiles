@@ -92,7 +92,8 @@ local on_lsp_attach = function(ev)
 	end
 
 	if client:supports_method("textDocument/documentHighlight") then
-		local group = vim.api.nvim_create_augroup("UserLspDocumentHighlight" .. buf, { clear = true })
+		local group = vim.api.nvim_create_augroup("UserLspDocumentHighlight", { clear = false })
+		vim.api.nvim_clear_autocmds({ group = group, buffer = buf })
 		vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 			group = group,
 			buffer = buf,

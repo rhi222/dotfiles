@@ -8,5 +8,6 @@ return {
 	require("my/commands/cp-current-file-path"),
 	require("my/commands/cp-to-host"),
 	require("my/commands/keymap-check"),
+	require("my/commands/memory-check"),
 }
 -- }}} -------------------------------

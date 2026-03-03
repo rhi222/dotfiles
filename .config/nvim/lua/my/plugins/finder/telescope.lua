@@ -36,7 +36,7 @@ require("telescope").setup({
 			},
 		},
 		cache_picker = {
-			num_pickers = 10,
+			num_pickers = 3,
 		},
 		sorting_strategy = "ascending",
 	},
