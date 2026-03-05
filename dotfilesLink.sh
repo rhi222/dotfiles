@@ -64,3 +64,6 @@ safe_link "$DOTFILES_DIR/.config/yazi" ~/.config/yazi
 
 # Custom scripts
 safe_link "$DOTFILES_DIR/scripts" ~/scripts
+
+echo ""
+echo "To install apt packages: ./scripts/apt-setup.sh"
