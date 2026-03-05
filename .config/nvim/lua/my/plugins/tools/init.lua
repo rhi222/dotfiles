@@ -108,15 +108,18 @@ return {
 		},
 	},
 	-- plantuml syntax + preview
-	-- 前提: sudo apt install plantuml wslu
 	{
-		"aklt/plantuml-syntax",
+		"weirongxu/plantuml-previewer.vim",
 		ft = "plantuml",
+		dependencies = {
+			"aklt/plantuml-syntax",
+			"tyru/open-browser.vim",
+		},
 		config = function()
-			require("my/plugins/tools/plantuml")
+			vim.g["plantuml_previewer#plantuml_jar_path"] = vim.fn.expand("~/plantuml.jar")
 		end,
 		keys = {
-			km.lazy_key("tools", "plantuml_preview", "<cmd>PlantumlPreview<CR>"),
+			km.lazy_key("tools", "plantuml_preview", "<cmd>PlantumlOpen<CR>"),
 		},
 	},
 	{
