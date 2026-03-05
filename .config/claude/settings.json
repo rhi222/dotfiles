@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -35,12 +38,6 @@
       "Read(id_rsa)"
     ]
   },
-  "mcpServers": {
-    "drawio": {
-      "command": "npx",
-      "args": ["@drawio/mcp"]
-    }
-  },
   "hooks": {
     "Stop": [
       {
@@ -63,10 +60,6 @@
       }
     ]
   },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "teammateMode": "tmux",
   "enabledPlugins": {
     "cdk@forcia-claude-marketplace": true,
     "commit-commands@forcia-claude-marketplace": true,
@@ -75,5 +68,14 @@
     "typescript@forcia-claude-marketplace": true
   },
   "language": "Japanese",
-  "plansDirectory": "./plans"
+  "plansDirectory": "./plans",
+  "mcpServers": {
+    "drawio": {
+      "command": "npx",
+      "args": [
+        "@drawio/mcp"
+      ]
+    }
+  },
+  "teammateMode": "tmux"
 }
