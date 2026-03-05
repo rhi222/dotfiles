@@ -2,7 +2,7 @@ local km = require("my.plugins.keymaps")
 return {
 	{
 		"sindrets/diffview.nvim",
-		lazy = true,
+		cmd = { "DiffviewOpen", "DiffviewFileHistory" },
 		opts = {
 			hg_cmd = {},
 		},
