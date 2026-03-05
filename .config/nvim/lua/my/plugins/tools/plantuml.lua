@@ -1,7 +1,20 @@
 local augroup = vim.api.nvim_create_augroup("PlantumlPreview", { clear = true })
+local tmpdir = "/tmp/plantuml-preview"
+
+local function ensure_tmpdir()
+	vim.fn.mkdir(tmpdir, "p")
+end
+
+local function tmp_path(file, ext)
+	local name = vim.fn.fnamemodify(file, ":t:r")
+	return tmpdir .. "/" .. name .. ext
+end
 
 local function generate(file, png)
-	local output = vim.fn.system("plantuml -tpng " .. vim.fn.shellescape(file))
+	local jar = vim.fn.expand("~/plantuml.jar")
+	local output = vim.fn.system(
+		"java -jar " .. vim.fn.shellescape(jar) .. " -tpng -o " .. vim.fn.shellescape(tmpdir) .. " " .. vim.fn.shellescape(file)
+	)
 	if vim.v.shell_error ~= 0 and vim.fn.filereadable(png) ~= 1 then
 		vim.notify("PlantUML: generation failed\n" .. output, vim.log.levels.ERROR)
 		return false
@@ -28,10 +41,10 @@ local function create_html(png, html)
 end
 
 vim.api.nvim_create_user_command("PlantumlPreview", function()
+	ensure_tmpdir()
 	local file = vim.fn.expand("%:p")
-	local base = vim.fn.expand("%:p:r")
-	local png = base .. ".png"
-	local html = base .. "_preview.html"
+	local png = tmp_path(file, ".png")
+	local html = tmp_path(file, "_preview.html")
 
 	if not generate(file, png) then
 		return
@@ -40,7 +53,6 @@ vim.api.nvim_create_user_command("PlantumlPreview", function()
 	create_html(png, html)
 	vim.fn.jobstart({ "wslview", html })
 
-	-- 保存時に自動再生成（ブラウザが2秒ごとに画像を再読み込み）
 	vim.api.nvim_clear_autocmds({ group = augroup })
 	vim.api.nvim_create_autocmd("BufWritePost", {
 		group = augroup,
