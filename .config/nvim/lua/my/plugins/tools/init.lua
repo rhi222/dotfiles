@@ -107,6 +107,28 @@ return {
 			end),
 		},
 	},
+	-- image.nvim: ターミナル内画像表示 (Sixelバックエンド)
+	{
+		"3rd/image.nvim",
+		event = "VeryLazy",
+		opts = {
+			backend = "sixel",
+			processor = "magick_cli",
+		},
+	},
+	-- diagram.nvim: PlantUML等のダイアグラムをインライン表示
+	{
+		"3rd/diagram.nvim",
+		ft = "plantuml",
+		dependencies = { "3rd/image.nvim" },
+		opts = {
+			renderer_options = {
+				plantuml = {
+					charset = "utf-8",
+				},
+			},
+		},
+	},
 	-- plantuml syntax + preview
 	{
 		"weirongxu/plantuml-previewer.vim",
@@ -117,6 +139,7 @@ return {
 		},
 		config = function()
 			vim.g["plantuml_previewer#plantuml_jar_path"] = vim.fn.expand("~/plantuml.jar")
+			require("my/plugins/tools/plantuml")
 		end,
 		keys = {
 			km.lazy_key("tools", "plantuml_preview", "<cmd>PlantumlOpen<CR>"),
