@@ -1,9 +1,9 @@
 local augroup = vim.api.nvim_create_augroup("PlantumlPreview", { clear = true })
 
 local function generate(file, png)
-	vim.fn.system("plantuml -tpng " .. vim.fn.shellescape(file))
-	if vim.v.shell_error ~= 0 then
-		vim.notify("PlantUML: generation failed", vim.log.levels.ERROR)
+	local output = vim.fn.system("plantuml -tpng " .. vim.fn.shellescape(file))
+	if vim.v.shell_error ~= 0 and vim.fn.filereadable(png) ~= 1 then
+		vim.notify("PlantUML: generation failed\n" .. output, vim.log.levels.ERROR)
 		return false
 	end
 	return true
