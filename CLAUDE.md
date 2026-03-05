@@ -19,6 +19,10 @@
 - 開発ツール (mise, lazygit, gitui, etc.)
 - Claude Code設定 (`.config/claude/`)
 
+### aptパッケージ管理
+
+`apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
