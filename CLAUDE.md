@@ -23,6 +23,8 @@
 
 `apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する。
 
+`sudo xargs -a apt-packages.txt apt install -y` を使用して一括インストール可能。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
