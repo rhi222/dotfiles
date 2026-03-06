@@ -138,7 +138,6 @@ return {
 			"tyru/open-browser.vim",
 		},
 		config = function()
-			vim.g["plantuml_previewer#plantuml_jar_path"] = vim.fn.expand("~/plantuml.jar")
 			require("my/plugins/tools/plantuml")
 		end,
 		keys = {
