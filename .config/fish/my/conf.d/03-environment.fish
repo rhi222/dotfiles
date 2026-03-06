@@ -4,7 +4,7 @@ set -gx PSQL_EDITOR nvim
 set -gx GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
 set -gx EDITOR nvim
 set -gx VISUAL nvim
-set -gx TERM screen-256color
+set -gx TERM tmux-256color
 
 # Font color settings
 # https://fishshell.com/docs/current/cmds/set_color.html
