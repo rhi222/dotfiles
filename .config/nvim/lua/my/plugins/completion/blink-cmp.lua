@@ -6,49 +6,59 @@ local scroll_down_lhs = km.get("completion", "cmp_scroll_down")
 local complete_lhs = km.get("completion", "cmp_complete")
 local abort_lhs = km.get("completion", "cmp_abort")
 local confirm_lhs = km.get("completion", "cmp_confirm")
+local select_next_lhs = km.get("completion", "cmp_select_next")
+local select_prev_lhs = km.get("completion", "cmp_select_prev")
 
 require("blink.cmp").setup({
 	keymap = {
-		preset = "none",
+		preset = "default",
 		[scroll_up_lhs] = { "scroll_documentation_up" },
 		[scroll_down_lhs] = { "scroll_documentation_down" },
 		[complete_lhs] = { "show" },
 		[abort_lhs] = { "cancel", "fallback" },
 		[confirm_lhs] = { "accept", "fallback" },
-		["<Tab>"] = { "select_next", "fallback" },
-		["<S-Tab>"] = { "select_prev", "fallback" },
+		[select_next_lhs] = { "select_next", "fallback_to_mappings" },
+		[select_prev_lhs] = { "select_prev", "fallback_to_mappings" },
 	},
 	cmdline = {
 		keymap = {
-			preset = "none",
-			[complete_lhs] = { "show" },
-			[abort_lhs] = { "cancel", "fallback" },
-			["<CR>"] = { "accept_and_enter", "fallback" },
-			["<Tab>"] = { "select_next", "fallback" },
-			["<S-Tab>"] = { "select_prev", "fallback" },
+			preset = "inherit",
+			[confirm_lhs] = { "accept_and_enter", "fallback" },
+		},
+		completion = {
+			list = {
+				selection = { preselect = false, auto_insert = false },
+			},
+			menu = { auto_show = true },
 		},
 	},
 	completion = {
+		list = {
+			selection = { preselect = true, auto_insert = false },
+		},
 		documentation = {
 			auto_show = true,
 		},
 		menu = {
+			auto_show = true,
 			draw = {
 				columns = { { "kind_icon" }, { "label", gap = 1 } },
 			},
 		},
 	},
 	sources = {
-		default = { "lazydev", "lsp", "path", "buffer" },
+		default = { "lsp", "path", "buffer" },
+		per_filetype = {
+			lua = { inherit_defaults = true, "lazydev" },
+		},
 		providers = {
 			lazydev = {
 				name = "LazyDev",
 				module = "lazydev.integrations.blink",
 				score_offset = 100,
 			},
-			buffer = {
-				fallbacks = { "lsp" },
-			},
+			-- lspのデフォルト: fallbacks = { "buffer" }
+			-- LSP結果がない場合のみbufferが表示される（nvim-cmpのgroup動作と同等）
 		},
 	},
 })

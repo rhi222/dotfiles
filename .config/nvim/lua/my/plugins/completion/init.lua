@@ -36,9 +36,8 @@ return {
 		"saghen/blink.cmp",
 		event = { "InsertEnter", "CmdlineEnter" },
 		version = "1.*",
-		dependencies = {
-			"folke/lazydev.nvim", -- Neovim Lua API補完
-		},
+		-- lazydev.nvimはlsp/init.luaでft="lua"として定義済み
+		-- blink.cmpのproviderはlazy requireのため依存不要
 		config = function()
 			require("my/plugins/completion/blink-cmp")
 		end,
