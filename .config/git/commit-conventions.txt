@@ -1,6 +1,6 @@
 
 # ----------------------------------------------------------
-# Header - <Type>: <Emoji> #<Issue Number> <Title>
+# Header - <Type>: #<Issue Number> <Title>
 # ----------------------------------------------------------
 #    * feat             A new feature - SemVar PATCH
 #    * fix              A bug fix - SemVar MINOR
