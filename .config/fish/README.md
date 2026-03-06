@@ -12,15 +12,15 @@
 ├── functions/           # プラグイン由来の関数（空/プラグイン専用）
 └── my/                  # 個人設定専用ディレクトリ
     ├── conf.d/          # 機能別設定ファイル（番号順で読み込み）
-    │   ├── 01-mise.fish           # ランタイム管理（mise）
-    │   ├── 02-history.fish        # 履歴設定
-    │   ├── 03-environment.fish    # 環境変数・ツール統合
-    │   ├── 04-paths.fish          # PATH設定
-    │   ├── 05-colors.fish         # 色設定
-    │   ├── 06-prompt.fish         # プロンプト設定（tide）
-    │   ├── 07-aliases.fish        # エイリアス
-    │   ├── 08-abbr.fish           # 略語
-    │   └── 09-custom-prompt.fish  # カスタムプロンプト設定
+    │   ├── 01-mise.fish              # ランタイム管理（mise）
+    │   ├── 02-history.fish           # 履歴設定
+    │   ├── 03-environment.fish       # 環境変数・ツール統合
+    │   ├── 04-paths.fish             # PATH設定
+    │   ├── 05-tide-settings.fish     # tideプロンプト設定変数
+    │   ├── 06-aliases.fish           # エイリアス
+    │   ├── 07-abbr.fish              # 略語
+    │   ├── 08-prompt-override.fish   # プロンプトカスタマイズ（git treeアイコン）
+    │   └── 09-git-wt.fish            # Git worktree関連
     └── functions/       # カスタム関数
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
@@ -42,13 +42,14 @@
 個人設定を機能ごとに分割して管理性を向上：
 
 - **01-mise.fish**: ランタイム管理とデフォルトパッケージ
-- **02-history.fish**: 履歴サイズ・重複・共有設定
+- **02-history.fish**: 履歴共有設定
 - **03-environment.fish**: エディタ・zoxide・tabtab統合
 - **04-paths.fish**: 各種ツールのPATH設定
-- **05-colors.fish**: ターミナル色設定
-- **06-prompt.fish**: tideプロンプト設定
-- **07-aliases.fish**: エイリアス（Git、ツール、SSH関連）
-- **08-abbr.fish**: 略語（Git、Docker、開発ツール関連）
+- **05-tide-settings.fish**: tideプロンプト設定変数
+- **06-aliases.fish**: エイリアス（Git、ツール、SSH関連）
+- **07-abbr.fish**: 略語（Git、Docker、開発ツール関連）
+- **08-prompt-override.fish**: プロンプトカスタマイズ（git treeアイコン）
+- **09-git-wt.fish**: Git worktree関連
 
 ### 3. 読み込み順序制御
 
@@ -84,8 +85,8 @@ set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 
 ### 新しい設定の追加
 
-1. **エイリアス**: `07-aliases.fish`に追加
-2. **略語**: `08-abbr.fish`に追加
+1. **エイリアス**: `06-aliases.fish`に追加
+2. **略語**: `07-abbr.fish`に追加
 3. **その他設定**: 機能に応じて`my/conf.d/`に新ファイル作成（番号プレフィックス付き）
 4. **新しい関数**: `my/functions/`に個別ファイル作成
 
