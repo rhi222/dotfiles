@@ -33,18 +33,14 @@ return {
 		},
 	},
 	{
-		"hrsh7th/nvim-cmp",
+		"saghen/blink.cmp",
 		event = { "InsertEnter", "CmdlineEnter" },
+		version = "1.*",
 		dependencies = {
-			"hrsh7th/cmp-nvim-lsp", --LSPを補完ソースに
-			"hrsh7th/cmp-buffer", --bufferを補完ソースに
-			"hrsh7th/cmp-cmdline", -- vimのコマンド
-			"hrsh7th/cmp-path", --pathを補完ソースに
-			"onsails/lspkind.nvim", --補完欄にアイコンを表示
 			"folke/lazydev.nvim", -- Neovim Lua API補完
 		},
 		config = function()
-			require("my/plugins/completion/nvim-cmp")
+			require("my/plugins/completion/blink-cmp")
 		end,
 	},
 }

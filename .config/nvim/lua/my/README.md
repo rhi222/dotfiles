@@ -38,10 +38,10 @@ my/
     │   ├── nvim-lspconfig.lua
     │   └── conform.lua
     ├── completion/         補完・AI支援
-    │   ├── init.lua          specs (copilot, cmp)
+    │   ├── init.lua          specs (copilot, blink.cmp)
     │   ├── copilot.lua
     │   ├── copilot-chat.lua
-    │   └── nvim-cmp.lua
+    │   └── blink-cmp.lua
     ├── finder/             ファイル検索・ジャンプ
     │   ├── init.lua          specs (telescope, fzf-lua)
     │   ├── telescope.lua
