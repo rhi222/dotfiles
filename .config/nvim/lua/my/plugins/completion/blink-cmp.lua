@@ -12,8 +12,8 @@ local select_prev_lhs = km.get("completion", "cmp_select_prev")
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",
-		[scroll_up_lhs] = { "scroll_documentation_up" },
-		[scroll_down_lhs] = { "scroll_documentation_down" },
+		[scroll_up_lhs] = { "scroll_documentation_up", "fallback" },
+		[scroll_down_lhs] = { "scroll_documentation_down", "fallback" },
 		[complete_lhs] = { "show" },
 		[abort_lhs] = { "cancel", "fallback" },
 		[confirm_lhs] = { "accept", "fallback" },
@@ -29,25 +29,30 @@ require("blink.cmp").setup({
 			list = {
 				selection = { preselect = false, auto_insert = false },
 			},
-			menu = { auto_show = true },
+			menu = {
+				auto_show = function()
+					return vim.fn.getcmdtype() == ":"
+				end,
+			},
 		},
 	},
 	completion = {
 		list = {
-			selection = { preselect = true, auto_insert = false },
+			selection = { preselect = false, auto_insert = false },
 		},
 		documentation = {
 			auto_show = true,
+			auto_show_delay_ms = 200,
 		},
 		menu = {
-			auto_show = true,
 			draw = {
 				columns = { { "kind_icon" }, { "label", gap = 1 } },
 			},
 		},
 	},
+	signature = { enabled = true },
 	sources = {
-		default = { "lsp", "path", "buffer" },
+		default = { "lsp", "path", "snippets", "buffer" },
 		per_filetype = {
 			lua = { inherit_defaults = true, "lazydev" },
 		},
