@@ -6,9 +6,6 @@ return {
 		config = function()
 			require("my/plugins/editing/nvim-treesitter")
 		end,
-		dependencies = {
-			"nvim-treesitter/playground",
-		},
 	},
 	-- easymotion
 	{

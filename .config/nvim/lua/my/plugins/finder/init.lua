@@ -37,7 +37,7 @@ return {
 			),
 			km.lazy_key("finder", "telescope_commands", ":Telescope commands<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_cmd_history", ":Telescope command_history<CR>", { silent = true }),
-			km.lazy_key("finder", "telescope_bookmarks", ":Telescope vim_bookmarks all<CR>", { silent = true }),
+	
 			km.lazy_key(
 				"finder",
 				"telescope_symbols",

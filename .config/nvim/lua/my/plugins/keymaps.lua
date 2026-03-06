@@ -41,7 +41,7 @@ M.finder = {
 	telescope_fuzzy_find = { "<C-p>l", desc = "Buffer fuzzy find" },
 	telescope_commands = { "<C-p>p", desc = "Commands" },
 	telescope_cmd_history = { "<C-p>:", desc = "Command history" },
-	telescope_bookmarks = { "<C-p>m", desc = "Vim bookmarks" },
+
 	telescope_symbols = { "<C-p>s", desc = "LSP workspace symbols" },
 	telescope_git_status = { "<C-p>c", desc = "Git status" },
 	telescope_resume = { "<C-p>r", desc = "Resume last picker" },
