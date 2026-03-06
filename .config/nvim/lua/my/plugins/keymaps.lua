@@ -84,6 +84,8 @@ M.completion = {
 	cmp_complete = { "<C-Space>", mode = "i", desc = "Trigger completion" },
 	cmp_abort = { "<C-e>", mode = "i", desc = "Abort completion" },
 	cmp_confirm = { "<CR>", mode = "i", desc = "Confirm completion" },
+	cmp_select_next = { "<C-j>", mode = "i", desc = "Next completion item" },
+	cmp_select_prev = { "<C-k>", mode = "i", desc = "Previous completion item" },
 }
 
 M.git = {
