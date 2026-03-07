@@ -26,3 +26,6 @@ abbr --add gw 'cd (gwq get)'
 # nvim
 abbr --add vi nvim
 abbr --add view 'nvim -R'
+
+# Node
+abbr --add pp pnpm
