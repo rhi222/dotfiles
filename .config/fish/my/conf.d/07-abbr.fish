@@ -29,3 +29,8 @@ abbr --add view 'nvim -R'
 
 # Node
 abbr --add pp pnpm
+
+# other
+abbr --add cl claude
+abbr --add cod codex
+abbr --add cop copilot
