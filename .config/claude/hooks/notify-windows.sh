@@ -30,6 +30,34 @@
 #
 # =============================================================================
 
+# アイコンパスを取得（スクリプトと同じディレクトリ）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ICON_PATH="$SCRIPT_DIR/claude-icon.png"
+
+# BurntToastでWindows通知を送信する関数
+send_notification() {
+  local title="$1"
+  local message="$2"
+
+  # シングルクォートをエスケープ（PowerShell用）
+  title="${title//\'/\'\'}"
+  message="${message//\'/\'\'}"
+
+  if [[ -f "$ICON_PATH" ]]; then
+    local win_icon_path
+    win_icon_path=$(wslpath -w "$ICON_PATH")
+    powershell.exe -NoProfile -Command "
+      Import-Module BurntToast -ErrorAction SilentlyContinue
+      New-BurntToastNotification -Text '$title', '$message' -AppLogo '$win_icon_path'
+    "
+  else
+    powershell.exe -NoProfile -Command "
+      Import-Module BurntToast -ErrorAction SilentlyContinue
+      New-BurntToastNotification -Text '$title', '$message'
+    "
+  fi
+}
+
 INPUT=$(cat)
 EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // empty')
 
@@ -48,22 +76,20 @@ case "$EVENT" in
     ;;
 esac
 
-# アイコンパスを取得（スクリプトと同じディレクトリ）
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ICON_PATH="$SCRIPT_DIR/claude-icon.png"
+send_notification "$TITLE" "$MESSAGE"
 
-# BurntToastでWindows通知を送信
-if [[ -f "$ICON_PATH" ]]; then
-  WIN_ICON_PATH=$(wslpath -w "$ICON_PATH")
-  powershell.exe -NoProfile -Command "
-    Import-Module BurntToast -ErrorAction SilentlyContinue
-    New-BurntToastNotification -Text '$TITLE', '$MESSAGE' -AppLogo '$WIN_ICON_PATH'
-  "
-else
-  powershell.exe -NoProfile -Command "
-    Import-Module BurntToast -ErrorAction SilentlyContinue
-    New-BurntToastNotification -Text '$TITLE', '$MESSAGE'
-  "
+# Stop時に日報チェックをバックグラウンド実行（フラグファイルで有効化）
+NIPPO_NOTIFY_FLAG="$HOME/.config/nippo-notify-enabled"
+if [[ "$EVENT" == "Stop" && -f "$NIPPO_NOTIFY_FLAG" ]]; then
+  NIPPO_CHECK="$HOME/scripts/nippo-check.sh"
+  if [[ -x "$NIPPO_CHECK" ]]; then
+    (
+      nippo_msg=$(timeout 5 "$NIPPO_CHECK" stop 2>/dev/null)
+      if [[ $? -ne 0 && -n "$nippo_msg" ]]; then
+        send_notification "日報チェック" "$nippo_msg"
+      fi
+    ) & disown
+  fi
 fi
 
 exit 0
