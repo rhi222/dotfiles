@@ -131,9 +131,9 @@ end
 
 -- コマンド／マッピング登録
 local km = require("my.plugins.keymaps")
-vim.api.nvim_create_user_command("OpenGit", function()
-	OpenGitURL("n")
-end, {})
+vim.api.nvim_create_user_command("OpenGit", function(opts)
+	OpenGitURL(opts.range > 0 and "v" or "n")
+end, { range = true })
 local og_lhs, _, og_desc = km.get("commands", "open_git")
 vim.keymap.set("n", og_lhs, ":OpenGit<CR>", { noremap = true, silent = true, desc = og_desc })
 local ogv_lhs, ogv_mode, ogv_desc = km.get("commands", "open_git_visual")
