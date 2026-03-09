@@ -65,5 +65,15 @@ safe_link "$DOTFILES_DIR/.config/yazi" ~/.config/yazi
 # Custom scripts
 safe_link "$DOTFILES_DIR/scripts" ~/scripts
 
+# 日報通知スクリプトに実行権限を付与
+chmod +x "$DOTFILES_DIR/scripts/nippo-check.sh" 2>/dev/null || true
+chmod +x "$DOTFILES_DIR/scripts/nippo-cron.sh" 2>/dev/null || true
+
 echo ""
 echo "To install apt packages: ./scripts/apt-setup.sh"
+echo ""
+echo "日報リマインド通知を有効にするには:"
+echo "  1. touch ~/.config/nippo-notify-enabled"
+echo "  2. crontab -e で以下を追加:"
+echo "     0 9,11,13,15,17,19 * * 1-5 \$HOME/scripts/nippo-cron.sh >> \$HOME/.nippo-cron.log 2>&1"
+echo "  無効化: rm ~/.config/nippo-notify-enabled"
