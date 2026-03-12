@@ -37,4 +37,12 @@ awk '
     next
 }
 { print }
-' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+' "$file" > "${file}.tmp"
+
+# awk の出力が空または元ファイルより極端に小さい場合は上書きしない
+if [ ! -s "${file}.tmp" ]; then
+    rm -f "${file}.tmp"
+    exit 0
+fi
+
+mv "${file}.tmp" "$file"
