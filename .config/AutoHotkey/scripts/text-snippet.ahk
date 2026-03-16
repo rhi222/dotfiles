@@ -90,6 +90,11 @@ ReadTextFileUtf8(path) {
     return text
 }
 
+ExpandVariables(text) {
+    text := StrReplace(text, "{{today}}", FormatTime(A_Now, "yyyy-MM-dd"))
+    return text
+}
+
 PasteText(text) {
     ; Clipboard-safe paste:
     ; - Always restore previous clipboard (even on error)
@@ -128,6 +133,7 @@ PasteFile(path, *) {
 
     try {
         text := ReadTextFileUtf8(path)
+        text := ExpandVariables(text)
         PasteText(text)
     } catch as e {
         MsgBox(
