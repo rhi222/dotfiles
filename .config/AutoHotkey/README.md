@@ -14,7 +14,8 @@ C:\Users\<user>\Documents\AutoHotkey\
 └── text-snippet.ahk
 ```
 
-- `cp AutoHotkey/scripts/* /mnt/c/Users/<user>/Documents/AutoHotkey/`
+- `bash AutoHotkey/deploy-ahk-script.sh`
+  - `--dry-run` オプションで、配備先のファイル構成を確認できます。
 
 ```
 C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\
