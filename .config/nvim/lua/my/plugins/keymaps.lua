@@ -121,6 +121,7 @@ M.tools = {
 M.commands = {
 	open_git = { "<leader>og", desc = "Open Git URL" },
 	open_git_visual = { "<leader>og", mode = "v", desc = "Open Git URL (visual)" },
+	mo_open = { "<leader>om", desc = "Open markdown with mo" },
 }
 
 -- ============================================================

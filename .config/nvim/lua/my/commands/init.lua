@@ -9,5 +9,6 @@ return {
 	require("my/commands/cp-to-host"),
 	require("my/commands/keymap-check"),
 	require("my/commands/memory-check"),
+	require("my/commands/mo"),
 }
 -- }}} -------------------------------
