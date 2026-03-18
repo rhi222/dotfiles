@@ -27,8 +27,8 @@ uv = "latest"
 "cargo:zoxide" = "latest"
 
 # GitHub Releasesからバイナリをインストール
-# https://mise.jdx.dev/dev-tools/backends/ubi.html
-"ubi:k1LoW/mo" = "latest"
+# https://mise.jdx.dev/dev-tools/backends/github.html
+"github:k1LoW/mo" = "latest"
 
 [settings]
 # 並列インストールで高速化
