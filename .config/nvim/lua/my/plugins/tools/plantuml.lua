@@ -85,18 +85,14 @@ vim.api.nvim_create_user_command("PlantumlOpen", function()
 		vim.notify("PlantUML: java が見つかりません", vim.log.levels.ERROR)
 		return
 	end
-	if vim.fn.exists("*OpenBrowser") == 0 then
-		vim.notify("PlantUML: open-browser.vim が必要です", vim.log.levels.ERROR)
-		return
-	end
-
 	local vp = get_viewer_dir(bufnr)
 
 	vim.fn.delete(vp .. "/tmp.puml")
 	vim.fn.delete(vp .. "/tmp.svg")
 
 	refresh(bufnr)
-	vim.fn.OpenBrowser(vp .. "/index.html")
+	-- WSL2ではブラウザ起動(wslview等)が同期的に~1.6秒ブロックするため非同期化
+	vim.fn.jobstart({ "xdg-open", vp .. "/index.html" }, { detach = true })
 
 	-- 保存時は即座にレンダリング
 	vim.api.nvim_create_autocmd("BufWritePost", {
