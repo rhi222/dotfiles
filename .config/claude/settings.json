@@ -74,7 +74,16 @@
     "commit-commands@forcia-claude-marketplace": true,
     "domain-model@forcia-claude-marketplace": true,
     "superpowers@claude-plugins-official": true,
-    "typescript@forcia-claude-marketplace": true
+    "typescript@forcia-claude-marketplace": true,
+    "example-skills@anthropic-agent-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/skills"
+      }
+    }
   },
   "language": "Japanese",
   "plansDirectory": "./plans",
@@ -86,5 +95,6 @@
       ]
     }
   },
-  "teammateMode": "tmux"
+  "teammateMode": "tmux",
+  "voiceEnabled": true
 }
