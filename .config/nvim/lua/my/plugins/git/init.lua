@@ -9,7 +9,7 @@ return {
 	},
 	{
 		"lewis6991/gitsigns.nvim",
-		event = { "BufReadPre", "BufNewFile" },
+		event = "VeryLazy",
 		config = function()
 			require("my/plugins/git/gitsigns")
 		end,
