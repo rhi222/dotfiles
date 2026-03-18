@@ -15,18 +15,21 @@ return {
 	},
 	{
 		"williamboman/mason-lspconfig.nvim",
-		event = { "BufReadPre", "BufNewFile" },
+		event = "VeryLazy",
 		dependencies = {
 			"williamboman/mason.nvim",
 			"neovim/nvim-lspconfig",
 		},
 		config = function()
 			require("my/plugins/lsp/mason-lspconfig")
+			-- VeryLazy後に開かれたバッファにLSPをアタッチするため
+			-- 既存バッファのFileTypeイベントを再発火
+			vim.api.nvim_exec_autocmds("FileType", {})
 		end,
 	},
 	{
 		"neovim/nvim-lspconfig",
-		event = { "BufReadPre", "BufNewFile" },
+		event = "VeryLazy",
 		dependencies = {
 			"saghen/blink.cmp",
 		},
