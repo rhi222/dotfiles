@@ -20,7 +20,7 @@ abbr --add cpe 'COMPOSE_PROFILES='
 # Development Tools
 abbr --add ld lazydocker
 abbr --add lg lazygit
-abbr --add gf 'cd (ghq root)/(ghq list | fzf)'
+abbr --add gf 'cd (ghq root)/(ghq list | fzf --bind "start:unbind(enter)" --bind "load:rebind(enter)")'
 abbr --add gw 'cd (gwq get)'
 
 # nvim
