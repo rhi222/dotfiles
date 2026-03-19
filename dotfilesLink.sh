@@ -52,6 +52,7 @@ safe_link "$DOTFILES_DIR/.config/fish/my" ~/.config/fish/my
 
 # Development tools configuration
 safe_link "$DOTFILES_DIR/.config/ccmanager" ~/.config/ccmanager
+safe_link "$DOTFILES_DIR/.config/ccstatusline" ~/.config/ccstatusline
 safe_link "$DOTFILES_DIR/.config/nvim" ~/.config/nvim
 safe_link "$DOTFILES_DIR/.config/git" ~/.config/git
 safe_link "$DOTFILES_DIR/.config/gwq" ~/.config/gwq
