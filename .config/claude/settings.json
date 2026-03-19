@@ -96,5 +96,10 @@
     }
   },
   "teammateMode": "tmux",
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "statusLine": {
+    "type": "command",
+    "command": "ccstatusline",
+    "padding": 0
+  }
 }
