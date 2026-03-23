@@ -16,10 +16,10 @@ ALACTモデル（Action → Looking back → Awareness → Creating alternatives
 
 ## 入力・出力
 
-| 項目     | パス                                             | 説明                           |
-| -------- | ------------------------------------------------ | ------------------------------ |
-| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ファイル                   |
-| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | ALACT振り返りを日報に追記      |
+| 項目     | パス                                             | 説明                      |
+| -------- | ------------------------------------------------ | ------------------------- |
+| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ファイル              |
+| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | ALACT振り返りを日報に追記 |
 
 ## 実行スクリプト
 

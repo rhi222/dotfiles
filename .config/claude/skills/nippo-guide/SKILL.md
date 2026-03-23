@@ -16,11 +16,11 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
 ## 入力・出力
 
-| 項目     | パス                                             | 説明                               |
-| -------- | ------------------------------------------------ | ---------------------------------- |
-| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ファイル                       |
-| **参照** | `~/Obsidian/02_Daily/nippo-goals.md`             | 目標設定ファイル（オプション）     |
-| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | フィードバックを日報に追記         |
+| 項目     | パス                                             | 説明                           |
+| -------- | ------------------------------------------------ | ------------------------------ |
+| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ファイル                   |
+| **参照** | `~/Obsidian/02_Daily/nippo-goals.md`             | 目標設定ファイル（オプション） |
+| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | フィードバックを日報に追記     |
 
 ## 実行スクリプト
 

@@ -90,9 +90,7 @@
   "mcpServers": {
     "drawio": {
       "command": "npx",
-      "args": [
-        "@drawio/mcp"
-      ]
+      "args": ["@drawio/mcp"]
     }
   },
   "teammateMode": "tmux",
