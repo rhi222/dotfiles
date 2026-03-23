@@ -29,6 +29,7 @@ uv = "latest"
 # GitHub Releasesからバイナリをインストール
 # https://mise.jdx.dev/dev-tools/backends/github.html
 "github:k1LoW/mo" = "latest"
+java = "21"
 
 [settings]
 # 並列インストールで高速化
