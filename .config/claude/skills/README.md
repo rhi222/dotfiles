@@ -30,7 +30,7 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 │   nippo-guide / nippo-report / nippo-review       │
 ├─────────────────────────────────────────────────┤
 │ 俯瞰層: 長期的な分析・深い振り返り                │
-│   nippo-insight / nippo-trend                     │
+│   nippo-insight / nippo-trend / session-patterns  │
 ├─────────────────────────────────────────────────┤
 │ 完成化: 日報・週報の仕上げ                        │
 │   nippo-finalize / nippo-weekly                   │
@@ -52,6 +52,7 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 | `/nippo-insight`    | ALACT深い振り返り            | `[日付]`     | 週1〜2回 | 日報追記     |
 | `/nippo-trend`      | 長期トレンド分析             | `[期間日数]` | 月1回    | 独立ファイル |
 | `/nippo-weekly`     | 週次振り返りレポート         | `[週番号]`   | 週1回    | 独立ファイル |
+| `/session-patterns` | セッションパターン分析       | `[期間日数]` | 週1回    | 標準出力     |
 
 ## 推奨日次フロー
 
@@ -65,7 +66,8 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 | 必要に応じ | `/nippo-report`          | 上司への報告用テキスト生成     |
 | 週1〜2回   | `/nippo-guide`           | 複数視点フィードバック         |
 | 週1〜2回   | `/nippo-insight`         | ALACTによる深い振り返り        |
-| 週次       | `/nippo-weekly`          | 週次レポート                   |
+| 週次       | `/nippo-weekly`          | 週次レポート（セッション分析含む） |
+| 週次       | `/session-patterns`      | セッションパターン分析（単独実行時） |
 | 月1回      | `/nippo-trend 90`        | 長期トレンド分析               |
 | 評価前     | `/nippo-review`          | 評価面談材料抽出               |
 

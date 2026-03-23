@@ -3,7 +3,7 @@ name: nippo-weekly
 description: 週次振り返りレポートを生成する。「今週の振り返り」「ウィークリー」「weekly」「週次レポート」「1週間のまとめ」などで使用。過去7日間の日報を分析し、4軸評価トレンドと来週のアクションプランを含む成長レポートを生成する。
 disable-model-invocation: true
 argument-hint: "[週番号 YYYY-Wnn] (省略時は今週)"
-allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(mkdir:*)
+allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(mkdir:*), Bash(bash:*), Bash(python3:*)
 ---
 
 # 週次振り返りコマンド
@@ -82,10 +82,25 @@ else
     echo "ℹ️  目標ファイルが見つかりません（オプション）"
 fi
 
-echo "✅ Phase 1 完了: データ収集"
+echo "✅ Phase 1 完了: 日報データ収集"
 
-# Phase 2: system-prompt.md と output-format.md に従って分析
-# Phase 3: 分析結果を $WEEKLY_FILE に保存
+# Phase 2: セッションパターンデータ収集
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COLLECT_SCRIPT="$SCRIPT_DIR/../../scripts/collect-session-patterns.sh"
+
+echo ""
+if [ -f "$COLLECT_SCRIPT" ]; then
+    echo "📋 === セッションパターン分析データ ==="
+    DAYS=7 source "$COLLECT_SCRIPT"
+else
+    echo "ℹ️ セッションパターン収集スクリプトが見つかりません（スキップ）"
+fi
+
+echo ""
+echo "✅ Phase 2 完了: セッションパターンデータ収集"
+
+# Phase 3: system-prompt.md と output-format.md に従って分析
+# Phase 4: 分析結果を $WEEKLY_FILE に保存
 ```
 
 ## 完了後の表示
@@ -110,3 +125,4 @@ ls -lt "$WEEKLY_DIR"/nippo-weekly.*.md 2>/dev/null | head -5
 - `/nippo-add` - 日報への追記
 - `/nippo-finalize` - 日報の完成化
 - `/nippo-show` - 日報内容の確認
+- `/session-patterns` - セッションパターン分析（単独実行）
