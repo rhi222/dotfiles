@@ -35,8 +35,44 @@
         "color": "yellow"
       }
     ],
-    [],
-    []
+    [
+      {
+        "id": "8a4939fb-2c38-4e48-aa06-3fca3993fba6",
+        "type": "session-usage",
+        "metadata": {
+          "display": "time"
+        }
+      },
+      {
+        "id": "20dedc3a-87a5-48bf-9065-9ebb3185be9a",
+        "type": "separator"
+      },
+      {
+        "id": "f6859633-d312-46e6-b170-d3c70f545337",
+        "type": "weekly-reset-timer",
+        "metadata": {
+          "display": "time",
+          "compact": "true"
+        }
+      },
+      {
+        "id": "8364cc49-a96f-45d0-8208-c7810624c2ca",
+        "type": "separator"
+      },
+      {
+        "id": "8c52ef60-9d5b-49c5-8ed5-b21bc2fa56d8",
+        "type": "weekly-usage",
+        "metadata": {
+          "display": "time"
+        }
+      }
+    ],
+    [
+      {
+        "id": "dea47050-5ffc-487c-b397-6daa8b437a57",
+        "type": "current-working-dir"
+      }
+    ]
   ],
   "flexMode": "full-minus-40",
   "compactThreshold": 60,
