@@ -7,3 +7,7 @@
 .config/tmux/plugins/
 .config/git/config-local
 .config/git/config-work
+
+# External skill install targets (generated locally)
+.claude/skills/
+.agents/skills/

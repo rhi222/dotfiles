@@ -1,0 +1,10 @@
+# External Claude Code skills
+# Format: <repository-url> --skill <skill-name>
+# Lines starting with # are ignored
+# Empty lines are ignored
+
+https://github.com/anthropics/skills --skill skill-creator
+https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices
+https://github.com/vercel-labs/agent-browser --skill agent-browser
+https://github.com/browser-use/browser-use --skill browser-use
+https://github.com/sanyuan0704/code-review-expert --skill code-review-expert

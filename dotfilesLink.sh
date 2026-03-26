@@ -36,6 +36,8 @@ for skill_dir in "$DOTFILES_DIR/.config/claude/skills"/*/; do
   safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
 done
 safe_link "$DOTFILES_DIR/.config/claude/agents" ~/.claude/agents
+# External Claude Code skills (installed via npx skills add)
+bash "$DOTFILES_DIR/scripts/setup-claude-skills.sh"
 
 # codex
 # Keep local config at ~/.codex/config.toml per official docs.

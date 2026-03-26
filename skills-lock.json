@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "computedHash": "1fdc3ae39490000d36b242168c64db00c1654fe1a0e45a1b12e93b38cc21e32c"
+    },
+    "browser-use": {
+      "source": "browser-use/browser-use",
+      "sourceType": "github",
+      "computedHash": "f974fac2783f80ac2a1a2cb45d576b5cca55123015dc73db8adfd02277002461"
+    },
+    "code-review-expert": {
+      "source": "sanyuan0704/code-review-expert",
+      "sourceType": "github",
+      "computedHash": "6c2fe31851a34e63e033257527eab04eea835ca1cf4c4276d1392a323e36e377"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b122f4d1e91aa1d83027e050b5b37c3156203ee85458d7b1360bc48167c9e02a"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "bbc31a48537b473ff4feea6360ef0de3bfdcbef26c14f4967a5deefe8ca801d3"
+    }
+  }
+}
