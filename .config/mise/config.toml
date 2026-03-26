@@ -10,6 +10,7 @@ node = "24"
 python = "latest"
 rust = "latest"
 uv = "latest"
+java = "21"
 
 # rustのグローバルパッケージ
 # go, node, pythonのように、.default-x-packagesがないため本ファイルで管理
@@ -29,7 +30,6 @@ uv = "latest"
 # GitHub Releasesからバイナリをインストール
 # https://mise.jdx.dev/dev-tools/backends/github.html
 "github:k1LoW/mo" = "latest"
-java = "21"
 
 [settings]
 # 並列インストールで高速化
