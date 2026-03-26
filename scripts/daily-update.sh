@@ -20,8 +20,8 @@ run_step() {
   echo "" | tee -a "$LOG_FILE"
 }
 
-run_step "apt update" sudo apt update -qq
-run_step "apt upgrade" sudo apt upgrade -y -qq
+run_step "apt update" sudo apt-get update -qq
+run_step "apt upgrade" sudo apt-get upgrade -y -qq
 run_step "cargo install-update" cargo install-update -a
 run_step "mise self-update" mise self-update -y
 run_step "mise upgrade" mise upgrade
