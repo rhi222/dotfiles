@@ -9,9 +9,9 @@ local M = {}
 -- NOTE: <leader> = Space なので <leader>x と <space>x は同一
 --
 -- <leader> + 1char:
---   使用中: D(type-def) e(diag) f(yazi) g(neogit) j(hop) m(quickhl) q(loclist)
+--   使用中: D(type-def) e(diag) f(yazi) g(neogit) j(hop) m(quickhl) q(loclist) u(undotree)
 --   2charプレフィクス: c(copilot) g(git) o(open) r(lsp) s(sidekick) w(workspace)
---   空き:   a b d h i k l n p t u v x y z
+--   空き:   a b d h i k l n p t v x y z
 --
 -- <leader> + 2char:
 --   使用中: ca(code-action) cd cp(copilot) gb(blame) og(git-url)
@@ -116,6 +116,10 @@ M.tools = {
 	sidekick_visual = { "<leader>sv", mode = "x", desc = "Sidekick send selection" },
 	sidekick_prompt = { "<leader>sp", mode = { "n", "x" }, desc = "Sidekick prompt" },
 	sidekick_claude = { "<leader>sc", desc = "Sidekick toggle Claude" },
+}
+
+M.builtin = {
+	undotree = { "<leader>u", desc = "Undotree" },
 }
 
 M.commands = {
