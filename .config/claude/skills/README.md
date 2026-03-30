@@ -1,3 +1,31 @@
+# Claude Code スキル
+
+## ディレクトリ構成
+
+```
+.config/claude/skills/   → 自作スキル（git管理対象）
+.claude/skills/          → 外部スキル（npx skill add でインストール、gitignore）
+```
+
+`dotfilesLink.sh` が `.config/claude/skills/*/` の各スキルを `~/.claude/skills/` にシンボリックリンクするため、自作・外部ともに `~/.claude/skills/` から統一的に読み込まれる。
+
+### 自作スキル一覧
+
+| スキル | 説明 |
+|---|---|
+| ci-debug | GitHub Actionsエラー分析 |
+| cross-repo-investigate | 複数リポジトリ横断調査 |
+| difit | ステージ差分のブラウザレビュー |
+| esa-api | esa.io API共通ナレッジ |
+| esa-diff-weekly | esa週次差分URL取得&サマリ |
+| esa-weekly-report | esa週次エグゼクティブレポート生成 |
+| humanize | AI文章の自然化 |
+| puml-from-drawio | draw.io→PlantUML変換 |
+| nippo-* | 日報システム（後述） |
+| tmux-sender | tmux別ペインへコマンド送信 |
+
+---
+
 # 日報スキルシステム
 
 ## 設計哲学
