@@ -19,7 +19,7 @@ fi
 echo "Installing external Claude Code skills..."
 
 declare -A installed_skills=()
-if installed_json="$(npx skills list --json -a "$TARGET_AGENT" 2>/dev/null)"; then
+if installed_json="$(npx skills list --json -g -a "$TARGET_AGENT" 2>/dev/null)"; then
   if command -v jq &>/dev/null; then
     mapfile -t installed_skill_names < <(printf '%s\n' "$installed_json" | jq -r '.[].name')
   else
@@ -55,7 +55,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   [[ -z "$line" ]] && continue
 
   read -r -a skill_args <<< "$line"
-  cmd=(npx skills add "${skill_args[@]}" --agent "$TARGET_AGENT" --yes)
+  cmd=(npx skills add "${skill_args[@]}" -g --agent "$TARGET_AGENT" --yes)
 
   requested_skills=()
   for ((i = 0; i < ${#skill_args[@]}; i++)); do
@@ -87,7 +87,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   attempted=$((attempted + 1))
 
   echo "  -> ${cmd[*]}"
-  if "${cmd[@]}"; then
+  if "${cmd[@]}" </dev/null; then
     succeeded=$((succeeded + 1))
     for skill_name in "${requested_skills[@]}"; do
       installed_skills["$skill_name"]=1

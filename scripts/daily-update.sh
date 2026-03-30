@@ -27,6 +27,7 @@ run_step "mise self-update" mise self-update -y
 run_step "mise upgrade" mise upgrade
 run_step "nvim Lazy update" timeout 300 nvim --headless "+Lazy! update" +qa
 run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
+run_step "claude skills update" bash "$(dirname "$0")/setup-claude-skills.sh"
 
 echo "========================================" | tee -a "$LOG_FILE"
 if [ ${#failures[@]} -gt 0 ]; then
