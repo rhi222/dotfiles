@@ -12,6 +12,8 @@ chat.setup({
 	},
 	-- CopilotChatModels
 	model = "claude-sonnet-4",
+	-- Use telescope for vim.ui.select integration
+	picker = "telescope",
 })
 
 -- 公式: https://github.com/CopilotC-Nvim/CopilotChat.nvim?tab=readme-ov-file#lazynvim
