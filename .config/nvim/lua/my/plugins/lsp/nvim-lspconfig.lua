@@ -108,6 +108,18 @@ local on_lsp_attach = function(ev)
 	if client:supports_method("textDocument/inlayHint") then
 		enable_inlay_hints(buf)
 	end
+
+	-- codeLens自動リフレッシュ (nvim 0.12+, 実行は grx)
+	if client:supports_method("textDocument/codeLens") then
+		local codelens_group = vim.api.nvim_create_augroup("UserLspCodeLens", { clear = false })
+		vim.api.nvim_clear_autocmds({ group = codelens_group, buffer = buf })
+		vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+			group = codelens_group,
+			buffer = buf,
+			callback = vim.lsp.codelens.refresh,
+		})
+		vim.lsp.codelens.refresh({ bufnr = buf })
+	end
 end
 
 vim.api.nvim_create_autocmd("LspAttach", {
