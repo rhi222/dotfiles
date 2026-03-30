@@ -7,7 +7,10 @@
 .config/tmux/plugins/
 .config/git/config-local
 .config/git/config-work
+.config/fish/my/conf.d/99-local.fish
 
-# External skill install targets (generated locally)
+# External skills (npx skill add)
 .claude/skills/
-.agents/skills/
+# Sensitive data
+.config/claude/skills/cross-repo-investigate/repos.yml
+.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json
