@@ -1,9 +1,7 @@
 require("noice").setup({
 	lsp = {
-		override = {
-			["vim.lsp.util.convert_input_to_markdown_lines"] = true,
-			["vim.lsp.util.stylize_markdown"] = true,
-		},
+		-- convert_input_to_markdown_lines / stylize_markdown は nvim 0.12 で削除済みのため override 不要
+		override = {},
 	},
 	presets = {
 		bottom_search = true,

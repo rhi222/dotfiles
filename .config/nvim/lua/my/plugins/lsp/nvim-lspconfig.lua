@@ -76,8 +76,7 @@ local on_lsp_attach = function(ev)
 	if not client then
 		return
 	end
-	vim.bo[buf].omnifunc = "v:lua.vim.lsp.omnifunc"
-	vim.bo[buf].formatexpr = "v:lua.vim.lsp.formatexpr()"
+	-- omnifunc / formatexpr は nvim 0.11+ の LspAttach で自動設定されるため不要
 
 	local opts = { buffer = buf }
 	for _, map in ipairs(lsp_keymap_defs) do

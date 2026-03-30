@@ -125,13 +125,13 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- nvim-treesitterによるfolding
+-- ビルトインtreesitterによるfolding (nvim 0.12+)
 vim.api.nvim_create_autocmd({ "FileType" }, {
 	group = "vimrc_augroup",
 	callback = function()
-		if require("nvim-treesitter.parsers").has_parser() then
+		if vim.treesitter.language.get_lang(vim.bo.filetype) then
 			vim.opt_local.foldmethod = "expr"
-			vim.opt_local.foldexpr = "nvim_treesitter#foldexpr()"
+			vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 		else
 			vim.opt_local.foldmethod = "syntax"
 		end

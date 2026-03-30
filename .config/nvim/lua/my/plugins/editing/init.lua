@@ -34,13 +34,7 @@ return {
 			km.lazy_key("editing", "flash_toggle", function() require("flash").toggle() end),
 		},
 	},
-	{
-		"numToStr/Comment.nvim",
-		event = "BufRead",
-		config = function()
-			require("my/plugins/editing/comment")
-		end,
-	},
+	-- Comment.nvim は削除: gc/gb コメントは nvim 0.10+ でビルトイン
 	{
 		"folke/todo-comments.nvim",
 		event = "BufRead",
