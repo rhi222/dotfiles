@@ -3,10 +3,15 @@
 local parsers = {
 	"bash",
 	-- "csv",
+	"css",
 	"diff",
+	"dockerfile",
 	"fish",
+	"gitcommit",
+	"go",
 	"graphql",
 	"hcl",
+	"html",
 	"http",
 	"javascript",
 	"json",
@@ -19,6 +24,7 @@ local parsers = {
 	"python",
 	"regex",
 	"sql",
+	"toml",
 	-- "tsv",
 	"tsx",
 	"typescript",
@@ -31,11 +37,18 @@ local parsers = {
 -- パーサーのインストール
 require("nvim-treesitter").install(parsers)
 
--- ハイライトの有効化
+-- ハイライトとfoldingの有効化（filetypeベースで自動判定）
 vim.api.nvim_create_autocmd("FileType", {
-	pattern = parsers,
+	group = vim.api.nvim_create_augroup("treesitter_setup", { clear = true }),
 	callback = function()
-		pcall(vim.treesitter.start)
+		local lang = vim.treesitter.language.get_lang(vim.bo.filetype)
+		if lang and pcall(vim.treesitter.language.add, lang) then
+			pcall(vim.treesitter.start)
+			vim.opt_local.foldmethod = "expr"
+			vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+		else
+			vim.opt_local.foldmethod = "syntax"
+		end
 	end,
 })
 -- NOTE: CSV highlighting broken
