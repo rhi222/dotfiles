@@ -45,13 +45,20 @@ local function getFilePathFromRepoRoot()
 	return fullpath:sub(#repo_root + 2) -- +2 for trailing "/"
 end
 
--- normal/visual で行範囲を取る部分はそのまま
+-- normal/visual で行範囲を取る
 local function getCurrentLineRange(mode)
 	if mode == "n" then
 		local line = vim.fn.line(".")
 		return line, line
 	elseif mode == "v" then
-		return vim.fn.getpos("'<")[2], vim.fn.getpos("'>")[2]
+		-- ビジュアルモード中は '</'> がまだ更新されていないため
+		-- "v"(選択開始) と "."(カーソル位置) から取得する
+		local s = vim.fn.line("v")
+		local e = vim.fn.line(".")
+		if s > e then
+			s, e = e, s
+		end
+		return s, e
 	end
 	return nil, nil
 end
