@@ -118,7 +118,7 @@ local on_lsp_attach = function(ev)
 			buffer = buf,
 			callback = vim.lsp.codelens.refresh,
 		})
-		vim.lsp.codelens.refresh({ bufnr = buf })
+		vim.lsp.codelens.refresh()
 	end
 end
 
