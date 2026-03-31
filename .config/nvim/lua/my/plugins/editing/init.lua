@@ -2,7 +2,9 @@ local km = require("my.plugins.keymaps")
 return {
 	{
 		"nvim-treesitter/nvim-treesitter",
-		event = { "BufReadPre", "BufNewFile" },
+		branch = "main",
+		lazy = false,
+		build = ":TSUpdate",
 		config = function()
 			require("my/plugins/editing/nvim-treesitter")
 		end,

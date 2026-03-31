@@ -12,6 +12,7 @@ ccstatusline
 ccusage
 difit
 neovim
+tree-sitter-cli
 npm-check-updates
 prettier
 wsl-open
