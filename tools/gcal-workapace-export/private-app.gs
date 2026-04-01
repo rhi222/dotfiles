@@ -20,42 +20,15 @@ function onOpen() {
 
 function dryRun() {
   const rows = loadRows_();
-  const targets = rows.filter(r => r.imported !== true && !r.gcalEventId);
+  const targets = rows.filter(r => !r.imported && !r.gcalEventId);
   SpreadsheetApp.getUi().alert(`登録対象: ${targets.length} 件`);
 }
 
 function pushToPersonalCalendar() {
-  const cal = getTargetCalendar_();
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
-  if (!sheet) throw new Error(`Sheet not found: ${SHEET_NAME}`);
-
   const rows = loadRows_();
-  const targets = rows.filter(r => r.imported !== true && !r.gcalEventId);
-
-  let ok = 0;
-  let skipped = 0;
-
-  targets.forEach(t => {
-    try {
-      const title = decorateTitle_(t.workType);
-      const date = ensureDate_(t.workDate);
-
-      // 終日イベントで作成
-      const event = cal.createAllDayEvent(title, date, buildOptions_(t));
-
-      // 書き戻し
-      sheet.getRange(t.rowIndex, 5).setValue(true);      // E imported
-      sheet.getRange(t.rowIndex, 6).setValue(new Date()); // F imported_at
-      sheet.getRange(t.rowIndex, 7).setValue(event.getId()); // G gcal_event_id
-
-      ok++;
-    } catch (e) {
-      Logger.log(`Failed row ${t.rowIndex}: ${e}`);
-      skipped++;
-    }
-  });
-
-  SpreadsheetApp.getUi().alert(`完了: ${ok}件登録 / 失敗: ${skipped}件（ログは実行ログ参照）`);
+  const targets = rows.filter(r => !r.imported && !r.gcalEventId);
+  const result = syncToCalendar_(targets, { allowUpdate: false });
+  SpreadsheetApp.getUi().alert(`完了: ${result.created}件登録 / 失敗: ${result.failed}件`);
 }
 
 function loadRows_() {
@@ -131,59 +104,49 @@ function ensureDate_(d) {
 
 
 function upsertPersonalCalendar() {
+  const rows = loadRows_();
+  const targets = rows.filter(r => r.workDate && r.workType);
+  const result = syncToCalendar_(targets, { allowUpdate: true });
+  SpreadsheetApp.getUi().alert(
+    `上書き同期 完了\n更新: ${result.updated}件 / 新規作成: ${result.created}件 / 失敗: ${result.failed}件`
+  );
+}
+
+function syncToCalendar_(targets, opts) {
+  const allowUpdate = opts.allowUpdate || false;
   const cal = getTargetCalendar_();
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
   if (!sheet) throw new Error(`Sheet not found: ${SHEET_NAME}`);
 
-  const rows = loadRows_();
-
-  // どの行を更新対象にするか：
-  // - imported=TRUE でも更新したいので、日付・種別があるもの全部を対象にするのが「同期」っぽい
-  // - もし「imported=FALSEだけ更新」なら条件を変えてください
-  const targets = rows.filter(r => r.workDate && r.workType);
-
-  let updated = 0;
   let created = 0;
+  let updated = 0;
   let failed = 0;
 
   targets.forEach(t => {
     try {
       const date = ensureDate_(t.workDate);
       const title = decorateTitle_(t.workType);
-      const opts = buildOptions_(t);
+      const eventOpts = buildOptions_(t);
 
-      const eventId = t.gcalEventId;
       let event = null;
-
-      if (eventId) {
+      if (allowUpdate && t.gcalEventId) {
         try {
-          event = cal.getEventById(eventId);
+          event = cal.getEventById(t.gcalEventId);
         } catch (e) {
-          // 取得失敗は null 扱いで作り直す
           event = null;
         }
       }
 
       if (event) {
-        // 既存イベントを上書き更新
         event.setTitle(title);
-        event.setAllDayDate(date); // 単日終日イベント想定
-        if (opts.location !== undefined) event.setLocation(opts.location);
-        if (opts.description !== undefined) event.setDescription(opts.description);
-
-        // フラグ更新（「同期した」扱い）
-        sheet.getRange(t.rowIndex, 5).setValue(true);       // imported
-        sheet.getRange(t.rowIndex, 6).setValue(new Date()); // imported_at
-
+        event.setAllDayDate(date);
+        if (eventOpts.location !== undefined) event.setLocation(eventOpts.location);
+        if (eventOpts.description !== undefined) event.setDescription(eventOpts.description);
+        sheet.getRange(t.rowIndex, 5, 1, 3).setValues([[true, new Date(), t.gcalEventId]]);
         updated++;
       } else {
-        // 無ければ新規作成
-        const newEvent = cal.createAllDayEvent(title, date, opts);
-
-        sheet.getRange(t.rowIndex, 5).setValue(true);
-        sheet.getRange(t.rowIndex, 6).setValue(new Date());
-        sheet.getRange(t.rowIndex, 7).setValue(newEvent.getId()); // gcal_event_id を差し替え
-
+        const newEvent = cal.createAllDayEvent(title, date, eventOpts);
+        sheet.getRange(t.rowIndex, 5, 1, 3).setValues([[true, new Date(), newEvent.getId()]]);
         created++;
       }
     } catch (e) {
@@ -192,9 +155,7 @@ function upsertPersonalCalendar() {
     }
   });
 
-  SpreadsheetApp.getUi().alert(
-    `上書き同期 完了\n更新: ${updated}件 / 新規作成: ${created}件 / 失敗: ${failed}件`
-  );
+  return { created, updated, failed };
 }
 
 
