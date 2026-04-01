@@ -61,15 +61,6 @@
 | `imported_at` (F)   | 登録日時                     |
 | `gcal_event_id` (G) | 作成されたイベントの ID      |
 
-**イベントタイトルの装飾:**
-
-| work_type | タイトル       |
-| --------- | -------------- |
-| 出社      | 🏢 REDACTED_NAME出社    |
-| 在宅      | 🏠 REDACTED_NAME在宅    |
-| 有休      | 🌿 REDACTED_NAME有休    |
-| その他    | 📍 {work_type} |
-
 ## セットアップ
 
 ### work-app.gs（会社側）
