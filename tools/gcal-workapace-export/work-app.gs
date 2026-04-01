@@ -8,9 +8,9 @@ const LOOKBACK_DAYS = 14;
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Working Location Sync")
-    .addItem("勤務場所を同期（過去14日〜未来60日）", "syncWorkingLocations")
-    .addItem("勤務場所を同期（未来だけ）", "syncWorkingLocationsFutureOnly")
-    .addItem("勤務場所を同期（更新のみ：行は増やさない）", "syncWorkingLocationsUpdateOnly")
+    .addItem("全同期（過去14日＋未来60日・新規追加あり）", "syncWorkingLocations")
+    .addItem("未来のみ同期（今日以降・新規追加あり）", "syncWorkingLocationsFutureOnly")
+    .addItem("既存行の更新のみ（新規行は追加しない）", "syncWorkingLocationsUpdateOnly")
     .addToUi();
 }
 
@@ -163,7 +163,9 @@ function mapWorkType_(type, officeLabel, customLabel) {
     return { work_type: "出社", office: officeLabel || "オフィス", memo: "" };
   }
   if (type === "customLocation") {
-    // 会社の運用次第で「外出」や「その他」にしたい
+    if (/有休|有給|休暇/.test(customLabel)) {
+      return { work_type: "有休", office: "", memo: customLabel };
+    }
     return { work_type: "外出", office: customLabel || "", memo: "" };
   }
   // 不明タイプ
