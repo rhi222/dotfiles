@@ -116,18 +116,23 @@ function listEvents_(timeMin, timeMax) {
   const results = [];
 
   let pageToken = null;
-  do {
-    const resp = Calendar.Events.list(calendarId, {
-      timeMin: timeMin.toISOString(),
-      timeMax: timeMax.toISOString(),
-      singleEvents: true,
-      orderBy: "startTime",
-      maxResults: 2500,
-      pageToken,
-    });
-    if (resp.items && resp.items.length) results.push(...resp.items);
-    pageToken = resp.nextPageToken;
-  } while (pageToken);
+  try {
+    do {
+      const resp = Calendar.Events.list(calendarId, {
+        timeMin: timeMin.toISOString(),
+        timeMax: timeMax.toISOString(),
+        singleEvents: true,
+        orderBy: "startTime",
+        maxResults: 2500,
+        pageToken,
+      });
+      if (resp.items && resp.items.length) results.push(...resp.items);
+      pageToken = resp.nextPageToken;
+    } while (pageToken);
+  } catch (e) {
+    Logger.log(`Calendar API error: ${e}`);
+    return [];
+  }
 
   return results;
 }
