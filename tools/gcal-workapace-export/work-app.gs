@@ -32,7 +32,16 @@ function syncWorkingLocationsUpdateOnly() {
   syncWorkingLocationsInRangeUpdateOnly_(start, end);
 }
 
+function syncWorkingLocationsInRange_(timeMin, timeMax) {
+  syncCore_(timeMin, timeMax, { updateOnly: false });
+}
+
 function syncWorkingLocationsInRangeUpdateOnly_(timeMin, timeMax) {
+  syncCore_(timeMin, timeMax, { updateOnly: true });
+}
+
+function syncCore_(timeMin, timeMax, opts) {
+  const updateOnly = opts.updateOnly || false;
   const sheet = getOrCreateSheet_();
   ensureHeader_(sheet);
 
@@ -41,6 +50,12 @@ function syncWorkingLocationsInRangeUpdateOnly_(timeMin, timeMax) {
   const items = listEvents_(timeMin, timeMax)
     .filter(e => e.eventType === "workingLocation");
 
+  if (items.length === 0) {
+    SpreadsheetApp.getUi().alert("対象の workingLocation イベントが見つかりませんでした");
+    return;
+  }
+
+  // 1日ごとに「updated が最新」の workingLocation を採用する
   const bestByDate = new Map();
   items.forEach(ev => {
     const rows = explodeWorkingLocationEvent_(ev);
@@ -54,61 +69,30 @@ function syncWorkingLocationsInRangeUpdateOnly_(timeMin, timeMax) {
     });
   });
 
+  let upserts = 0;
   let updates = 0;
-  bestByDate.forEach(v => {
-    const rowIndex = existing.get(v.row.work_date);
-    if (rowIndex) {
-      sheet.getRange(rowIndex, 2, 1, 3).setValues([[v.row.work_type, v.row.office, v.row.memo]]);
-      updates++;
-    }
-  });
 
-  sortByWorkDate_(sheet);
-  SpreadsheetApp.getUi().alert(`更新完了: ${updates} 件を更新しました（新規行は追加していません）`);
-}
-
-
-function syncWorkingLocationsInRange_(timeMin, timeMax) {
-  const sheet = getOrCreateSheet_();
-  ensureHeader_(sheet);
-
-  // 既存行を date -> rowIndex で索引化（A列：work_date）
-  const existing = indexExistingByDate_(sheet);
-
-  // Calendar API (Advanced Service) で primary のイベントを取得
-  // eventType=workingLocation をフィルタしたいが、list には eventType パラメータがないため、取得後に絞る
-  // （必要なら time window を狭めるのが重要）
-  const items = listEvents_(timeMin, timeMax)
-    .filter(e => e.eventType === "workingLocation");
-
-
-  // 1日ごとに「updated が最新」の workingLocation を採用する
-  const bestByDate = new Map(); // work_date -> { row, updated }
-
-  items.forEach(ev => {
-    const rows = explodeWorkingLocationEvent_(ev);
-    const updated = String(ev.updated || ""); // ISO 文字列（辞書順で比較OK）
-
-    rows.forEach(r => {
-      const key = r.work_date;
-      const current = bestByDate.get(key);
-
-      // updated が新しいものを優先
-      if (!current || updated > current.updated) {
-        bestByDate.set(key, { row: r, updated });
+  if (updateOnly) {
+    bestByDate.forEach(v => {
+      const rowIndex = existing.get(v.row.work_date);
+      if (rowIndex) {
+        sheet.getRange(rowIndex, 2, 1, 3).setValues([[v.row.work_type, v.row.office, v.row.memo]]);
+        updates++;
       }
     });
-  });
-
-  let upserts = 0;
-  bestByDate.forEach(v => {
-    upsertRow_(sheet, existing, v.row);
-    upserts++;
-  });
+  } else {
+    bestByDate.forEach(v => {
+      upsertRow_(sheet, existing, v.row);
+      upserts++;
+    });
+  }
 
   sortByWorkDate_(sheet);
 
-  SpreadsheetApp.getUi().alert(`同期完了: ${upserts} 件（workingLocation）を反映しました`);
+  const msg = updateOnly
+    ? `更新完了: ${updates} 件を更新しました（新規行は追加していません）`
+    : `同期完了: ${upserts} 件（workingLocation）を反映しました`;
+  SpreadsheetApp.getUi().alert(msg);
 }
 
 function listEvents_(timeMin, timeMax) {
