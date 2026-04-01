@@ -87,7 +87,7 @@ function loadRows_() {
       workType: String(workType).trim(),
       office: String(office || "").trim(),
       memo: String(memo || "").trim(),
-      imported: imported === true,
+      imported: imported === true || String(imported).toUpperCase() === "TRUE",
       importedAt,
       gcalEventId: String(gcalEventId || "").trim(),
     });
