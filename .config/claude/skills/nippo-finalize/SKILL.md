@@ -3,7 +3,7 @@ name: nippo-finalize
 description: 日報を完成させる（4軸評価の振り返りレポートを自動生成）。「日報を仕上げて」「振り返り」「finalize」「今日のまとめ」「1日の振り返り」など業務終了時の振り返り生成で使用。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*)
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), mcp__claude_ai_Slack__slack_search_public_and_private
 ---
 
 # 日報完成化コマンド
@@ -30,18 +30,22 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
    - ディレクトリ・ファイルの存在確認
    - ファイルサイズ・読み取り権限の検証
 
-2. **Phase 2: AI分析準備**
+2. **Phase 2: Slack情報収集・作業ログ追記**
+   - Slack検索で本人の発言を当日分収集
+   - 収集した発言を作業ログ・作業メモに追記
+
+3. **Phase 3: AI分析準備**
    - 日報ドラフトの構造化読み込み
    - 目標設定ファイル（nippo-goals.md）の読み込み
 
-3. **Phase 3: AI分析・レポート生成**
+4. **Phase 4: AI分析・レポート生成**
    - `system-prompt.md` のペルソナに従い分析を実行
    - 重点4軸での活動分析
    - 作業ログからの自動セクション生成
    - 時間サマリ生成
    - `output-format.md` のフォーマットで出力
 
-4. **Phase 4: 結果追記**
+5. **Phase 5: 結果追記**
    - 分析結果を元ファイルに追記
 
 ## 前提条件
@@ -82,7 +86,35 @@ fi
 
 echo "✅ Phase 1 完了: データ準備・検証"
 
-# Phase 2: AI分析準備
+# Phase 2: Slack情報収集・作業ログ追記
+# 以下の手順でSlackから本人の発言を収集し、日報に追記する
+#
+# 1. mcp__claude_ai_Slack__slack_search_public_and_private を使用して検索:
+#    query: "from:<@U0E450R1B> on:YYYY-MM-DD"  (YYYY-MM-DDは対象日付)
+#    sort: "timestamp"
+#    sort_dir: "asc"
+#    include_context: false
+#    limit: 20
+#
+# 2. 結果が20件の場合、cursorを使って次ページも取得（全件収集するまで繰り返す）
+#
+# 3. 収集した発言を以下のルールで分類・追記:
+#    - 時刻付きの短い発言・報告 → 「## 作業ログ（分報・思考メモ）」セクションに時系列で追記
+#      フォーマット: "- HH:MM [Slack/#チャンネル名] 発言内容の要約"
+#    - 詳細な議論・意思決定・技術的メモ → 「## 作業メモ」セクションに追記
+#      フォーマット: 適切な見出し付きで内容を整理
+#
+# 4. 追記ルール:
+#    - 既に作業ログに記載済みの内容と重複する場合はスキップ
+#    - bot向けコマンド（/remind等）やリアクションのみの発言は除外
+#    - チャンネル名を付記して文脈がわかるようにする
+#    - 作業ログは時系列順を維持する（既存エントリとマージ）
+#
+# 5. 追記完了後、追記件数を表示
+
+echo "✅ Phase 2 完了: Slack情報収集・作業ログ追記"
+
+# Phase 3: AI分析準備
 echo "📖 日報内容:"
 cat "$NIPPO_FILE"
 echo ""
@@ -95,15 +127,15 @@ else
     echo "ℹ️  目標ファイルが見つかりません（オプション）"
 fi
 
-echo "✅ Phase 2 完了: AI分析準備"
+echo "✅ Phase 3 完了: AI分析準備"
 
-# Phase 3: system-prompt.md と output-format.md に従って分析・レポート生成
-# Phase 4: 分析結果を $NIPPO_FILE に追記
+# Phase 4: system-prompt.md と output-format.md に従って分析・レポート生成
+# Phase 5: 分析結果を $NIPPO_FILE に追記
 ```
 
 ## 時間サマリ生成
 
-Phase 3 の一部として、作業ログから時間サマリを自動生成します。
+Phase 4 の一部として、作業ログから時間サマリを自動生成します。
 
 1. **作業ログの解析**: `🟢 start:` と `🔴 end:` の行を抽出し、時刻とタスク名をパース
 2. **時間計算**: 同じタスク名の start/end ペアをマッチングし経過時間を計算
