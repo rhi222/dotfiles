@@ -11,7 +11,8 @@ end
 # Font color settings
 # https://fishshell.com/docs/current/cmds/set_color.html
 # https://reiichii.hateblo.jp/entry/2022/01/05/194823
-set -U black brblack # 背景色と同化して読めないため
+# NOTE: fish_color_* で個別に設定すること（set -U black brblack は無効）
+# 初回セットアップ時に手動実行: set -U fish_color_autosuggestion brblack
 
 # zoxide integration
 if type -q zoxide

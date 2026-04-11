@@ -2,9 +2,9 @@
 # ----------------------------------------------------------
 # Header - <Type>: #<Issue Number> <Title>
 # ----------------------------------------------------------
-#    * feat             A new feature - SemVar PATCH
-#    * fix              A bug fix - SemVar MINOR
-#    * BREAKING CHANGE  Breaking API change - SemVar MAJOR
+#    * feat             A new feature - SemVer MINOR
+#    * fix              A bug fix - SemVer PATCH
+#    * BREAKING CHANGE  Breaking API change - SemVer MAJOR
 #    * docs             Change to documentation only
 #    * style            Change to style (whitespace, etc.)
 #    * refactor         Change not related to a bug or feat
