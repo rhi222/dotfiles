@@ -17,7 +17,8 @@ function __git_tree_icon
 end
 
 # Save original tide prompt before overriding
-if functions -q fish_prompt
+# NOTE: rf（再source）時の無限再帰を防ぐため、既にコピー済みならスキップ
+if functions -q fish_prompt; and not functions -q _original_tide_prompt
     functions -c fish_prompt _original_tide_prompt
 end
 

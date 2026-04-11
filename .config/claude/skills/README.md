@@ -11,18 +11,18 @@
 
 ### 自作スキル一覧
 
-| スキル | 説明 |
-|---|---|
-| ci-debug | GitHub Actionsエラー分析 |
-| cross-repo-investigate | 複数リポジトリ横断調査 |
-| difit | ステージ差分のブラウザレビュー |
-| esa-api | esa.io API共通ナレッジ |
-| esa-diff-weekly | esa週次差分URL取得&サマリ |
-| esa-weekly-report | esa週次エグゼクティブレポート生成 |
-| humanize | AI文章の自然化 |
-| puml-from-drawio | draw.io→PlantUML変換 |
-| nippo-* | 日報システム（後述） |
-| tmux-sender | tmux別ペインへコマンド送信 |
+| スキル                 | 説明                              |
+| ---------------------- | --------------------------------- |
+| ci-debug               | GitHub Actionsエラー分析          |
+| cross-repo-investigate | 複数リポジトリ横断調査            |
+| difit                  | ステージ差分のブラウザレビュー    |
+| esa-api                | esa.io API共通ナレッジ            |
+| esa-diff-weekly        | esa週次差分URL取得&サマリ         |
+| esa-weekly-report      | esa週次エグゼクティブレポート生成 |
+| humanize               | AI文章の自然化                    |
+| puml-from-drawio       | draw.io→PlantUML変換              |
+| nippo-\*               | 日報システム（後述）              |
+| tmux-sender            | tmux別ペインへコマンド送信        |
 
 ---
 
@@ -84,20 +84,20 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 
 ## 推奨日次フロー
 
-| 時間帯     | スキル                   | 目的                           |
-| ---------- | ------------------------ | ------------------------------ |
-| 朝         | `/nippo-add`             | 日報作成・タスク確認           |
-| 日中       | `/nippo-add start:/end:` | 作業ログ記録                   |
-| 業務終了前 | `/nippo-finalize`        | 事実の自動整理（内省欄は空白） |
-| 業務終了時 | `/nippo-reflection`      | 問いに自分で答える（5〜10分）  |
-| 必要に応じ | `/nippo-brief`           | 今日のサマリー確認             |
-| 必要に応じ | `/nippo-report`          | 上司への報告用テキスト生成     |
-| 週1〜2回   | `/nippo-guide`           | 複数視点フィードバック         |
-| 週1〜2回   | `/nippo-insight`         | ALACTによる深い振り返り        |
-| 週次       | `/nippo-weekly`          | 週次レポート（セッション分析含む） |
+| 時間帯     | スキル                   | 目的                                 |
+| ---------- | ------------------------ | ------------------------------------ |
+| 朝         | `/nippo-add`             | 日報作成・タスク確認                 |
+| 日中       | `/nippo-add start:/end:` | 作業ログ記録                         |
+| 業務終了前 | `/nippo-finalize`        | 事実の自動整理（内省欄は空白）       |
+| 業務終了時 | `/nippo-reflection`      | 問いに自分で答える（5〜10分）        |
+| 必要に応じ | `/nippo-brief`           | 今日のサマリー確認                   |
+| 必要に応じ | `/nippo-report`          | 上司への報告用テキスト生成           |
+| 週1〜2回   | `/nippo-guide`           | 複数視点フィードバック               |
+| 週1〜2回   | `/nippo-insight`         | ALACTによる深い振り返り              |
+| 週次       | `/nippo-weekly`          | 週次レポート（セッション分析含む）   |
 | 週次       | `/session-patterns`      | セッションパターン分析（単独実行時） |
-| 月1回      | `/nippo-trend 90`        | 長期トレンド分析               |
-| 評価前     | `/nippo-review`          | 評価面談材料抽出               |
+| 月1回      | `/nippo-trend 90`        | 長期トレンド分析                     |
+| 評価前     | `/nippo-review`          | 評価面談材料抽出                     |
 
 ## 各スキルの詳細
 
