@@ -20,7 +20,7 @@ local M = {}
 --   空き:   ga gc gd ge gf... など多数
 --
 -- <C-p> + char (Finder):
---   使用中: f e g l p : m s c r b o h d
+--   使用中: f e g l p : s c r b o h d
 --   空き:   a i j k n q t u v w x y z
 --
 -- g + char (Go-to/Motion):

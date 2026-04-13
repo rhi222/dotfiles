@@ -30,19 +30,6 @@ return {
 	},
 	-- colorscheme
 	{
-		"catppuccin/nvim",
-		lazy = true,
-	},
-	{
-		"folke/tokyonight.nvim",
-		lazy = true,
-		config = function()
-			require("my/plugins/ui/tokyonight")
-		end,
-	},
-	-- nvim-treesitterのsyntax highlightが絶妙に見にくかったのでtokyonightから乗り換え
-	-- https://github.com/rockerBOO/awesome-neovim?tab=readme-ov-file#tree-sitter-supported-colorscheme からpickした
-	{
 		"Mofiqul/vscode.nvim",
 		lazy = false,
 		priority = 1000,
