@@ -1,5 +1,8 @@
 .config/nvim/after
 .config/nvim/pack
+.config/nvim/.netrwhist
+plans/
+.serena/
 .config/codex/config.toml
 .config/AutoHotkey/ahk-snippets/passwords/*
 !.config/AutoHotkey/ahk-snippets/passwords/.gitkeep
