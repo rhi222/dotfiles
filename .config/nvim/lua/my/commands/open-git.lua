@@ -132,8 +132,9 @@ local function OpenGitURL(mode)
 	local url = generateGitUrl(repo_type, repo_url, hash, filepath, s, e)
 
 	print("Opening URL: " .. url)
-	-- 3) jobstart を引数テーブルで呼び出し
-	vim.fn.jobstart({ "wsl-open", url }, { detach = true })
+	-- 3) jobstart を引数テーブルで呼び出し（WSL環境に応じてコマンドを選択）
+	local open_cmd = vim.fn.has("wsl") == 1 and "wsl-open" or "xdg-open"
+	vim.fn.jobstart({ open_cmd, url }, { detach = true })
 end
 
 -- コマンド／マッピング登録

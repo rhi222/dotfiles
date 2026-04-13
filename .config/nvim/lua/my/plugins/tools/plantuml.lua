@@ -690,9 +690,10 @@ local function ensure_server_and_autocmds()
 		start_server()
 		start_manifest_poll()
 
-		-- ブラウザ起動（WSL2非同期）
+		-- ブラウザ起動（WSL2非同期、WSL環境ではwslviewを使用）
 		vim.defer_fn(function()
-			vim.fn.jobstart({ "xdg-open", "http://localhost:" .. SERVER_PORT }, { detach = true })
+			local open_cmd = vim.fn.has("wsl") == 1 and "wslview" or "xdg-open"
+			vim.fn.jobstart({ open_cmd, "http://localhost:" .. SERVER_PORT }, { detach = true })
 		end, 2000)
 
 		-- 保存時に該当ファイルを再変換（登録済みのみ）
