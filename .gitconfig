@@ -22,7 +22,7 @@
 [fetch]
 	prune = true
 [merge]
-	conflictstyle = diff3
+	conflictstyle = zdiff3
 [commit]
 	template = ~/.config/git/commit-conventions.txt
 [status]
@@ -49,7 +49,7 @@
 	cp  = cherry-pick
 	cpush = !git push origin `git rev-parse --abbrev-ref HEAD`
 	current-hash="show --format='%H' --no-patch"
-	delete-merged-branch = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master'|xargs git branch -d; };f"
+	delete-merged-branch = "!f () { git checkout $1; git branch --merged|grep -Ev '\\*|develop|main|master'|xargs git branch -d; };f"
 	fe  = fetch
 	fsw = "!fish -c git-fsw" # branch 選択 + プレビュー + 自動追跡ブランチ作成
 	l  = log

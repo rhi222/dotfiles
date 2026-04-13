@@ -1,3 +1,8 @@
+---
+name: esa-diff-weekly
+description: esa週次差分URL取得&サマリ。指定したesa投稿の直近一週間のリビジョン差分を取得し、compare URLを表示してサマリする。
+---
+
 # esa 週次差分URL取得 & サマリ
 
 指定した esa 投稿の直近一週間のリビジョン差分を取得し、compare URL を表示してサマリする。
