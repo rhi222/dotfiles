@@ -5,6 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_FILE="$SCRIPT_DIR/claude-skills.txt"
 TARGET_AGENT="claude-code"
+# Claude Code reads skills from this directory (see `skills add` output).
+SKILLS_INSTALL_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
 
 if [ ! -f "$SKILLS_FILE" ]; then
   echo "Error: $SKILLS_FILE not found"
@@ -18,22 +20,14 @@ fi
 
 echo "Installing external Claude Code skills..."
 
-declare -A installed_skills=()
-if installed_json="$(npx skills list --json -g -a "$TARGET_AGENT" 2>/dev/null)"; then
-  if command -v jq &>/dev/null; then
-    mapfile -t installed_skill_names < <(printf '%s\n' "$installed_json" | jq -r '.[].name')
-  else
-    mapfile -t installed_skill_names < <(
-      printf '%s\n' "$installed_json" | sed -n 's/^[[:space:]]*"name":[[:space:]]*"\([^"]*\)".*/\1/p'
-    )
-  fi
-
-  for skill_name in "${installed_skill_names[@]}"; do
-    [ -n "$skill_name" ] && installed_skills["$skill_name"]=1
-  done
-else
-  echo "Warning: failed to list installed skills; duplicate-skip check disabled." >&2
-fi
+# Check installation status by directory existence instead of `npx skills list`.
+# Rationale: `npx skills list --json` occasionally emits non-JSON on stdout
+# (e.g. npx cache-warming output on cold runs), which broke jq parsing and
+# forced every skill to be reinstalled. Filesystem check is deterministic.
+is_skill_installed() {
+  local name="$1"
+  [ -d "$SKILLS_INSTALL_DIR/$name" ]
+}
 
 failures=()
 attempted=0
@@ -55,7 +49,9 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   [[ -z "$line" ]] && continue
 
   read -r -a skill_args <<< "$line"
-  cmd=(npx skills add "${skill_args[@]}" -g --agent "$TARGET_AGENT" --yes)
+  # `npx --yes` suppresses the "Need to install ... Ok to proceed?" prompt on
+  # cold caches; `skills add --yes` suppresses the CLI's own confirmations.
+  cmd=(npx --yes skills add "${skill_args[@]}" -g --agent "$TARGET_AGENT" --yes)
 
   requested_skills=()
   for ((i = 0; i < ${#skill_args[@]}; i++)); do
@@ -72,7 +68,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   if [ "${#requested_skills[@]}" -gt 0 ]; then
     already_installed=1
     for skill_name in "${requested_skills[@]}"; do
-      if [ -z "${installed_skills[$skill_name]+x}" ]; then
+      if ! is_skill_installed "$skill_name"; then
         already_installed=0
         break
       fi
@@ -89,9 +85,6 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   echo "  -> ${cmd[*]}"
   if "${cmd[@]}" </dev/null; then
     succeeded=$((succeeded + 1))
-    for skill_name in "${requested_skills[@]}"; do
-      installed_skills["$skill_name"]=1
-    done
   else
     failures+=("line $line_no: $line")
   fi
