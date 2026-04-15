@@ -99,7 +99,6 @@ return {
 				require("yazi").yazi()
 			end, { silent = true }),
 		},
-		event = "BufEnter",
 		config = function()
 			require("my/plugins/finder/yazi")
 		end,
