@@ -10,5 +10,6 @@ return {
 	require("my/commands/keymap-check"),
 	require("my/commands/memory-check"),
 	require("my/commands/mo"),
+	require("my/commands/plantuml"),
 }
 -- }}} -------------------------------

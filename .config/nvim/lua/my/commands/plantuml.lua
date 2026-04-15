@@ -1,5 +1,5 @@
--- PlantUML Viewer: mo風サイドバー付き単一エンドポイントビューア
--- PlantumlOpen したファイルだけをビューアに登録 → SVG変換 → browser-syncで配信
+-- PlantUML Viewer: サイドバー付き単一エンドポイントビューア
+-- PlantumlOpen したファイルだけをビューアに登録 → SVG変換 → python3 http.serverで配信
 -- http://localhost:3100 でサイドバー付きビューアを表示
 
 local augroup = vim.api.nvim_create_augroup("PlantumlViewer", { clear = true })
@@ -20,7 +20,13 @@ local function jar_path()
 	if base then
 		return vim.fn.fnameescape(base) .. "/../lib/plantuml.jar"
 	end
-	return vim.fn["plantuml_previewer#default_viewer_path"]() .. "/../lib/plantuml.jar"
+	local ok, path = pcall(function()
+		return vim.fn["plantuml_previewer#default_viewer_path"]() .. "/../lib/plantuml.jar"
+	end)
+	if ok then
+		return path
+	end
+	return nil
 end
 
 local function get_project_root()
@@ -61,22 +67,22 @@ local function write_manifest()
 	end
 end
 
-local function unregister_file(abs_path)
-	if not registered_files[abs_path] then
-		return
-	end
-	registered_files[abs_path] = nil
-	if output_dir then
-		local svg = output_dir .. "/" .. svg_name(abs_path)
-		vim.fn.delete(svg)
-	end
-	write_manifest()
-end
-
-local function convert_file(puml_path)
+--- SVG変換を実行する
+---@param puml_path string 変換対象の.pumlファイルの絶対パス
+---@param on_complete? fun(success: boolean) 変換完了時のコールバック
+local function convert_file(puml_path, on_complete)
 	if not output_dir then
 		return
 	end
+	local jar = jar_path()
+	if not jar then
+		vim.notify("PlantUML: plantuml.jar が見つかりません", vim.log.levels.ERROR)
+		if on_complete then
+			on_complete(false)
+		end
+		return
+	end
+
 	local src_dir = vim.fn.fnamemodify(puml_path, ":h")
 	local svg = output_dir .. "/" .. svg_name(puml_path)
 
@@ -93,20 +99,37 @@ local function convert_file(puml_path)
 	local cmd = string.format(
 		"java -Djava.awt.headless=true -DPLANTUML_LIMIT_SIZE=32768 -Dplantuml.include.path=%s -jar %s -tsvg -pipe > %s",
 		vim.fn.shellescape(src_dir),
-		vim.fn.shellescape(jar_path()),
+		vim.fn.shellescape(jar),
 		vim.fn.shellescape(svg)
 	)
 
+	local job_opts = {}
+	if on_complete then
+		job_opts.on_exit = function(_, exit_code, _)
+			vim.schedule(function()
+				on_complete(exit_code == 0)
+			end)
+		end
+	end
+
 	if content then
-		local job_id = vim.fn.jobstart({ "bash", "-c", cmd }, { stdin = "pipe" })
+		job_opts.stdin = "pipe"
+		local job_id = vim.fn.jobstart({ "bash", "-c", cmd }, job_opts)
 		if job_id > 0 then
 			vim.fn.chansend(job_id, content)
 			vim.fn.chanclose(job_id, "stdin")
 		end
 	else
 		local read_cmd = string.format("cat %s | %s", vim.fn.shellescape(puml_path), cmd)
-		vim.fn.jobstart({ "bash", "-c", read_cmd })
+		vim.fn.jobstart({ "bash", "-c", read_cmd }, job_opts)
 	end
+end
+
+local function notify_convert_error(puml_path)
+	vim.notify(
+		"PlantUML: " .. vim.fn.fnamemodify(puml_path, ":t") .. " の変換に失敗しました",
+		vim.log.levels.WARN
+	)
 end
 
 local function register_and_convert(abs_path)
@@ -114,80 +137,14 @@ local function register_and_convert(abs_path)
 		return
 	end
 	registered_files[abs_path] = true
-	convert_file(abs_path)
-	write_manifest()
-end
-
--- browser-syncの設定ファイル（middleware付き）を生成
-local function write_bs_config()
-	if not output_dir then
-		return
-	end
-	local config = string.format(
-		[[
-var fs = require('fs');
-var path = require('path');
-var outputDir = %q;
-
-module.exports = {
-  server: outputDir,
-  files: [outputDir + '/**/*.svg', outputDir + '/manifest.json'],
-  port: %d,
-  open: false,
-  notify: false,
-  ui: false,
-  middleware: [
-    {
-      route: '/api/delete',
-      handle: function(req, res) {
-        if (req.method !== 'POST') {
-          res.writeHead(405);
-          res.end('Method not allowed');
-          return;
-        }
-        var body = '';
-        req.on('data', function(chunk) { body += chunk; });
-        req.on('end', function() {
-          try {
-            var data = JSON.parse(body);
-            var svgFile = data.svg;
-            if (!svgFile || svgFile.indexOf('..') !== -1) {
-              res.writeHead(400);
-              res.end('Invalid filename');
-              return;
-            }
-            var svgPath = path.join(outputDir, svgFile);
-            if (fs.existsSync(svgPath)) {
-              fs.unlinkSync(svgPath);
-            }
-            // manifest.json から該当エントリを削除
-            var manifestPath = path.join(outputDir, 'manifest.json');
-            if (fs.existsSync(manifestPath)) {
-              var manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-              manifest.files = manifest.files.filter(function(f) { return f.svg !== svgFile; });
-              manifest.updated_at = Math.floor(Date.now() / 1000);
-              fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-            }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: true }));
-          } catch(e) {
-            res.writeHead(500);
-            res.end('Error: ' + e.message);
-          }
-        });
-      }
-    }
-  ]
-};
-]],
-		output_dir,
-		SERVER_PORT
-	)
-	local fh = io.open(output_dir .. "/bs-config.js", "w")
-	if fh then
-		fh:write(config)
-		fh:close()
-	end
+	write_manifest() -- サイドバーに即座に表示
+	convert_file(abs_path, function(success)
+		if success then
+			write_manifest() -- SVG完了後にタイムスタンプ更新 → ブラウザが最新SVGを取得
+		else
+			notify_convert_error(abs_path)
+		end
+	end)
 end
 
 -- Neovim側でもmanifest.jsonを監視して registered_files を同期
@@ -200,12 +157,12 @@ local function sync_registered_files_from_manifest()
 	if not fh then
 		return
 	end
-	local content = fh:read("*a")
+	local manifest_content = fh:read("*a")
 	fh:close()
 
 	-- manifest.jsonに残っているファイルだけを registered_files に反映
 	local new_registered = {}
-	for name in content:gmatch('"name"%s*:%s*"([^"]+)"') do
+	for name in manifest_content:gmatch('"name"%s*:%s*"([^"]+)"') do
 		local root = get_project_root()
 		local abs_path = root .. "/" .. name
 		if registered_files[abs_path] then
@@ -439,7 +396,6 @@ local VIEWER_HTML = [[<!DOCTYPE html>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ svg: file.svg })
     }).then(function() {
-      // 削除後にmanifestを再取得
       manifest.files = manifest.files.filter(function(f) { return f.name !== file.name; });
       if (currentFile && currentFile.name === file.name) {
         currentFile = manifest.files.length > 0 ? manifest.files[0] : null;
@@ -594,6 +550,52 @@ local VIEWER_HTML = [[<!DOCTYPE html>
 </body>
 </html>]]
 
+-- python3 http.server + /api/delete エンドポイント（browser-sync + bs-config.js の代替）
+local SERVER_PY = [[
+import http.server, json, os, sys, time
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == '/api/delete':
+            length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(length))
+            svg = body.get('svg', '')
+            if not svg or '..' in svg or svg.startswith('/'):
+                self.send_error(400)
+                return
+            svg_path = os.path.realpath(os.path.join(os.getcwd(), svg))
+            if not svg_path.startswith(os.path.realpath(os.getcwd()) + os.sep):
+                self.send_error(400)
+                return
+            manifest_path = os.path.join(os.getcwd(), 'manifest.json')
+            if not os.path.exists(manifest_path):
+                self.send_error(400)
+                return
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+            if svg not in [e['svg'] for e in manifest.get('files', [])]:
+                self.send_error(400)
+                return
+            if os.path.exists(svg_path):
+                os.remove(svg_path)
+            manifest['files'] = [e for e in manifest['files'] if e['svg'] != svg]
+            manifest['updated_at'] = int(time.time())
+            with open(manifest_path, 'w') as f:
+                json.dump(manifest, f, indent=2)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+        else:
+            self.send_error(404)
+
+    def log_message(self, format, *args):
+        pass
+
+os.chdir(sys.argv[2])
+http.server.HTTPServer(('127.0.0.1', int(sys.argv[1])), Handler).serve_forever()
+]]
+
 local function write_index_html()
 	if not output_dir then
 		return
@@ -605,19 +607,46 @@ local function write_index_html()
 	end
 end
 
-local function start_server()
-	if server_job_id then
+local function write_server_py()
+	if not output_dir then
 		return
 	end
-	write_bs_config()
-	local cmd = {
-		"npx", "browser-sync", "start",
-		"--config", output_dir .. "/bs-config.js",
-	}
-	server_job_id = vim.fn.jobstart(cmd, {
-		detach = true,
-		on_exit = function()
-			server_job_id = nil
+	local fh = io.open(output_dir .. "/server.py", "w")
+	if fh then
+		fh:write(SERVER_PY)
+		fh:close()
+	end
+end
+
+local function start_server()
+	if server_job_id or not output_dir then
+		return
+	end
+	write_server_py()
+	server_job_id = vim.fn.jobstart({
+		"python3", output_dir .. "/server.py",
+		tostring(SERVER_PORT), output_dir,
+	}, {
+		on_stderr = function(_, data, _)
+			vim.schedule(function()
+				if data then
+					local msg = vim.trim(table.concat(data, "\n"))
+					if msg ~= "" then
+						vim.notify("PlantUML server: " .. msg, vim.log.levels.WARN)
+					end
+				end
+			end)
+		end,
+		on_exit = function(_, exit_code, _)
+			vim.schedule(function()
+				server_job_id = nil
+				if exit_code ~= 0 then
+					vim.notify(
+						string.format("PlantUML: サーバーが異常終了しました (exit %d)", exit_code),
+						vim.log.levels.ERROR
+					)
+				end
+			end)
 		end,
 	})
 end
@@ -647,8 +676,13 @@ local function convert_and_update_manifest(puml_path)
 	if not registered_files[puml_path] then
 		return
 	end
-	convert_file(puml_path)
-	write_manifest()
+	convert_file(puml_path, function(success)
+		if success then
+			write_manifest()
+		else
+			notify_convert_error(puml_path)
+		end
+	end)
 end
 
 local function debounced_convert(puml_path)
@@ -690,11 +724,11 @@ local function ensure_server_and_autocmds()
 		start_server()
 		start_manifest_poll()
 
-		-- ブラウザ起動（WSL2非同期、WSL環境ではwslviewを使用）
+		-- ブラウザ起動（WSL環境ではwslviewを使用）
 		vim.defer_fn(function()
 			local open_cmd = vim.fn.has("wsl") == 1 and "wslview" or "xdg-open"
 			vim.fn.jobstart({ open_cmd, "http://localhost:" .. SERVER_PORT }, { detach = true })
-		end, 2000)
+		end, 1000)
 
 		-- 保存時に該当ファイルを再変換（登録済みのみ）
 		vim.api.nvim_create_autocmd("BufWritePost", {
@@ -735,7 +769,7 @@ local function ensure_server_and_autocmds()
 	end
 end
 
-vim.api.nvim_create_user_command("PlantumlOpen", function()
+local function plantuml_open_handler()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local path = vim.api.nvim_buf_get_name(bufnr)
 
@@ -748,8 +782,8 @@ vim.api.nvim_create_user_command("PlantumlOpen", function()
 		vim.notify("PlantUML: java が見つかりません", vim.log.levels.ERROR)
 		return
 	end
-	if vim.fn.executable("npx") == 0 then
-		vim.notify("PlantUML: npx が見つかりません（Node.jsが必要です）", vim.log.levels.ERROR)
+	if vim.fn.executable("python3") == 0 then
+		vim.notify("PlantUML: python3 が見つかりません", vim.log.levels.ERROR)
 		return
 	end
 
@@ -765,14 +799,13 @@ vim.api.nvim_create_user_command("PlantumlOpen", function()
 	end
 
 	if server_job_id and count > 1 then
-		-- 既にサーバーが動いている場合はブラウザを開かない（追加登録のみ）
 		vim.notify(string.format("PlantUML: added %s (%d files total)", vim.fn.fnamemodify(path, ":t"), count))
 	else
 		vim.notify(string.format("PlantUML: viewer started at http://localhost:%d", SERVER_PORT))
 	end
-end, { force = true })
+end
 
-vim.api.nvim_create_user_command("PlantumlStop", function()
+local function plantuml_stop_handler()
 	if not server_job_id then
 		vim.notify("PlantUML: viewer is not running")
 		return
@@ -780,4 +813,29 @@ vim.api.nvim_create_user_command("PlantumlStop", function()
 	stop_manifest_poll()
 	cleanup()
 	vim.notify("PlantUML: viewer stopped")
-end, { force = true })
+end
+
+-- コマンドを(再)定義する関数
+-- plantuml-previewer.vimプラグインがPlantumlOpenを上書きするため、
+-- プラグインロード後にconfig経由で再定義する必要がある
+local function create_commands()
+	vim.api.nvim_create_user_command("PlantumlOpen", plantuml_open_handler, { force = true })
+	vim.api.nvim_create_user_command("PlantumlStop", plantuml_stop_handler, { force = true })
+end
+
+create_commands()
+
+-- plantumlファイルでのみキーマップを設定
+-- cleanup()でクリアされるPlantumlViewerとは別のaugroupを使用
+local keymap_augroup = vim.api.nvim_create_augroup("PlantumlKeymaps", { clear = true })
+local keymaps = require("my/plugins/keymaps")
+local lhs, mode, desc = keymaps.get("commands", "plantuml_open")
+vim.api.nvim_create_autocmd("FileType", {
+	group = keymap_augroup,
+	pattern = "plantuml",
+	callback = function(args)
+		vim.keymap.set(mode, lhs, "<cmd>PlantumlOpen<cr>", { buffer = args.buf, desc = desc })
+	end,
+})
+
+return { create_commands = create_commands }

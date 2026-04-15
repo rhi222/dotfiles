@@ -105,7 +105,6 @@ M.editing = {
 
 M.tools = {
 	rest_run = { "<C-e>", desc = "Rest run" },
-	plantuml_preview = { "<leader>p", desc = "PlantUML preview" },
 	sidekick_jump = { "<tab>", desc = "Sidekick jump/apply" },
 	sidekick_toggle = { "<c-.>", mode = { "n", "t", "i", "x" }, desc = "Sidekick toggle" },
 	sidekick_toggle2 = { "<leader>st", desc = "Sidekick toggle CLI" },
@@ -126,6 +125,7 @@ M.commands = {
 	open_git = { "<leader>og", desc = "Open Git URL" },
 	open_git_visual = { "<leader>og", mode = "v", desc = "Open Git URL (visual)" },
 	mo_open = { "<leader>om", desc = "Open markdown with mo" },
+	plantuml_open = { "<leader>p", desc = "PlantUML preview" },
 }
 
 -- ============================================================
