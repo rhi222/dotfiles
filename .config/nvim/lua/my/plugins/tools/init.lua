@@ -110,16 +110,11 @@ return {
 	{
 		"weirongxu/plantuml-previewer.vim",
 		ft = "plantuml",
-		dependencies = {
-			"aklt/plantuml-syntax",
-			"tyru/open-browser.vim",
-		},
+		dependencies = { "aklt/plantuml-syntax" },
 		config = function()
-			require("my/plugins/tools/plantuml")
+			-- プラグインがPlantumlOpenコマンドを上書きするため、ロード後に再定義
+			require("my/commands/plantuml").create_commands()
 		end,
-		keys = {
-			km.lazy_key("tools", "plantuml_preview", "<cmd>PlantumlOpen<CR>"),
-		},
 	},
 	{
 		"windwp/nvim-autopairs",
