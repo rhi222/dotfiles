@@ -10,7 +10,7 @@ vim.api.nvim_create_user_command("MoOpen", function()
 		vim.notify("MoOpen: ファイルが保存されていません", vim.log.levels.ERROR)
 		return
 	end
-	vim.fn.jobstart("mo " .. vim.fn.shellescape(file), { detach = true })
+	vim.fn.jobstart("mo " .. vim.fn.shellescape(file) .. " </dev/null", { detach = true })
 end, {})
 
 -- markdownファイルでのみキーマップを設定
