@@ -20,11 +20,24 @@ run_step() {
   echo "" | tee -a "$LOG_FILE"
 }
 
-run_step "apt update" sudo apt-get update -qq
+check_nvim_version() {
+  local current latest
+  current=$(nvim --version | head -1 | awk '{print $2}')
+  latest=$(gh release list --repo neovim/neovim --exclude-pre-releases --limit 1 \
+    --json tagName,isLatest -q '.[] | select(.isLatest) | .tagName')
+  echo "current: $current"
+  echo "latest (stable): $latest"
+  if [ -n "$latest" ] && [ "$current" != "$latest" ]; then
+    echo ">>> NEW VERSION AVAILABLE: $current -> $latest <<<"
+  fi
+}
+
+# run_step "apt update" sudo apt-get update -qq
 run_step "apt upgrade" sudo apt-get upgrade -y -qq
 run_step "cargo install-update" cargo install-update -a
 run_step "mise self-update" mise self-update -y
 run_step "mise upgrade" mise upgrade
+run_step "nvim version check" check_nvim_version
 run_step "nvim Lazy update" timeout 300 nvim --headless "+Lazy! update" +qa
 run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
 run_step "claude skills update" bash "$(dirname "$0")/setup-claude-skills.sh"
