@@ -25,6 +25,20 @@
 
 `sudo xargs -a scripts/apt-packages.txt apt install -y` を使用して一括インストール可能。
 
+### Claude Code skill管理
+
+外部 agent skill は `gh skill` (GitHub CLI v2.90.0+) で管理。宣言リストは `scripts/claude-skills.txt`。
+
+| やりたいこと         | コマンド                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| skill 追加           | `bash scripts/skill-add.sh <owner/repo> <skill>`                                                                   |
+| index 未登録リポ追加 | `claude-skills.txt` に `local: <git-url> <sub-path> <skill-name>` を手書き → `bash scripts/setup-claude-skills.sh` |
+| 新環境 bootstrap     | `env STRICT=1 bash scripts/setup-claude-skills.sh`                                                                 |
+| 更新                 | `daily-update.sh` が自動実行                                                                                       |
+| 削除                 | `claude-skills.txt` の行削除 + `rm -rf ~/.claude/skills/<name>`                                                    |
+
+詳細は `scripts/setup-claude-skills.sh` と `scripts/skill-add.sh` 冒頭コメントを参照。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
