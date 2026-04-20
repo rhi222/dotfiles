@@ -27,6 +27,10 @@ java = "21"
 "cargo:yazi-build" = "latest"
 "cargo:zoxide" = "latest"
 
+# プリビルドバイナリ (aqua backend)
+neovim = "latest"
+tmux = "latest"
+
 # GitHub Releasesからバイナリをインストール
 # https://mise.jdx.dev/dev-tools/backends/github.html
 "github:k1LoW/mo" = "latest"
