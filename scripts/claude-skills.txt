@@ -1,12 +1,21 @@
 # External Claude Code skills
-# Format: <repository-url> --skill <skill-name>
-# Lines starting with # are ignored
-# Empty lines are ignored
+# Requires: gh CLI >= v2.90.0 with `gh auth login` completed
+# Lines starting with # are ignored; inline `# ...` comments allowed.
+#
+# Two line formats:
+#   <OWNER/REPO> <skill-name>[@<version>]
+#     Installs via `gh skill install` (remote). Needs the repo to be
+#     registered in the agentskills.io index.
+#
+#   local: <git-url> <sub-path> <skill-name>
+#     Falls back to git clone + `gh skill install --from-local` for repos
+#     that are not yet indexed. <skill-name> is the SKILL.md `name:` value,
+#     used for installed-directory dedup.
 
-https://github.com/anthropics/skills --skill skill-creator
-https://github.com/anthropics/skills --skill frontend-design
-https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices
-https://github.com/vercel-labs/agent-skills --skill vercel-composition-patterns
-https://github.com/vercel-labs/agent-browser --skill agent-browser
-https://github.com/browser-use/browser-use --skill browser-use
-https://github.com/sanyuan0704/code-review-expert --skill code-review-expert
+anthropics/skills frontend-design
+anthropics/skills skill-creator
+browser-use/browser-use browser-use
+sanyuan0704/code-review-expert code-review-expert
+vercel-labs/agent-browser agent-browser
+local: https://github.com/vercel-labs/agent-skills.git skills/react-best-practices vercel-react-best-practices
+local: https://github.com/vercel-labs/agent-skills.git skills/composition-patterns vercel-composition-patterns

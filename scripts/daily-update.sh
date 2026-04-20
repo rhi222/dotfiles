@@ -1,6 +1,7 @@
 #!/bin/bash
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="$HOME/.local/state/daily-update"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
 mkdir -p "$LOG_DIR"
@@ -32,6 +33,24 @@ check_nvim_version() {
   fi
 }
 
+# Only update skills managed via `gh skill install` (remote lines in
+# claude-skills.txt). Local-cloned or system skills lack GitHub metadata
+# and would trigger noisy "Reinstall to enable updates" warnings.
+gh_skill_update() {
+  local names
+  mapfile -t names < <(awk '
+    /^[[:space:]]*#/ || /^[[:space:]]*$/ || /^[[:space:]]*local:/ { next }
+    { sub(/[[:space:]]#.*$/, ""); split($2, a, "@"); n = a[1]; sub(/.*\//, "", n); if (n != "") print n }
+  ' "$SCRIPT_DIR/claude-skills.txt")
+
+  if [ "${#names[@]}" -eq 0 ]; then
+    echo "No remote-managed skills to update."
+    return 0
+  fi
+
+  gh skill update --all "${names[@]}" </dev/null
+}
+
 # run_step "apt update" sudo apt-get update -qq
 run_step "apt upgrade" sudo apt-get upgrade -y -qq
 run_step "cargo install-update" cargo install-update -a
@@ -40,7 +59,9 @@ run_step "mise upgrade" mise upgrade
 run_step "nvim version check" check_nvim_version
 run_step "nvim Lazy update" timeout 300 nvim --headless "+Lazy! update" +qa
 run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
-run_step "claude skills update" bash "$(dirname "$0")/setup-claude-skills.sh"
+# New skills are added via `scripts/skill-add.sh`; bootstrap uses
+# `setup-claude-skills.sh`. Daily only runs the update step.
+run_step "gh skill update" gh_skill_update
 
 echo "========================================" | tee -a "$LOG_FILE"
 if [ ${#failures[@]} -gt 0 ]; then
