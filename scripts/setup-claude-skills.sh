@@ -9,17 +9,30 @@
 #   local: <git-url> <sub-path> <skill-name>     # git clone + --from-local
 #
 # Env flags:
-#   STRICT=1  : fail hard on missing prereqs (bootstrap)
-#   MIGRATE=1 : --force reinstall (migrate from npx skills / inject metadata)
+#   STRICT=1       : fail hard on missing prereqs (bootstrap)
+#   MIGRATE=1      : --force reinstall (migrate from npx skills / inject metadata)
+#   SKILL_AGENTS=  : space-separated gh `--agent` targets
+#                    (default: "claude-code codex")
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_FILE="$SCRIPT_DIR/claude-skills.txt"
-SKILLS_INSTALL_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
 LOCAL_CACHE_DIR="${CLAUDE_SKILLS_CACHE:-$HOME/.cache/claude-skills-local}"
 MIGRATE="${MIGRATE:-0}"
 STRICT="${STRICT:-0}"
+SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 REQUIRED_GH_VERSION="2.90.0"
+
+# Maps a gh `--agent` value to its user-scope install directory.
+# Used for the "already installed" check; gh itself resolves the path
+# from the --agent/--scope combination.
+agent_target_dir() {
+  case "$1" in
+    claude-code) echo "$HOME/.claude/skills" ;;
+    codex)       echo "$HOME/.codex/skills" ;;
+    *)           echo "" ;;
+  esac
+}
 
 prereq_fail() {
   local msg="$1"
@@ -50,35 +63,72 @@ if ! gh auth status >/dev/null 2>&1; then
   prereq_fail "gh not authenticated (run 'gh auth login')"
 fi
 
-echo "Installing external Claude Code skills via gh skill..."
+echo "Installing external skills via gh skill (agents: $SKILL_AGENTS)..."
 
-# Returns:
-#   0  -> installed
-#   100 -> skipped (already installed)
-#   >0 -> failure
+# Runs `gh skill install` for each agent in $SKILL_AGENTS and aggregates
+# per-agent results (installed/skipped/failed) into one return code:
+#   0   -> at least one agent installed (and none failed)
+#   100 -> every agent skipped (already installed)
+#   1   -> any agent failed
+run_install_for_agents() {
+  local skill_name="$1"
+  shift
+  local -a cmd_prefix=("$@")
+
+  local any_installed=0 any_failed=0 all_skipped=1
+
+  for agent in $SKILL_AGENTS; do
+    local base_dir
+    base_dir="$(agent_target_dir "$agent")"
+    if [ -z "$base_dir" ]; then
+      echo "  -> ERROR: unknown agent '$agent' (no target dir mapping)" >&2
+      any_failed=1
+      all_skipped=0
+      continue
+    fi
+
+    local target="$base_dir/$skill_name"
+    if [ "$MIGRATE" != "1" ] && [ -d "$target" ] && [ ! -L "$target" ]; then
+      echo "  -> skip ($agent, already installed): $skill_name"
+      continue
+    fi
+
+    local -a cmd=("${cmd_prefix[@]}" --agent "$agent" --scope user)
+    [ "$MIGRATE" = "1" ] && cmd+=(--force)
+    echo "  -> ${cmd[*]}"
+    local log
+    log="$(mktemp -t claude-skills-install.XXXXXX.log)"
+    if "${cmd[@]}" </dev/null 2>"$log"; then
+      cat "$log"
+      rm -f "$log"
+      any_installed=1
+      all_skipped=0
+    else
+      local rc=$?
+      cat "$log" >&2
+      rm -f "$log"
+      echo "  -> ERROR: gh skill install exited $rc (agent=$agent)" >&2
+      any_failed=1
+      all_skipped=0
+    fi
+  done
+
+  if [ "$any_failed" = "1" ]; then
+    return 1
+  elif [ "$all_skipped" = "1" ]; then
+    return 100
+  else
+    return 0
+  fi
+}
+
 install_remote() {
   local repo="$1" skill_spec="$2" skill_name="$3"
-  local target="$SKILLS_INSTALL_DIR/$skill_name"
-
-  if [ "$MIGRATE" != "1" ] && [ -d "$target" ] && [ ! -L "$target" ]; then
-    echo "  -> skip (already installed): $skill_name"
-    return 100
-  fi
-
-  local cmd=(gh skill install "$repo" "$skill_spec" --agent claude-code --scope user)
-  [ "$MIGRATE" = "1" ] && cmd+=(--force)
-  echo "  -> ${cmd[*]}"
-  "${cmd[@]}" </dev/null
+  run_install_for_agents "$skill_name" gh skill install "$repo" "$skill_spec"
 }
 
 install_local() {
   local git_url="$1" sub_path="$2" skill_name="$3"
-  local target="$SKILLS_INSTALL_DIR/$skill_name"
-
-  if [ "$MIGRATE" != "1" ] && [ -d "$target" ] && [ ! -L "$target" ]; then
-    echo "  -> skip (already installed): $skill_name"
-    return 100
-  fi
 
   mkdir -p "$LOCAL_CACHE_DIR"
   local repo_slug
@@ -112,22 +162,7 @@ install_local() {
     return 1
   fi
 
-  local cmd=(gh skill install "$clone_dir" "$skill_name" --from-local --agent claude-code --scope user)
-  [ "$MIGRATE" = "1" ] && cmd+=(--force)
-  echo "  -> ${cmd[*]}"
-  local log
-  log="$(mktemp -t claude-skills-local.XXXXXX.log)"
-  if "${cmd[@]}" </dev/null 2>"$log"; then
-    cat "$log"
-    rm -f "$log"
-    return 0
-  else
-    local rc=$?
-    cat "$log" >&2
-    rm -f "$log"
-    echo "  -> ERROR: gh skill install --from-local exited $rc" >&2
-    return $rc
-  fi
+  run_install_for_agents "$skill_name" gh skill install "$clone_dir" "$skill_name" --from-local
 }
 
 failures=()
