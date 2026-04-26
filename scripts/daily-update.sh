@@ -1,6 +1,13 @@
 #!/bin/bash
 set -uo pipefail
 
+# mise-managed tools (gh, nvim, cargo, ...) must resolve via shims, not via
+# the version-locked PATH inherited from a long-running parent shell. After
+# `mise upgrade` bumps a tool, the old `installs/<tool>/<ver>/...` path
+# becomes stale; for `gh` that means falling through to /usr/bin/gh 2.74.0,
+# which lacks the `skill` subcommand and breaks `gh skill update`.
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="$HOME/.local/state/daily-update"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
