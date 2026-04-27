@@ -8,6 +8,11 @@ if set -q TMUX
     set -gx TERM tmux-256color
 end
 
+# WSL2: open URLs in Windows default browser (e.g. aws sso login)
+if test -n "$WSL_DISTRO_NAME"; and type -q wslview
+    set -gx BROWSER wslview
+end
+
 # Font color settings
 # https://fishshell.com/docs/current/cmds/set_color.html
 # https://reiichii.hateblo.jp/entry/2022/01/05/194823
