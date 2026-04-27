@@ -22,12 +22,15 @@
 
 1. `esa-api` スキルに従い、リビジョン一覧を取得
 2. 直近7日間のリビジョンをフィルタ（`created_at` で判定）
-3. compare URL を生成: `https://<team>.esa.io/posts/<number>/revisions/compare/<from>...<to>/html_diff`
-4. compare API で diff 内容を取得
+3. FROM を決定: 直近7日間の最古リビジョンの1つ前（= 1週間前時点の内容）
+4. レポートに載せる compare URL を生成: `https://<team>.esa.io/posts/<number>/revisions/compare/<from>...head/html_diff`
+   - ブラウザURLは TO を `head` とする。SoS直前に記事が追記更新された場合でもURLを書き換えずに最新差分を表示できる
+5. compare API で diff 内容を取得
+   - API は `head` キーワード非対応（404）。API呼び出しでは具体的なリビジョン番号（現時点の最新番号を TO）を指定する
 
 **差分が無い場合:**
 - 直近7日間にリビジョンがない → 「変更なし」と記録し、レポートでは省略
-- リビジョンが1件のみ（FROM=TO） → 全リビジョン一覧から1つ前のリビジョン番号を取得し比較
+- 直近7日間のリビジョンが1件のみ → 全リビジョン一覧から1つ前のリビジョン番号を FROM として使用
 
 ### 3. エグゼクティブレポート生成
 
