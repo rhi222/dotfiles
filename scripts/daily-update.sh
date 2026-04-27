@@ -46,7 +46,7 @@ gh_skill_update() {
   gh skill update --all "${names[@]}" </dev/null
 }
 
-# run_step "apt update" sudo apt-get update -qq
+run_step "apt update" sudo apt-get update -qq
 run_step "apt upgrade" sudo apt-get upgrade -y -qq
 run_step "cargo install-update" cargo install-update -a
 run_step "mise self-update" mise self-update -y
