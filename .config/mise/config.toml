@@ -6,11 +6,12 @@ deno = "latest"
 fzf = "latest"
 gh = "latest"
 go = "latest"
+java = "21"
 node = "24"
 python = "latest"
 rust = "latest"
 uv = "latest"
-java = "21"
+yazi = "latest"
 
 # rustのグローバルパッケージ
 # go, node, pythonのように、.default-x-packagesがないため本ファイルで管理
@@ -24,7 +25,6 @@ java = "21"
 "cargo:gitui" = "latest"
 "cargo:ripgrep" = "latest"
 "cargo:stylua" = "latest"
-"cargo:yazi-build" = "latest"
 "cargo:zoxide" = "latest"
 
 # プリビルドバイナリ (aqua backend)
