@@ -21,6 +21,6 @@ function git-fsw
         git switch "$branch"
     else
 
-        git switch -c (string replace 'origin/' '' "$branch") --track "$branch"
+        git switch -c (string replace -r '^origin/' '' "$branch") --track "$branch"
     end
 end

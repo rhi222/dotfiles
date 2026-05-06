@@ -32,19 +32,18 @@ function find_docker_compose
 
     # ───────────────────────────────────────────────────────────────────
     # 4) 深さ制限付きサーチ (fd があれば fd、なければ find)
+    # NOTE: set -l はブロックスコープ。if/else 内で宣言すると外で参照不可になるため、関数スコープで宣言する。
+    set -l result
     if type -q fd
-        # fd にパターンを渡す
-        set -l result (fd --hidden --max-depth 4 --type f --glob '{docker-compose.yml,docker-compose.yaml,compose.yml,compose.yaml}' $repo_root | head -n1)
+        set result (fd --hidden --max-depth 4 --type f --glob '{docker-compose.yml,docker-compose.yaml,compose.yml,compose.yaml}' $repo_root | head -n1)
     else
-        # find 用に "-name X -o -name Y ..." を準備
         set -l name_args
         for p in $patterns
             set name_args $name_args -name $p -o
         end
-        # 末尾の "-o" を削除
         set name_args $name_args[1..-2]
 
-        set -l result (find $repo_root -maxdepth 4 -type f \( $name_args \) | head -n1)
+        set result (find $repo_root -maxdepth 4 -type f \( $name_args \) | head -n1)
     end
 
     if test -n "$result"

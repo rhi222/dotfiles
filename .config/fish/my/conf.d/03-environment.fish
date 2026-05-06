@@ -1,7 +1,7 @@
 # Environment variables and tool settings
 
 set -gx PSQL_EDITOR nvim
-set -gx GIT_EDITOR 'nvim -u $HOME/.config/nvim/init.lua'
+set -gx GIT_EDITOR "nvim -u $HOME/.config/nvim/init.lua"
 set -gx EDITOR nvim
 set -gx VISUAL nvim
 if set -q TMUX

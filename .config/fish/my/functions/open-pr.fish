@@ -9,10 +9,11 @@ function open-pr --description "Open pull request page in browser via gh"
         return $status
     end
 
-    # Fast path: let gh resolve PR from current branch.
-    gh pr view --web >/dev/null 2>&1
-    if test $status -eq 0
-        return 0
+    # Fast path: let gh resolve PR from current branch (URL取得→browseで副作用を分離)
+    set -l pr_url (gh pr view --json url --jq .url 2>/dev/null)
+    if test -n "$pr_url"; and test "$pr_url" != null
+        gh browse "$pr_url"
+        return $status
     end
 
     set -l branch (git branch --show-current 2>/dev/null)
