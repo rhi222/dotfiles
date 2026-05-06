@@ -33,6 +33,20 @@ zoxide = "latest"
 # https://mise.jdx.dev/dev-tools/backends/github.html
 "github:k1LoW/mo" = "latest"
 
+# aquaバックエンドで管理するCLIツール（旧go install / npm / pip 経由から移行）
+"aqua:d-kuro/gwq" = "latest"
+"aqua:jesseduffield/lazydocker" = "latest"
+"aqua:jesseduffield/lazygit" = "latest"
+"aqua:k1LoW/deck" = "latest"
+"aqua:k1LoW/tcmux" = "latest"
+"aqua:k1LoW/git-wt" = "latest"
+"aqua:x-motemen/ghq" = "latest"
+"aqua:mvdan/sh" = "latest"          # shfmt
+"aqua:astral-sh/ruff" = "latest"
+"aqua:biomejs/biome" = "latest"
+"aqua:marp-team/marp-cli" = "latest"
+"aqua:tree-sitter/tree-sitter" = "latest"
+
 [settings]
 # Pythonはプリビルドバイナリ優先（WSL2でコンパイル回避）
 python.compile = false
