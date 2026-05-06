@@ -20,14 +20,22 @@
     │   ├── 06-aliases.fish           # エイリアス
     │   ├── 07-abbr.fish              # 略語
     │   ├── 08-prompt-override.fish   # プロンプトカスタマイズ（git treeアイコン）
-    │   └── 09-git-wt.fish            # Git worktree関連
+    │   ├── 09-git-wt.fish            # Git worktree関連
+    │   ├── 10-fzf.fish               # fzf.fishキーバインド／履歴表示設定
+    │   └── 11-yazi.fish              # yazi統合（終了時にcwdへcd）
     └── functions/       # カスタム関数
+        ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
+        ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
-        ├── ftmux.fish               # tmuxセッション選択
+        ├── ftmux.fish               # tmux window/session/pane選択
+        ├── gf.fish                  # ghq管理リポジトリへcd（キャッシュ付き）
         ├── git-fsw.fish             # Gitブランチ選択・切り替え
-        ├── mv2main.fish             # mainブランチへの移動
-        └── mvuntracked.fish         # 未追跡ファイルの移動
+        ├── mv2main.fish             # mainワークツリーへmv/cp
+        ├── mvuntracked.fish         # 未追跡ファイルをmainワークツリーへ移動
+        ├── open-pr.fish             # 現在ブランチのPRをブラウザで開く
+        ├── wt.fish                  # git worktree切り替え
+        └── wtd.fish                 # git worktree削除
 ```
 
 ## 設計思想
@@ -50,6 +58,8 @@
 - **07-abbr.fish**: 略語（Git、Docker、開発ツール関連）
 - **08-prompt-override.fish**: プロンプトカスタマイズ（git treeアイコン）
 - **09-git-wt.fish**: Git worktree関連
+- **10-fzf.fish**: fzf.fishのキーバインド／履歴表示設定
+- **11-yazi.fish**: yazi終了時のcwdへの自動cd（`y`関数）
 
 ### 3. 読み込み順序制御
 
