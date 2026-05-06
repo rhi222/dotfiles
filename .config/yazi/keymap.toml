@@ -1,0 +1,8 @@
+# https://yazi-rs.github.io/docs/configuration/keymap
+
+# smart-enter.yazi: l キーで「ファイルなら開く / ディレクトリなら入る」を統一
+# https://github.com/yazi-rs/plugins/tree/main/smart-enter.yazi
+[[mgr.prepend_keymap]]
+on = "l"
+run = "plugin smart-enter"
+desc = "Enter the child directory, or open the file"
