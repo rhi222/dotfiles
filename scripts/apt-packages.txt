@@ -1,4 +1,6 @@
+bubblewrap
 graphviz
 imagemagick
+jq
 plantuml
 wslu
