@@ -1,7 +1,7 @@
 ######################
 # Global Preferences #
 ######################
-model = "gpt-5.2-codex"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 # show_raw_agent_reasoning = true
@@ -26,11 +26,11 @@ inherit = "all"
 # Profiles #
 ############
 [profiles.auto]
-model = "gpt-5.2-codex"
+model = "gpt-5.5"
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 
 [profiles.gh]
-model = "gpt-5.2-codex"
+model = "gpt-5.5"
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
