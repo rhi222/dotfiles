@@ -46,6 +46,9 @@
       "Read(.env.*)",
       "Read(id_rsa)"
     ],
+    "ask": [
+      "Bash(aws:*)"
+    ],
     "defaultMode": "auto"
   },
   "hooks": {
@@ -100,8 +103,9 @@
   },
   "language": "Japanese",
   "plansDirectory": "./plans",
-  "voiceEnabled": true,
+  "teammateMode": "tmux",
   "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true,
   "mcpServers": {
     "drawio": {
       "command": "npx",
@@ -110,5 +114,6 @@
       ]
     }
   },
-  "teammateMode": "tmux"
+  "theme": "dark-daltonized",
+  "remoteControlAtStartup": true
 }
