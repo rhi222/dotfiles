@@ -20,8 +20,15 @@ function ftmux --description "Fuzzy switch tmux window/session (works outside tm
     end
 
     # 共通: 整形済み入力(ID\t表示文字列)から fzf で選び、ID列を返す
+    # 注: パイプ受け取り後に再度コマンド置換 `(fzf ...)` でstdinを参照しても
+    #     fishはパイプのstdinを継承しないため、while readで一旦吸い込んでから渡す
     function __ftmux_pick_id --argument-names prompt --no-scope-shadowing
-        set -l line (fzf --prompt="$prompt" --delimiter="$TAB" --with-nth=2 --exit-0)
+        set -l input
+        while read -l l
+            set -a input $l
+        end
+        set -l line (printf '%s\n' $input \
+            | fzf --prompt="$prompt" --delimiter="$TAB" --with-nth=2 --exit-0)
         if test -z "$line"
             return 1
         end
