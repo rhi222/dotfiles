@@ -85,7 +85,8 @@ if [[ "$EVENT" == "Stop" && -f "$NIPPO_NOTIFY_FLAG" ]]; then
   if [[ -x "$NIPPO_CHECK" ]]; then
     (
       nippo_msg=$(timeout 5 "$NIPPO_CHECK" stop 2>/dev/null)
-      if [[ $? -ne 0 && -n "$nippo_msg" ]]; then
+      status=$?
+      if [[ $status -ne 0 && -n "$nippo_msg" ]]; then
         send_notification "日報チェック" "$nippo_msg"
       fi
     ) & disown

@@ -29,4 +29,12 @@ Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Cl
 - ユーザーへの回答でコマンド例を示す際はfish構文で記述すること（開発者のログインシェルがfishのため）
 - Claude Code自身がBashツールで実行するコマンドはPOSIX/Bash構文のままでよい
 
-<!-- TDD / リファクタリングは ~/.config/claude/rules/ に移行済み -->
+## 開発ルール
+
+開発スタイル系のルールは `rules/` 配下に分離し、以下を import する。
+`obsidian-vault.md` と `deck.md` は path-scope が狭いため、必要に応じて該当ディレクトリの CLAUDE.md から個別参照する想定。
+
+@rules/tdd.md
+@rules/refactoring.md
+@rules/review-mode.md
+@rules/investigation-mode.md
