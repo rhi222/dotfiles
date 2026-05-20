@@ -62,13 +62,13 @@ M.lsp = {
 	hover = { "K", desc = "Hover" },
 	implementation = { "gi", desc = "Implementation" },
 	signature_help = { "<C-k>", desc = "Signature help" },
-	workspace_add = { "<space>wa", desc = "Add workspace folder" },
-	workspace_remove = { "<space>wr", desc = "Remove workspace folder" },
-	workspace_list = { "<space>wl", desc = "List workspace folders" },
-	type_definition = { "<space>D", desc = "Type definition" },
-	rename = { "<space>rn", desc = "Rename" },
-	code_action = { "<space>ca", mode = { "n", "v" }, desc = "Code action" },
-	references = { "grr", desc = "References" },
+	workspace_add = { "<leader>lwa", desc = "Add workspace folder" },
+	workspace_remove = { "<leader>lwr", desc = "Remove workspace folder" },
+	workspace_list = { "<leader>lwl", desc = "List workspace folders" },
+	type_definition = { "<leader>lt", desc = "Type definition" },
+	rename = { "<leader>ln", desc = "Rename" },
+	code_action = { "<leader>la", mode = { "n", "v" }, desc = "Code action" },
+	references = { "<leader>lr", desc = "References" },
 }
 
 M.completion = {
