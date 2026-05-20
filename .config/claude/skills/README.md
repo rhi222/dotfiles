@@ -11,18 +11,24 @@
 
 ### 自作スキル一覧
 
-| スキル                 | 説明                              |
-| ---------------------- | --------------------------------- |
-| ci-debug               | GitHub Actionsエラー分析          |
-| cross-repo-investigate | 複数リポジトリ横断調査            |
-| difit                  | ステージ差分のブラウザレビュー    |
-| esa-api                | esa.io API共通ナレッジ            |
-| esa-diff-weekly        | esa週次差分URL取得&サマリ         |
-| esa-weekly-report      | esa週次エグゼクティブレポート生成 |
-| humanize               | AI文章の自然化                    |
-| puml-from-drawio       | draw.io→PlantUML変換              |
-| nippo-\*               | 日報システム（後述）              |
-| tmux-sender            | tmux別ペインへコマンド送信        |
+| スキル                 | 説明                                          |
+| ---------------------- | --------------------------------------------- |
+| ci-debug               | GitHub Actionsエラー分析                      |
+| cross-repo-investigate | 複数リポジトリ横断調査                        |
+| difit                  | ステージ差分のブラウザレビュー                |
+| esa-api                | esa.io API共通ナレッジ (他esa-*から内部参照)  |
+| esa-diff-weekly        | esa週次差分URL取得&サマリ                     |
+| esa-weekly-report      | esa週次エグゼクティブレポート生成             |
+| git-commit             | Conventional Commit形式のコミット作成         |
+| humanize               | AI文章の自然化                                |
+| pr-auto-update         | PRの自動更新（タイトル/説明文の再生成）       |
+| pr-feedback            | PRレビューコメント分類と対応順序の決定        |
+| pr-generate            | PR本文生成（commit履歴からタイトル/説明文を作成） |
+| pr-review              | PR内容のセルフレビュー                        |
+| puml-from-drawio       | draw.io→PlantUML変換                          |
+| nippo-\*               | 日報システム（後述）                          |
+| session-patterns       | セッション履歴から繰り返しパターンを抽出      |
+| tmux-sender            | tmux別ペインへコマンド送信                    |
 
 ---
 

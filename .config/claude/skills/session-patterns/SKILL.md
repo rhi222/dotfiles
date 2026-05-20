@@ -27,8 +27,7 @@ allowed-tools: Read, Bash(date:*), Bash(python3:*), Bash(ls:*), Bash(bash:*)
 ```bash
 DAYS="${ARGUMENTS:-7}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COLLECT_SCRIPT="$SCRIPT_DIR/../../scripts/collect-session-patterns.sh"
+COLLECT_SCRIPT="$HOME/.config/claude/scripts/collect-session-patterns.sh"
 
 if [ ! -f "$COLLECT_SCRIPT" ]; then
     echo "❌ データ収集スクリプトが見つかりません: $COLLECT_SCRIPT"
