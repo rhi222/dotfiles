@@ -20,10 +20,7 @@ local categories = {
 }
 
 for _, mod in ipairs(categories) do
-	local list = require(mod)
-	for _, plugin in ipairs(list) do
-		table.insert(plugins, plugin)
-	end
+	vim.list_extend(plugins, require(mod))
 end
 
 return plugins
