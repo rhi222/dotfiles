@@ -49,28 +49,34 @@ local function read_json_once(pkg)
 	return PKG_CACHE[pkg]
 end
 
--- Prettier 設定の存在判定（package.json の "prettier" も見る）
-local function has_prettier_conf(dir)
-	local names = {
-		".prettierrc",
-		".prettierrc.json",
-		".prettierrc.yaml",
-		".prettierrc.yml",
-		".prettierrc.js",
-		".prettierrc.cjs",
-		".prettierrc.mjs",
-		"prettier.config.js",
-		"prettier.config.cjs",
-		"prettier.config.mjs",
-	}
-	for _, n in ipairs(names) do
+-- Prettier 設定ファイルの存在判定（package.json の "prettier" は呼び出し側で見る）
+-- https://prettier.io/docs/configuration
+local PRETTIER_CONF_FILES = {
+	".prettierrc",
+	".prettierrc.json",
+	".prettierrc.json5",
+	".prettierrc.yaml",
+	".prettierrc.yml",
+	".prettierrc.toml",
+	".prettierrc.js",
+	".prettierrc.cjs",
+	".prettierrc.mjs",
+	".prettierrc.ts",
+	".prettierrc.cts",
+	".prettierrc.mts",
+	"prettier.config.js",
+	"prettier.config.cjs",
+	"prettier.config.mjs",
+	"prettier.config.ts",
+	"prettier.config.cts",
+	"prettier.config.mts",
+}
+
+local function has_prettier_conf_file(dir)
+	for _, n in ipairs(PRETTIER_CONF_FILES) do
 		if fs_readable(dir .. "/" .. n) then
 			return true
 		end
-	end
-	local pkg = read_json_once(dir .. "/package.json")
-	if pkg and pkg.prettier ~= nil then
-		return true
 	end
 	return false
 end
@@ -100,11 +106,11 @@ local function sanitize_start_dir(dir)
 end
 
 -- あるディレクトリから上方向に探索して、どのフォーマッタを使うかを決める
--- ルール（近い順優先）:
---  1. 同階層に biome.json / biome.jsonc → "biome"
---  2. 同階層 package.json の "biome" フィールド → "biome"
---  3. 同階層に Prettier 設定 or package.json の "prettier" → "prettier"
---  4. package.json の "workspaces" や .git 到達で境界打ち切り
+-- ルール（近い順優先・各階層で formatter 検出を全部行ってから境界判定）:
+--  1. 同階層に biome.json / biome.jsonc または package.json の "biome" → "biome"
+--  2. 同階層に Prettier 設定ファイル または package.json の "prettier" → "prettier"
+--  3. 上記いずれも無い場合のみ、package.json の "workspaces" / .git で境界打ち切り
+--     （monorepo root に .prettierrc がある構成で先に "none" になるのを防ぐため）
 --  見つからなければ "none"
 local function decide_for_dir(start_dir)
 	start_dir = sanitize_start_dir(start_dir)
@@ -118,58 +124,46 @@ local function decide_for_dir(start_dir)
 	end
 
 	local seen = {} -- 今回の探索で辿ったディレクトリ（バルクでキャッシュ埋める用）
+
+	local function cache_and_return(decision)
+		for _, d in ipairs(seen) do
+			DIR_CACHE[d] = decision
+		end
+		return decision
+	end
+
 	local dir = start_dir
 	local MAX_UP = 15
 
 	for _ = 1, MAX_UP do
 		seen[#seen + 1] = dir
 
-		-- 1) biome の明示ファイル
-		if fs_readable(dir .. "/biome.json") or fs_readable(dir .. "/biome.jsonc") then
-			for _, d in ipairs(seen) do
-				DIR_CACHE[d] = "biome"
-			end
-			return "biome"
-		end
-
-		-- 2) package.json の biome / prettier / workspaces
 		local pkg = read_json_once(dir .. "/package.json")
-		if pkg then
-			if pkg.biome ~= nil then
-				for _, d in ipairs(seen) do
-					DIR_CACHE[d] = "biome"
-				end
-				return "biome"
-			end
-			if pkg.prettier ~= nil then
-				for _, d in ipairs(seen) do
-					DIR_CACHE[d] = "prettier"
-				end
-				return "prettier"
-			end
-			if pkg.workspaces ~= nil then
-				-- モノレポ境界：ここで打ち切り
-				for _, d in ipairs(seen) do
-					DIR_CACHE[d] = "none"
-				end
-				return "none"
-			end
+
+		-- 1) biome 検出（同階層の biome.json / biome.jsonc / package.json#biome）
+		local has_biome = fs_readable(dir .. "/biome.json") or fs_readable(dir .. "/biome.jsonc")
+		if pkg and pkg.biome ~= nil then
+			has_biome = true
+		end
+		if has_biome then
+			return cache_and_return("biome")
 		end
 
-		-- 3) Prettier の個別設定ファイル
-		if has_prettier_conf(dir) then
-			for _, d in ipairs(seen) do
-				DIR_CACHE[d] = "prettier"
-			end
-			return "prettier"
+		-- 2) prettier 検出（同階層の Prettier 設定ファイル / package.json#prettier）
+		local has_prettier = has_prettier_conf_file(dir)
+		if pkg and pkg.prettier ~= nil then
+			has_prettier = true
+		end
+		if has_prettier then
+			return cache_and_return("prettier")
 		end
 
-		-- 4) .git 到達で打ち切り
+		-- 3) ここまで何も無ければ境界判定（workspaces / .git）
+		if pkg and pkg.workspaces ~= nil then
+			return cache_and_return("none")
+		end
 		if fs_isdir(dir .. "/.git") then
-			for _, d in ipairs(seen) do
-				DIR_CACHE[d] = "none"
-			end
-			return "none"
+			return cache_and_return("none")
 		end
 
 		local parent = vim.fs.dirname(dir)
@@ -179,10 +173,7 @@ local function decide_for_dir(start_dir)
 		dir = parent
 	end
 
-	for _, d in ipairs(seen) do
-		DIR_CACHE[d] = "none"
-	end
-	return "none"
+	return cache_and_return("none")
 end
 
 -- バッファごとの最終判定（キャッシュ付き）
@@ -367,38 +358,25 @@ end, {
 --------------------------------------------------------------------------------
 -- キャッシュ無効化フック（ディレクトリ移動・設定変更時）
 --------------------------------------------------------------------------------
--- カレントディレクトリが変わったらディレクトリ/パッケージキャッシュも含めてクリア
-vim.api.nvim_create_autocmd({ "DirChanged" }, {
-	callback = function()
-		DIR_CACHE = {}
-		PKG_CACHE = {}
-		local bufnr = vim.api.nvim_get_current_buf()
+-- 全バッファの formatter キャッシュをクリア
+-- 設定ファイル変更時に、既に開いている他バッファが古い判定を持ち続けるのを防ぐ
+local function clear_all_formatter_caches()
+	DIR_CACHE = {}
+	PKG_CACHE = {}
+	for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
 		clear_buffer_formatter_cache(bufnr)
-	end,
+	end
+end
+
+vim.api.nvim_create_autocmd({ "DirChanged" }, {
+	callback = clear_all_formatter_caches,
 })
 
--- 設定ファイルを書き換えたらディレクトリ/パッケージキャッシュを緩めに破棄
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
-	pattern = {
+	pattern = vim.list_extend({
 		"package.json",
 		"biome.json",
 		"biome.jsonc",
-		".prettierrc",
-		".prettierrc.json",
-		".prettierrc.yaml",
-		".prettierrc.yml",
-		".prettierrc.js",
-		".prettierrc.cjs",
-		".prettierrc.mjs",
-		"prettier.config.js",
-		"prettier.config.cjs",
-		"prettier.config.mjs",
-	},
-	callback = function()
-		DIR_CACHE = {}
-		PKG_CACHE = {}
-		-- 現バッファは次回フォーマット要求時に再判定される
-		local bufnr = vim.api.nvim_get_current_buf()
-		clear_buffer_formatter_cache(bufnr)
-	end,
+	}, PRETTIER_CONF_FILES),
+	callback = clear_all_formatter_caches,
 })
