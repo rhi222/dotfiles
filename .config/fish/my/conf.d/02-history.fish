@@ -6,7 +6,9 @@
 # - 最大保存数は262,144件（ハードコード、変更不可）
 # そのため、これらに対応する設定変数は存在しない。
 
-# 複数セッション間でのhistory共有: 他セッションの履歴をプロンプトごとに取り込む
-function __fish_shared_history --on-event fish_prompt
+# 複数セッション間でのhistory共有: コマンド実行直後に他セッションの履歴を取り込む。
+# fish_prompt だと描画毎にmergeが走り履歴件数の増加でレイテンシが増える。
+# fish_postexec ならコマンド実行後だけで十分（次のプロンプトで反映される）。
+function __fish_shared_history --on-event fish_postexec
     history --merge 2>/dev/null
 end

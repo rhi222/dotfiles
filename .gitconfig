@@ -10,7 +10,8 @@
 [init]
 	defaultBranch = main
 [credential]
-	helper = cache
+	# デフォルトの15分は短すぎる。1時間に延長（SSH鍵運用なら本ヘルパは不要）
+	helper = cache --timeout=3600
 
 # --- Operations ---
 [push]
