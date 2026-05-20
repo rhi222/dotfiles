@@ -1,17 +1,9 @@
 -- options
 vim.scriptencoding = "utf-8"
 
--- path: 起動時のパフォーマンス最適化のため遅延実行
-vim.api.nvim_create_autocmd("VimEnter", {
-	callback = function()
-		vim.schedule(function()
-			-- checkhelathするとErrorになるが、:echo g:node_host_progすると設定できている
-			-- checkhealthはVimEnterより前に実行されるため
-			vim.g.node_host_prog = vim.fn.trim(vim.fn.system("which neovim-node-host"))
-			vim.g.python3_host_prog = vim.fn.trim(vim.fn.system("which python3"))
-		end)
-	end,
-})
+-- providers: 外部プロセスを起動せずパスを解決
+vim.g.node_host_prog = vim.fn.exepath("neovim-node-host")
+vim.g.python3_host_prog = vim.fn.exepath("python3")
 
 -- checkhealthの警告抑制
 vim.g.loaded_perl_provider = 0
@@ -56,16 +48,13 @@ if vim.fn.has("wsl") == 1 then
 		},
 		cache_enable = 0,
 	}
-	-- xdg-openのtimeout問題を回避するためwslviewを使用
-	vim.keymap.set("n", "gx", function()
-		local url = vim.fn.expand("<cfile>")
-		vim.fn.jobstart({ "wslview", url }, { detach = true })
-	end, { silent = true, desc = "Open URL with wslview" })
 end
 -- TrueColor対応
 vim.opt.termguicolors = true
 -- ファイル末尾のEOLを自動追加しない
 vim.opt.fixendofline = false
+-- folding: nvim-treesitterに統合（デフォルトは無効）
+vim.o.foldenable = false
 -- auto-session: ensure multiple buffers are persisted
 vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
 
@@ -77,6 +66,3 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- wslで貼り付けにC-vを割り当てたためremap
--- Ctrl+Shift+VでVisual Blockモードに入る
-vim.keymap.set({ "n", "v" }, "<C-S-v>", "<C-v>", { silent = true })

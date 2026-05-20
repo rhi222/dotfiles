@@ -125,9 +125,6 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- NOTE: treesitterによるfolding は nvim-treesitter.lua に統合
-vim.o.foldenable = false -- Disable folding at default
-
 -- TSVファイルでタブ文字を可視化
 vim.api.nvim_create_autocmd("FileType", {
 	group = "vimrc_augroup",
