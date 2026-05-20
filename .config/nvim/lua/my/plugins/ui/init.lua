@@ -44,9 +44,18 @@ return {
 		config = function()
 			-- 使用しないモジュールを無効化
 			local disabled = {
-				"bigfile", "dashboard", "explorer", "image", "input",
-				"notifier", "picker", "quickfile", "scope", "scroll",
-				"statuscolumn", "words",
+				"bigfile",
+				"dashboard",
+				"explorer",
+				"image",
+				"input",
+				"notifier",
+				"picker",
+				"quickfile",
+				"scope",
+				"scroll",
+				"statuscolumn",
+				"words",
 			}
 			local opts = {}
 			for _, mod in ipairs(disabled) do
