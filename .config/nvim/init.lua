@@ -21,8 +21,6 @@ require("lazy_nvim")
 require("my/commands")
 -- }}} -------------------------------
 
--- -------------------- builtin keymaps (nvim 0.12+) {{{
-local km = require("my.plugins.keymaps")
-local lhs, mode, desc = km.get("builtin", "undotree")
-vim.keymap.set(mode, lhs, vim.cmd.Undotree, { desc = desc })
+-- -------------------- global keymap (非プラグイン) {{{
+require("my/settings/keymap")
 -- }}} -------------------------------
