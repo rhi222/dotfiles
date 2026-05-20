@@ -58,6 +58,9 @@ return {
 		},
 	},
 	-- https://github.com/folke/sidekick.nvim?tab=readme-ov-file
+	-- 現状 enabled = false。CLI連携(claude/codex)をtmuxペイン直接運用にしているため未採用。
+	-- keymaps (M.tools.sidekick_*) は再有効化時の差分を最小にするため予約として残してある。
+	-- 不要と確定したらこのブロックと keymaps.lua の sidekick_* を一緒に削除する。
 	{
 		"folke/sidekick.nvim",
 		enabled = false,

@@ -13,7 +13,7 @@
 #   MIGRATE=1      : --force reinstall (migrate from npx skills / inject metadata)
 #   SKILL_AGENTS=  : space-separated gh `--agent` targets
 #                    (default: "claude-code codex")
-set -uo pipefail
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_FILE="$SCRIPT_DIR/claude-skills.txt"

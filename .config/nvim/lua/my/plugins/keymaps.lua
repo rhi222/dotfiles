@@ -105,6 +105,8 @@ M.editing = {
 
 M.tools = {
 	rest_run = { "<C-e>", desc = "Rest run" },
+	-- sidekick_* は plugins/tools/init.lua で enabled=false。
+	-- 再有効化に備えてlhsを予約。プラグインを廃止する場合はここも合わせて削除。
 	sidekick_jump = { "<tab>", desc = "Sidekick jump/apply" },
 	sidekick_toggle = { "<c-.>", mode = { "n", "t", "i", "x" }, desc = "Sidekick toggle" },
 	sidekick_toggle2 = { "<leader>st", desc = "Sidekick toggle CLI" },

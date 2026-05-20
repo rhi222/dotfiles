@@ -9,4 +9,6 @@ if [ ! -f "$PACKAGES_FILE" ]; then
 fi
 
 sudo apt update
-xargs -a "$PACKAGES_FILE" sudo apt install -y
+# Strip `#`-prefixed comments and blank lines so future annotations don't
+# leak into the package list.
+grep -vE '^\s*(#|$)' "$PACKAGES_FILE" | xargs sudo apt install -y
