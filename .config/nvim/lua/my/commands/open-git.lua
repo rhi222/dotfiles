@@ -9,7 +9,7 @@ local RepositoryType = {
 local function getRepositoryURL()
 	-- 1) リモート URL を取得
 	local raw = vim.fn.system("git remote get-url origin 2> /dev/null"):gsub("%s+", "")
-	if raw == "" then
+	if vim.v.shell_error ~= 0 or raw == "" then
 		print("Unable to retrieve repository URL")
 		return nil
 	end
@@ -104,11 +104,14 @@ local function OpenGitURL(mode)
 
 	local repo_type = nil
 
-	if repo_url:match("github") then
+	-- ホスト部分のみ抽出して厳密マッチする
+	-- (例: mygithubclone.example.com を github と誤検出しないため)
+	local host = repo_url:match("^([^/]+)") or ""
+	if host:find("^github%.com$") or host:find("%.github%.com$") then
 		repo_type = RepositoryType.GITHUB
-	elseif repo_url:match("gitlab") then
+	elseif host:find("^gitlab") or host:find("%.gitlab%.") or host == "gitlab.fdev" then
 		repo_type = RepositoryType.GITLAB
-	elseif repo_url:match("bitbucket") then
+	elseif host:find("^bitbucket") or host:find("%.bitbucket%.") then
 		repo_type = RepositoryType.BITBUCKET
 	end
 	if not repo_type then
