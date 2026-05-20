@@ -85,8 +85,7 @@ fi
 echo "✅ Phase 1 完了: 日報データ収集"
 
 # Phase 2: セッションパターンデータ収集
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COLLECT_SCRIPT="$SCRIPT_DIR/../../scripts/collect-session-patterns.sh"
+COLLECT_SCRIPT="$HOME/.config/claude/scripts/collect-session-patterns.sh"
 
 echo ""
 if [ -f "$COLLECT_SCRIPT" ]; then
