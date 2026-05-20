@@ -172,450 +172,52 @@ local function sync_registered_files_from_manifest()
 	registered_files = new_registered
 end
 
--- サイドバー付きHTMLビューア（削除ボタン付き）
-local VIEWER_HTML = [[<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>PlantUML Viewer</title>
-<style>
-  :root {
-    --sidebar-width: 250px;
-    --bg: #f5f5f5;
-    --sidebar-bg: #fff;
-    --sidebar-border: #e0e0e0;
-    --text: #333;
-    --text-secondary: #888;
-    --item-hover: #f0f0f0;
-    --item-active: #e3f2fd;
-    --item-active-border: #1976d2;
-    --controls-bg: white;
-    --controls-border: #ccc;
-    --status-bg: #fafafa;
-    --status-border: #eee;
-    --delete-color: #999;
-    --delete-hover: #e53935;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1e1e1e;
-      --sidebar-bg: #252526;
-      --sidebar-border: #3c3c3c;
-      --text: #ccc;
-      --text-secondary: #888;
-      --item-hover: #2a2d2e;
-      --item-active: #094771;
-      --item-active-border: #4fc3f7;
-      --controls-bg: #333;
-      --controls-border: #555;
-      --status-bg: #1e1e1e;
-      --status-border: #333;
-      --delete-color: #666;
-      --delete-hover: #ef5350;
-    }
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  #app { display: flex; width: 100%; height: 100%; }
+-- サイドバー付きHTMLビューア / python3 http.server スクリプトは
+-- lua/my/commands/plantuml/resources/ に外出ししている
+local RESOURCE_DIR = "lua/my/commands/plantuml/resources"
 
-  /* Sidebar */
-  #sidebar {
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
-    height: 100%;
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--sidebar-border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  #sidebar-header {
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom: 1px solid var(--sidebar-border);
-  }
-  #file-list {
-    flex: 1;
-    overflow-y: auto;
-    list-style: none;
-  }
-  #file-list li {
-    padding: 8px 12px 8px 16px;
-    font-size: 13px;
-    cursor: pointer;
-    border-left: 3px solid transparent;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  #file-list li:hover { background: var(--item-hover); }
-  #file-list li.active {
-    background: var(--item-active);
-    border-left-color: var(--item-active-border);
-  }
-  #file-list li .file-name {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  #file-list li .btn-delete {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    border: none;
-    background: none;
-    color: var(--delete-color);
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  #file-list li:hover .btn-delete { opacity: 1; }
-  #file-list li .btn-delete:hover { color: var(--delete-hover); background: rgba(229,57,53,0.1); }
-  #status-bar {
-    padding: 6px 16px;
-    font-size: 11px;
-    color: var(--text-secondary);
-    border-top: 1px solid var(--status-border);
-    background: var(--status-bg);
-  }
+local function read_resource(name)
+	local files = vim.api.nvim_get_runtime_file(RESOURCE_DIR .. "/" .. name, false)
+	if #files == 0 then
+		vim.notify("PlantUML: resource not found: " .. name, vim.log.levels.ERROR)
+		return nil
+	end
+	local fh = io.open(files[1], "r")
+	if not fh then
+		vim.notify("PlantUML: cannot open resource: " .. files[1], vim.log.levels.ERROR)
+		return nil
+	end
+	local content = fh:read("*a")
+	fh:close()
+	return content
+end
 
-  /* Main area */
-  #main {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
-  #container {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    cursor: grab;
-    touch-action: none;
-  }
-  #container.dragging { cursor: grabbing; }
-  #svg-wrapper {
-    transform-origin: 0 0;
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  #svg-wrapper img {
-    display: block;
-    max-width: none;
-    max-height: none;
-  }
-  #controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  #controls button {
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--controls-border);
-    background: var(--controls-bg);
-    color: var(--text);
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  #controls button:hover { opacity: 0.8; }
-  #empty-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-secondary);
-    font-size: 14px;
-  }
-</style>
-</head>
-<body>
-<div id="app">
-  <div id="sidebar">
-    <div id="sidebar-header">PlantUML Viewer</div>
-    <ul id="file-list"></ul>
-    <div id="status-bar">0 diagrams</div>
-  </div>
-  <div id="main">
-    <div id="controls">
-      <button id="btn-reset" title="Reset">&#8962;</button>
-      <button id="btn-zoomin" title="Zoom In">+</button>
-      <button id="btn-zoomout" title="Zoom Out">&minus;</button>
-    </div>
-    <div id="container">
-      <div id="svg-wrapper">
-        <img id="diagram" src="">
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-(function() {
-  var fileList = document.getElementById('file-list');
-  var statusBar = document.getElementById('status-bar');
-  var container = document.getElementById('container');
-  var wrapper = document.getElementById('svg-wrapper');
-  var img = document.getElementById('diagram');
-  var currentFile = null;
-  var manifest = { files: [], updated_at: 0 };
-
-  // --- Sidebar ---
-  function getStoredSelection() {
-    try { return localStorage.getItem('plantuml-viewer-selected'); } catch(e) { return null; }
-  }
-  function setStoredSelection(name) {
-    try { localStorage.setItem('plantuml-viewer-selected', name); } catch(e) {}
-  }
-
-  function selectFile(file) {
-    if (!file) return;
-    currentFile = file;
-    setStoredSelection(file.name);
-    img.src = file.svg + '?t=' + Date.now();
-    renderFileList();
-  }
-
-  function deleteFile(file) {
-    fetch('/api/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ svg: file.svg })
-    }).then(function() {
-      manifest.files = manifest.files.filter(function(f) { return f.name !== file.name; });
-      if (currentFile && currentFile.name === file.name) {
-        currentFile = manifest.files.length > 0 ? manifest.files[0] : null;
-        if (currentFile) {
-          img.src = currentFile.svg + '?t=' + Date.now();
-          setStoredSelection(currentFile.name);
-        } else {
-          img.src = '';
-        }
-      }
-      renderFileList();
-    }).catch(function() {});
-  }
-
-  function renderFileList() {
-    fileList.innerHTML = '';
-    manifest.files.forEach(function(f) {
-      var li = document.createElement('li');
-      if (currentFile && currentFile.name === f.name) li.className = 'active';
-
-      var nameSpan = document.createElement('span');
-      nameSpan.className = 'file-name';
-      nameSpan.textContent = f.name;
-      nameSpan.title = f.name;
-      nameSpan.addEventListener('click', function() { selectFile(f); });
-
-      var delBtn = document.createElement('button');
-      delBtn.className = 'btn-delete';
-      delBtn.title = 'Remove from viewer';
-      delBtn.innerHTML = '&#x2715;';
-      delBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        deleteFile(f);
-      });
-
-      li.appendChild(nameSpan);
-      li.appendChild(delBtn);
-      fileList.appendChild(li);
-    });
-    statusBar.textContent = manifest.files.length + ' diagrams';
-  }
-
-  function refreshManifest() {
-    fetch('manifest.json?t=' + Date.now())
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        var changed = data.updated_at !== manifest.updated_at;
-        manifest = data;
-        if (changed) {
-          renderFileList();
-          if (currentFile) {
-            var found = manifest.files.find(function(f) { return f.name === currentFile.name; });
-            if (found) {
-              currentFile = found;
-              img.src = found.svg + '?t=' + Date.now();
-            } else if (manifest.files.length > 0) {
-              selectFile(manifest.files[0]);
-            }
-          }
-        }
-      })
-      .catch(function() {});
-  }
-
-  // 初回ロード
-  refreshManifest();
-  setTimeout(function() {
-    var stored = getStoredSelection();
-    if (stored) {
-      var found = manifest.files.find(function(f) { return f.name === stored; });
-      if (found) { selectFile(found); return; }
-    }
-    if (manifest.files.length > 0) selectFile(manifest.files[0]);
-  }, 500);
-
-  // 2秒ポーリング
-  setInterval(refreshManifest, 2000);
-
-  // --- Panzoom ---
-  var scale = 1, tx = 0, ty = 0;
-  var dragging = false, startX, startY, startTx, startTy;
-
-  function applyTransform() {
-    wrapper.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
-  }
-
-  function fitToView() {
-    var cw = container.clientWidth, ch = container.clientHeight;
-    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
-    if (!iw || !ih) return;
-    scale = Math.min(cw / iw, ch / ih, 1);
-    tx = (cw - iw * scale) / 2;
-    ty = (ch - ih * scale) / 2;
-    applyTransform();
-  }
-
-  img.addEventListener('load', function() { fitToView(); });
-
-  container.addEventListener('wheel', function(e) {
-    try { e.preventDefault(); } catch(_) {}
-    e.stopPropagation();
-    var rect = container.getBoundingClientRect();
-    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    var newScale = scale * factor;
-    if (newScale < 0.05 || newScale > 20) return;
-    tx = mx - (mx - tx) * factor;
-    ty = my - (my - ty) * factor;
-    scale = newScale;
-    applyTransform();
-    return false;
-  }, { passive: false, capture: true });
-
-  container.addEventListener('mousedown', function(e) {
-    dragging = true;
-    container.classList.add('dragging');
-    startX = e.clientX; startY = e.clientY;
-    startTx = tx; startTy = ty;
-  });
-  window.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    tx = startTx + (e.clientX - startX);
-    ty = startTy + (e.clientY - startY);
-    applyTransform();
-  });
-  window.addEventListener('mouseup', function() {
-    dragging = false;
-    container.classList.remove('dragging');
-  });
-
-  container.addEventListener('dblclick', fitToView);
-
-  document.getElementById('btn-reset').addEventListener('click', fitToView);
-  document.getElementById('btn-zoomin').addEventListener('click', function() {
-    var cw = container.clientWidth, ch = container.clientHeight;
-    var mx = cw / 2, my = ch / 2, factor = 1.3;
-    tx = mx - (mx - tx) * factor;
-    ty = my - (my - ty) * factor;
-    scale *= factor;
-    applyTransform();
-  });
-  document.getElementById('btn-zoomout').addEventListener('click', function() {
-    var cw = container.clientWidth, ch = container.clientHeight;
-    var mx = cw / 2, my = ch / 2, factor = 1 / 1.3;
-    tx = mx - (mx - tx) * factor;
-    ty = my - (my - ty) * factor;
-    scale *= factor;
-    applyTransform();
-  });
-})();
-</script>
-</body>
-</html>]]
-
--- python3 http.server + /api/delete エンドポイント（browser-sync + bs-config.js の代替）
-local SERVER_PY = [[
-import http.server, json, os, sys, time
-
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def do_POST(self):
-        if self.path == '/api/delete':
-            length = int(self.headers.get('Content-Length', 0))
-            body = json.loads(self.rfile.read(length))
-            svg = body.get('svg', '')
-            if not svg or '..' in svg or svg.startswith('/'):
-                self.send_error(400)
-                return
-            svg_path = os.path.realpath(os.path.join(os.getcwd(), svg))
-            if not svg_path.startswith(os.path.realpath(os.getcwd()) + os.sep):
-                self.send_error(400)
-                return
-            manifest_path = os.path.join(os.getcwd(), 'manifest.json')
-            if not os.path.exists(manifest_path):
-                self.send_error(400)
-                return
-            with open(manifest_path) as f:
-                manifest = json.load(f)
-            if svg not in [e['svg'] for e in manifest.get('files', [])]:
-                self.send_error(400)
-                return
-            if os.path.exists(svg_path):
-                os.remove(svg_path)
-            manifest['files'] = [e for e in manifest['files'] if e['svg'] != svg]
-            manifest['updated_at'] = int(time.time())
-            with open(manifest_path, 'w') as f:
-                json.dump(manifest, f, indent=2)
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(b'{"ok":true}')
-        else:
-            self.send_error(404)
-
-    def log_message(self, format, *args):
-        pass
-
-os.chdir(sys.argv[2])
-http.server.HTTPServer(('127.0.0.1', int(sys.argv[1])), Handler).serve_forever()
-]]
+local function write_resource(name, dest)
+	local content = read_resource(name)
+	if not content then
+		return false
+	end
+	local fh = io.open(dest, "w")
+	if not fh then
+		return false
+	end
+	fh:write(content)
+	fh:close()
+	return true
+end
 
 local function write_index_html()
 	if not output_dir then
 		return
 	end
-	local fh = io.open(output_dir .. "/index.html", "w")
-	if fh then
-		fh:write(VIEWER_HTML)
-		fh:close()
-	end
+	write_resource("viewer.html", output_dir .. "/index.html")
 end
 
 local function write_server_py()
 	if not output_dir then
 		return
 	end
-	local fh = io.open(output_dir .. "/server.py", "w")
-	if fh then
-		fh:write(SERVER_PY)
-		fh:close()
-	end
+	write_resource("server.py", output_dir .. "/server.py")
 end
 
 local function start_server()
