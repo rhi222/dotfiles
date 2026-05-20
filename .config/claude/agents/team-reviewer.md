@@ -30,7 +30,7 @@ color: orange
 
 ### 3. フィードバック
 
-- 指摘をmust/imo/nits/questionに分類
+- 指摘をmust/imo/nits/qに分類
 - 実装担当にSendMessageでフィードバック送信
 - mustがなければTaskUpdateで完了
 
