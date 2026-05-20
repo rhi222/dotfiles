@@ -51,7 +51,6 @@ return {
 		dependencies = { "williamboman/mason.nvim" },
 		cmd = { "MasonUpdateAll" },
 		config = function()
-			require("mason").setup()
 			require("mason-update-all").setup()
 		end,
 	},
