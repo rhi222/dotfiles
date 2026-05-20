@@ -13,11 +13,8 @@ if test -n "$WSL_DISTRO_NAME"; and type -q wslview
     set -gx BROWSER wslview
 end
 
-# Font color settings
-# https://fishshell.com/docs/current/cmds/set_color.html
-# https://reiichii.hateblo.jp/entry/2022/01/05/194823
-# NOTE: fish_color_* で個別に設定すること（set -U black brblack は無効）
-# 初回セットアップ時に手動実行: set -U fish_color_autosuggestion brblack
+# 初回セットアップ手順は scripts/initial-setup.md を参照
+# （fish_color_* など、universal変数として手動設定が必要なものをまとめている）
 
 # zoxide integration
 if type -q zoxide
