@@ -4,7 +4,7 @@
 alias gu gitui
 
 # Terminal & Tools
-alias rf 'source ~/.config/fish/config.fish' # reload fish config
+alias rf 'exec fish' # reload fish config (replace process, clears stale functions/vars)
 
 # SSH
 if type -q cocot

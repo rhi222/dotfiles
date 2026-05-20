@@ -35,7 +35,8 @@ function find_docker_compose
     # NOTE: set -l はブロックスコープ。if/else 内で宣言すると外で参照不可になるため、関数スコープで宣言する。
     set -l result
     if type -q fd
-        set result (fd --hidden --max-depth 4 --type f --glob '{docker-compose.yml,docker-compose.yaml,compose.yml,compose.yaml}' $repo_root | head -n1)
+        set -l fd_glob "{"(string join , $patterns)"}"
+        set result (fd --hidden --max-depth 4 --max-results 1 --type f --glob $fd_glob $repo_root)
     else
         set -l name_args
         for p in $patterns
@@ -43,7 +44,8 @@ function find_docker_compose
         end
         set name_args $name_args[1..-2]
 
-        set result (find $repo_root -maxdepth 4 -type f \( $name_args \) | head -n1)
+        # -print -quit で最初の1件を出力して即終了
+        set result (find $repo_root -maxdepth 4 -type f \( $name_args \) -print -quit)
     end
 
     if test -n "$result"

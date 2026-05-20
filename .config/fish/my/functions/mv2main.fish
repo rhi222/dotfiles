@@ -47,7 +47,7 @@ function mv2main -d "Move (default) or copy repo-root-relative paths to the main
 
         set -l src "$here/$rel"
         set -l dest "$mainroot/$rel"
-        set -l destdir (dirname "$dest")
+        set -l destdir (path dirname "$dest")
 
         if not test -e "$src"
             echo "Not found under current worktree: $rel  (looked at: $src)"
