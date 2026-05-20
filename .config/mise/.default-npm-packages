@@ -9,7 +9,7 @@ ccmanager
 ccstatusline
 ccusage
 difit
-neovim
+neovim # Neovim Node host (npm package). 本体バイナリは mise の `neovim` ツールで別管理
 npm-check-updates
 prettier
 wsl-open

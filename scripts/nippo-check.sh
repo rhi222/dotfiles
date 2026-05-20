@@ -8,7 +8,7 @@
 #   NIPPO_DIR  - 日報ディレクトリ（デフォルト: ~/Obsidian/02_Daily）
 #   NIPPO_NOW  - 現在時刻の上書き（例: "2026-03-09 14:00"）
 
-set -uo pipefail
+set -euo pipefail
 
 CONTEXT="${1:-stop}"
 NIPPO_DIR="${NIPPO_DIR:-$HOME/Obsidian/02_Daily}"

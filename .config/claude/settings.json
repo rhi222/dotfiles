@@ -40,6 +40,7 @@
       "Bash(psql:*)",
       "Bash(rm -r:*)",
       "Bash(rm -rf:*)",
+      "Bash(rm -f:*)",
       "Bash(ssh:*)",
       "Bash(sudo:*)",
       "Read(.env)",
