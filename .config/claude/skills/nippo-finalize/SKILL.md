@@ -53,6 +53,8 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 - `/nippo-add` で日々のタスクが記録されていること
 - `~/Obsidian/02_Daily/nippo-goals.md` で目標が設定されていること（推奨）
 - Obsidianディレクトリ（`~/Obsidian/02_Daily/`）が存在すること
+- Slack情報収集を使う場合: 環境変数 `SLACK_MEMBER_ID` を本人のSlackメンバーIDに設定すること
+  (fish: `set -Ux SLACK_MEMBER_ID U0XXXXXXX`)
 
 ## 実行スクリプト
 
@@ -90,7 +92,7 @@ echo "✅ Phase 1 完了: データ準備・検証"
 # 以下の手順でSlackから本人の発言を収集し、日報に追記する
 #
 # 1. mcp__claude_ai_Slack__slack_search_public_and_private を使用して検索:
-#    query: "from:<@U0E450R1B> on:YYYY-MM-DD"  (YYYY-MM-DDは対象日付)
+#    query: "from:<@${SLACK_MEMBER_ID}> on:YYYY-MM-DD"  (YYYY-MM-DDは対象日付、SLACK_MEMBER_IDは環境変数で設定)
 #    sort: "timestamp"
 #    sort_dir: "asc"
 #    include_context: false
