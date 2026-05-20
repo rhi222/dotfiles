@@ -17,7 +17,12 @@ function gf --description "cd to ghq-managed repo (cached ghq list)"
 
     cd $root/$repo
 
-    # 次回用にバックグラウンドでキャッシュをアトミック更新
-    fish -c "ghq list >$cache.tmp && mv $cache.tmp $cache" &
+    # 次回用にバックグラウンドでキャッシュをアトミック更新。
+    # 失敗時は .tmp を残さず、stderr は .err に追記して可視化する。
+    fish -c "if ghq list >$cache.tmp 2>>$cache.err
+        mv $cache.tmp $cache
+    else
+        rm -f $cache.tmp
+    end" &
     disown
 end

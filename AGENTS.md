@@ -19,9 +19,9 @@
 
 ### aptパッケージ管理
 
-`scripts/apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する。
+`scripts/apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する（`#`で始まる行はコメントとして無視される）。
 
-`sudo xargs -a scripts/apt-packages.txt apt install -y` を使用して一括インストール可能。
+一括インストールは `bash scripts/apt-setup.sh` を使う。内部で `apt update` を実行したうえでコメント/空行を除外して `apt install -y` する。
 
 ### Claude Code skill管理
 
