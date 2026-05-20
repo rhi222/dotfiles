@@ -1,5 +1,5 @@
 #!/bin/bash
-set -uo pipefail
+set -euo pipefail
 
 # mise-managed tools (gh, nvim, cargo, ...) must resolve via shims, not via
 # the version-locked PATH inherited from a long-running parent shell. After

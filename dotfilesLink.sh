@@ -24,12 +24,12 @@ safe_link "$DOTFILES_DIR/.config/tmux/tmux.conf" ~/.tmux.conf
 safe_link "$DOTFILES_DIR/.psqlrc" ~/.psqlrc
 
 # Claude Code configuration
+mkdir -p ~/.claude ~/.claude/skills
 safe_link "$DOTFILES_DIR/.config/claude" ~/.config/claude
 safe_link "$DOTFILES_DIR/.config/claude/CLAUDE.md" ~/.claude/CLAUDE.md
 safe_link "$DOTFILES_DIR/.config/claude/settings.json" ~/.claude/settings.json
 safe_link "$DOTFILES_DIR/.config/claude/commands" ~/.claude/commands
 # Skills: link each skill directory individually to avoid nesting
-mkdir -p ~/.claude/skills
 for skill_dir in "$DOTFILES_DIR/.config/claude/skills"/*/; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
@@ -47,6 +47,7 @@ safe_link "$DOTFILES_DIR/.config/codex/config.toml" ~/.codex/config.toml
 
 # Fish shell configuration
 # Create fish config directory and link individual components
+mkdir -p ~/.config/fish
 safe_link "$DOTFILES_DIR/.config/fish/config.fish" ~/.config/fish/config.fish
 safe_link "$DOTFILES_DIR/.config/fish/my" ~/.config/fish/my
 
