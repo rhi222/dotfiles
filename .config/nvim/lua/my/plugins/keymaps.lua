@@ -68,7 +68,7 @@ M.lsp = {
 	type_definition = { "<space>D", desc = "Type definition" },
 	rename = { "<space>rn", desc = "Rename" },
 	code_action = { "<space>ca", mode = { "n", "v" }, desc = "Code action" },
-	references = { "gr", desc = "References" },
+	references = { "grr", desc = "References" },
 }
 
 M.completion = {
