@@ -39,29 +39,13 @@ fi
 nippo_msg=$(timeout 5 "$NIPPO_CHECK" cron 2>/dev/null)
 check_exit=$?
 
+# Windows BurntToast 通知の共通関数 (send_windows_toast)
+# shellcheck source=lib/notify-windows-toast.sh
+source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
+
 if [[ "$check_exit" -ne 0 && -n "$nippo_msg" ]]; then
-  # アイコンパスを取得
-  HOOK_DIR="$HOME/.config/claude/hooks"
-  ICON_PATH="$HOOK_DIR/claude-icon.png"
-
-  TITLE="日報リマインド（定期）"
-  # シングルクォートをエスケープ（PowerShell用）
-  TITLE="${TITLE//\'/\'\'}"
-  nippo_msg="${nippo_msg//\'/\'\'}"
-
-  if [[ -f "$ICON_PATH" ]]; then
-    WIN_ICON_PATH=$(wslpath -w "$ICON_PATH")
-    powershell.exe -NoProfile -Command "
-      Import-Module BurntToast -ErrorAction SilentlyContinue
-      New-BurntToastNotification -Text '$TITLE', '$nippo_msg' -AppLogo '$WIN_ICON_PATH'
-    "
-  else
-    powershell.exe -NoProfile -Command "
-      Import-Module BurntToast -ErrorAction SilentlyContinue
-      New-BurntToastNotification -Text '$TITLE', '$nippo_msg'
-    "
-  fi
-
+  ICON_PATH="$HOME/.config/claude/hooks/claude-icon.png"
+  send_windows_toast "日報リマインド（定期）" "$nippo_msg" "$ICON_PATH"
   echo "$(date): 通知送信: $nippo_msg"
 else
   echo "$(date): 問題なし"
