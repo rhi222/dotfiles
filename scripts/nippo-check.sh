@@ -22,7 +22,8 @@ fi
 
 # 日付・時刻・曜日の取得
 TODAY=$(echo "$NOW" | cut -d' ' -f1)
-HOUR=$(echo "$NOW" | cut -d' ' -f2 | cut -d: -f1 | sed 's/^0//')
+# 10# で base-10 強制パース（"08"→8, "00"→0）。sed 's/^0//' だと "00" が空文字になり [[ ]] が死ぬ
+HOUR=$((10#$(echo "$NOW" | cut -d' ' -f2 | cut -d: -f1)))
 DOW=$(date -d "$TODAY" +%u)  # 1=月 ... 7=日
 
 NIPPO_FILE="$NIPPO_DIR/nippo.${TODAY}.md"
@@ -71,6 +72,7 @@ done
 
 # --- チェック4: 陳腐化検知 ---
 # 未完了タスク数を計算（チェック4と6で共用）
+# grep -c はマッチ0件でexit 1を返すため、set -e防御として || fallback が必須
 incomplete_count=$(grep -cE '^\s*- \[[ -]\]' "$NIPPO_FILE" 2>/dev/null) || incomplete_count=0
 
 if [[ "$incomplete_count" -gt 0 ]]; then
