@@ -11,5 +11,6 @@ return {
 	require("my/commands/memory-check"),
 	require("my/commands/mo"),
 	require("my/commands/plantuml"),
+	require("my/commands/difit"),
 }
 -- }}} -------------------------------
