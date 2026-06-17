@@ -35,6 +35,8 @@ for skill_dir in "$DOTFILES_DIR/.config/claude/skills"/*/; do
   skill_name="$(basename "$skill_dir")"
   safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
 done
+# Standalone skill files (not directory-based)
+safe_link "$DOTFILES_DIR/.config/claude/skills/tech-writing.md" ~/.claude/skills/tech-writing.md
 safe_link "$DOTFILES_DIR/.config/claude/agents" ~/.claude/agents
 
 # codex
