@@ -28,6 +28,7 @@
 | puml-from-drawio       | draw.io→PlantUML変換                          |
 | nippo-\*               | 日報システム（後述）                          |
 | session-patterns       | セッション履歴から繰り返しパターンを抽出      |
+| tech-writing           | 日本語技術文書の文章規範（推敲やリライト）    |
 | tmux-sender            | tmux別ペインへコマンド送信                    |
 
 ---
