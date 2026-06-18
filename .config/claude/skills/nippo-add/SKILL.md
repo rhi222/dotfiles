@@ -3,7 +3,7 @@ name: nippo-add
 description: 日報に追記する（作業ログ、タスク開始/終了の時間計測、フォーカス設定）。「日報」「にっぽ」「作業記録」「ログ追加」「start:」「end:」などで使用。新規日報の作成、前日からの引き継ぎ、目標逆算タスクの提案も行う。
 disable-model-invocation: true
 argument-hint: "<追記内容> (例: start:PRレビュー, end:PRレビュー, フォーカス:横断)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*)
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), mcp__claude_ai_Google_Calendar__list_events
 ---
 
 # 日報に追記する
@@ -17,6 +17,8 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 ### 新規作成の場合
 
 `template.md` サポートファイルのテンプレートを使用して日報を作成してください。
+
+新規作成時は、テンプレートの `## 今日の予定` セクションを Google Calendar から自動で埋めてください。手順・除外条件・空き時間計算・埋め込みフォーマットは `calendar-schedule.md` サポートファイルに従います。カレンダーを取得できない場合も日報作成は中断せず、`calendar-schedule.md` のフォールバックに従ってセクションを記載してください。
 
 ### 前営業日からの引き継ぎロジック（新規ファイル作成時）
 
