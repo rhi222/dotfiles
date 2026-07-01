@@ -43,6 +43,14 @@ vim.lsp.config("*", {
 	capabilities = lsp_utils.get_capabilities(),
 })
 
+-- LSP document color を無効化する。
+-- nvim 0.12+ では textDocument/documentColor がデフォルト有効になり、
+-- tailwindcss LSP が bg-[#EFEFEF] のようなカラーコードに色プレビューを付ける。
+-- グローバルに false を立てることで以降アタッチする全クライアントに効く。
+if vim.lsp.document_color then
+	vim.lsp.document_color.enable(false)
+end
+
 local servers_without_formatting = { ts_ls = true }
 
 local function enable_inlay_hints(bufnr)
