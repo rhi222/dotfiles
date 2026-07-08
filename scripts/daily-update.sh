@@ -80,9 +80,40 @@ report_pkg_diff() {
   ' "$1" "$2"
 }
 
-# Re-install global npm packages listed in .default-npm-packages at @latest.
+# Decide which managed npm globals actually need (re)installing. A package is
+# a target when it is either flagged by `npm outdated` (a newer version exists)
+# or not currently installed at all (newly added to the list — `npm outdated`
+# never reports missing packages). Pure function: all inputs are arguments, so
+# it is unit-testable without touching the network.
+#
+# Args: <outdated_json> <installed_names> <name...>
+#   outdated_json  : `npm outdated -g --json` output (empty string ok)
+#   installed_names: newline-separated names of currently-installed globals
+# Prints one "<name>@latest" per target, newline-separated.
+npm_select_targets() {
+  local outdated_json="$1"
+  local installed="$2"
+  shift 2
+  [ -n "$outdated_json" ] || outdated_json='{}'
+
+  local n
+  for n in "$@"; do
+    if jq -e --arg n "$n" 'has($n)' <<<"$outdated_json" >/dev/null 2>&1; then
+      printf '%s@latest\n' "$n"
+    elif ! grep -qxF -- "$n" <<<"$installed"; then
+      printf '%s@latest\n' "$n"
+    fi
+  done
+}
+
+# Update global npm packages listed in .default-npm-packages to @latest.
 # `mise upgrade` only bumps language runtimes; npm globals installed via
 # mise's default-npm-packages hook are not touched after first install.
+#
+# `npm install -g pkg@latest` re-resolves and reinstalls the full dependency
+# tree unconditionally — slow even when nothing changed. Instead, a fast,
+# metadata-only `npm outdated -g` check (~1s, no tree resolution/download)
+# narrows the install to only the packages that actually moved.
 npm_global_update() {
   local file="$HOME/.config/mise/.default-npm-packages"
   if [ ! -f "$file" ]; then
@@ -90,14 +121,28 @@ npm_global_update() {
     return 0
   fi
 
-  local packages
-  mapfile -t packages < <(awk '
+  local names
+  mapfile -t names < <(awk '
     /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
-    { sub(/[[:space:]]#.*$/, ""); gsub(/[[:space:]]/, ""); if ($0 != "") print $0 "@latest" }
+    { sub(/[[:space:]]#.*$/, ""); gsub(/[[:space:]]/, ""); if ($0 != "") print }
   ' "$file")
 
-  if [ "${#packages[@]}" -eq 0 ]; then
+  if [ "${#names[@]}" -eq 0 ]; then
     echo "No packages to update."
+    return 0
+  fi
+
+  # `npm outdated` exits 1 when anything is outdated, so guard with `|| true`.
+  local outdated_json installed
+  outdated_json=$(npm outdated -g --json 2>/dev/null || true)
+  installed=$(npm list -g --depth=0 --json 2>/dev/null \
+    | jq -r '.dependencies // {} | keys[]')
+
+  local targets
+  mapfile -t targets < <(npm_select_targets "$outdated_json" "$installed" "${names[@]}")
+
+  if [ "${#targets[@]}" -eq 0 ]; then
+    echo "No package changes."
     return 0
   fi
 
@@ -106,7 +151,7 @@ npm_global_update() {
   after_file=$(mktemp)
 
   list_npm_globals >"$before_file"
-  npm install -g "${packages[@]}" >/dev/null
+  npm install -g --no-audit --no-fund "${targets[@]}" >/dev/null
   rc=$?
   list_npm_globals >"$after_file"
 
@@ -115,7 +160,49 @@ npm_global_update() {
   return $rc
 }
 
-# Same idea for pip globals listed in .default-python-packages.
+# PEP 503 name normalizer (stream filter): lowercase and collapse runs of
+# -, _, . to a single -, so e.g. typing_extensions and typing-extensions match.
+_pip_normalize() {
+  tr '[:upper:]' '[:lower:]' | sed -E 's/[-_.]+/-/g'
+}
+
+# Decide which managed pip packages need (re)installing. A spec is a target
+# when its base name (extras like [all] stripped) is flagged by
+# `pip list --outdated` or is not currently installed. Names are compared
+# PEP 503-normalized. The original spec (extras kept) is what gets printed so
+# `pip install -U python-lsp-server[all]` keeps its extras. Pure/unit-testable.
+#
+# Args: <outdated_json> <installed_names> <spec...>
+#   outdated_json  : `pip list --outdated --format=json` output (empty ok)
+#   installed_names: newline-separated names of currently-installed packages
+# Prints the original specs that need installing, newline-separated.
+pip_select_targets() {
+  local outdated_json="$1"
+  local installed="$2"
+  shift 2
+  [ -n "$outdated_json" ] || outdated_json='[]'
+
+  local outdated_norm installed_norm
+  outdated_norm=$(jq -r '.[].name' <<<"$outdated_json" 2>/dev/null | _pip_normalize)
+  installed_norm=$(_pip_normalize <<<"$installed")
+
+  local spec base base_norm
+  for spec in "$@"; do
+    base=$(printf '%s' "$spec" | sed 's/\[.*//')   # strip extras: foo[all] -> foo
+    base_norm=$(_pip_normalize <<<"$base")
+    if grep -qxF -- "$base_norm" <<<"$outdated_norm"; then
+      printf '%s\n' "$spec"
+    elif ! grep -qxF -- "$base_norm" <<<"$installed_norm"; then
+      printf '%s\n' "$spec"
+    fi
+  done
+}
+
+# Same idea as npm for pip globals listed in .default-python-packages.
+# A fast, metadata-only `pip list --outdated` check narrows the reinstall to
+# packages that moved or are missing. pip's default only-if-needed upgrade
+# strategy means an already-latest top-level package is a no-op anyway, so
+# skipping it is behavior-preserving.
 pip_global_update() {
   local file="$HOME/.config/mise/.default-python-packages"
   if [ ! -f "$file" ]; then
@@ -134,12 +221,24 @@ pip_global_update() {
     return 0
   fi
 
+  local outdated_json installed
+  outdated_json=$(pip list --outdated --format=json 2>/dev/null || true)
+  installed=$(pip list --format=json 2>/dev/null | jq -r '.[].name')
+
+  local targets
+  mapfile -t targets < <(pip_select_targets "$outdated_json" "$installed" "${packages[@]}")
+
+  if [ "${#targets[@]}" -eq 0 ]; then
+    echo "No package changes."
+    return 0
+  fi
+
   local before_file after_file rc
   before_file=$(mktemp)
   after_file=$(mktemp)
 
   list_pip_globals >"$before_file"
-  pip install -U "${packages[@]}" >/dev/null
+  pip install -U "${targets[@]}" >/dev/null
   rc=$?
   list_pip_globals >"$after_file"
 
@@ -148,23 +247,31 @@ pip_global_update() {
   return $rc
 }
 
-run_step "apt update" sudo apt-get update -qq
-run_step "apt upgrade" sudo apt-get upgrade -y -qq
-run_step "cargo install-update" cargo install-update -a
-run_step "mise self-update" mise self-update -y
-run_step "mise upgrade" mise upgrade
-run_step "npm global update" npm_global_update
-run_step "pip global update" pip_global_update
-run_step "nvim Lazy update" timeout 300 nvim --headless -c "luafile $SCRIPT_DIR/nvim-lazy-update.lua" +qa
-run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
-# New skills are added via `scripts/skill-add.sh`; bootstrap uses
-# `setup-claude-skills.sh`. Daily only runs the update step.
-run_step "gh skill update" gh_skill_update
+main() {
+  run_step "apt update" sudo apt-get update -qq
+  run_step "apt upgrade" sudo apt-get upgrade -y -qq
+  run_step "cargo install-update" cargo install-update -a
+  run_step "mise self-update" mise self-update -y
+  run_step "mise upgrade" mise upgrade
+  run_step "npm global update" npm_global_update
+  run_step "pip global update" pip_global_update
+  run_step "nvim Lazy update" timeout 300 nvim --headless -c "luafile $SCRIPT_DIR/nvim-lazy-update.lua" +qa
+  run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
+  # New skills are added via `scripts/skill-add.sh`; bootstrap uses
+  # `setup-claude-skills.sh`. Daily only runs the update step.
+  run_step "gh skill update" gh_skill_update
 
-echo "========================================" | tee -a "$LOG_FILE"
-if [ ${#failures[@]} -gt 0 ]; then
-  echo "FAILED: ${failures[*]}" | tee -a "$LOG_FILE"
-  exit 1
-else
-  echo "All updates completed successfully." | tee -a "$LOG_FILE"
+  echo "========================================" | tee -a "$LOG_FILE"
+  if [ ${#failures[@]} -gt 0 ]; then
+    echo "FAILED: ${failures[*]}" | tee -a "$LOG_FILE"
+    exit 1
+  else
+    echo "All updates completed successfully." | tee -a "$LOG_FILE"
+  fi
+}
+
+# Only run the update pipeline when executed directly; sourcing (e.g. from
+# test-daily-update.sh) loads the functions without triggering any updates.
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+  main "$@"
 fi
