@@ -22,7 +22,7 @@ EXECUTE=0
 for arg in "$@"; do
   case "$arg" in
     --execute) EXECUTE=1 ;;
-    -h|--help)
+    -h | --help)
       grep '^#' "$0" | sed 's/^#//; s/^ //' | head -n 20
       exit 0
       ;;
@@ -36,9 +36,17 @@ done
 
 # ---- 表示ヘルパー ------------------------------------------------------------
 if [ -t 1 ]; then
-  C_BOLD=$'\e[1m'; C_GREEN=$'\e[32m'; C_YELLOW=$'\e[33m'; C_CYAN=$'\e[36m'; C_RESET=$'\e[0m'
+  C_BOLD=$'\e[1m'
+  C_GREEN=$'\e[32m'
+  C_YELLOW=$'\e[33m'
+  C_CYAN=$'\e[36m'
+  C_RESET=$'\e[0m'
 else
-  C_BOLD=""; C_GREEN=""; C_YELLOW=""; C_CYAN=""; C_RESET=""
+  C_BOLD=""
+  C_GREEN=""
+  C_YELLOW=""
+  C_CYAN=""
+  C_RESET=""
 fi
 
 if [ "$EXECUTE" -eq 1 ]; then
@@ -49,12 +57,18 @@ fi
 
 freed_total_human=()
 
-section() { echo; echo "${C_BOLD}${C_CYAN}== $* ==${C_RESET}"; }
+section() {
+  echo
+  echo "${C_BOLD}${C_CYAN}== $* ==${C_RESET}"
+}
 
 # パスのサイズを人間可読で返す（存在しなければ空）。
 path_size() {
   local p="$1"
-  [ -e "$p" ] || { echo ""; return; }
+  [ -e "$p" ] || {
+    echo ""
+    return
+  }
   du -sh "$p" 2>/dev/null | cut -f1
 }
 
@@ -118,16 +132,16 @@ echo "  ~/.cache : $(path_size "$HOME/.cache")"
 
 # ---- パッケージマネージャ系キャッシュ ---------------------------------------
 section "パッケージマネージャ キャッシュ"
-clean_cmd "npm cache"  npm "$HOME/.npm"        -- npm cache clean --force
-clean_cmd "uv cache"   uv  "$HOME/.cache/uv"   -- uv cache clean
-clean_cmd "pip cache"  pip "$HOME/.cache/pip"  -- pip cache purge
+clean_cmd "npm cache" npm "$HOME/.npm" -- npm cache clean --force
+clean_cmd "uv cache" uv "$HOME/.cache/uv" -- uv cache clean
+clean_cmd "pip cache" pip "$HOME/.cache/pip" -- pip cache purge
 
 # ---- ブラウザ自動化 / ビルド系キャッシュ ------------------------------------
 section "ブラウザ自動化・ビルドキャッシュ"
-clean_path "puppeteer cache"  "$HOME/.cache/puppeteer"
+clean_path "puppeteer cache" "$HOME/.cache/puppeteer"
 clean_path "playwright cache" "$HOME/.cache/ms-playwright"
-clean_path "node-gyp cache"   "$HOME/.cache/node-gyp"
-clean_path "pnpm cache"       "$HOME/.cache/pnpm"
+clean_path "node-gyp cache" "$HOME/.cache/node-gyp"
+clean_path "pnpm cache" "$HOME/.cache/pnpm"
 
 # ---- 未使用 pnpm store --------------------------------------------------------
 # `pnpm store path` が指す現行 store 以外の store/v* を削除する。
@@ -143,7 +157,11 @@ else
   CURRENT_STORE="$(pnpm store path 2>/dev/null)"
   echo "  現行 store: ${C_GREEN}${CURRENT_STORE:-取得失敗}${C_RESET}"
   # 比較を堅牢にするため正規化（末尾スラッシュ除去 + realpath 解決）。
-  norm() { local p="$1"; p="${p%/}"; realpath -m -- "$p" 2>/dev/null || echo "$p"; }
+  norm() {
+    local p="$1"
+    p="${p%/}"
+    realpath -m -- "$p" 2>/dev/null || echo "$p"
+  }
   CURRENT_NORM="$(norm "$CURRENT_STORE")"
 
   shopt -s nullglob

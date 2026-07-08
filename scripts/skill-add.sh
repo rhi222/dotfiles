@@ -63,9 +63,9 @@ done
 if [ "$already_listed" -ne 1 ]; then
   # Ensure file ends with newline before appending.
   if [ -s "$SKILLS_FILE" ] && [ "$(tail -c1 "$SKILLS_FILE" | wc -l)" -eq 0 ]; then
-    printf '\n' >> "$SKILLS_FILE"
+    printf '\n' >>"$SKILLS_FILE"
   fi
-  printf '%s\n' "$entry" >> "$SKILLS_FILE"
+  printf '%s\n' "$entry" >>"$SKILLS_FILE"
   echo "-> appended to $SKILLS_FILE: $entry"
 fi
 
