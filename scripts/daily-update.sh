@@ -8,10 +8,15 @@ set -euo pipefail
 # which lacks the `skill` subcommand and breaks `gh skill update`.
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$HOME/.local/state/daily-update"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
 mkdir -p "$LOG_DIR"
+# 日次ログは溜まり続けるので、30日より古いものを起動時に掃除する
+find "$LOG_DIR" -name '*.log' -mtime +30 -delete 2>/dev/null || true
+
+# shellcheck source=lib/pkg-update.sh
+source "$SCRIPT_DIR/lib/pkg-update.sh"
 
 failures=()
 
@@ -46,205 +51,13 @@ gh_skill_update() {
   gh skill update --all "${names[@]}" </dev/null
 }
 
-# Tab-separated "name<TAB>version" snapshot of currently installed global
-# npm packages, sorted for deterministic diffing.
-list_npm_globals() {
-  npm list -g --depth=0 --json 2>/dev/null \
-    | jq -r '.dependencies // {} | to_entries[] | "\(.key)\t\(.value.version // "?")"' \
-    | sort
-}
-
-list_pip_globals() {
-  pip list --format=json 2>/dev/null \
-    | jq -r '.[] | "\(.name | ascii_downcase)\t\(.version)"' \
-    | sort
-}
-
-# Compare two snapshot files and print a human-friendly summary of upgrades
-# and newly-installed packages.
-report_pkg_diff() {
-  awk -F'\t' '
-    NR==FNR { before[$1] = $2; next }
-    {
-      if (!($1 in before)) {
-        added = added sprintf("  %s %s (new)\n", $1, $2); na++
-      } else if (before[$1] != $2) {
-        upgraded = upgraded sprintf("  %s %s → %s\n", $1, before[$1], $2); nu++
-      }
-    }
-    END {
-      if (nu > 0) printf "Upgraded %d package(s):\n%s", nu, upgraded
-      if (na > 0) printf "Installed %d new package(s):\n%s", na, added
-      if (nu == 0 && na == 0) print "No package changes."
-    }
-  ' "$1" "$2"
-}
-
-# Decide which managed npm globals actually need (re)installing. A package is
-# a target when it is either flagged by `npm outdated` (a newer version exists)
-# or not currently installed at all (newly added to the list — `npm outdated`
-# never reports missing packages). Pure function: all inputs are arguments, so
-# it is unit-testable without touching the network.
-#
-# Args: <outdated_json> <installed_names> <name...>
-#   outdated_json  : `npm outdated -g --json` output (empty string ok)
-#   installed_names: newline-separated names of currently-installed globals
-# Prints one "<name>@latest" per target, newline-separated.
-npm_select_targets() {
-  local outdated_json="$1"
-  local installed="$2"
-  shift 2
-  [ -n "$outdated_json" ] || outdated_json='{}'
-
-  local n
-  for n in "$@"; do
-    if jq -e --arg n "$n" 'has($n)' <<<"$outdated_json" >/dev/null 2>&1; then
-      printf '%s@latest\n' "$n"
-    elif ! grep -qxF -- "$n" <<<"$installed"; then
-      printf '%s@latest\n' "$n"
-    fi
-  done
-}
-
-# Update global npm packages listed in .default-npm-packages to @latest.
-# `mise upgrade` only bumps language runtimes; npm globals installed via
-# mise's default-npm-packages hook are not touched after first install.
-#
-# `npm install -g pkg@latest` re-resolves and reinstalls the full dependency
-# tree unconditionally — slow even when nothing changed. Instead, a fast,
-# metadata-only `npm outdated -g` check (~1s, no tree resolution/download)
-# narrows the install to only the packages that actually moved.
-npm_global_update() {
-  local file="$HOME/.config/mise/.default-npm-packages"
-  if [ ! -f "$file" ]; then
-    echo "Skip: $file not found"
-    return 0
-  fi
-
-  local names
-  mapfile -t names < <(awk '
-    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
-    { sub(/[[:space:]]#.*$/, ""); gsub(/[[:space:]]/, ""); if ($0 != "") print }
-  ' "$file")
-
-  if [ "${#names[@]}" -eq 0 ]; then
-    echo "No packages to update."
-    return 0
-  fi
-
-  # `npm outdated` exits 1 when anything is outdated, so guard with `|| true`.
-  local outdated_json installed
-  outdated_json=$(npm outdated -g --json 2>/dev/null || true)
-  installed=$(npm list -g --depth=0 --json 2>/dev/null \
-    | jq -r '.dependencies // {} | keys[]')
-
-  local targets
-  mapfile -t targets < <(npm_select_targets "$outdated_json" "$installed" "${names[@]}")
-
-  if [ "${#targets[@]}" -eq 0 ]; then
-    echo "No package changes."
-    return 0
-  fi
-
-  local before_file after_file rc
-  before_file=$(mktemp)
-  after_file=$(mktemp)
-
-  list_npm_globals >"$before_file"
-  npm install -g --no-audit --no-fund "${targets[@]}" >/dev/null
-  rc=$?
-  list_npm_globals >"$after_file"
-
-  report_pkg_diff "$before_file" "$after_file"
-  rm -f "$before_file" "$after_file"
-  return $rc
-}
-
-# PEP 503 name normalizer (stream filter): lowercase and collapse runs of
-# -, _, . to a single -, so e.g. typing_extensions and typing-extensions match.
-_pip_normalize() {
-  tr '[:upper:]' '[:lower:]' | sed -E 's/[-_.]+/-/g'
-}
-
-# Decide which managed pip packages need (re)installing. A spec is a target
-# when its base name (extras like [all] stripped) is flagged by
-# `pip list --outdated` or is not currently installed. Names are compared
-# PEP 503-normalized. The original spec (extras kept) is what gets printed so
-# `pip install -U python-lsp-server[all]` keeps its extras. Pure/unit-testable.
-#
-# Args: <outdated_json> <installed_names> <spec...>
-#   outdated_json  : `pip list --outdated --format=json` output (empty ok)
-#   installed_names: newline-separated names of currently-installed packages
-# Prints the original specs that need installing, newline-separated.
-pip_select_targets() {
-  local outdated_json="$1"
-  local installed="$2"
-  shift 2
-  [ -n "$outdated_json" ] || outdated_json='[]'
-
-  local outdated_norm installed_norm
-  outdated_norm=$(jq -r '.[].name' <<<"$outdated_json" 2>/dev/null | _pip_normalize)
-  installed_norm=$(_pip_normalize <<<"$installed")
-
-  local spec base base_norm
-  for spec in "$@"; do
-    base=$(printf '%s' "$spec" | sed 's/\[.*//')   # strip extras: foo[all] -> foo
-    base_norm=$(_pip_normalize <<<"$base")
-    if grep -qxF -- "$base_norm" <<<"$outdated_norm"; then
-      printf '%s\n' "$spec"
-    elif ! grep -qxF -- "$base_norm" <<<"$installed_norm"; then
-      printf '%s\n' "$spec"
-    fi
-  done
-}
-
-# Same idea as npm for pip globals listed in .default-python-packages.
-# A fast, metadata-only `pip list --outdated` check narrows the reinstall to
-# packages that moved or are missing. pip's default only-if-needed upgrade
-# strategy means an already-latest top-level package is a no-op anyway, so
-# skipping it is behavior-preserving.
-pip_global_update() {
-  local file="$HOME/.config/mise/.default-python-packages"
-  if [ ! -f "$file" ]; then
-    echo "Skip: $file not found"
-    return 0
-  fi
-
-  local packages
-  mapfile -t packages < <(awk '
-    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
-    { sub(/[[:space:]]#.*$/, ""); gsub(/[[:space:]]/, ""); if ($0 != "") print }
-  ' "$file")
-
-  if [ "${#packages[@]}" -eq 0 ]; then
-    echo "No packages to update."
-    return 0
-  fi
-
-  local outdated_json installed
-  outdated_json=$(pip list --outdated --format=json 2>/dev/null || true)
-  installed=$(pip list --format=json 2>/dev/null | jq -r '.[].name')
-
-  local targets
-  mapfile -t targets < <(pip_select_targets "$outdated_json" "$installed" "${packages[@]}")
-
-  if [ "${#targets[@]}" -eq 0 ]; then
-    echo "No package changes."
-    return 0
-  fi
-
-  local before_file after_file rc
-  before_file=$(mktemp)
-  after_file=$(mktemp)
-
-  list_pip_globals >"$before_file"
-  pip install -U "${targets[@]}" >/dev/null
-  rc=$?
-  list_pip_globals >"$after_file"
-
-  report_pkg_diff "$before_file" "$after_file"
-  rm -f "$before_file" "$after_file"
-  return $rc
+# 失敗があればWindowsトースト通知を出す。WSL2以外（powershell.exeが無い環境）
+# ではスキップ。通知自体の失敗で全体を落とさない。
+notify_failures() {
+  command -v powershell.exe >/dev/null 2>&1 || return 0
+  # shellcheck source=lib/notify-windows-toast.sh
+  source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
+  send_windows_toast "daily-update 失敗" "FAILED: ${failures[*]}" || true
 }
 
 main() {
@@ -264,6 +77,7 @@ main() {
   echo "========================================" | tee -a "$LOG_FILE"
   if [ ${#failures[@]} -gt 0 ]; then
     echo "FAILED: ${failures[*]}" | tee -a "$LOG_FILE"
+    notify_failures
     exit 1
   else
     echo "All updates completed successfully." | tee -a "$LOG_FILE"
