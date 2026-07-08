@@ -132,6 +132,64 @@ assert_eq "" \
   "空の outdated_json は変更なし扱い"
 
 echo ""
+echo "[3] read_package_list"
+
+# コメント行・空行・行内コメント・空白を除去して1行1エントリで返す
+fixture=$(mktemp)
+cat >"$fixture" <<'EOF'
+# コメント行
+prettier
+
+difit  # 行内コメント
+  aws-cdk
+@openai/codex
+EOF
+assert_eq $'prettier\ndifit\naws-cdk\n@openai/codex' \
+  "$(read_package_list "$fixture")" \
+  "コメント・空行・空白を除去して読み込む"
+
+# 空ファイル → 出力なし
+: >"$fixture"
+assert_eq "" \
+  "$(read_package_list "$fixture")" \
+  "空ファイルは出力なし"
+
+# コメントのみ → 出力なし
+printf '# only comment\n\n' >"$fixture"
+assert_eq "" \
+  "$(read_package_list "$fixture")" \
+  "コメントのみのファイルは出力なし"
+rm -f "$fixture"
+
+echo ""
+echo "[4] pkg_install_with_diff"
+
+# スタブ: FAKE_STATE ファイルをパッケージ一覧に見立てる
+FAKE_STATE=$(mktemp)
+fake_list() { cat "$FAKE_STATE"; }
+fake_install_ok() { printf 'pkgA\t2.0.0\n' >"$FAKE_STATE"; }
+fake_install_fail() { return 3; }
+
+# 成功時: diff が報告され、rc=0
+printf 'pkgA\t1.0.0\n' >"$FAKE_STATE"
+out=$(pkg_install_with_diff fake_list fake_install_ok pkgA)
+rc=$?
+assert_eq "0" "$rc" "install 成功時は rc=0"
+assert_eq $'Upgraded 1 package(s):\n  pkgA 1.0.0 → 2.0.0' \
+  "$out" \
+  "成功時にアップグレード差分を報告"
+
+# 失敗時: install の rc を伝播しつつ、diff 報告まで実行される（早期終了しない）
+printf 'pkgA\t1.0.0\n' >"$FAKE_STATE"
+out=$(pkg_install_with_diff fake_list fake_install_fail pkgA)
+rc=$?
+assert_eq "3" "$rc" "install 失敗時は rc を伝播"
+assert_eq "No package changes." \
+  "$out" \
+  "失敗時も diff 報告まで到達する"
+rm -f "$FAKE_STATE"
+
+echo ""
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
 echo ""
