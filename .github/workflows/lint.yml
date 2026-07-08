@@ -1,0 +1,32 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.sh"
+      - ".github/workflows/lint.yml"
+  pull_request:
+    paths:
+      - "**.sh"
+      - ".github/workflows/lint.yml"
+
+jobs:
+  shell-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # shellcheck は runner にプリインストール済み。shfmt は Go 経由で導入。
+      - name: Install shfmt
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Lint shell scripts
+        run: bash scripts/lint.sh
+
+      - name: Run shell script tests
+        run: |
+          bash scripts/test-daily-update.sh
+          bash scripts/test-nippo-check.sh
