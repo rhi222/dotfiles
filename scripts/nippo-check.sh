@@ -10,6 +10,8 @@
 
 set -euo pipefail
 
+# 呼び出し元コンテキスト。現状ロジックでは未使用だが、引数インターフェースとして受け取る
+# shellcheck disable=SC2034
 CONTEXT="${1:-stop}"
 NIPPO_DIR="${NIPPO_DIR:-$HOME/Obsidian/02_Daily}"
 
@@ -24,7 +26,7 @@ fi
 TODAY=$(echo "$NOW" | cut -d' ' -f1)
 # 10# で base-10 強制パース（"08"→8, "00"→0）。sed 's/^0//' だと "00" が空文字になり [[ ]] が死ぬ
 HOUR=$((10#$(echo "$NOW" | cut -d' ' -f2 | cut -d: -f1)))
-DOW=$(date -d "$TODAY" +%u)  # 1=月 ... 7=日
+DOW=$(date -d "$TODAY" +%u) # 1=月 ... 7=日
 
 NIPPO_FILE="$NIPPO_DIR/nippo.${TODAY}.md"
 
@@ -46,13 +48,13 @@ fi
 # 🟢 start: に対応する 🔴 end: がないものを検出
 started_tasks=()
 while IFS= read -r line; do
-  task_name=$(echo "$line" | sed 's/.*🟢 start: //')
+  task_name="${line##*"🟢 start: "}"
   started_tasks+=("$task_name")
 done < <(grep '🟢 start:' "$NIPPO_FILE" 2>/dev/null || true)
 
 ended_tasks=()
 while IFS= read -r line; do
-  task_name=$(echo "$line" | sed 's/.*🔴 end: //')
+  task_name="${line##*"🔴 end: "}"
   ended_tasks+=("$task_name")
 done < <(grep '🔴 end:' "$NIPPO_FILE" 2>/dev/null || true)
 
@@ -82,7 +84,7 @@ if [[ "$incomplete_count" -gt 0 ]]; then
   else
     now_epoch=$(date +%s)
   fi
-  elapsed_minutes=$(( (now_epoch - file_mtime) / 60 ))
+  elapsed_minutes=$(((now_epoch - file_mtime) / 60))
 
   if [[ "$elapsed_minutes" -ge 90 ]]; then
     echo "⏰ 日報が${elapsed_minutes}分以上更新されていません（未完了: ${incomplete_count}件）"

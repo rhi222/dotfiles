@@ -41,7 +41,7 @@ safe_link "$DOTFILES_DIR/.config/claude/agents" ~/.claude/agents
 # Keep local config at ~/.codex/config.toml per official docs.
 mkdir -p ~/.codex
 if [ -e ~/.codex/config.toml ] && [ ! -L ~/.codex/config.toml ]; then
-  mv ~/.codex/config.toml ~/.codex/config.toml.bak.$(date +%Y%m%d%H%M%S)
+  mv ~/.codex/config.toml ~/.codex/config.toml.bak."$(date +%Y%m%d%H%M%S)"
 fi
 safe_link "$DOTFILES_DIR/.config/codex/config.toml" ~/.codex/config.toml
 

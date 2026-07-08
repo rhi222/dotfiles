@@ -164,10 +164,14 @@ rm -f "$fixture"
 echo ""
 echo "[4] pkg_install_with_diff"
 
-# スタブ: FAKE_STATE ファイルをパッケージ一覧に見立てる
+# スタブ: FAKE_STATE ファイルをパッケージ一覧に見立てる。
+# pkg_install_with_diff に関数名で渡す間接呼び出しのため SC2329 は誤検知。
 FAKE_STATE=$(mktemp)
+# shellcheck disable=SC2329
 fake_list() { cat "$FAKE_STATE"; }
+# shellcheck disable=SC2329
 fake_install_ok() { printf 'pkgA\t2.0.0\n' >"$FAKE_STATE"; }
+# shellcheck disable=SC2329
 fake_install_fail() { return 3; }
 
 # 成功時: diff が報告され、rc=0

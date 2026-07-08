@@ -29,8 +29,8 @@ REQUIRED_GH_VERSION="2.90.0"
 agent_target_dir() {
   case "$1" in
     claude-code) echo "$HOME/.claude/skills" ;;
-    codex)       echo "$HOME/.codex/skills" ;;
-    *)           echo "" ;;
+    codex) echo "$HOME/.codex/skills" ;;
+    *) echo "" ;;
   esac
 }
 
@@ -75,7 +75,7 @@ run_install_for_agents() {
   shift
   local -a cmd_prefix=("$@")
 
-  local any_installed=0 any_failed=0 all_skipped=1
+  local any_failed=0 all_skipped=1
 
   for agent in $SKILL_AGENTS; do
     local base_dir
@@ -101,7 +101,6 @@ run_install_for_agents() {
     if "${cmd[@]}" </dev/null 2>"$log"; then
       cat "$log"
       rm -f "$log"
-      any_installed=1
       all_skipped=0
     else
       local rc=$?
@@ -186,7 +185,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   if [[ "$line" == local:* ]]; then
     body="${line#local:}"
     body="${body#"${body%%[![:space:]]*}"}"
-    read -r git_url sub_path skill_name extra <<< "$body"
+    read -r git_url sub_path skill_name extra <<<"$body"
     if [ -z "${git_url:-}" ] || [ -z "${sub_path:-}" ] || [ -z "${skill_name:-}" ] || [ -n "${extra:-}" ]; then
       echo "  -> skip (malformed local: line $line_no): $line"
       failures+=("line $line_no: malformed local entry: $line")
@@ -196,7 +195,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
     install_local "$git_url" "$sub_path" "$skill_name"
     rc=$?
   else
-    read -r repo skill_spec extra <<< "$line"
+    read -r repo skill_spec extra <<<"$line"
     if [ -z "${repo:-}" ] || [ -z "${skill_spec:-}" ] || [ -n "${extra:-}" ]; then
       echo "  -> skip (malformed line $line_no): $line"
       failures+=("line $line_no: malformed: $line")
@@ -210,11 +209,17 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   fi
 
   case "$rc" in
-    0) succeeded=$((succeeded + 1)); attempted=$((attempted + 1)) ;;
+    0)
+      succeeded=$((succeeded + 1))
+      attempted=$((attempted + 1))
+      ;;
     100) skipped=$((skipped + 1)) ;;
-    *) failures+=("line $line_no: $line"); attempted=$((attempted + 1)) ;;
+    *)
+      failures+=("line $line_no: $line")
+      attempted=$((attempted + 1))
+      ;;
   esac
-done < "$SKILLS_FILE"
+done <"$SKILLS_FILE"
 
 echo ""
 echo "Finished: $succeeded succeeded, $skipped skipped, $attempted attempted."
