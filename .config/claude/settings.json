@@ -47,7 +47,9 @@
       "Read(.env.*)",
       "Read(id_rsa)"
     ],
-    "ask": ["Bash(aws:*)"],
+    "ask": [
+      "Bash(aws:*)"
+    ],
     "defaultMode": "auto"
   },
   "hooks": {
@@ -102,15 +104,19 @@
   },
   "language": "Japanese",
   "plansDirectory": "./plans",
+  "theme": "dark-daltonized",
   "teammateMode": "tmux",
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
   "mcpServers": {
     "drawio": {
       "command": "npx",
-      "args": ["@drawio/mcp"]
+      "args": [
+        "@drawio/mcp"
+      ]
     }
   },
-  "theme": "dark-daltonized",
-  "remoteControlAtStartup": true
+  "model": "claude-fable-5[1m]"
 }
