@@ -42,6 +42,7 @@ zoxide = "latest"
 "aqua:k1LoW/git-wt" = "latest"
 "aqua:x-motemen/ghq" = "latest"
 "aqua:mvdan/sh" = "latest"          # shfmt
+"aqua:koalaman/shellcheck" = "latest"
 "aqua:astral-sh/ruff" = "latest"
 "aqua:biomejs/biome" = "latest"
 "aqua:marp-team/marp-cli" = "latest"
