@@ -3,6 +3,9 @@ return {
 	-- copilot: 処理が早く、最近のプラグインとの統合が容易(と言っている)ため、.vimでなく.luaを採用
 	{
 		"zbirenbaum/copilot.lua",
+		-- Copilotサブスクリプション解約中のため無効化（language-serverが約240MB/インスタンス消費する）。
+		-- 再契約時は enabled = false を外すだけで復活する。
+		enabled = false,
 		event = "InsertEnter",
 		config = function()
 			require("my/plugins/completion/copilot")
@@ -10,6 +13,8 @@ return {
 	},
 	{
 		"CopilotC-Nvim/CopilotChat.nvim",
+		-- Copilotサブスクリプション解約中のため無効化。再契約時は enabled = false を外す。
+		enabled = false,
 		event = "VeryLazy",
 		-- note: 未指定の場合、deprecatedなcanaryブランチを参照していた。明示的にmainブランチを指定
 		branch = "main",
