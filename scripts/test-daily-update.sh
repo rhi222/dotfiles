@@ -1,6 +1,7 @@
 #!/bin/bash
 # daily-update.sh のユニットテスト（純粋関数のみ対象）
-set -uo pipefail
+# -e はセットアップ部（source まで）の失敗を即検知するため。テスト本体では無効化する
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DAILY_UPDATE="$SCRIPT_DIR/daily-update.sh"
@@ -13,7 +14,7 @@ fi
 # 関数定義のみ読み込む（main ガードにより更新処理は走らない）
 # shellcheck source=/dev/null
 source "$DAILY_UPDATE"
-# daily-update.sh の `set -e` がこのシェルに波及するため、テスト実行用に無効化。
+# テスト本体は失敗 rc の捕捉を伴うため `set -e` を無効化（assert 側で判定する）。
 set +e
 
 PASS=0

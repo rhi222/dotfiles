@@ -1,6 +1,7 @@
 #!/bin/bash
 # nippo-check.sh のユニットテスト
-set -uo pipefail
+# 被テストコマンドの失敗 rc は run_check 内で `|| exit_code=$?` により捕捉するため -e と両立する
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NIPPO_CHECK="$SCRIPT_DIR/nippo-check.sh"
