@@ -55,6 +55,10 @@ python.compile = false
 # lockfileでバージョンを記録（再現性向上）
 lockfile = true
 
+# リリース直後の壊れた版・yank される版を掴まないための枯らし期間。
+# mise デフォルトは 24h だが、より安全側に 48h へ延長する。
+minimum_release_age = "48h"
+
 # idiomatic version files を尊重（repo 単位で pin できる）
 idiomatic_version_file_enable_tools = [
   "node",
