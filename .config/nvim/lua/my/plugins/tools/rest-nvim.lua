@@ -4,6 +4,7 @@ vim.g.rest_nvim = {
 	-- https://github.com/rest-nvim/rest.nvim?tab=readme-ov-file#default-configuration
 	request = {
 		-- 予約記録のdev環境など検証系のエラー回避
+		-- NOTE: グローバルに検証を切っているため、本番系エンドポイントへのリクエストには使わないこと
 		skip_ssl_verification = true,
 	},
 }

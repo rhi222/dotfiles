@@ -63,7 +63,3 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_user_command("CopilotChatShowPrompt", function()
 	chat.select_prompt()
 end, {})
--- note: 動かなくなったので一時的にコメントアウト
--- -- キーマッピングの例（必要に応じてお好みで設定してください）
--- vim.keymap.set("n", "<C-a>", ":CopilotChatBuffer<CR>", { noremap = true, silent = true })
--- vim.keymap.set("v", "<C-a>", ":CopilotChatVisual<CR>", { noremap = true, silent = true })

@@ -18,14 +18,6 @@ return {
 		end,
 	},
 	{
-		"shellRaining/hlchunk.nvim",
-		enabled = false,
-		event = { "BufReadPre", "BufNewFile" },
-		config = function()
-			require("my/plugins/ui/hlchunk")
-		end,
-	},
-	{
 		"nvim-tree/nvim-web-devicons",
 	},
 	-- colorscheme
@@ -48,6 +40,8 @@ return {
 				"dashboard",
 				"explorer",
 				"image",
+				-- indent guide は indent-blankline.nvim を使うため無効化（二重描画防止）
+				"indent",
 				"input",
 				"notifier",
 				"picker",

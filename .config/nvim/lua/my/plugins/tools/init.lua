@@ -57,58 +57,7 @@ return {
 			"RainbowMultiDelim",
 		},
 	},
-	-- https://github.com/folke/sidekick.nvim?tab=readme-ov-file
-	-- 現状 enabled = false。CLI連携(claude/codex)をtmuxペイン直接運用にしているため未採用。
-	-- keymaps (M.tools.sidekick_*) は再有効化時の差分を最小にするため予約として残してある。
-	-- 不要と確定したらこのブロックと keymaps.lua の sidekick_* を一緒に削除する。
-	{
-		"folke/sidekick.nvim",
-		enabled = false,
-		opts = {
-			-- add any options here
-			cli = {
-				mux = {
-					backend = "tmux",
-					enabled = true,
-				},
-			},
-		},
-		keys = {
-			km.lazy_key("tools", "sidekick_jump", function()
-				-- if there is a next edit, jump to it, otherwise apply it if any
-				if not require("sidekick").nes_jump_or_apply() then
-					return "<Tab>" -- fallback to normal tab
-				end
-			end, { expr = true }),
-			km.lazy_key("tools", "sidekick_toggle", function()
-				require("sidekick.cli").toggle()
-			end),
-			km.lazy_key("tools", "sidekick_toggle2", function()
-				require("sidekick.cli").toggle()
-			end),
-			km.lazy_key("tools", "sidekick_select", function()
-				require("sidekick.cli").select()
-			end),
-			km.lazy_key("tools", "sidekick_close", function()
-				require("sidekick.cli").close()
-			end),
-			km.lazy_key("tools", "sidekick_send", function()
-				require("sidekick.cli").send({ msg = "{this}" })
-			end),
-			km.lazy_key("tools", "sidekick_file", function()
-				require("sidekick.cli").send({ msg = "{file}" })
-			end),
-			km.lazy_key("tools", "sidekick_visual", function()
-				require("sidekick.cli").send({ msg = "{selection}" })
-			end),
-			km.lazy_key("tools", "sidekick_prompt", function()
-				require("sidekick.cli").prompt()
-			end),
-			km.lazy_key("tools", "sidekick_claude", function()
-				require("sidekick.cli").toggle({ name = "claude", focus = true })
-			end),
-		},
-	},
+	-- sidekick.nvim は削除: CLI連携(claude/codex)はtmuxペイン直接運用のため不採用と確定
 	-- plantuml syntax + preview
 	{
 		"weirongxu/plantuml-previewer.vim",
