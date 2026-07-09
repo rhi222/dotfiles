@@ -66,6 +66,9 @@ main() {
   run_step "cargo install-update" cargo install-update -a
   run_step "mise self-update" mise self-update -y
   run_step "mise upgrade" mise upgrade
+  # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
+  # 参照されなくなったツール版を実削除。確認プロンプトなし）
+  run_step "mise prune" mise prune
   run_step "npm global update" npm_global_update
   run_step "pip global update" pip_global_update
   run_step "nvim Lazy update" timeout 300 nvim --headless -c "luafile $SCRIPT_DIR/nvim-lazy-update.lua" +qa
