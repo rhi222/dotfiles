@@ -20,8 +20,15 @@ end
 set -gx LS_COLORS "$LS_COLORS:ow=01;33:tw=01;33"
 
 # zoxide integration
+# `zoxide init fish` の出力をキャッシュして起動時のサブプロセスを回避する（01-mise.fish と同じパターン）
 if type -q zoxide
-    zoxide init fish | source
+    set -l cache $HOME/.cache/zoxide-init.fish
+    set -l zoxide_bin (type -p zoxide)
+    if not test -f $cache; or test $zoxide_bin -nt $cache
+        mkdir -p (path dirname $cache)
+        zoxide init fish >$cache
+    end
+    source $cache
 end
 
 # tabtab source for packages
