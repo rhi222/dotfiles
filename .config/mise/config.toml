@@ -48,6 +48,9 @@ zoxide = "latest"
 "aqua:marp-team/marp-cli" = "latest"
 "aqua:tree-sitter/tree-sitter" = "latest"
 
+# pipxバックエンドで管理するPython製CLIツール（隔離環境にインストール）
+"pipx:git-remote-codecommit" = "latest"  # AWS CodeCommitのgit remote helper
+
 [settings]
 # Pythonはプリビルドバイナリ優先（WSL2でコンパイル回避）
 python.compile = false
