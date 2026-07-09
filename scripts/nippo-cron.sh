@@ -3,7 +3,7 @@
 # crontab設定例:
 #   0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
 
-set -uo pipefail
+set -euo pipefail
 
 # cron環境用PATH設定（PowerShell実行に必要）
 export PATH="$PATH:/mnt/c/Windows/System32/WindowsPowerShell/v1.0"
@@ -36,9 +36,9 @@ if [[ "$HOUR" -lt 9 || "$HOUR" -ge 20 ]]; then
   exit 0
 fi
 
-# 日報チェック実行
-nippo_msg=$(timeout 5 "$NIPPO_CHECK" cron 2>/dev/null)
-check_exit=$?
+# 日報チェック実行（未投稿時は非ゼロが返るので set -e と両立する形で捕捉）
+check_exit=0
+nippo_msg=$(timeout 5 "$NIPPO_CHECK" cron 2>/dev/null) || check_exit=$?
 
 # Windows BurntToast 通知の共通関数 (send_windows_toast)
 # shellcheck source=lib/notify-windows-toast.sh
