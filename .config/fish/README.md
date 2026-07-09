@@ -87,9 +87,10 @@ set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 - `type -q zoxide` - zoxideの存在確認後に初期化
 - `test -f ~/.config/tabtab/fish/__tabtab.fish` - tabtabファイル存在確認
 
-### 履歴同期の最適化
+### 履歴同期
 
-過度な頻度での実行を避けるため、10回に1回の頻度で履歴同期を実行。
+`fish_postexec` イベントでコマンド実行直後に `history --merge` を実行し、他セッションの履歴を取り込む。
+`fish_prompt` だと描画毎に merge が走るため、コマンド実行後だけ動く postexec を採用している。
 
 ## メンテナンス
 

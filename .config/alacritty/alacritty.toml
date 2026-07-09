@@ -7,7 +7,8 @@ import = [
 ]
 
 [terminal.shell]
-program = "/Windows/System32/wsl.exe ~ -d Ubuntu"
+# -d <distro> は指定せずデフォルトディストロを起動する（ディストロ名変更に追従するため）
+program = "/Windows/System32/wsl.exe ~"
 
 
 [window]
