@@ -64,3 +64,6 @@ pcall(require("telescope").load_extension, "fzf")
 
 -- https://github.com/fdschmidt93/telescope-egrepify.nvim
 pcall(require("telescope").load_extension, "egrepify")
+
+-- https://github.com/danielfalk/smart-open.nvim
+pcall(require("telescope").load_extension, "smart_open")

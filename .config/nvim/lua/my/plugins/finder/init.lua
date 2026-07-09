@@ -18,6 +18,8 @@ return {
 			{
 				"fdschmidt93/telescope-egrepify.nvim",
 			},
+			-- smart_open 拡張は telescope.lua の load_extension で読み込む
+			{ "danielfalk/smart-open.nvim" },
 		},
 		keys = {
 			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
@@ -61,13 +63,12 @@ return {
 		end,
 	},
 	-- https://github.com/danielfalk/smart-open.nvim
+	-- event = "VeryLazy" + load_extension だと telescope が毎起動フルロードされるため、
+	-- telescope の依存に含めて keybind 経由のオンデマンドロードに一本化している
 	{
 		"danielfalk/smart-open.nvim",
 		branch = "0.2.x",
-		event = "VeryLazy",
-		config = function()
-			require("telescope").load_extension("smart_open")
-		end,
+		lazy = true,
 		dependencies = {
 			"kkharji/sqlite.lua",
 			-- Only required if using match_algorithm fzf
