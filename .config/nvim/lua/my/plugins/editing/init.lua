@@ -9,26 +9,14 @@ return {
 			require("my/plugins/editing/nvim-treesitter")
 		end,
 	},
-	-- easymotion
-	{
-		-- NOTE: 本家はneovim 0.11対応しないためforkを採用
-		-- "phaazon/hop.nvim",
-		"smoka7/hop.nvim",
-		version = "*",
-		keys = {
-			km.lazy_key("editing", "hop_word", ":HopWord<CR>", { noremap = true }),
-		},
-		opts = {
-			keys = "asdghklqwertyuiopzxcvbnmfj",
-			create_hl_autocmd = true,
-		},
-	},
+	-- hop.nvim は削除: flash.nvim と機能重複のため（<leader>j も flash jump に統合）
 	{
 		"folke/flash.nvim",
 		event = "VeryLazy",
 		opts = {},
 		-- stylua: ignore
 		keys = {
+			km.lazy_key("editing", "flash_jump_leader", function() require("flash").jump() end),
 			km.lazy_key("editing", "flash_jump", function() require("flash").jump() end),
 			km.lazy_key("editing", "flash_treesitter", function() require("flash").treesitter() end),
 			km.lazy_key("editing", "flash_remote", function() require("flash").remote() end),

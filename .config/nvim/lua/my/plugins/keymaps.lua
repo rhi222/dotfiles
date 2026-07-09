@@ -94,7 +94,8 @@ M.git = {
 }
 
 M.editing = {
-	hop_word = { "<leader>j", desc = "Hop word" },
+	-- hop.nvim は flash.nvim と機能重複のため削除。<leader>j は flash jump に付け替え
+	flash_jump_leader = { "<leader>j", desc = "Flash jump" },
 	flash_jump = { "gs", mode = { "n", "x", "o" }, desc = "Flash jump" },
 	flash_treesitter = { "gS", mode = { "n", "x", "o" }, desc = "Flash treesitter" },
 	flash_remote = { "gr", mode = "o", desc = "Flash remote" },
@@ -105,18 +106,6 @@ M.editing = {
 
 M.tools = {
 	rest_run = { "<C-e>", desc = "Rest run" },
-	-- sidekick_* は plugins/tools/init.lua で enabled=false。
-	-- 再有効化に備えてlhsを予約。プラグインを廃止する場合はここも合わせて削除。
-	sidekick_jump = { "<tab>", desc = "Sidekick jump/apply" },
-	sidekick_toggle = { "<c-.>", mode = { "n", "t", "i", "x" }, desc = "Sidekick toggle" },
-	sidekick_toggle2 = { "<leader>st", desc = "Sidekick toggle CLI" },
-	sidekick_select = { "<leader>ss", desc = "Sidekick select CLI" },
-	sidekick_close = { "<leader>sd", desc = "Sidekick detach" },
-	sidekick_send = { "<leader>se", mode = { "x", "n" }, desc = "Sidekick send this" },
-	sidekick_file = { "<leader>sf", desc = "Sidekick send file" },
-	sidekick_visual = { "<leader>sv", mode = "x", desc = "Sidekick send selection" },
-	sidekick_prompt = { "<leader>sp", mode = { "n", "x" }, desc = "Sidekick prompt" },
-	sidekick_claude = { "<leader>sc", desc = "Sidekick toggle Claude" },
 }
 
 M.builtin = {
