@@ -94,8 +94,8 @@ M.git = {
 }
 
 M.editing = {
-	-- hop.nvim は flash.nvim と機能重複のため削除。<leader>j は flash jump に付け替え
-	flash_jump_leader = { "<leader>j", desc = "Flash jump" },
+	-- 日本語文書はタイプ不要の HopWord、ASCII は flash と使い分ける
+	hop_word = { "<leader>j", desc = "Hop word" },
 	flash_jump = { "gs", mode = { "n", "x", "o" }, desc = "Flash jump" },
 	flash_treesitter = { "gS", mode = { "n", "x", "o" }, desc = "Flash treesitter" },
 	flash_remote = { "gr", mode = "o", desc = "Flash remote" },
