@@ -48,7 +48,8 @@
       "Read(id_rsa)"
     ],
     "ask": [
-      "Bash(aws:*)"
+      "Bash(aws:*)",
+      "Bash(rm:*)"
     ],
     "defaultMode": "auto"
   },
@@ -117,6 +118,5 @@
         "@drawio/mcp"
       ]
     }
-  },
-  "model": "claude-fable-5[1m]"
+  }
 }
