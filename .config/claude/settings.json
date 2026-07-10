@@ -31,7 +31,15 @@
       "Bash(cat:*)",
       "Bash(head:*)",
       "Bash(tail:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(pnpm type-check:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm biome:check:*)",
+      "Bash(glab mr view:*)",
+      "Bash(oc get:*)",
+      "mcp__claude_ai_Slack__slack_search_public_and_private",
+      "mcp__jira-mcp__getJiraIssue",
+      "mcp__claude_ai_Google_Calendar__list_events"
     ],
     "deny": [
       "Bash(git push:*)",
@@ -101,10 +109,17 @@
         "source": "github",
         "repo": "openai/codex-plugin-cc"
       }
+    },
+    "forcia-claude-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "git@github.com:forcia/claude_marketplace.git"
+      }
     }
   },
   "language": "Japanese",
   "plansDirectory": "./plans",
+  "tui": "default",
   "theme": "dark-daltonized",
   "teammateMode": "tmux",
   "remoteControlAtStartup": true,
