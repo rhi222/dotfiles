@@ -8,3 +8,6 @@ end
 
 # Add my functions directory to fish_function_path
 set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
+
+# Generated for envman. Do not edit.
+test -s ~/.config/envman/load.fish; and source ~/.config/envman/load.fish
