@@ -77,6 +77,25 @@ crontab -e
 
 無効化は `rm ~/.config/nippo-draft-enabled`。動作確認は `bash scripts/test-nippo-draft-cron.sh`。
 
+### esa週次レポート自動生成（WSL2専用）
+
+毎週金曜16:00に `scripts/esa-weekly-cron.sh` が `esa-weekly-report` スキルをヘッドレス実行し、部長会向けドラフトを `~/Obsidian/05_Organization/Buchokai/` に出力する。人間は生成結果をレビューするだけにする。
+
+セットアップ:
+
+```fish
+# まず手動でヘッドレス実行を1回試す（esa APIアクセスと生成結果を確認する）
+touch ~/.config/esa-weekly-enabled
+bash scripts/esa-weekly-cron.sh
+
+# 問題なければcronに登録する
+crontab -e
+# 以下を追加
+# 0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
+```
+
+無効化は `rm ~/.config/esa-weekly-enabled`。動作確認は `bash scripts/test-esa-weekly-cron.sh`。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
