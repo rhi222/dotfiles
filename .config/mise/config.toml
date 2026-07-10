@@ -50,6 +50,7 @@ zoxide = "latest"
 
 # pipxバックエンドで管理するPython製CLIツール（隔離環境にインストール）
 "pipx:git-remote-codecommit" = "latest"  # AWS CodeCommitのgit remote helper
+yq = "latest"
 
 [settings]
 # Pythonはプリビルドバイナリ優先（WSL2でコンパイル回避）
