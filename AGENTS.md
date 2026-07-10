@@ -58,6 +58,25 @@ crontab -e
 
 無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh`。
 
+### 日報ドラフト自動仕上げ（WSL2専用）
+
+平日18:30に `scripts/nippo-draft-cron.sh` が `nippo-finalize` スキルをヘッドレス実行し、日報ドラフトを自動で仕上げる。人間は生成結果をレビューするだけにする。
+
+セットアップ:
+
+```fish
+# まず手動でヘッドレス実行を1回試す（生成結果の妥当性を確認する）
+touch ~/.config/nippo-draft-enabled
+env NIPPO_DRAFT_FORCE=1 bash scripts/nippo-draft-cron.sh
+
+# 問題なければcronに登録する
+crontab -e
+# 以下を追加
+# 30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
+```
+
+無効化は `rm ~/.config/nippo-draft-enabled`。動作確認は `bash scripts/test-nippo-draft-cron.sh`。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
