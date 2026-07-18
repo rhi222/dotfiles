@@ -68,7 +68,10 @@ link_configs() {
     "$DC/yazi|$HOME/.config/yazi"
 
     # herdr: config.toml のみリンク（ディレクトリごとリンクするとログがリポジトリに漏れるため）
+    # scripts/ サブディレクトリは popup コマンドから参照するため個別にリンクする
+    # （ログは ~/.config/herdr/*.log に出るため scripts/ をリンクしても漏れない）
     "$DC/herdr/config.toml|$HOME/.config/herdr/config.toml"
+    "$DC/herdr/scripts|$HOME/.config/herdr/scripts"
 
     # Custom scripts
     "$DOTFILES_DIR/scripts|$HOME/scripts"

@@ -6,8 +6,9 @@
 
 [theme]
 # tmux の Solarized dark 配色に合わせる（herdr ビルトインテーマ）
-name = "solarized"
+name = "tokyo-night"
 
+auto_switch = false
 [terminal]
 # 新ペイン/タブは元ペインのディレクトリを引き継ぐ
 # tmux の `new-window -c "#{pane_current_path}"` 相当（herdr デフォルトだが明示）
@@ -28,11 +29,21 @@ command = "lazygit"
 width = "90%"
 height = "90%"
 
+# fzf でファイル検索 → 選択パスを呼び出し元ペインに挿入（tmux の bind f 相当）
+# スクリプトは env HERDR_ACTIVE_PANE_ID / HERDR_ACTIVE_PANE_CWD を参照する
+[[keys.command]]
+key = "prefix+f"
+type = "popup"
+command = "$HOME/.config/herdr/scripts/fzf-file.sh"
+width = "80%"
+height = "50%"
+
 [ui]
 # tmux 同様マウス操作・ドラッグコピーを有効化（いずれもデフォルトだが明示）
 mouse_capture = true
 copy_on_select = true
 
+show_agent_labels_on_pane_borders = true
 [ui.toast]
 # WSL2 では OS 通知(system)に追加設定が要るため、まずアプリ内トーストで安全側に
 # 慣れたら "system" / "terminal" へ変更可
