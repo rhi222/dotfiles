@@ -19,3 +19,4 @@ sanyuan0704/code-review-expert code-review-expert
 vercel-labs/agent-browser agent-browser
 local: https://github.com/vercel-labs/agent-skills.git skills/react-best-practices vercel-react-best-practices
 local: https://github.com/vercel-labs/agent-skills.git skills/composition-patterns vercel-composition-patterns
+ogulcancelik/pi-extensions herdr
