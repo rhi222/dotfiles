@@ -9,6 +9,13 @@
 name = "tokyo-night"
 
 auto_switch = false
+
+# 上部タブの非活性 workspace 名を読みやすくする。この名前は overlay0 で描画される。
+# overlay0 は他の控えめ要素にも共有される（セマンティックトークン）ため、白まで上げると
+# 全体が派手になる。tokyo-night 本来の前景色に合わせ、標準テキストと同じ明るさに留める。
+[theme.custom]
+overlay0 = "#c0caf5"  # tokyo-night fg
+
 [terminal]
 # 新ペイン/タブは元ペインのディレクトリを引き継ぐ
 # tmux の `new-window -c "#{pane_current_path}"` 相当（herdr デフォルトだが明示）
