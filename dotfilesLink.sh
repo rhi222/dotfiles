@@ -29,7 +29,7 @@ safe_link() {
 
 # リンク先ディレクトリを事前に用意する（fresh 環境では ~/.config 自体が存在しない）
 ensure_dirs() {
-  mkdir -p ~/.config ~/.config/fish ~/.claude/skills ~/.codex
+  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
@@ -66,6 +66,9 @@ link_configs() {
     "$DC/deck|$HOME/.config/deck"
     "$DC/alacritty|$HOME/.config/alacritty"
     "$DC/yazi|$HOME/.config/yazi"
+
+    # herdr: config.toml のみリンク（ディレクトリごとリンクするとログがリポジトリに漏れるため）
+    "$DC/herdr/config.toml|$HOME/.config/herdr/config.toml"
 
     # Custom scripts
     "$DOTFILES_DIR/scripts|$HOME/scripts"
