@@ -1,0 +1,48 @@
+# herdr 設定
+# 実体はこのファイル。config.toml 単体を ~/.config/herdr/config.toml へシンボリックリンクする
+# （ディレクトリごとリンクすると herdr のログ(herdr*.log)がリポジトリに漏れるため）
+# 反映方法: prefix -> Shift+R、または `herdr server reload-config`
+# デフォルト設定の全体は `herdr --default-config` で確認できる
+
+[theme]
+# tmux の Solarized dark 配色に合わせる（herdr ビルトインテーマ）
+name = "solarized"
+
+[terminal]
+# 新ペイン/タブは元ペインのディレクトリを引き継ぐ
+# tmux の `new-window -c "#{pane_current_path}"` 相当（herdr デフォルトだが明示）
+new_cwd = "follow"
+# default_shell は未指定 = $SHELL(fish) を継承する
+
+[keys]
+# standalone 運用のため tmux と同じ Ctrl-b を維持（指の記憶をそのまま活かす）
+prefix = "ctrl+b"
+# ペイン移動は vim 式 prefix+h/j/k/l（herdr デフォルト。tmux で `o` 巡回していた操作の上位互換）
+# タブ移動は prefix+p / prefix+n、scrollback は prefix+e で $EDITOR(nvim) を開く（いずれもデフォルト）
+
+# lazygit を popup 起動（lazygit を常用しているため。tmux の fzf popup 運用に近い追加）
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+width = "90%"
+height = "90%"
+
+[ui]
+# tmux 同様マウス操作・ドラッグコピーを有効化（いずれもデフォルトだが明示）
+mouse_capture = true
+copy_on_select = true
+
+[ui.toast]
+# WSL2 では OS 通知(system)に追加設定が要るため、まずアプリ内トーストで安全側に
+# 慣れたら "system" / "terminal" へ変更可
+delivery = "herdr"
+
+[ui.sound]
+# 背景ワークスペースのエージェントが状態変化したら音で知らせる
+enabled = true
+
+[session]
+# サーバ再起動後もエージェントの会話セッションを復元
+# tmux の resurrect/continuum（自動保存・復元）の思想に対応
+resume_agents_on_restore = true
