@@ -9,6 +9,7 @@ ccmanager
 ccstatusline
 ccusage
 difit
+hunkdiff # hunk: ターミナル diff ビューア（レビュー用途、difit の TUI 版）
 neovim # Neovim Node host (npm package). 本体バイナリは mise の `neovim` ツールで別管理
 npm-check-updates
 prettier
