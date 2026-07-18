@@ -19,6 +19,7 @@ abbr --add cpe 'COMPOSE_PROFILES='
 
 # Terminal
 abbr --add tmux 'tmux -2' # open tmux in 256color
+abbr --add he herdr # herdr (terminal multiplexer for agents)
 
 # Development Tools
 abbr --add ld lazydocker
