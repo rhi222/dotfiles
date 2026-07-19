@@ -12,13 +12,23 @@ set -eu
 # ESC はソースに直書きせず printf で生成し、jq に --arg で渡して色付けする（fzf は --ansi で解釈）。
 esc=$(printf '\033')
 
-# 1列目(pane_id)は無着色で置き、選択後に cut -f1 で取り出す（色は 2 列目のアイコンのみ）
-# 2列目に「状態アイコン + AIエージェント名(claude/codex..)」を出す
-lines=$(herdr agent list | jq -r --arg esc "$esc" '
-  {blocked:"31m◉", working:"33m⠋", done:"36m●", idle:"32m✓", unknown:"90m○"} as $c
+# 場所表示に workspace の内部ID(w9)ではなくラベル(daily)を使うため workspace list も引く。
+# agent list には workspace_id しか無いので workspace_id→label の対応を作って結合する。
+ws=$(herdr workspace list)
+
+# 表示は 2列目に全部まとめる（1列目=pane_id はタブ区切りの隠しフィールド）。
+# タブ区切りのまま複数列にするとエージェント名の長さ差でタブストップがずれるため、
+# エージェント名をスペースで固定幅(8)に埋めて 2列目内で桁を揃える。
+lines=$(herdr agent list | jq -r --arg esc "$esc" --argjson ws "$ws" '
+  ($ws.result.workspaces | map({(.workspace_id): .label}) | add) as $label
+  | {blocked:"31m◉", working:"33m⠋", done:"36m●", idle:"32m✓", unknown:"90m○"} as $c
   | .result.agents[]
   | (($c[.agent_status]) // "0m•") as $v
-  | "\(.pane_id)\t\($esc)[\($v)\($esc)[0m \(.agent // "?")\t\(.terminal_title_stripped)\t[\(.workspace_id)/\(.tab_id)]"')
+  | (($label[.workspace_id]) // .workspace_id) as $wl
+  | (.tab_id | sub("^[^:]*:"; "")) as $tab
+  | (.agent // "?") as $a
+  | ($a + ((8 - ($a | length)) as $n | if $n < 1 then " " else " " * $n end)) as $ap
+  | "\(.pane_id)\t\($esc)[\($v)\($esc)[0m \($ap)\(.terminal_title_stripped)  [\($wl)/\($tab)]"')
 [ -n "$lines" ] || exit 0
 
 selected=$(
