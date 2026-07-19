@@ -28,6 +28,8 @@ stylua = "latest"
 tmux = "latest"
 yazi = "latest"
 zoxide = "latest"
+yq = "latest"
+herdr = "latest"
 
 # GitHub Releasesからバイナリをインストール
 # https://mise.jdx.dev/dev-tools/backends/github.html
@@ -50,7 +52,6 @@ zoxide = "latest"
 
 # pipxバックエンドで管理するPython製CLIツール（隔離環境にインストール）
 "pipx:git-remote-codecommit" = "latest"  # AWS CodeCommitのgit remote helper
-yq = "latest"
 
 [settings]
 # Pythonはプリビルドバイナリ優先（WSL2でコンパイル回避）
