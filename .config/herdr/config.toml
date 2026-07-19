@@ -27,6 +27,8 @@ new_cwd = "follow"
 prefix = "ctrl+b"
 # ペイン移動は vim 式 prefix+h/j/k/l（herdr デフォルト。tmux で `o` 巡回していた操作の上位互換）
 # タブ移動は prefix+p / prefix+n、scrollback は prefix+e で $EDITOR(nvim) を開く（いずれもデフォルト）
+# agent/workspace 切り替えは alt 併用が効かない環境のため、prefix+単一chord では next_/previous_ を
+# 割り当てず、下記 [[keys.command]] の fzf popup（prefix+a / prefix+shift+s）に寄せる
 
 # lazygit を popup 起動（lazygit を常用しているため。tmux の fzf popup 運用に近い追加）
 [[keys.command]]
@@ -42,6 +44,22 @@ height = "90%"
 key = "prefix+f"
 type = "popup"
 command = "$HOME/.config/herdr/scripts/fzf-file.sh"
+width = "80%"
+height = "50%"
+
+# fzf で agent を選んでフォーカス移動（prefix+a）。alt 併用キーが効かない代替の popup 方式
+[[keys.command]]
+key = "prefix+a"
+type = "popup"
+command = "$HOME/.config/herdr/scripts/agent-switch.sh"
+width = "80%"
+height = "50%"
+
+# fzf で workspace(spaces) を選んでフォーカス移動（prefix+shift+s）
+[[keys.command]]
+key = "prefix+shift+s"
+type = "popup"
+command = "$HOME/.config/herdr/scripts/workspace-switch.sh"
 width = "80%"
 height = "50%"
 
