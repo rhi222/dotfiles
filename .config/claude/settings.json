@@ -42,7 +42,6 @@
       "mcp__claude_ai_Google_Calendar__list_events"
     ],
     "deny": [
-      "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git rebase:*)",
       "Bash(psql:*)",
@@ -57,7 +56,8 @@
     ],
     "ask": [
       "Bash(aws:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git push:*)"
     ],
     "defaultMode": "auto"
   },
