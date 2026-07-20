@@ -19,7 +19,7 @@ abbr --add cpe 'COMPOSE_PROFILES='
 
 # Terminal
 abbr --add tmux 'tmux -2' # open tmux in 256color
-abbr --add he herdr # herdr (terminal multiplexer for agents)
+# `he` は my/conf.d/12-herdr.fish の関数として定義（nvim 復元付き起動ラッパー）
 
 # Development Tools
 abbr --add ld lazydocker
