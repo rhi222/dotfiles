@@ -48,7 +48,7 @@
       {
         "hooks": [
           {
-            "command": "bash '/home/nishiyama/.claude/hooks/herdr-agent-state.sh' session",
+            "command": "bash '~/.claude/hooks/herdr-agent-state.sh' session",
             "timeout": 10,
             "type": "command"
           }
@@ -71,9 +71,7 @@
   "language": "Japanese",
   "mcpServers": {
     "drawio": {
-      "args": [
-        "@drawio/mcp"
-      ],
+      "args": ["@drawio/mcp"],
       "command": "npx"
     }
   },
@@ -114,11 +112,7 @@
       "mcp__jira-mcp__getJiraIssue",
       "mcp__claude_ai_Google_Calendar__list_events"
     ],
-    "ask": [
-      "Bash(aws:*)",
-      "Bash(rm:*)",
-      "Bash(git push:*)"
-    ],
+    "ask": ["Bash(aws:*)", "Bash(rm:*)", "Bash(git push:*)"],
     "defaultMode": "auto",
     "deny": [
       "Bash(git reset:*)",
