@@ -1,9 +1,70 @@
 {
+  "agentPushNotifEnabled": true,
+  "enabledPlugins": {
+    "cdk@forcia-claude-marketplace": true,
+    "codex@openai-codex": true,
+    "commit-commands@forcia-claude-marketplace": true,
+    "domain-model@forcia-claude-marketplace": true,
+    "example-skills@anthropic-agent-skills": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript@forcia-claude-marketplace": true
+  },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-opus-4-8"
   },
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "repo": "anthropics/skills",
+        "source": "github"
+      }
+    },
+    "forcia-claude-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "git@github.com:forcia/claude_marketplace.git"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "repo": "openai/codex-plugin-cc",
+        "source": "github"
+      }
+    }
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.config/claude/hooks/notify-windows.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.config/claude/hooks/notify-windows.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
   "includeCoAuthoredBy": false,
+  "language": "Japanese",
+  "mcpServers": {
+    "drawio": {
+      "args": [
+        "@drawio/mcp"
+      ],
+      "command": "npx"
+    }
+  },
   "permissions": {
     "allow": [
       "Bash(awk:*)",
@@ -41,6 +102,12 @@
       "mcp__jira-mcp__getJiraIssue",
       "mcp__claude_ai_Google_Calendar__list_events"
     ],
+    "ask": [
+      "Bash(aws:*)",
+      "Bash(rm:*)",
+      "Bash(git push:*)"
+    ],
+    "defaultMode": "auto",
     "deny": [
       "Bash(git reset:*)",
       "Bash(git rebase:*)",
@@ -53,85 +120,18 @@
       "Read(.env)",
       "Read(.env.*)",
       "Read(id_rsa)"
-    ],
-    "ask": [
-      "Bash(aws:*)",
-      "Bash(rm:*)",
-      "Bash(git push:*)"
-    ],
-    "defaultMode": "auto"
-  },
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.config/claude/hooks/notify-windows.sh"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.config/claude/hooks/notify-windows.sh"
-          }
-        ]
-      }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "ccstatusline",
-    "padding": 0
-  },
-  "enabledPlugins": {
-    "cdk@forcia-claude-marketplace": true,
-    "commit-commands@forcia-claude-marketplace": true,
-    "domain-model@forcia-claude-marketplace": true,
-    "superpowers@claude-plugins-official": true,
-    "typescript@forcia-claude-marketplace": true,
-    "example-skills@anthropic-agent-skills": true,
-    "codex@openai-codex": true
-  },
-  "extraKnownMarketplaces": {
-    "anthropic-agent-skills": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/skills"
-      }
-    },
-    "openai-codex": {
-      "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
-      }
-    },
-    "forcia-claude-marketplace": {
-      "source": {
-        "source": "git",
-        "url": "git@github.com:forcia/claude_marketplace.git"
-      }
-    }
-  },
-  "language": "Japanese",
   "plansDirectory": "./plans",
-  "tui": "default",
-  "theme": "dark-daltonized",
-  "teammateMode": "tmux",
   "remoteControlAtStartup": true,
-  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "mcpServers": {
-    "drawio": {
-      "command": "npx",
-      "args": [
-        "@drawio/mcp"
-      ]
-    }
-  }
+  "statusLine": {
+    "command": "ccstatusline",
+    "padding": 0,
+    "type": "command"
+  },
+  "teammateMode": "tmux",
+  "theme": "dark-daltonized",
+  "tui": "default",
+  "voiceEnabled": true
 }
