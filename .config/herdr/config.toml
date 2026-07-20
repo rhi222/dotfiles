@@ -4,6 +4,9 @@
 # 反映方法: prefix -> Shift+R、または `herdr server reload-config`
 # デフォルト設定の全体は `herdr --default-config` で確認できる
 
+# 初回起動時のオンボーディング案内を表示しない
+onboarding = false
+
 [theme]
 # tmux の Solarized dark 配色に合わせる（herdr ビルトインテーマ）
 name = "tokyo-night"
