@@ -143,3 +143,35 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.bo[ev.buf].formatprg = "jq"
 	end,
 })
+
+-- herdr: nvim が動いているペインを自動記録する。
+-- reboot 後に fish の `he` ラッパーがこのマーカーを読んで、該当ペインで nvim を復元起動する
+-- （tmux-resurrect の @resurrect-processes 相当。手動ラベル付けは不要）。
+-- 1ペイン=1ファイルにすることで複数 nvim 間の読み書き競合を避ける。
+-- シャットダウン時は VimLeavePre が走らずマーカーが残る＝「nvim が動いていたペイン」が残る。
+do
+	local herdr_pane = vim.env.HERDR_PANE_ID
+	if herdr_pane and herdr_pane ~= "" then
+		local state_dir = (vim.env.XDG_STATE_HOME or (vim.env.HOME .. "/.local/state")) .. "/herdr-nvim"
+		local marker = state_dir .. "/" .. herdr_pane
+		local grp = vim.api.nvim_create_augroup("herdr_nvim_registry", {})
+		vim.api.nvim_create_autocmd("VimEnter", {
+			group = grp,
+			callback = function()
+				vim.fn.mkdir(state_dir, "p")
+				-- 内容は cwd（デバッグ用）。ファイル名がペイン ID。
+				vim.fn.writefile({ vim.fn.getcwd() }, marker)
+			end,
+		})
+		vim.api.nvim_create_autocmd("VimLeavePre", {
+			group = grp,
+			callback = function()
+				-- :q 等の通常終了では削除する。OS shutdown やペイン終了時は
+				-- SIGTERM/SIGHUP により vim.v.dying > 0 になるため、復元用に残す。
+				if vim.v.dying == 0 then
+					vim.fn.delete(marker)
+				end
+			end,
+		})
+	end
+end
