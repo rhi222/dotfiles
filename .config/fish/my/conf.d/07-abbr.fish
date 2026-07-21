@@ -24,7 +24,6 @@ abbr --add tmux 'tmux -2' # open tmux in 256color
 # Development Tools
 abbr --add ld lazydocker
 abbr --add lg lazygit
-abbr --add gw 'cd (gwq get)'
 
 # nvim
 abbr --add vi nvim

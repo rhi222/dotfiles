@@ -36,7 +36,6 @@ herdr = "latest"
 "github:k1LoW/mo" = "latest"
 
 # aquaバックエンドで管理するCLIツール（旧go install / npm / pip 経由から移行）
-"aqua:d-kuro/gwq" = "latest"
 "aqua:jesseduffield/lazydocker" = "latest"
 "aqua:jesseduffield/lazygit" = "latest"
 "aqua:k1LoW/deck" = "latest"
