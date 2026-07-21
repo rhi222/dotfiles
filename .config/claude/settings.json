@@ -72,6 +72,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.config/claude/hooks/worktree-init-hook.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "*",
