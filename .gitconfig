@@ -16,6 +16,11 @@
 # --- Operations ---
 [push]
 	autoSetupRemote = true
+[branch]
+	# 起点が同名のリモート追跡ブランチのときだけupstreamを設定する。
+	# origin/develop 起点で作ったworktreeブランチがdevelopを追跡してしまい、
+	# プロンプトの ⇣⇡ がdevelop基準になるのを防ぐ（push時にautoSetupRemoteが自ブランチを設定する）
+	autoSetupMerge = simple
 [pull]
 	rebase = true
 [rebase]
