@@ -1,6 +1,7 @@
 .config/nvim/pack
 .config/nvim/.netrwhist
 plans/
+docs/superpowers/
 .serena/
 .config/codex/config.toml
 .config/AutoHotkey/ahk-snippets/passwords/*
