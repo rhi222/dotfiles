@@ -59,7 +59,6 @@ link_configs() {
     "$DC/ccstatusline|$HOME/.config/ccstatusline"
     "$DC/nvim|$HOME/.config/nvim"
     "$DC/git|$HOME/.config/git"
-    "$DC/gwq|$HOME/.config/gwq"
     "$DC/mise|$HOME/.config/mise"
     "$DC/gitui|$HOME/.config/gitui"
     "$DC/lazygit|$HOME/.config/lazygit"
