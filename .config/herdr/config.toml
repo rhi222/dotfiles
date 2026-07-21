@@ -79,7 +79,7 @@ delivery = "herdr"
 
 [ui.sound]
 # 背景ワークスペースのエージェントが状態変化したら音で知らせる
-enabled = true
+enabled = false
 
 [session]
 # サーバ再起動後もエージェントの会話セッションを復元
