@@ -60,4 +60,9 @@ worktreeでも、以下で初期化できる（冪等）:
   - 該当なし → スキップ
 
 `git wt <branch>` での作成時は `wt.hook` 経由で自動実行される。
+Claude Code の EnterWorktree 経由では PostToolUse hook
+（`.config/claude/hooks/worktree-init-hook.sh`）で自動実行される。
+herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には
+作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは
+手動で `~/scripts/worktree-init.sh` を実行する。
 テストは `bash scripts/test-worktree-init.sh`。
