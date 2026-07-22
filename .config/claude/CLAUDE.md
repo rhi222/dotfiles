@@ -51,6 +51,10 @@ Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Cl
 - 変更が混在してしまった場合は `git add -p`（ハンク単位）や `git add <path>` で関連する差分だけをステージしてからコミットする。
 - コミット前に `git diff --staged` でステージ内容が単一の意図に閉じているか確認する。
 
+## コミットしないもの
+
+- `docs/superpowers/`（superpowersのspec/planドキュメント）はコミットしない。`.gitignore` で管理対象外にしているため、`git add -A` などで誤って追加しないこと。
+
 ## shellコマンド
 
 - ユーザーへの回答でコマンド例を示す際はfish構文で記述すること（開発者のログインシェルがfishのため）
