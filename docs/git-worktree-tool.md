@@ -30,10 +30,12 @@ git wt --json              # JSON形式で一覧出力
 ```ini
 [wt]
     relative = true       # サブディレクトリの相対パスを付与
-    nocd = create         # worktree作成時は自動cdしない
     copy = CLAUDE.md      # worktree作成時にCLAUDE.mdをコピー
     hook = "bash \"$HOME/scripts/worktree-init.sh\""  # 作成後の初期化
 ```
+
+worktree作成時は hook（初期化・依存インストール）実行後に新worktreeへ自動cdする
+（`nocd = create` は2026-07に廃止。作成後すぐ作業に入る運用のため）。
 
 tmux+claude の自動起動hookは2026-07に廃止し、hookは初期化処理専用にした
 （herdr移行によりtmux前提が崩れたため。エージェント起動は手動または herdr 側で行う）。
