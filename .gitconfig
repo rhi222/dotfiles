@@ -73,6 +73,5 @@
 	root = /data/git-repos
 [wt]
 	relative = true
-	nocd = create
 	copy = CLAUDE.md
 	hook = "bash \"$HOME/scripts/worktree-init.sh\""
