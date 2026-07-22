@@ -213,6 +213,93 @@ assert_output_contains "[dry-run]" "$output" "[dry-run] 表示を含む"
 teardown
 echo ""
 
+# --- 8. 固有スクリプトが存在すれば実行される ---
+echo "[8] 固有スクリプト実行"
+setup
+git -C "$REPO" remote add origin "git@github.com:acme/widget.git"
+add_worktree
+WT_INIT_D="$TEST_DIR/wt-init.d"
+mkdir -p "$WT_INIT_D/github.com/acme"
+cat >"$WT_INIT_D/github.com/acme/widget.sh" <<EOF
+#!/usr/bin/env bash
+echo "CUSTOM_RAN target=\$1"
+touch "\$1/.custom-marker"
+EOF
+exit_code=0
+output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" "$WT" 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "固有スクリプトありでもexit 0"
+assert_output_contains "CUSTOM_RAN" "$output" "固有スクリプトが実行される"
+assert_file_exists "$WT/.custom-marker" "固有スクリプトの副作用が反映される"
+assert_output_contains "target=$WT" "$output" "第1引数にworktreeパスが渡る"
+teardown
+echo ""
+
+# --- 9. 固有スクリプトが無ければ共通処理のみ ---
+echo "[9] 固有スクリプトなし"
+setup
+git -C "$REPO" remote add origin "git@github.com:acme/other.git"
+add_worktree
+WT_INIT_D="$TEST_DIR/wt-init.d"
+mkdir -p "$WT_INIT_D"
+exit_code=0
+output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" "$WT" 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "固有スクリプトなしでもexit 0"
+assert_output_contains "custom: skip" "$output" "スクリプトなしはskip表示"
+teardown
+echo ""
+
+# --- 10. origin未設定はskip ---
+echo "[10] origin未設定"
+setup
+add_worktree
+WT_INIT_D="$TEST_DIR/wt-init.d"
+mkdir -p "$WT_INIT_D"
+exit_code=0
+output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" "$WT" 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "origin未設定でもexit 0"
+assert_output_contains "custom: skip" "$output" "origin未設定はskip表示"
+teardown
+echo ""
+
+# --- 11. dry-runでは固有スクリプトを実行しない ---
+echo "[11] dry-run 固有スクリプト"
+setup
+git -C "$REPO" remote add origin "git@github.com:acme/widget.git"
+add_worktree
+WT_INIT_D="$TEST_DIR/wt-init.d"
+mkdir -p "$WT_INIT_D/github.com/acme"
+cat >"$WT_INIT_D/github.com/acme/widget.sh" <<EOF
+#!/usr/bin/env bash
+touch "\$1/.custom-marker"
+EOF
+output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" --dry-run "$WT" 2>&1)
+assert_file_missing "$WT/.custom-marker" "dry-runでは固有スクリプトを実行しない"
+assert_output_contains "[dry-run] custom:" "$output" "[dry-run] custom: 表示を含む"
+teardown
+echo ""
+
+# --- 12. origin URL正規化の網羅（同一キーへ解決） ---
+echo "[12] origin URL正規化"
+for url in \
+  "git@github.com:acme/widget.git" \
+  "https://github.com/acme/widget.git" \
+  "https://github.com/acme/widget" \
+  "ssh://git@github.com/acme/widget.git"; do
+  setup
+  git -C "$REPO" remote add origin "$url"
+  add_worktree
+  WT_INIT_D="$TEST_DIR/wt-init.d"
+  mkdir -p "$WT_INIT_D/github.com/acme"
+  cat >"$WT_INIT_D/github.com/acme/widget.sh" <<EOF
+#!/usr/bin/env bash
+echo "CUSTOM_RAN"
+EOF
+  output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" "$WT" 2>&1) || true
+  assert_output_contains "CUSTOM_RAN" "$output" "正規化: $url"
+  teardown
+done
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
