@@ -300,6 +300,25 @@ EOF
 done
 echo ""
 
+# --- 13. 固有スクリプトが失敗しても全体は成功扱い ---
+echo "[13] 固有スクリプト失敗の分離"
+setup
+git -C "$REPO" remote add origin "git@github.com:acme/widget.git"
+add_worktree
+WT_INIT_D="$TEST_DIR/wt-init.d"
+mkdir -p "$WT_INIT_D/github.com/acme"
+cat >"$WT_INIT_D/github.com/acme/widget.sh" <<EOF
+#!/usr/bin/env bash
+echo "before-fail"
+exit 3
+EOF
+exit_code=0
+output=$(WORKTREE_INIT_D="$WT_INIT_D" "$WT_INIT" "$WT" 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "固有スクリプト失敗でも worktree-init は exit 0"
+assert_output_contains "warning" "$output" "失敗時は warning を出力する"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
