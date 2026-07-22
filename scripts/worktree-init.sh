@@ -36,6 +36,9 @@ done
 
 TARGET="${TARGET:-$PWD}"
 
+# worktree-init.d のベースディレクトリ（テストで上書き可能）
+WORKTREE_INIT_D="${WORKTREE_INIT_D:-$(cd "$(dirname "$0")" && pwd)/worktree-init.d}"
+
 if ! git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "error: gitリポジトリ内ではありません: $TARGET" >&2
   exit 1
@@ -96,5 +99,49 @@ install_deps() {
   fi
 }
 
+# origin URLを正規化してキーにする
+#   git@github.com:owner/repo.git       -> github.com/owner/repo
+#   https://github.com/owner/repo.git   -> github.com/owner/repo
+#   ssh://git@github.com/owner/repo.git -> github.com/owner/repo
+normalize_repo_key() {
+  local url="$1"
+  url="${url#ssh://}"
+  url="${url#https://}"
+  url="${url#http://}"
+  url="${url#git://}"
+  # user@ を除去（scp形式・ssh形式）
+  url="${url#*@}"
+  # scp形式の最初の ':' を '/' に変換
+  url="${url/://}"
+  # 末尾の .git を除去
+  url="${url%.git}"
+  printf '%s' "$url"
+}
+
+# リポジトリ固有スクリプトがあれば実行する（失敗しても全体は継続）
+run_custom_hook() {
+  local origin key script
+  origin=$(git -C "$TARGET" remote get-url origin 2>/dev/null || true)
+  if [ -z "$origin" ]; then
+    echo "custom: skip（origin未設定）"
+    return 0
+  fi
+  key=$(normalize_repo_key "$origin")
+  script="$WORKTREE_INIT_D/$key.sh"
+  if [ ! -f "$script" ]; then
+    echo "custom: skip（$key 用スクリプトなし）"
+    return 0
+  fi
+  if [ "$DRY_RUN" = 1 ]; then
+    echo "[dry-run] custom: $script"
+    return 0
+  fi
+  echo "custom: $script"
+  if ! (cd "$TARGET" && bash "$script" "$TARGET"); then
+    echo "warning: custom hook が失敗しました（無視して継続）: $script" >&2
+  fi
+}
+
 copy_env_files
 install_deps
+run_custom_hook
