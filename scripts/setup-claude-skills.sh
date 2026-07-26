@@ -192,8 +192,9 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
       attempted=$((attempted + 1))
       continue
     fi
-    install_local "$git_url" "$sub_path" "$skill_name"
-    rc=$?
+    # `|| rc=$?` は必須: set -e 下では素の関数呼び出しが非0(skip=100等)を返した
+    # 時点でスクリプトが終了してしまう。
+    install_local "$git_url" "$sub_path" "$skill_name" || rc=$?
   else
     read -r repo skill_spec extra <<<"$line"
     if [ -z "${repo:-}" ] || [ -z "${skill_spec:-}" ] || [ -n "${extra:-}" ]; then
@@ -204,8 +205,7 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
     fi
     skill_path="${skill_spec%@*}"
     skill_name="${skill_path##*/}"
-    install_remote "$repo" "$skill_spec" "$skill_name"
-    rc=$?
+    install_remote "$repo" "$skill_spec" "$skill_name" || rc=$?
   fi
 
   case "$rc" in
