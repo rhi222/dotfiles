@@ -28,7 +28,7 @@ CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 VAULT="${NIPPO_VAULT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian}"
 PROMPT="/nippo-finalize"
 # nippo-finalize の allowed-tools に合わせて許可を最小化する
-ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*)"
+ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(command:*),Bash(gh:*),Bash(jq:*),Bash(sort:*),Bash(paste:*)"
 
 if [[ "${NIPPO_DRAFT_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $VAULT && $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""

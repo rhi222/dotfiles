@@ -31,6 +31,8 @@ touch "$tmp_home2/.config/nippo-draft-enabled"
 out2=$(HOME="$tmp_home2" NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 bash "$SCRIPT" 2>&1)
 check "DRY_RUNで実行内容を表示する" grep -q "DRY_RUN" <<<"$out2"
 check "DRY_RUNでnippo-finalizeを呼ぶ予定が表示される" grep -q "nippo-finalize" <<<"$out2"
+check "allowedToolsにghが含まれる（GitHub活動収集用）" grep -q 'Bash(gh:\*)' <<<"$out2"
+check "allowedToolsにjqが含まれる（GitHub活動収集用）" grep -q 'Bash(jq:\*)' <<<"$out2"
 
 # 3. DRY_RUNでclaude本体が呼ばれていないこと（存在しないバイナリを指定しても成功する）
 out3=$(HOME="$tmp_home2" NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 CLAUDE_BIN=/nonexistent/claude bash "$SCRIPT" 2>&1)
