@@ -67,7 +67,8 @@ return {
 	-- telescope の依存に含めて keybind 経由のオンデマンドロードに一本化している
 	{
 		"danielfalk/smart-open.nvim",
-		branch = "0.2.x",
+		-- 上流の開発線は 0.3.x。0.2.x は保守ブランチで取り残されるため 0.3.x を追う
+		branch = "0.3.x",
 		lazy = true,
 		dependencies = {
 			"kkharji/sqlite.lua",
