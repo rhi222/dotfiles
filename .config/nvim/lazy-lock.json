@@ -30,7 +30,7 @@
   "plenary.nvim": { "branch": "master", "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b" },
   "rainbow_csv.nvim": { "branch": "main", "commit": "26de78d8324f7ac6a3e478319d1eb1f17123eb5b" },
   "rest.nvim": { "branch": "main", "commit": "714d5512aaec5565d55652480c16c26f8d95645d" },
-  "smart-open.nvim": { "branch": "0.2.x", "commit": "7763800068bef69334870c10cb595d49ce27580a" },
+  "smart-open.nvim": { "branch": "0.3.x", "commit": "918c97cac0c33f7a116a822df144bc5bbefa4490" },
   "snacks.nvim": { "branch": "main", "commit": "882c996cf28183f4d63640de0b4c02ec886d01f2" },
   "sqlite.lua": { "branch": "master", "commit": "50092d60feb242602d7578398c6eb53b4a8ffe7b" },
   "telescope-egrepify.nvim": { "branch": "master", "commit": "cd9342b95c1a8cff2e41ba5041ae3912f47595cc" },
