@@ -179,6 +179,47 @@ assert_eq 2 "$(echo "$repos_out" | grep -c .)" "リポジトリは2件"
 teardown
 echo ""
 
+# --- 4. PR状態の取得 ---
+echo "[4] PR状態の取得"
+setup
+
+# スタブ: ブランチ名で状態を返す。exit 1 で取得失敗を再現する。
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+# $1=repo $2=branch
+case "$2" in
+  merged-br) echo "MERGED #10737" ;;
+  closed-br) echo "CLOSED #99" ;;
+  open-br) echo "OPEN #11068" ;;
+  nopr-br) echo "NONE" ;;
+  broken-br) exit 1 ;;
+  *) echo "NONE" ;;
+esac
+EOF
+chmod +x "$STUB"
+
+assert_eq "MERGED #10737" "$(WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" get_pr_state "$REPO" merged-br)" "スタブ経由で MERGED を返す"
+assert_eq "CLOSED #99" "$(WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" get_pr_state "$REPO" closed-br)" "スタブ経由で CLOSED を返す"
+assert_eq "NONE" "$(WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" get_pr_state "$REPO" nopr-br)" "PRなしは NONE"
+
+exit_code=0
+WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" get_pr_state "$REPO" broken-br >/dev/null 2>&1 || exit_code=$?
+assert_eq 1 "$exit_code" "取得失敗は非ゼロで return"
+
+# gh が使えない環境では実gh経路が失敗扱いになる。
+# PATH を潰して gh を見つけられない状態を作り、環境非依存で決定的に検証する
+# （command -v はシェル組み込みなので PATH が空でも動作する）。
+exit_code=0
+(
+  PATH="/nonexistent"
+  WORKTREE_CLEANUP_PR_STATE_CMD=""
+  get_pr_state "$REPO" any-br
+) >/dev/null 2>&1 || exit_code=$?
+assert_eq 1 "$exit_code" "gh が見つからない環境では非ゼロで return"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"

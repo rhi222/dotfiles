@@ -185,6 +185,36 @@ list_worktrees() {
   done <<<"$porcelain"$'\n'
 }
 
+# ---- PR状態 ------------------------------------------------------------------
+# ブランチに対応するPRの状態を取得する。
+#   stdout: "MERGED #10737" / "CLOSED #99" / "OPEN #11068" / "NONE"
+#   return: 取得できなければ非ゼロ（未認証・権限不足・ネットワーク断など）
+#
+# 同一ブランチ名に複数PRがある場合は gh の既定順（作成日時の降順）の先頭を採る。
+get_pr_state() {
+  local repo="$1" branch="$2"
+
+  # テストや手元検証用の差し替え口
+  if [ -n "$WORKTREE_CLEANUP_PR_STATE_CMD" ]; then
+    "$WORKTREE_CLEANUP_PR_STATE_CMD" "$repo" "$branch"
+    return $?
+  fi
+
+  command -v gh >/dev/null 2>&1 || return 1
+
+  local out
+  # リポジトリを cd で与えることで owner/repo の導出を gh に任せる。
+  out=$( (cd "$repo" && gh pr list \
+    --head "$branch" \
+    --state all \
+    --json number,state \
+    --limit 1 \
+    --jq 'if length == 0 then "NONE" else (.[0].state + " #" + (.[0].number | tostring)) end') 2>/dev/null) || return 1
+
+  [ -n "$out" ] || return 1
+  printf '%s\n' "$out"
+}
+
 main() {
   parse_args "$@" || return 1
   return 0
