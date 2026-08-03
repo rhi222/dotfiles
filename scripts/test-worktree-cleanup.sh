@@ -338,6 +338,31 @@ assert_output_contains "解放見込み" "$output" "--size で解放見込みを
 teardown
 echo ""
 
+# --- 6b. detached worktree の分類（空フィールド畳み込みの回帰） ---
+echo "[6b] detached worktree の分類"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "NONE"
+EOF
+chmod +x "$STUB"
+
+# 素の detached（ディレクトリあり）と detached+prunable（ディレクトリ消失）
+git -C "$REPO" worktree add -q --detach "$REPO/.wt/w-detached"
+git -C "$REPO" worktree add -q --detach "$REPO/.wt/w-det-gone"
+rm -rf "$REPO/.wt/w-det-gone"
+
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" 2>&1)
+assert_output_contains "[SKIP" "$output" "detached worktree は SKIP"
+assert_output_contains "detached HEAD" "$output" "detached の理由に detached HEAD が出る"
+assert_output_contains "[PRUNE" "$output" "detached+prunable は PRUNE"
+# バグ時は空 branch が畳まれ flags 値(prunable)を branch として拾い KEEP(PR なし)になっていた
+assert_output_lacks "PR なし" "$output" "detached が branch にフラグ値を拾って KEEP に誤分類されない"
+assert_output_contains "detached 1" "$output" "SKIP内訳の detached が正しく1件数えられる"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
