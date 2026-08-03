@@ -25,6 +25,7 @@
     │   └── 11-yazi.fish              # yazi統合（終了時にcwdへcd）
     └── functions/       # カスタム関数
         ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
+        ├── __wt_lock_reason.fish    # worktreeのlock理由取得
         ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
@@ -35,7 +36,7 @@
         ├── mvuntracked.fish         # 未追跡ファイルをmainワークツリーへ移動
         ├── open-pr.fish             # 現在ブランチのPRをブラウザで開く
         ├── wt.fish                  # git worktree切り替え
-        └── wtd.fish                 # git worktree削除
+        └── wtd.fish                 # git worktree削除（-f/-ff で強制削除）
 ```
 
 ## 設計思想
