@@ -76,6 +76,9 @@ main() {
   # New skills are added via `scripts/skill-add.sh`; bootstrap uses
   # `setup-claude-skills.sh`. Daily only runs the update step.
   run_step "gh skill update" gh_skill_update
+  # 同様に、拡張の追加は gh-extensions.txt + setup-gh-extensions.sh。
+  # ここは既存拡張の更新だけを回す（--pin 済みの拡張は据え置かれる）。
+  run_step "gh extension upgrade" gh extension upgrade --all
 
   echo "========================================" | tee -a "$LOG_FILE"
   if [ ${#failures[@]} -gt 0 ]; then
