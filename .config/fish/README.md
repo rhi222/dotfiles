@@ -22,11 +22,18 @@
     │   ├── 08-prompt-override.fish   # プロンプトカスタマイズ（git treeアイコン）
     │   ├── 09-git-wt.fish            # Git worktree関連
     │   ├── 10-fzf.fish               # fzf.fishキーバインド／履歴表示設定
-    │   └── 11-yazi.fish              # yazi統合（終了時にcwdへcd）
+    │   ├── 11-yazi.fish              # yazi統合（終了時にcwdへcd）
+    │   ├── 12-herdr.fish             # herdr起動ラッパー（`he`）
+    │   └── 13-docker-clean.fish      # docker掃除のリマインド（起動時通知）
     └── functions/       # カスタム関数
+        ├── __docker_clean_cache_file.fish    # docker-cleanキャッシュのパス解決
+        ├── __docker_clean_format_bytes.fish  # バイト数→人間可読
+        ├── __docker_clean_size_to_bytes.fish # 人間可読サイズ→バイト数
+        ├── __docker_clean_stats.fish         # docker使用状況のキャッシュ管理
         ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
         ├── __wt_lock_reason.fish    # worktreeのlock理由取得
         ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
+        ├── dclean.fish              # docker掃除（軽/重プリセット）
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
         ├── ftmux.fish               # tmux window/session/pane選択
@@ -61,22 +68,31 @@
 - **09-git-wt.fish**: Git worktree関連
 - **10-fzf.fish**: fzf.fishのキーバインド／履歴表示設定
 - **11-yazi.fish**: yazi終了時のcwdへの自動cd（`y`関数）
+- **12-herdr.fish**: herdr起動ラッパー（`he`）
+- **13-docker-clean.fish**: docker掃除のリマインド（キャッシュ経由の起動時通知）
 
 ### 3. 読み込み順序制御
 
 `config.fish`で明示的に読み込み順序を制御：
 
 ```fish
+# 個人関数を優先パスに追加（conf.d より前）
+set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
+
 # 個人設定を順次読み込み
 for file in ~/.config/fish/my/conf.d/*.fish
     if test -r $file
         source $file
     end
 end
-
-# 個人関数を優先パスに追加
-set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 ```
+
+**`fish_function_path` の設定は conf.d の source より前に置く。** conf.d の中から
+`my/functions` の関数を呼ぶ設定（`13-docker-clean.fish` など）があるため、後回しにすると
+autoload に失敗して `fish_command_not_found` が走る。`mise hook-not-found` と
+`/usr/lib/command-not-found` で実測 380ms を浪費するうえ、当該処理は黙って何もしない
+まま終わるので気づきにくい。回帰テストは `scripts/test-docker-clean.sh` の
+「実際の対話シェルで通知が出る」で担保している。
 
 ## パフォーマンス最適化
 
