@@ -199,7 +199,7 @@ teardown
 echo ""
 
 # --- 5. 陳腐化検知（90分以上更新なし + 未完了タスクあり） ---
-echo "[5] 陳腐化検知"
+echo "[5] 陳腐化検知（cronのみ）"
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
@@ -214,12 +214,19 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 NIPPO
 # ファイルのmtimeを120分前に設定
 touch -t "202603091200.00" "$TEST_DIR/nippo.2026-03-09.md"
+result=$(run_check cron)
+output=$(parse_output "$result")
+exit_code=$(parse_exit "$result")
+assert_exit 1 "$exit_code" "cronでは陳腐化検知でexit 1"
+assert_output_contains "⏰" "$output" "⏰メッセージを含む"
+assert_output_contains "更新されていません" "$output" "更新なしメッセージ"
+
+# 同じ状態でも stop では通知しない（低優先度チェックのため）
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
-assert_exit 1 "$exit_code" "陳腐化検知はexit 1"
-assert_output_contains "⏰" "$output" "⏰メッセージを含む"
-assert_output_contains "更新されていません" "$output" "更新なしメッセージ"
+assert_exit 0 "$exit_code" "stopでは陳腐化検知はexit 0"
+assert_output_empty "$output" "stopでは陳腐化検知は出力なし"
 teardown
 
 echo ""
@@ -300,7 +307,7 @@ teardown
 echo ""
 
 # --- 7. 未完了タスクのみ ---
-echo "[7] 未完了タスクのみ"
+echo "[7] 未完了タスクのみ（cronのみ）"
 
 setup
 export NIPPO_NOW="2026-03-09 15:00"
@@ -317,13 +324,20 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定（陳腐化を回避）
 touch -t "202603091450.00" "$TEST_DIR/nippo.2026-03-09.md"
-result=$(run_check stop)
+result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
-assert_exit 1 "$exit_code" "未完了タスクありはexit 1"
+assert_exit 1 "$exit_code" "cronでは未完了タスクありでexit 1"
 assert_output_contains "📋" "$output" "📋メッセージを含む"
 assert_output_contains "未完了タスク" "$output" "未完了タスクメッセージ"
 assert_output_contains "3件" "$output" "未完了3件を含む"
+
+# 同じ状態でも stop では通知しない（一日中鳴り続けるため）
+result=$(run_check stop)
+output=$(parse_output "$result")
+exit_code=$(parse_exit "$result")
+assert_exit 0 "$exit_code" "stopでは未完了タスクはexit 0"
+assert_output_empty "$output" "stopでは未完了タスクは出力なし"
 teardown
 
 echo ""
@@ -383,6 +397,83 @@ else
   PASS=$((PASS + 1))
   echo "  PASS: 📋は出力されない（未終了タイマーが優先）"
 fi
+teardown
+
+echo ""
+
+# --- 10. 緊急度の高いチェックは両コンテキストで通知される ---
+echo "[10] 緊急チェックはstop/cron両方で通知"
+
+setup
+export NIPPO_NOW="2026-03-09 10:00"
+for ctx in stop cron; do
+  result=$(run_check "$ctx")
+  output=$(parse_output "$result")
+  exit_code=$(parse_exit "$result")
+  assert_exit 1 "$exit_code" "日報未作成は${ctx}でexit 1"
+  assert_output_contains "📝" "$output" "日報未作成は${ctx}で📝"
+done
+teardown
+
+setup
+export NIPPO_NOW="2026-03-09 14:00"
+cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+# 2026-03-09
+
+## Tasks:
+- 10:00 🟢 start: API設計
+NIPPO
+touch -t "202603091350.00" "$TEST_DIR/nippo.2026-03-09.md"
+for ctx in stop cron; do
+  result=$(run_check "$ctx")
+  output=$(parse_output "$result")
+  exit_code=$(parse_exit "$result")
+  assert_exit 1 "$exit_code" "未終了タイマーは${ctx}でexit 1"
+  assert_output_contains "🟢" "$output" "未終了タイマーは${ctx}で🟢"
+done
+teardown
+
+setup
+export NIPPO_NOW="2026-03-09 18:30"
+cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+# 2026-03-09
+
+## Tasks:
+- 10:00 🟢 start: API設計
+- 11:00 🔴 end: API設計
+- [x] レビュー対応
+NIPPO
+touch -t "202603091820.00" "$TEST_DIR/nippo.2026-03-09.md"
+for ctx in stop cron; do
+  result=$(run_check "$ctx")
+  output=$(parse_output "$result")
+  exit_code=$(parse_exit "$result")
+  assert_exit 1 "$exit_code" "finalize忘れは${ctx}でexit 1"
+  assert_output_contains "📊" "$output" "finalize忘れは${ctx}で📊"
+done
+teardown
+
+echo ""
+
+# --- 11. 未知のコンテキストは全チェックを行う（cron相当にフォールバック） ---
+echo "[11] 未知のコンテキストは全チェック"
+
+setup
+export NIPPO_NOW="2026-03-09 15:00"
+cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+# 2026-03-09
+
+## Tasks:
+- 10:00 🟢 start: API設計
+- 11:00 🔴 end: API設計
+- [ ] レビュー対応
+NIPPO
+touch -t "202603091450.00" "$TEST_DIR/nippo.2026-03-09.md"
+result=$(run_check manual)
+output=$(parse_output "$result")
+exit_code=$(parse_exit "$result")
+assert_exit 1 "$exit_code" "未知のコンテキストは低優先度も報告する"
+assert_output_contains "📋" "$output" "未知のコンテキストで📋"
 teardown
 
 echo ""
