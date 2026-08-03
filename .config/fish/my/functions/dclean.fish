@@ -1,0 +1,194 @@
+# docker の不要リソースを掃除する（軽/重 2段プリセット）
+#
+# 稼働中コンテナは一切停止しない。一覧を表示するだけで、停止は手動判断とする。
+# named volume も削除しない（volume prune に -a を付けない）。DB データを守るため。
+function dclean --description 'docker の不要リソースを掃除する（軽/重プリセット）'
+    set -l mode light
+    set -l action clean
+
+    for a in $argv
+        switch $a
+            case -a --all
+                set mode heavy
+            case --status
+                set action status
+            case --refresh
+                set action refresh
+            case -h --help
+                __dclean_usage
+                return 0
+            case '*'
+                echo "dclean: 不明な引数: $a" >&2
+                __dclean_usage >&2
+                return 2
+        end
+    end
+
+    if not docker info >/dev/null 2>&1
+        echo "Docker が起動していません" >&2
+        return 1
+    end
+
+    if test $action = refresh
+        __docker_clean_stats --update
+        return $status
+    end
+
+    # プレビューは削除直前の実データで出す。手動実行なので 5 秒待って構わない。
+    __docker_clean_stats --update
+    __dclean_preview $mode
+
+    test $action = status; and return 0
+
+    read -l -P '実行しますか? [y/N] ' ans
+    if not string match -qir '^y(es)?$' -- $ans
+        echo 中止しました
+        return 0
+    end
+
+    __dclean_run $mode
+    set -l rc $status
+    __docker_clean_stats --update
+    return $rc
+end
+
+function __dclean_usage --description 'dclean の使い方を表示する'
+    echo '使い方: dclean [-a|--all] [--status] [--refresh] [-h|--help]'
+    echo ''
+    echo '  (引数なし)      軽掃除: 停止コンテナ / dangling image / 匿名 volume /'
+    echo '                  7日より古い build cache を削除する'
+    echo '  -a, --all       重掃除: 上記 + 未使用 image 全部 + build cache 全部'
+    echo '  --status        現状の集計と稼働中コンテナ一覧のみ表示（削除しない）'
+    echo '  --refresh       キャッシュ更新のみ（起動時通知が background で使う）'
+    echo '  -h, --help      この使い方を表示する'
+    echo ''
+    echo '  named volume は軽・重どちらでも削除しない。消すときは docker volume rm を使う。'
+    echo '  稼働中コンテナも停止しない。一覧を見て手動で判断する。'
+end
+
+# buildx のビルダー名を列挙する。
+#
+# `docker builder prune` は docker buildx prune のエイリアスで、--builder を
+# 付けないとカレントビルダーしか掃除しない。docker-container ドライバのビルダーと
+# daemon 側の default ビルダーは別のキャッシュを持つ（実測で 11.2GB と 6.8GB）ため、
+# 両方を対象にしないと片方が永久に残る。
+#
+# 列挙できなかった場合は空を返す。呼び出し側は --builder を付けずにカレントビルダーだけを扱う。
+function __dclean_builders --description 'buildx のビルダー名を列挙する'
+    docker buildx ls --format json 2>/dev/null | jq -r '.Name' 2>/dev/null
+end
+
+function __dclean_df_field --description 'キャッシュした df から指定種別のフィールドを取り出す'
+    set -l cache (__docker_clean_cache_file)
+    jq -r --arg t "$argv[1]" --arg f "$argv[2]" \
+        '.df[]? | select(.Type == $t) | .[$f] // ""' $cache 2>/dev/null
+end
+
+# プレビューの1行を整形する。
+# string pad は East Asian の文字幅を考慮するため日本語ラベルでも桁が揃う。
+# printf の %-18s はバイト数で詰めるので日本語では崩れる。
+function __dclean_row --description 'プレビューの1行を整形して出力する'
+    set -l label (string pad -r -w 18 -- $argv[1])
+    set -l n (string pad -w 4 -- $argv[2])
+    set -l out "  $label$n 件   $argv[3]"
+    test (count $argv) -ge 4; and set out "$out   $argv[4]"
+    echo $out
+end
+
+function __dclean_preview --description 'dclean のプレビューを表示する'
+    set -l mode $argv[1]
+    set -l label 軽
+    test $mode = heavy; and set label 重
+
+    echo "docker 掃除プレビュー（$label）"
+
+    set -l known 0
+
+    # 停止コンテナ
+    set -l stopped_n (count (docker ps -a -q -f status=exited -f status=created 2>/dev/null))
+    set -l stopped_b (__docker_clean_size_to_bytes (__dclean_df_field Containers Reclaimable))
+    or set stopped_b 0
+    __dclean_row 停止コンテナ $stopped_n (__docker_clean_format_bytes $stopped_b)
+    set known (math "$known + $stopped_b")
+
+    # image
+    if test $mode = heavy
+        set -l total (__dclean_df_field Images TotalCount)
+        set -l active (__dclean_df_field Images Active)
+        set -l img_n (math "$total - $active")
+        set -l img_b (__docker_clean_size_to_bytes (__dclean_df_field Images Reclaimable))
+        or set img_b 0
+        __dclean_row '未使用 image' $img_n (__docker_clean_format_bytes $img_b)
+        set known (math "$known + $img_b")
+    else
+        set -l img_n (count (docker images -f dangling=true -q 2>/dev/null))
+        __dclean_row 'dangling image' $img_n - '※共有レイヤのため事前見積り不可'
+    end
+
+    # volume（匿名のみ。64桁hex名で判定する）
+    set -l vol_n (docker volume ls -q -f dangling=true 2>/dev/null | string match -r '^[0-9a-f]{64}$' | count)
+    set -l vol_b (__docker_clean_size_to_bytes (__dclean_df_field 'Local Volumes' Reclaimable))
+    or set vol_b 0
+    __dclean_row '未使用 volume' $vol_n (__docker_clean_format_bytes $vol_b) '※ named volume は対象外'
+    set known (math "$known + $vol_b")
+
+    # build cache（全ビルダーを合算する。df の Build Cache は default ビルダーの分しか出ない）
+    set -l bc_filter --filter until=168h
+    set -l bc_note '※7日より古いもの / 全ビルダー合算'
+    if test $mode = heavy
+        set bc_filter
+        set bc_note '※全ビルダー合算'
+    end
+
+    set -l sizes
+    set -l builders (__dclean_builders)
+    if test (count $builders) -eq 0
+        set sizes (docker buildx du $bc_filter --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
+    else
+        for b in $builders
+            set -a sizes (docker buildx du --builder $b $bc_filter --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
+        end
+    end
+
+    set -l bc_n (count $sizes)
+    set -l bc_b 0
+    if test $bc_n -gt 0
+        set bc_b (__docker_clean_size_to_bytes $sizes)
+        or set bc_b 0
+    end
+    __dclean_row 'build cache' $bc_n 最大(__docker_clean_format_bytes $bc_b) $bc_note
+    set known (math "$known + $bc_b")
+
+    echo '  ──────────────────────────────'
+    echo "  回収見込み 最大 約 "(__docker_clean_format_bytes $known)
+    # 軽モードは image 行のサイズを出せない（共有レイヤのため）ので合計に入っていない。
+    # 重モードは df の Reclaimable を使うので image 分も合計に含まれている。
+    if test $mode = heavy
+        echo '  （buildx du のサイズは共有レイヤを含むため実際はこれより少ない）'
+    else
+        echo '  （buildx du のサイズは共有レイヤを含むため実際はこれより少ない。image 分は未計上）'
+    end
+    echo ''
+
+    echo '稼働中コンテナ（停止は手動判断）'
+    set -l long (__docker_clean_stats --long-running)
+    if test (count $long) -eq 0
+        echo '  （閾値を超えて稼働しているコンテナはありません）'
+    else
+        for line in $long
+            set -l f (string split \t -- $line)
+            printf '  %-36s Up %s\n' $f[1] (__dclean_humanize_uptime $f[3])
+        end
+    end
+    echo ''
+end
+
+function __dclean_humanize_uptime --description '秒数を「23 hours」形式にする'
+    set -l s $argv[1]
+    set -l h (math "floor($s / 3600)")
+    if test $h -lt 24
+        echo "$h hours"
+    else
+        echo (math "floor($h / 24)")" days"
+    end
+end
