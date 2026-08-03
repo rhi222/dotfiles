@@ -228,6 +228,26 @@ get_pr_state() {
 }
 
 # ---- 判定 -------------------------------------------------------------------
+# 追跡ファイルに未コミット変更があるか。あれば 0、なければ 1 を返す。
+# 未追跡ファイルは意図的に見ない（--untracked-files=no）。
+# 理由: dirty の実体が plans/ 等の使い捨てスクラッチ1件であることが多く、
+# 未追跡を dirty に含めるとマージ済みworktreeの削除がほぼ全部ブロックされる。
+has_tracked_changes() {
+  local path="$1"
+  [ -n "$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" ]
+}
+
+# 未追跡ファイルの件数を10進整数で返す（測定できなければ 0）。
+# 呼び出し側が $(( )) や比較で使うため、必ず数値を返す。
+count_untracked() {
+  local path="$1" n
+  n=$(git -C "$path" status --porcelain --untracked-files=normal 2>/dev/null | grep -c '^??')
+  case "$n" in
+    '' | *[!0-9]*) echo 0 ;;
+    *) echo "$n" ;;
+  esac
+}
+
 # worktree を KEEP / DELETE / SKIP / PRUNE に分類する。
 #   stdout: "<verdict>\t<reason>"
 #
@@ -258,8 +278,9 @@ classify_worktree() {
     return 0
   fi
 
-  # 4. 未コミット変更・未追跡ファイル: 作業中の可能性。--force で解除できる
-  if [ "$FORCE" -eq 0 ] && [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]; then
+  # 4. 追跡ファイルの未コミット変更: 作業中の可能性。--force で解除できる
+  #    未追跡ファイルのみの場合はここで止めず、ルール5で件数を併記して削除候補にする
+  if [ "$FORCE" -eq 0 ] && has_tracked_changes "$path"; then
     printf 'SKIP\t未コミット変更あり（--force で削除対象に含める）\n'
     return 0
   fi
@@ -272,8 +293,14 @@ classify_worktree() {
   fi
 
   case "$pr" in
-    MERGED*| CLOSED*)
-      printf 'DELETE\t%s\n' "$pr"
+    MERGED* | CLOSED*)
+      local untracked
+      untracked=$(count_untracked "$path")
+      if [ "$untracked" -gt 0 ]; then
+        printf 'DELETE\t%s（未追跡 %s 件あり）\n' "$pr" "$untracked"
+      else
+        printf 'DELETE\t%s\n' "$pr"
+      fi
       ;;
     NONE)
       printf 'KEEP\tPR なし\n'
