@@ -373,6 +373,43 @@ print_summary() {
   echo "worktree-cleanup: DELETE_CANDIDATES=$N_DELETE PRUNE=$N_PRUNE SKIP=$N_SKIP KEEP=$N_KEEP"
 }
 
+# ---- 実行 -------------------------------------------------------------------
+# DELETE候補を削除し、prunable を掃除する。個別の失敗では止まらない。
+execute_deletions() {
+  local entry del_repo del_path repo
+  local force_args=()
+
+  # スクリプトの --force は git へも伝播させる。dirty な worktree の remove は
+  # --force なしでは git 自身が exit 128 で拒否するため（git 2.54.0 で実測）。
+  [ "$FORCE" -eq 1 ] && force_args=(--force)
+
+  if [ "${#DELETE_PATHS[@]}" -gt 0 ]; then
+    section "削除の実行"
+    for entry in "${DELETE_PATHS[@]}"; do
+      # `IFS=$'\t' read` は使わない。TAB は IFS の空白文字なので連続タブが1区切りに
+      # 畳まれ、空フィールドが消えてフィールドがずれる（Task 5 で実際にこのバグを踏んだ）。
+      # ここは repo/path とも非空なので実害は出ないが、同じ脆いパターンを再導入しない
+      # ため process_repo と同じ手動分解に揃える。
+      del_repo="${entry%%$'\t'*}"
+      del_path="${entry#*$'\t'}"
+      # git -C はリポジトリ側を指す。削除対象の worktree 内を指すと cwd が消える。
+      if git -C "$del_repo" worktree remove "${force_args[@]}" "$del_path" 2>/dev/null; then
+        echo "  ${C_GREEN}削除${C_RESET}: $del_path"
+      else
+        echo "  ${C_YELLOW}削除に失敗（継続します）${C_RESET}: $del_path" >&2
+      fi
+    done
+  fi
+
+  if [ "${#PRUNE_REPOS[@]}" -gt 0 ]; then
+    section "prune の実行"
+    for repo in "${PRUNE_REPOS[@]}"; do
+      git -C "$repo" worktree prune -v 2>&1 | sed 's/^/  /' ||
+        echo "  ${C_YELLOW}prune に失敗（継続します）${C_RESET}: $repo" >&2
+    done
+  fi
+}
+
 main() {
   parse_args "$@" || return 1
 
@@ -390,6 +427,10 @@ main() {
     [ -n "$repo" ] || continue
     process_repo "$repo"
   done < <(discover_repos)
+
+  if [ "$EXECUTE" -eq 1 ]; then
+    execute_deletions
+  fi
 
   print_summary
 
