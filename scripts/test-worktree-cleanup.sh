@@ -220,6 +220,80 @@ assert_eq 1 "$exit_code" "gh が見つからない環境では非ゼロで retur
 teardown
 echo ""
 
+# --- 5. 判定ロジック ---
+echo "[5] 判定ロジック"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+case "$2" in
+  merged-br) echo "MERGED #10737" ;;
+  closed-br) echo "CLOSED #99" ;;
+  open-br) echo "OPEN #11068" ;;
+  nopr-br) echo "NONE" ;;
+  broken-br) exit 1 ;;
+  *) echo "NONE" ;;
+esac
+EOF
+chmod +x "$STUB"
+export WORKTREE_CLEANUP_PR_STATE_CMD="$STUB"
+
+# clean な worktree を作るヘルパー
+mk_wt() {
+  local name="$1" branch="$2"
+  git -C "$REPO" worktree add -q "$REPO/.wt/$name" -b "$branch"
+  echo "$REPO/.wt/$name"
+}
+
+FORCE=0
+
+p=$(mk_wt w-merged merged-br)
+assert_eq "DELETE" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "MERGED → DELETE"
+assert_output_contains "MERGED #10737" "$(classify_worktree "$REPO" "$p" merged-br - "")" "理由にPR番号が入る"
+
+p=$(mk_wt w-closed closed-br)
+assert_eq "DELETE" "$(classify_worktree "$REPO" "$p" closed-br - "" | cut -f1)" "CLOSED → DELETE"
+
+p=$(mk_wt w-open open-br)
+assert_eq "KEEP" "$(classify_worktree "$REPO" "$p" open-br - "" | cut -f1)" "OPEN → KEEP"
+
+p=$(mk_wt w-nopr nopr-br)
+assert_eq "KEEP" "$(classify_worktree "$REPO" "$p" nopr-br - "" | cut -f1)" "PRなし → KEEP"
+
+p=$(mk_wt w-broken broken-br)
+assert_eq "KEEP" "$(classify_worktree "$REPO" "$p" broken-br - "" | cut -f1)" "PR状態の取得失敗 → KEEP"
+assert_output_contains "取得に失敗" "$(classify_worktree "$REPO" "$p" broken-br - "")" "失敗理由を出す"
+
+# 未コミット変更あり（MERGEDでもSKIP）
+p=$(mk_wt w-dirty2 merged-br2)
+echo "changed" >>"$p/README.md"
+assert_eq "SKIP" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "未コミット変更 → SKIP"
+FORCE=1
+assert_eq "DELETE" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "--force なら未コミット変更でも DELETE"
+FORCE=0
+
+# 未追跡ファイルのみでもSKIP
+p=$(mk_wt w-untracked merged-br3)
+: >"$p/untracked-only"
+assert_eq "SKIP" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "未追跡ファイルのみ → SKIP"
+
+# locked は PR状態より優先してSKIP
+p=$(mk_wt w-locked merged-br4)
+assert_eq "SKIP" "$(classify_worktree "$REPO" "$p" merged-br locked "claude session (pid 123)" | cut -f1)" "locked → SKIP（MERGEDでも）"
+assert_output_contains "locked" "$(classify_worktree "$REPO" "$p" merged-br locked "claude session (pid 123)")" "理由に locked を出す"
+
+# prunable は削除ではなく prune
+assert_eq "PRUNE" "$(classify_worktree "$REPO" "$REPO/.wt/nonexistent" gone prunable "gitdir file points to non-existent location" | cut -f1)" "prunable → PRUNE"
+
+# detached は判定不能
+git -C "$REPO" worktree add -q --detach "$REPO/.wt/w-det"
+assert_eq "SKIP" "$(classify_worktree "$REPO" "$REPO/.wt/w-det" "" - "" | cut -f1)" "detached → SKIP"
+assert_output_contains "detached" "$(classify_worktree "$REPO" "$REPO/.wt/w-det" "" - "")" "理由に detached を出す"
+
+unset WORKTREE_CLEANUP_PR_STATE_CMD
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"

@@ -215,6 +215,64 @@ get_pr_state() {
   printf '%s\n' "$out"
 }
 
+# ---- 判定 -------------------------------------------------------------------
+# worktree を KEEP / DELETE / SKIP / PRUNE に分類する。
+#   stdout: "<verdict>\t<reason>"
+#
+# 上から順に評価し、最初にマッチした時点で確定する。順序には意味がある:
+#   locked を最優先にしないと、実行中のClaudeセッションの作業ディレクトリを消しうる。
+classify_worktree() {
+  local repo="$1" path="$2" branch="$3" flags="$4" detail="$5"
+
+  # 1. locked: Claudeセッション実行中の可能性があるため必ず残す
+  case ",$flags," in
+    *,locked,*)
+      printf 'SKIP\tlocked (%s)\n' "${detail:-理由未設定}"
+      return 0
+      ;;
+  esac
+
+  # 2. prunable: ディレクトリが既に無い。削除ではなく prune の対象
+  case ",$flags," in
+    *,prunable,*)
+      printf 'PRUNE\tディレクトリ消失 (%s)\n' "${detail:-理由未設定}"
+      return 0
+      ;;
+  esac
+
+  # 3. detached HEAD: ブランチが無くPR判定ができない
+  if [ -z "$branch" ]; then
+    printf 'SKIP\tdetached HEAD（PR判定不能）\n'
+    return 0
+  fi
+
+  # 4. 未コミット変更・未追跡ファイル: 作業中の可能性。--force で解除できる
+  if [ "$FORCE" -eq 0 ] && [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]; then
+    printf 'SKIP\t未コミット変更あり（--force で削除対象に含める）\n'
+    return 0
+  fi
+
+  # 5-6. PR状態で判定
+  local pr
+  if ! pr=$(get_pr_state "$repo" "$branch"); then
+    printf 'KEEP\tPR状態の取得に失敗\n'
+    return 0
+  fi
+
+  case "$pr" in
+    MERGED*| CLOSED*)
+      printf 'DELETE\t%s\n' "$pr"
+      ;;
+    NONE)
+      printf 'KEEP\tPR なし\n'
+      ;;
+    *)
+      printf 'KEEP\t%s\n' "$pr"
+      ;;
+  esac
+  return 0
+}
+
 main() {
   parse_args "$@" || return 1
   return 0
