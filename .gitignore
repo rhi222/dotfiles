@@ -2,6 +2,8 @@
 .config/nvim/.netrwhist
 plans/
 docs/superpowers/
+# superpowers subagent-driven-development のスクラッチ（ledger・brief・レビュー用diff）
+.superpowers/
 .serena/
 .config/codex/config.toml
 .config/AutoHotkey/ahk-snippets/passwords/*
