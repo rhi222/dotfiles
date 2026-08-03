@@ -33,6 +33,62 @@ run_step() {
   echo "" | tee -a "$LOG_FILE"
 }
 
+# worktree掃除の候補チェックのように「情報提供」であって「更新」ではないステップ用。
+# 失敗しても failures には積まず、daily-update 全体を FAILED にしない。
+# gh 未認証やネットワーク断で毎日 FAILED 通知が飛ぶのを避けるため。
+run_step_soft() {
+  local name="$1"
+  shift
+  echo "=== $name ===" | tee -a "$LOG_FILE"
+  if "$@" 2>&1 | tee -a "$LOG_FILE"; then
+    echo "=== $name: OK ===" | tee -a "$LOG_FILE"
+  else
+    echo "=== $name: 失敗（全体は継続） ===" | tee -a "$LOG_FILE"
+  fi
+  echo "" | tee -a "$LOG_FILE"
+}
+
+# 消し忘れ worktree の溜まり込みを検知する。dry-run で候補を数えるだけで、削除はしない。
+# 候補が閾値以上のときだけトースト通知する（毎日通知が飛ぶと無視されるようになるため）。
+WORKTREE_CLEANUP_NOTIFY_THRESHOLD="${WORKTREE_CLEANUP_NOTIFY_THRESHOLD:-5}"
+
+# 掃除スクリプトの場所。テストから偽スクリプトに差し替えるために上書きできる。
+# SCRIPT_DIR 自体を差し替えると lib/notify-windows-toast.sh も引けなくなるため、
+# 掃除スクリプトのパスだけを独立した変数にしている。
+WORKTREE_CLEANUP_SCRIPT="${WORKTREE_CLEANUP_SCRIPT:-$SCRIPT_DIR/worktree-cleanup.sh}"
+
+worktree_cleanup_check() {
+  local script="$WORKTREE_CLEANUP_SCRIPT"
+  if [ ! -f "$script" ]; then
+    echo "worktree-cleanup.sh が無いためスキップ: $script"
+    return 0
+  fi
+
+  local out count
+  out=$(bash "$script" 2>&1)
+  echo "$out"
+
+  # 表示行ではなく機械可読サマリ行から件数を取る（表示の体裁変更で壊れないように）。
+  # `^worktree-cleanup:` で行頭アンカーする。dry-run ではこの行の後ろに人間向けの
+  # 案内が出るため最終行ではなく、`tail -1` では取れない。
+  count=$(printf '%s\n' "$out" |
+    grep '^worktree-cleanup:' |
+    sed -n 's/.*DELETE_CANDIDATES=\([0-9]\{1,\}\).*/\1/p' |
+    head -1)
+  count="${count:-0}"
+  echo "worktree掃除の候補: $count 件（通知閾値 $WORKTREE_CLEANUP_NOTIFY_THRESHOLD 件）"
+
+  if [ "$count" -ge "$WORKTREE_CLEANUP_NOTIFY_THRESHOLD" ]; then
+    if command -v powershell.exe >/dev/null 2>&1; then
+      # shellcheck source=lib/notify-windows-toast.sh
+      source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
+      send_windows_toast "worktree の消し忘れ" \
+        "削除候補が $count 件あります。bash scripts/worktree-cleanup.sh で確認してください。" || true
+    fi
+  fi
+  return 0
+}
+
 # Only update skills managed via `gh skill install` (remote lines in
 # claude-skills.txt). Local-cloned or system skills lack GitHub metadata
 # and would trigger noisy "Reinstall to enable updates" warnings.
@@ -79,6 +135,9 @@ main() {
   # 同様に、拡張の追加は gh-extensions.txt + setup-gh-extensions.sh。
   # ここは既存拡張の更新だけを回す（--pin 済みの拡張は据え置かれる）。
   run_step "gh extension upgrade" gh extension upgrade --all
+  # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
+  # gh 未認証などで daily-update 全体を FAILED にしない。
+  run_step_soft "worktree cleanup check" worktree_cleanup_check
   # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
   # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
   run_step "claude settings pull" bash "$SCRIPT_DIR/sync-claude-settings.sh" pull
