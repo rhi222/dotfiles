@@ -462,8 +462,9 @@ echo "[6] dclean の prune 実行"
 
 # 6-1. 確認プロンプトで n を入れたら何も消さない
 setup
+# NOTE: read -P のプロンプトは stdin が tty でないと出力されないため、表示は検証できない。
+# 代わりに y/yes/Y で実行、それ以外で中止という挙動を検証する。
 out="$(printf 'n\n' | run_dclean 'dclean')"
-assert_contains "実行しますか?" "$out" "確認プロンプトを出す"
 assert_contains "中止しました" "$out" "n なら中止する"
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "n なら prune を呼ばない"
 teardown

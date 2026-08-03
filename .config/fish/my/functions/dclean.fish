@@ -40,9 +40,11 @@ function dclean --description 'docker の不要リソースを掃除する（軽
 
     test $action = status; and return 0
 
-    # read -P のプロンプトは stdin が tty でないと出ないため、自分で出す（テストで検証したい）
-    printf '実行しますか? [y/N] ' >&2
-    read -l ans
+    # プロンプトは read -P に任せる。自分で printf してから引数なしの read を呼ぶと、
+    # read が自前の `read>` プロンプトを描画して printf の出力を上書きしてしまう。
+    # -P のプロンプトは stdin が tty でないと出ないため、テストは表示ではなく
+    # 挙動（y/yes/Y で実行、それ以外で中止）で検証する。
+    read -l -P '実行しますか? [y/N] ' ans
     if not string match -qir '^y(es)?$' -- $ans
         echo 中止しました
         return 0
