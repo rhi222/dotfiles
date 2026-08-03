@@ -149,13 +149,5 @@
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "mcpServers": {
-    "drawio": {
-      "args": [
-        "@drawio/mcp"
-      ],
-      "command": "npx"
-    }
-  }
+  "voiceEnabled": true
 }
