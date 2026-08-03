@@ -43,6 +43,56 @@ function __docker_clean_stats_read --description 'キャッシュを読んで JS
     cat $cache
 end
 
+# キャッシュを1回の jq で読み、必要な値をプロセス内にメモ化する。
+#
+# 起動時フックは --notice と --stale を続けて呼ぶため、素朴に実装すると1回の
+# シェル起動で jq を4回起動してしまい、実測で 0.2 秒ほど起動が遅くなる。
+# 同一プロセス内では1回だけ読むようにする（__git_tree_icon が PWD 単位で
+# キャッシュしているのと同じ発想）。
+#
+# 結果は以下のグローバルに入る:
+#   __docker_clean_gen       generated_at（epoch 秒）
+#   __docker_clean_reclaim   df 各種別の Reclaimable 文字列のリスト
+#   __docker_clean_running   稼働コンテナの name<TAB>image<TAB>秒 のリスト
+function __docker_clean_stats_parse --description 'キャッシュを1回のjqで読みメモ化する'
+    set -l cache $argv[1]
+
+    if set -q __docker_clean_parsed; and test "$__docker_clean_parsed" = "$cache"
+        return $__docker_clean_parse_rc
+    end
+
+    set -g __docker_clean_parsed $cache
+    set -g __docker_clean_gen 0
+    set -g __docker_clean_reclaim
+    set -g __docker_clean_running
+    set -g __docker_clean_parse_rc 1
+
+    test -f $cache; or return 1
+
+    set -l lines (jq -r '
+        "G\t\(.generated_at // 0)",
+        (.df[]?.Reclaimable | "R\t\(.)"),
+        (.running[]? | "C\t\(.name)\t\(.image)\t\(.uptime_seconds)")
+    ' $cache 2>/dev/null)
+    or return 1
+    test (count $lines) -gt 0; or return 1
+
+    for l in $lines
+        set -l f (string split \t -- $l)
+        switch $f[1]
+            case G
+                set -g __docker_clean_gen $f[2]
+            case R
+                set -a __docker_clean_reclaim $f[2]
+            case C
+                set -a __docker_clean_running (string join \t $f[2..-1])
+        end
+    end
+
+    set -g __docker_clean_parse_rc 0
+    return 0
+end
+
 function __docker_clean_stats_stale --description 'キャッシュが TTL 超か判定する'
     set -l cache $argv[1]
 
@@ -51,13 +101,10 @@ function __docker_clean_stats_stale --description 'キャッシュが TTL 超か
         set ttl_h $docker_clean_cache_ttl_h
     end
 
-    test -f $cache; or return 0
-    set -l gen (jq -r '.generated_at // 0' $cache 2>/dev/null)
-    or return 0
-    test -n "$gen"; or return 0
-    string match -qr '^[0-9]+$' -- $gen; or return 0
+    __docker_clean_stats_parse $cache; or return 0
+    string match -qr '^[0-9]+$' -- $__docker_clean_gen; or return 0
 
-    set -l age (math (date +%s) - $gen)
+    set -l age (math (date +%s) - $__docker_clean_gen)
     test $age -ge (math "round($ttl_h * 3600)")
 end
 
@@ -111,6 +158,11 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
         return 1
     end
     mv $tmp $cache
+
+    # 内容が変わったのでプロセス内のメモを捨てる（次回の parse で読み直す）。
+    # 未設定の変数に set -e すると非ゼロを返すため、最後に明示的に成功を返す。
+    set -q __docker_clean_parsed; and set -e __docker_clean_parsed
+    return 0
 end
 
 # 長時間稼働コンテナを name<TAB>image<TAB>uptime_seconds で出力する。
@@ -119,7 +171,7 @@ end
 # イメージ名側での照合が必須。
 function __docker_clean_stats_long_running --description '除外後の長時間稼働コンテナを列挙する'
     set -l cache $argv[1]
-    test -f $cache; or return 1
+    __docker_clean_stats_parse $cache; or return 1
 
     set -l thr_h 12
     if set -q docker_clean_uptime_threshold_h; and test -n "$docker_clean_uptime_threshold_h"
@@ -132,7 +184,7 @@ function __docker_clean_stats_long_running --description '除外後の長時間�
         set ignore $docker_clean_ignore_patterns
     end
 
-    for line in (jq -r '.running[]? | "\(.name)\t\(.image)\t\(.uptime_seconds)"' $cache 2>/dev/null)
+    for line in $__docker_clean_running
         set -l f (string split \t -- $line)
         test (count $f) -ge 3; or continue
 
@@ -153,8 +205,7 @@ end
 # 閾値超えなら通知 1 行を出力して return 0、そうでなければ何も出さず return 1。
 function __docker_clean_stats_notice --description '起動時通知の1行を生成する'
     set -l cache $argv[1]
-    __docker_clean_stats_read $cache >/dev/null 2>&1
-    or return 1
+    __docker_clean_stats_parse $cache; or return 1
 
     set -l size_thr_gb 5
     if set -q docker_clean_size_threshold_gb; and test -n "$docker_clean_size_threshold_gb"
@@ -165,10 +216,9 @@ function __docker_clean_stats_notice --description '起動時通知の1行を生
         set thr_h $docker_clean_uptime_threshold_h
     end
 
-    set -l reclaim (jq -r '.df[]?.Reclaimable' $cache 2>/dev/null)
     set -l bytes 0
-    if test (count $reclaim) -gt 0
-        set bytes (__docker_clean_size_to_bytes $reclaim)
+    if test (count $__docker_clean_reclaim) -gt 0
+        set bytes (__docker_clean_size_to_bytes $__docker_clean_reclaim)
         or set bytes 0
     end
 
