@@ -37,6 +37,20 @@
 
 詳細は `scripts/setup-claude-skills.sh` と `scripts/skill-add.sh` 冒頭コメントを参照。
 
+### gh CLI拡張管理
+
+`gh` の拡張は宣言リスト `scripts/gh-extensions.txt` で管理する。skill が拡張コマンドを前提にしている場合（例: `gh-stack` skill → `gh stack`）、skill だけ入れても新環境で動かないため、拡張側もここに並べて宣言する。
+
+| やりたいこと     | コマンド                                                                         |
+| ---------------- | -------------------------------------------------------------------------------- |
+| 拡張追加         | `gh-extensions.txt` に `<owner>/<repo>[@<version>]` を追記 → 下の一括インストール |
+| 一括インストール | `bash scripts/setup-gh-extensions.sh`（インストール済みはskip）                   |
+| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-gh-extensions.sh`                               |
+| 更新             | `daily-update.sh` が `gh extension upgrade --all` を実行                          |
+| 削除             | `gh-extensions.txt` の行削除 + `gh extension remove <name>`                       |
+
+`@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash scripts/test-gh-extensions.sh`。
+
 ### 日報リマインド通知（WSL2専用）
 
 平日の業務時間中に日報投稿の有無をチェックしてWindowsトースト通知を出す仕組み。`scripts/nippo-cron.sh` がcron経由で `nippo-check.sh` を実行し、未投稿時に `notify-windows.sh` で `BurntToast` (PowerShell) を呼び出す。
