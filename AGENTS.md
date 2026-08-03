@@ -51,15 +51,53 @@
 
 `@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash scripts/test-gh-extensions.sh`。
 
-### 日報リマインド通知（WSL2専用）
+### Windowsトースト通知（WSL2専用）
 
-平日の業務時間中に日報投稿の有無をチェックしてWindowsトースト通知を出す仕組み。`scripts/nippo-cron.sh` がcron経由で `nippo-check.sh` を実行し、未投稿時に `notify-windows.sh` で `BurntToast` (PowerShell) を呼び出す。
+Claude Code のフックと cron から、Windows側の `BurntToast` (PowerShell) でトースト通知を出す。エントリポイントは `.config/claude/hooks/notify-windows.sh`（`Stop` / `Notification` フックに登録）と `scripts/nippo-cron.sh`。
+
+共通処理は `scripts/lib/` に分けている。
+
+| ファイル                      | 役割                                          |
+| ----------------------------- | --------------------------------------------- |
+| `lib/notify-windows-toast.sh` | `send_windows_toast` — BurntToast 呼び出し     |
+| `lib/stop-notification.sh`    | Stop通知のタイトル・本文の組み立て             |
+| `lib/notify-cooldown.sh`      | `notify_cooldown_should_send` — 同一通知の抑止 |
 
 依存:
 
 - WSL2 + `wslu` (`apt-packages.txt` 経由)
 - Windows側 PowerShell の `BurntToast` モジュール（`Install-Module BurntToast`）
 - `jq`（同上）
+
+#### 完了通知（Stopフック）
+
+タイトルに作業中のリポジトリ名とブランチ、本文にトランスクリプトから抽出した最後のアシスタント発言（サブエージェント分は除外、1行120文字に整形）を出す。
+
+```
+✅ dotfiles (main)
+テストを追加してlintも通りました。コミット済みです。
+```
+
+本文の長さは `STOP_NOTIFICATION_SUMMARY_MAX` で変えられる。トランスクリプトが読めない場合は `タスクが完了しました` にフォールバックする。
+
+#### 日報リマインド通知
+
+平日の業務時間中に日報の状態をチェックして通知する。`nippo-check.sh` は呼び出し元コンテキストを第1引数で受け取り、報告する内容を変える。
+
+| チェック           | stop | cron |
+| ------------------ | ---- | ---- |
+| 📝 日報未作成      | ✓    | ✓    |
+| 🟢 タイマー未終了  | ✓    | ✓    |
+| 📊 finalize忘れ    | ✓    | ✓    |
+| ⏰ 90分以上未更新  | −    | ✓    |
+| 📋 未完了タスクN件 | −    | ✓    |
+
+`stop` は応答が終わるたびに発火するので、一日中真になり続ける下2つは cron 専用にしている。加えて Stop フック側で二段のゲートを掛ける。
+
+1. **実行ゲート** — チェック自体を10分に1回まで。日報は `/mnt/c` (9p) 上にあり1ファイル操作あたり数秒かかるため
+2. **通知クールダウン** — 同じ内容の通知は60分に1回まで。内容が変われば窓の途中でも通知する
+
+状態は `~/.cache/claude-nippo-notify/{last-run,last-notify}` に持つ。通知が来なくなったと思ったらこの2ファイルを消せばリセットされる。
 
 セットアップ:
 
@@ -70,7 +108,7 @@ crontab -e
 # 0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh`。
+無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh` / `scripts/test-notify-cooldown.sh` / `scripts/test-stop-notification.sh`。
 
 ### 日報ドラフト自動仕上げ（WSL2専用）
 
