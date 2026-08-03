@@ -485,6 +485,106 @@ unset WORKTREE_CLEANUP_PR_STATE_CMD
 teardown
 echo ""
 
+# --- 10. 既定の --execute（--force なし）で未追跡のみの MERGED を削除する ---
+# 修正1（Critical）の回帰テスト。Task 9 で未追跡のみは --force なしでも DELETE 判定に
+# なったが、git worktree remove は未追跡ファイルがあると --force なしで拒否する。
+# execute_deletions が常に --force を渡すことで、既定モードでも削除できることを確認する。
+echo "[10] 既定の --execute で未追跡のみを削除"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #99"
+EOF
+chmod +x "$STUB"
+
+# clean な MERGED（比較用）と 未追跡のみの MERGED
+git -C "$REPO" worktree add -q "$REPO/.wt/w-clean" -b clean-br
+git -C "$REPO" worktree add -q "$REPO/.wt/w-untracked" -b untracked-br
+: >"$REPO/.wt/w-untracked/scratch.md"
+: >"$REPO/.wt/w-untracked/note.md"
+
+# --force を付けずに --execute する
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+assert_dir_missing "$REPO/.wt/w-clean" "既定の --execute で clean な MERGED が削除される"
+assert_dir_missing "$REPO/.wt/w-untracked" "既定の --execute で未追跡のみの MERGED も削除される"
+teardown
+echo ""
+
+# --- 11. remove が失敗しても後続を継続し、失敗理由を出力する ---
+# 修正2（Important）の回帰テスト。git の stderr を握り潰さず利用者に見せる。
+# また1件の削除失敗で後続の worktree 処理を止めない。
+echo "[11] remove 失敗時の継続とエラー表示"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #99"
+EOF
+chmod +x "$STUB"
+
+# 失敗させる worktree は専用の親ディレクトリ配下に置き、親を書き込み不可にする。
+# 親が a-w だと git worktree remove がディレクトリ削除に失敗する（Permission denied）。
+# git worktree list --porcelain はパス昇順で並ぶため、失敗する worktree が
+# 成功する worktree より前に処理されるようパス名で順序を固定する
+# （a-fail-parent < z-ok）。失敗の「後続」が処理されることを検証するため。
+mkdir -p "$REPO/.wt/a-fail-parent"
+git -C "$REPO" worktree add -q "$REPO/.wt/a-fail-parent/w-fail" -b fail-br
+git -C "$REPO" worktree add -q "$REPO/.wt/z-ok" -b ok-br
+
+chmod a-w "$REPO/.wt/a-fail-parent"
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+# 親を書き込み可能に戻す（戻さないと teardown の rm -rf が失敗する）
+chmod u+w "$REPO/.wt/a-fail-parent"
+
+assert_output_contains "Permission denied" "$output" "git の失敗理由（stderr）が利用者に見える"
+assert_dir_missing "$REPO/.wt/z-ok" "1件失敗しても後続の worktree は削除される（処理継続）"
+teardown
+echo ""
+
+# --- 12. --force 時に破棄される追跡変更を DELETE 行に併記する ---
+# 修正4（Important）の回帰テスト。--force で追跡ファイルの未コミット変更が破棄される
+# worktree は、DELETE 行にその旨を併記して見えるようにする。
+echo "[12] --force 時の破棄注記"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #99"
+EOF
+chmod +x "$STUB"
+export WORKTREE_CLEANUP_PR_STATE_CMD="$STUB"
+
+# 追跡ファイルに未コミット変更がある MERGED
+git -C "$REPO" worktree add -q "$REPO/.wt/w-tracked" -b tracked-br
+echo "changed" >>"$REPO/.wt/w-tracked/README.md"
+
+# 追跡変更 + 未追跡の混在
+git -C "$REPO" worktree add -q "$REPO/.wt/w-both" -b both-br
+echo "changed" >>"$REPO/.wt/w-both/README.md"
+: >"$REPO/.wt/w-both/scratch.md"
+
+FORCE=1
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-tracked" tracked-br - "")
+assert_eq "DELETE" "$(echo "$out" | cut -f1)" "--force で追跡変更あり → DELETE"
+assert_output_contains "未コミット変更あり・破棄されます" "$out" "追跡変更の破棄を DELETE 行に併記する"
+
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-both" both-br - "")
+assert_output_contains "未コミット変更あり・破棄されます" "$out" "混在でも破棄注記を出す"
+assert_output_contains "未追跡" "$out" "混在では未追跡の件数も併記する"
+FORCE=0
+
+# clean な MERGED は破棄注記を出さない
+git -C "$REPO" worktree add -q "$REPO/.wt/w-clean2" -b clean2-br
+FORCE=1
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-clean2" clean2-br - "")
+assert_output_lacks "未コミット変更あり・破棄されます" "$out" "clean なら破棄注記なし"
+FORCE=0
+
+unset WORKTREE_CLEANUP_PR_STATE_CMD
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
