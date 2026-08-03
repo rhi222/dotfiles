@@ -327,15 +327,38 @@ write_cache() {
 JSON
 }
 
-# 4-1. サイズ超え + 長時間稼働1件（除外2件を差し引いた結果）
+# 4-1. Images に偏った回収可能量は重掃除しか消せないので dclean -a を案内する
+#
+# df の Images Reclaimable は「参照されていない image」の量で dangling かは問わない。
+# 軽掃除の image prune -f は dangling だけを消すため、Images を軽掃除の根拠にすると
+# 「dclean しても通知が消えない」状態になる（実際になった）。
 write_cache "12.53GB (51%)" 86400 86400 86400
 out="$(run_fish '__docker_clean_stats --notice')"
 assert_contains "docker:" "$out" "通知に docker: を含む"
 # 12.53GB + 2.037MB + 50.28MB + 100MB = 12.682317GB → 12.7GB
 assert_contains "12.7GB" "$out" "回収可能量の合計を表示する"
+assert_contains "未使用 image 中心" "$out" "Images 由来だと分かるようにする"
+assert_matches "→ dclean -a" "$out" "重掃除が必要なら dclean -a を案内する"
 assert_contains "12h超稼働 1件" "$out" "除外後の長時間稼働は1件"
-assert_contains "dclean" "$out" "実行コマンドを案内する"
 assert_eq "0" "$(run_fish '__docker_clean_stats --notice >/dev/null; echo $status')" "通知ありは status 0"
+
+# 4-1b. Images 以外（軽掃除で消える分）が閾値を超えたら dclean を案内する
+cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [
+    {"Active":"6","Reclaimable":"0B","Size":"24.48GB","TotalCount":"96","Type":"Images"},
+    {"Active":"6","Reclaimable":"1.0GB","Size":"4.215MB","TotalCount":"7","Type":"Containers"},
+    {"Active":"3","Reclaimable":"1.0GB","Size":"9.531GB","TotalCount":"99","Type":"Local Volumes"},
+    {"Active":"0","Reclaimable":"6.776GB","Size":"13.03GB","TotalCount":"591","Type":"Build Cache"}
+  ],
+  "running": []
+}
+JSON
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_contains "8.8GB" "$out" "軽掃除で消える分を合算する"
+assert_not_contains "未使用 image 中心" "$out" "Images 由来でなければ注記を出さない"
+assert_matches "→ dclean$" "$out" "軽掃除で足りるなら dclean を案内する"
 
 # 4-2. サイズ未満 + 長時間稼働なし → 何も出さない
 write_cache "1.0GB (10%)" 3600 3600 3600
@@ -343,11 +366,12 @@ out="$(run_fish '__docker_clean_stats --notice')"
 assert_eq "" "$out" "閾値未満なら何も出さない"
 assert_eq "1" "$(run_fish '__docker_clean_stats --notice >/dev/null 2>&1; echo $status')" "閾値未満は status 1"
 
-# 4-3. サイズ未満だが長時間稼働あり → 稼働だけ通知する
+# 4-3. サイズ未満だが長時間稼働あり → 稼働だけ通知し、確認コマンドを案内する
 write_cache "1.0GB (10%)" 86400 3600 3600
 out="$(run_fish '__docker_clean_stats --notice')"
 assert_contains "12h超稼働 1件" "$out" "サイズ未満でも稼働があれば通知する"
 assert_not_contains "回収可能" "$out" "サイズ未満なら回収可能量は出さない"
+assert_matches "→ dclean --status" "$out" "稼働だけなら削除ではなく確認を案内する"
 
 # 4-4. サイズ超えだが長時間稼働なし → サイズだけ通知する
 write_cache "12.53GB (51%)" 3600 3600 3600
@@ -419,10 +443,12 @@ assert_contains "example-app_db_test" "$out" "長時間稼働のコンテナ名�
 assert_matches "未使用 volume +3 件" "$out" "匿名 volume だけを数える（named は除く）"
 assert_matches "停止コンテナ +1 件" "$out" "停止コンテナは1件"
 assert_matches "dangling image +2 件" "$out" "dangling image は2件"
-# build cache は2ビルダー合算で Reclaimable:true が3件、577.8MB + 1.026GB + 500MB = 2.1GB
+# build cache は2ビルダー合算で Reclaimable:true が3件
 assert_matches "build cache +3 件" "$out" "build cache は全ビルダーの Reclaimable:true を数える"
-assert_contains "2.1GB" "$out" "build cache のサイズを全ビルダーで合算する"
 assert_contains "全ビルダー合算" "$out" "全ビルダーを合算していることを注記する"
+# 軽モードは build cache のサイズを出さない（buildx du の合算と実回収量が桁違いになるため）
+assert_contains "うち未使用ぶんのみ削除" "$out" "軽モードは削除範囲が一部であることを注記する"
+assert_not_contains "最大2.1GB" "$out" "軽モードは build cache のサイズを約束しない"
 
 # --status は削除コマンドを一切呼ばない
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--status は prune を呼ばない"
@@ -434,6 +460,8 @@ assert_contains "未使用 image" "$out" "重モードは未使用 image 行に�
 assert_matches "未使用 image +90 件" "$out" "未使用 image は TotalCount - Active"
 assert_not_contains "dangling image" "$out" "重モードに dangling image 行は出ない"
 assert_contains "12.5GB" "$out" "未使用 image のサイズは df の Reclaimable"
+# 重モードは build cache を全部消すのでサイズを出す。577.8MB + 1.026GB + 500MB = 2.1GB
+assert_contains "最大2.1GB" "$out" "重モードは build cache のサイズを全ビルダーで合算する"
 
 # --help
 out="$(run_dclean 'dclean --help')"
@@ -602,7 +630,9 @@ cat >"$CACHE" <<JSON
 JSON
 out="$(run_hook '__docker_clean_greeting')"
 assert_contains "docker:" "$out" "閾値超えなら通知する"
-assert_contains "19.3GB" "$out" "回収可能量を表示する"
+# Build Cache の 6.776GB だけで閾値を超えるので、軽掃除で足りる扱いになる
+assert_contains "6.8GB" "$out" "軽掃除で消える分を表示する"
+assert_matches "→ dclean$" "$out" "軽掃除で足りるなら dclean を案内する"
 
 # 7-3. 閾値未満なら黙る
 cat >"$CACHE" <<JSON

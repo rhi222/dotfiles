@@ -52,7 +52,7 @@ end
 #
 # 結果は以下のグローバルに入る:
 #   __docker_clean_gen       generated_at（epoch 秒）
-#   __docker_clean_reclaim   df 各種別の Reclaimable 文字列のリスト
+#   __docker_clean_reclaim   df の Type<TAB>Reclaimable のリスト
 #   __docker_clean_running   稼働コンテナの name<TAB>image<TAB>秒 のリスト
 function __docker_clean_stats_parse --description 'キャッシュを1回のjqで読みメモ化する'
     set -l cache $argv[1]
@@ -71,7 +71,7 @@ function __docker_clean_stats_parse --description 'キャッシュを1回のjq�
 
     set -l lines (jq -r '
         "G\t\(.generated_at // 0)",
-        (.df[]?.Reclaimable | "R\t\(.)"),
+        (.df[]? | "R\t\(.Type)\t\(.Reclaimable)"),
         (.running[]? | "C\t\(.name)\t\(.image)\t\(.uptime_seconds)")
     ' $cache 2>/dev/null)
     or return 1
@@ -83,7 +83,7 @@ function __docker_clean_stats_parse --description 'キャッシュを1回のjq�
             case G
                 set -g __docker_clean_gen $f[2]
             case R
-                set -a __docker_clean_reclaim $f[2]
+                set -a __docker_clean_reclaim (string join \t $f[2..-1])
             case C
                 set -a __docker_clean_running (string join \t $f[2..-1])
         end
@@ -216,25 +216,60 @@ function __docker_clean_stats_notice --description '起動時通知の1行を生
         set thr_h $docker_clean_uptime_threshold_h
     end
 
-    set -l bytes 0
-    if test (count $__docker_clean_reclaim) -gt 0
-        set bytes (__docker_clean_size_to_bytes $__docker_clean_reclaim)
-        or set bytes 0
+    # 回収可能量を「軽掃除で消える分」と「重掃除でしか消えない分」に分ける。
+    #
+    # df の Images Reclaimable は「どのコンテナからも参照されていない image」の量で、
+    # dangling かどうかは問わない。軽掃除の `image prune -f` は dangling だけを消すため、
+    # ここを軽掃除の根拠にすると「dclean しても通知が消えない」状態になる（実際になった）。
+    # 一方 Containers / Local Volumes / Build Cache の Reclaimable は軽掃除の
+    # prune がそのまま回収する量に対応する（実測で prune 後に 0B になる）。
+    set -l light_parts
+    set -l heavy_parts
+    for entry in $__docker_clean_reclaim
+        set -l f (string split \t -- $entry)
+        test (count $f) -ge 2; or continue
+        switch $f[1]
+            case Images
+                set -a heavy_parts $f[2]
+            case '*'
+                set -a light_parts $f[2]
+        end
+    end
+
+    set -l light_bytes 0
+    if test (count $light_parts) -gt 0
+        set light_bytes (__docker_clean_size_to_bytes $light_parts)
+        or set light_bytes 0
+    end
+    set -l heavy_bytes $light_bytes
+    if test (count $heavy_parts) -gt 0
+        set -l extra (__docker_clean_size_to_bytes $heavy_parts)
+        and set heavy_bytes (math "$light_bytes + $extra")
     end
 
     set -l long (count (__docker_clean_stats_long_running $cache))
 
     # NOTE: fish 4.x の math は論理演算子を持たないため、math で整数化してから test -ge で比較する。
-    set -l size_over 0
-    test $bytes -ge (math "round($size_thr_gb * 1000000000)"); and set size_over 1
+    set -l thr (math "round($size_thr_gb * 1000000000)")
 
-    if test $size_over -eq 0; and test $long -eq 0
+    # 案内するコマンドは、その量を実際に回収できるモードに合わせる。
+    set -l size_msg
+    set -l cmd dclean
+    if test $light_bytes -ge $thr
+        set size_msg (__docker_clean_format_bytes $light_bytes)" 回収可能"
+    else if test $heavy_bytes -ge $thr
+        set size_msg (__docker_clean_format_bytes $heavy_bytes)" 回収可能（未使用 image 中心）"
+        set cmd 'dclean -a'
+    end
+
+    if test -z "$size_msg"; and test $long -eq 0
         return 1
     end
 
     set -l parts
-    test $size_over -eq 1; and set -a parts (__docker_clean_format_bytes $bytes)" 回収可能"
+    test -n "$size_msg"; and set -a parts $size_msg
     test $long -gt 0; and set -a parts "$thr_h""h超稼働 $long""件"
+    test -z "$size_msg"; and set cmd 'dclean --status'
 
-    echo "🗑  docker: "(string join ' / ' $parts)"  → dclean"
+    echo "🗑  docker: "(string join ' / ' $parts)"  → $cmd"
 end
