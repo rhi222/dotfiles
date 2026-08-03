@@ -23,6 +23,18 @@ EXECUTE=0
 FORCE=0
 SHOW_SIZE=0
 
+# 集計（process_repo が更新する）
+N_DELETE=0
+N_PRUNE=0
+N_SKIP=0
+N_KEEP=0
+N_SKIP_LOCKED=0
+N_SKIP_DETACHED=0
+N_SKIP_DIRTY=0
+FREED_KB=0
+DELETE_PATHS=()
+PRUNE_REPOS=()
+
 # 走査ルート（スペース区切り）。テストから一時ディレクトリを指すために上書きできる。
 WORKTREE_CLEANUP_ROOTS="${WORKTREE_CLEANUP_ROOTS:-/data/git-repos}"
 # PR状態取得コマンドの差し替え口。テストは gh を叩かずにスタブを渡す。
@@ -273,8 +285,104 @@ classify_worktree() {
   return 0
 }
 
+# ---- レポート ----------------------------------------------------------------
+# 1リポジトリを処理してセクションを表示し、集計を更新する。
+process_repo() {
+  local repo="$1"
+  local wt_lines
+  wt_lines=$(list_worktrees "$repo") || {
+    echo "  [warn] worktree一覧の取得に失敗: $repo" >&2
+    return 0
+  }
+  # linked worktree が無いリポジトリはセクションごと出さない（出力を静かに保つ）
+  [ -n "$wt_lines" ] || return 0
+
+  section "$repo"
+
+  local path branch flags detail verdict reason line
+  local has_prunable=0
+  while IFS=$'\t' read -r path branch flags detail; do
+    [ -n "$path" ] || continue
+    IFS=$'\t' read -r verdict reason < <(classify_worktree "$repo" "$path" "$branch" "$flags" "$detail")
+
+    local label="${branch:-（detached）}"
+    local size_note=""
+
+    case "$verdict" in
+      DELETE)
+        N_DELETE=$((N_DELETE + 1))
+        # 削除時に git -C <repo> を使うため、リポジトリとworktreeパスの組で持つ
+        DELETE_PATHS+=("$repo"$'\t'"$path")
+        if [ "$SHOW_SIZE" -eq 1 ]; then
+          local kb
+          kb=$(path_size_kb "$path")
+          FREED_KB=$((FREED_KB + kb))
+          size_note="  $(format_kb "$kb")"
+        fi
+        printf '  %s[DELETE]%s %-44s %s%s\n' "$C_GREEN" "$C_RESET" "$label" "$reason" "$size_note"
+        ;;
+      PRUNE)
+        N_PRUNE=$((N_PRUNE + 1))
+        has_prunable=1
+        printf '  %s[PRUNE ]%s %-44s %s\n' "$C_CYAN" "$C_RESET" "$label" "$reason"
+        ;;
+      SKIP)
+        N_SKIP=$((N_SKIP + 1))
+        case "$reason" in
+          locked*) N_SKIP_LOCKED=$((N_SKIP_LOCKED + 1)) ;;
+          detached*) N_SKIP_DETACHED=$((N_SKIP_DETACHED + 1)) ;;
+          *) N_SKIP_DIRTY=$((N_SKIP_DIRTY + 1)) ;;
+        esac
+        printf '  %s[SKIP  ]%s %-44s %s\n' "$C_YELLOW" "$C_RESET" "$label" "$reason"
+        ;;
+      *)
+        N_KEEP=$((N_KEEP + 1))
+        printf '  [KEEP  ] %-44s %s\n' "$label" "$reason"
+        ;;
+    esac
+  done <<<"$wt_lines"
+
+  [ "$has_prunable" -eq 1 ] && PRUNE_REPOS+=("$repo")
+  return 0
+}
+
+print_summary() {
+  section "サマリ"
+  echo "  DELETE 候補: $N_DELETE 件"
+  echo "  PRUNE  対象: $N_PRUNE 件"
+  echo "  SKIP       : $N_SKIP 件 (locked $N_SKIP_LOCKED / detached $N_SKIP_DETACHED / 未コミット変更 $N_SKIP_DIRTY)"
+  echo "  KEEP       : $N_KEEP 件"
+  if [ "$SHOW_SIZE" -eq 1 ]; then
+    echo "  解放見込み : $(format_kb "$FREED_KB")"
+  fi
+  # 機械可読サマリ行。daily-update.sh はこの行から件数を取る（表示行はgrepしない）。
+  echo "worktree-cleanup: DELETE_CANDIDATES=$N_DELETE PRUNE=$N_PRUNE SKIP=$N_SKIP KEEP=$N_KEEP"
+}
+
 main() {
   parse_args "$@" || return 1
+
+  local mode
+  if [ "$EXECUTE" -eq 1 ]; then
+    mode="${C_GREEN}EXECUTE（実削除）${C_RESET}"
+  else
+    mode="${C_YELLOW}DRY-RUN（試走／削除しません）${C_RESET}"
+  fi
+  echo "${C_BOLD}worktree cleanup${C_RESET}  mode: $mode"
+  echo "走査ルート: $WORKTREE_CLEANUP_ROOTS"
+
+  local repo
+  while IFS= read -r repo; do
+    [ -n "$repo" ] || continue
+    process_repo "$repo"
+  done < <(discover_repos)
+
+  print_summary
+
+  if [ "$EXECUTE" -ne 1 ]; then
+    echo
+    echo "${C_YELLOW}これは dry-run です。実際に削除するには --execute を付けて再実行してください。${C_RESET}"
+  fi
   return 0
 }
 
