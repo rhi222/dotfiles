@@ -1,0 +1,154 @@
+#!/bin/bash
+# ~/.claude/settings.json とリポジトリ版を同期する。
+#
+#   bash scripts/sync-claude-settings.sh pull [--dry-run]  # 実ファイル -> リポジトリ
+#   bash scripts/sync-claude-settings.sh push [--force]    # リポジトリ -> 実ファイル
+#   bash scripts/sync-claude-settings.sh status            # 差分の確認だけ
+#
+# なぜシンボリックリンクではないのか:
+#   Claude Code は /config でのテーマ変更・プラグインの有効無効・skillOverrides
+#   などを実行時に settings.json へ書き戻す。この書き込みは一時ファイル + rename
+#   で行われるため、~/.claude/settings.json をリポジトリへの symlink にしていても
+#   実ファイルに置き換えられてしまう（CLAUDE.md や commands/ は書き込まれないので
+#   symlink のまま残る）。リンクで戦っても必ず外れるので、コピー同期にしている。
+#
+# 通常運用は pull。実ファイルを正とし、リポジトリがそれを追いかける。
+# push は新環境の bootstrap 用（dotfilesLink.sh から呼ばれる）。
+#
+# 環境変数（テスト用オーバーライド）:
+#   CLAUDE_SETTINGS_LIVE - 実ファイルのパス
+#   CLAUDE_SETTINGS_REPO - リポジトリ側のパス
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+LIVE="${CLAUDE_SETTINGS_LIVE:-$HOME/.claude/settings.json}"
+REPO="${CLAUDE_SETTINGS_REPO:-$REPO_ROOT/.config/claude/settings.json}"
+
+usage() {
+  cat >&2 <<'USAGE'
+使い方: sync-claude-settings.sh <pull|push|status> [オプション]
+
+  pull [--dry-run]  ~/.claude/settings.json をリポジトリに取り込む（通常はこちら）
+  push [--force]    リポジトリの内容を ~/.claude/settings.json に書き出す
+  status            差分の有無を表示するだけ
+USAGE
+}
+
+# JSONとして読めなければ非ゼロ。壊れた設定を相手側へ伝播させないための門番
+read_normalized() {
+  local path="$1" label="$2"
+  if [[ ! -f "$path" ]]; then
+    echo "ERROR: $label が見つかりません: $path" >&2
+    return 1
+  fi
+  if ! jq -S . "$path" 2>/dev/null; then
+    echo "ERROR: $label が正しいJSONではありません: $path" >&2
+    return 1
+  fi
+}
+
+# $1 の正規化結果を $2 に書く。既に同一内容なら書かない（0=書いた, 1=変更なし）
+write_if_changed() {
+  local content="$1" dest="$2"
+  if [[ -f "$dest" ]] && printf '%s\n' "$content" | diff -q - "$dest" >/dev/null 2>&1; then
+    return 1
+  fi
+  mkdir -p "$(dirname "$dest")"
+  printf '%s\n' "$content" >"$dest"
+  return 0
+}
+
+cmd_pull() {
+  local dry_run=0
+  [[ "${1:-}" == "--dry-run" ]] && dry_run=1
+
+  local content
+  content=$(read_normalized "$LIVE" "実ファイル") || return 1
+
+  if [[ -f "$REPO" ]] && printf '%s\n' "$content" | diff -q - "$REPO" >/dev/null 2>&1; then
+    echo "変更なし: リポジトリは実ファイルと一致しています"
+    return 0
+  fi
+
+  if [[ "$dry_run" -eq 1 ]]; then
+    echo "更新あり（--dry-run のため書き込みません）: $REPO"
+    [[ -f "$REPO" ]] && diff <(cat "$REPO") <(printf '%s\n' "$content") || true
+    return 0
+  fi
+
+  write_if_changed "$content" "$REPO"
+  echo "更新: $REPO に実ファイルの内容を取り込みました"
+}
+
+cmd_push() {
+  local force=0
+  [[ "${1:-}" == "--force" ]] && force=1
+
+  local content
+  content=$(read_normalized "$REPO" "リポジトリ版") || return 1
+
+  if [[ ! -f "$LIVE" ]]; then
+    write_if_changed "$content" "$LIVE"
+    echo "作成: $LIVE をリポジトリ版から作成しました"
+    return 0
+  fi
+
+  local live_content
+  live_content=$(read_normalized "$LIVE" "実ファイル") || {
+    # 実ファイルが壊れている場合は --force でのみ復旧させる
+    if [[ "$force" -eq 1 ]]; then
+      write_if_changed "$content" "$LIVE"
+      echo "上書き: 壊れた $LIVE をリポジトリ版で復旧しました"
+      return 0
+    fi
+    return 1
+  }
+
+  if [[ "$content" == "$live_content" ]]; then
+    echo "変更なし: 実ファイルはリポジトリと一致しています"
+    return 0
+  fi
+
+  if [[ "$force" -eq 0 ]]; then
+    cat >&2 <<EOF
+ERROR: 実ファイルとリポジトリに差分があるため push しません。
+  実ファイル: $LIVE
+  リポジトリ: $REPO
+
+実ファイル側の変更（/config での操作など）を残すなら pull を、
+リポジトリ側で上書きしてよいなら push --force を実行してください。
+差分:
+EOF
+    diff <(printf '%s\n' "$content") <(printf '%s\n' "$live_content") >&2 || true
+    return 1
+  fi
+
+  write_if_changed "$content" "$LIVE"
+  echo "上書き: $LIVE をリポジトリ版で上書きしました"
+}
+
+cmd_status() {
+  local live_content repo_content
+  live_content=$(read_normalized "$LIVE" "実ファイル") || return 1
+  repo_content=$(read_normalized "$REPO" "リポジトリ版") || return 1
+
+  if [[ "$live_content" == "$repo_content" ]]; then
+    echo "一致: 実ファイルとリポジトリは同じ内容です"
+    return 0
+  fi
+
+  echo "差分あり（左: リポジトリ / 右: 実ファイル）"
+  diff <(printf '%s\n' "$repo_content") <(printf '%s\n' "$live_content") || true
+}
+
+case "${1:-}" in
+  pull) shift && cmd_pull "$@" ;;
+  push) shift && cmd_push "$@" ;;
+  status) shift && cmd_status "$@" ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
