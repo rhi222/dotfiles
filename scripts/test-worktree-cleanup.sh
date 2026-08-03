@@ -363,6 +363,62 @@ assert_output_contains "detached 1" "$output" "SKIP内訳の detached が正し�
 teardown
 echo ""
 
+# --- 7. 削除の実行 ---
+echo "[7] 削除の実行"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+case "$2" in
+  merged-br) echo "MERGED #10737" ;;
+  open-br) echo "OPEN #11068" ;;
+  *) echo "NONE" ;;
+esac
+EOF
+chmod +x "$STUB"
+
+git -C "$REPO" worktree add -q "$REPO/.wt/w-merged" -b merged-br
+git -C "$REPO" worktree add -q "$REPO/.wt/w-open" -b open-br
+git -C "$REPO" worktree add -q "$REPO/.wt/w-gone" -b gone-br
+rm -rf "$REPO/.wt/w-gone"
+
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+assert_dir_missing "$REPO/.wt/w-merged" "MERGED の worktree が削除される"
+assert_dir_exists "$REPO/.wt/w-open" "OPEN の worktree は残る"
+assert_output_lacks "dry-run です" "$output" "--execute では dry-run 案内を出さない"
+
+# ブランチは残す（決定事項）
+assert_output_contains "merged-br" "$(git -C "$REPO" branch --list merged-br)" "ブランチは削除しない"
+
+# prunable のメタデータが掃除される
+assert_output_lacks "w-gone" "$(git -C "$REPO" worktree list --porcelain)" "prunable のメタデータが prune される"
+teardown
+echo ""
+
+# --- 8. --force での削除 ---
+echo "[8] --force での削除"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #1"
+EOF
+chmod +x "$STUB"
+
+git -C "$REPO" worktree add -q "$REPO/.wt/w-dirty" -b dirty-br
+: >"$REPO/.wt/w-dirty/untracked-only"
+
+# --force なしでは消えない
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+assert_dir_exists "$REPO/.wt/w-dirty" "--force なしでは未コミット変更ありは残る"
+assert_output_contains "[SKIP" "$output" "SKIP として報告される"
+
+# --force ありで消える（git 側にも --force を伝播する必要がある）
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute --force 2>&1)
+assert_dir_missing "$REPO/.wt/w-dirty" "--force ありなら未コミット変更ありも削除される"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
