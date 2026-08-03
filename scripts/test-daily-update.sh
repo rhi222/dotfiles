@@ -218,6 +218,10 @@ echo "[5] worktree cleanup check"
 # (~/.local/state/daily-update/YYYY-MM-DD.log) を指している。
 # run_step_soft はそこに追記するため、テスト中は一時ファイルへ差し替える。
 WT_TEST_DIR="$(mktemp -d)"
+# SC2034: LOG_FILE は source 済みの daily-update.sh 内の run_step_soft / run_step が
+# tee -a "$LOG_FILE" で参照する。shellcheck は source 先の関数からの参照を追えず未使用と誤検知する。
+# ここで一時ファイルへ差し替えることで、テスト中に実運用ログを汚さない役割がある。
+# shellcheck disable=SC2034
 LOG_FILE="$WT_TEST_DIR/test.log"
 
 # run_step_soft は失敗しても failures に積まない

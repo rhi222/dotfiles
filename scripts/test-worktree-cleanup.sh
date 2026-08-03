@@ -216,7 +216,12 @@ assert_eq 1 "$exit_code" "取得失敗は非ゼロで return"
 # （command -v はシェル組み込みなので PATH が空でも動作する）。
 exit_code=0
 (
+  # SC2123: PATH をあえて潰して gh を見つけられない状態をサブシェル内に閉じて作る。
+  # command -v はシェル組み込みなので PATH が空でも動き、実gh経路の失敗を決定的に再現できる。
+  # shellcheck disable=SC2123
   PATH="/nonexistent"
+  # SC2030: このサブシェル内だけで環境変数を無効化したい（外側の設定に影響させない）ので意図的。
+  # shellcheck disable=SC2030
   WORKTREE_CLEANUP_PR_STATE_CMD=""
   get_pr_state "$REPO" any-br
 ) >/dev/null 2>&1 || exit_code=$?
@@ -240,6 +245,9 @@ case "$2" in
 esac
 EOF
 chmod +x "$STUB"
+# SC2031: 上のサブシェルでの一時的な無効化とは無関係な、別文脈（判定ロジックの検証）での設定。
+# 以降のテストが参照する本来の値なので「サブシェルでの変更が失われる」という指摘は当たらない。
+# shellcheck disable=SC2031
 export WORKTREE_CLEANUP_PR_STATE_CMD="$STUB"
 
 # clean な worktree を作るヘルパー
