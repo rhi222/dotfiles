@@ -272,10 +272,10 @@ FORCE=1
 assert_eq "DELETE" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "--force なら未コミット変更でも DELETE"
 FORCE=0
 
-# 未追跡ファイルのみでもSKIP
+# 未追跡ファイルのみは削除候補（Task 9 で dirty 判定を追跡ファイル限定にした）
 p=$(mk_wt w-untracked merged-br3)
 : >"$p/untracked-only"
-assert_eq "SKIP" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "未追跡ファイルのみ → SKIP"
+assert_eq "DELETE" "$(classify_worktree "$REPO" "$p" merged-br - "" | cut -f1)" "未追跡ファイルのみ → DELETE"
 
 # locked は PR状態より優先してSKIP
 p=$(mk_wt w-locked merged-br4)
@@ -406,7 +406,8 @@ EOF
 chmod +x "$STUB"
 
 git -C "$REPO" worktree add -q "$REPO/.wt/w-dirty" -b dirty-br
-: >"$REPO/.wt/w-dirty/untracked-only"
+# 追跡ファイルを変更する（Task 9 以降、未追跡のみは SKIP ではなく DELETE になるため）
+echo "changed" >>"$REPO/.wt/w-dirty/README.md"
 
 # --force なしでは消えない
 output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
@@ -416,6 +417,59 @@ assert_output_contains "[SKIP" "$output" "SKIP として報告される"
 # --force ありで消える（git 側にも --force を伝播する必要がある）
 output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute --force 2>&1)
 assert_dir_missing "$REPO/.wt/w-dirty" "--force ありなら未コミット変更ありも削除される"
+teardown
+echo ""
+
+# --- 9. 未追跡のみは削除候補に含める ---
+echo "[9] 未追跡ファイルのみの扱い"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #10867"
+EOF
+chmod +x "$STUB"
+export WORKTREE_CLEANUP_PR_STATE_CMD="$STUB"
+FORCE=0
+
+# 未追跡ファイルのみ → DELETE（件数を併記）
+git -C "$REPO" worktree add -q "$REPO/.wt/w-untracked" -b untracked-br
+: >"$REPO/.wt/w-untracked/scratch.md"
+mkdir -p "$REPO/.wt/w-untracked/plans"
+: >"$REPO/.wt/w-untracked/plans/note.md"
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-untracked" untracked-br - "")
+assert_eq "DELETE" "$(echo "$out" | cut -f1)" "未追跡のみ → DELETE"
+assert_output_contains "未追跡 2 件あり" "$out" "未追跡の件数を理由に併記する"
+assert_output_contains "MERGED #10867" "$out" "PR状態も残る"
+
+# 追跡ファイルの変更あり → SKIP（従来どおり）
+git -C "$REPO" worktree add -q "$REPO/.wt/w-tracked" -b tracked-br
+echo "changed" >>"$REPO/.wt/w-tracked/README.md"
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-tracked" tracked-br - "")
+assert_eq "SKIP" "$(echo "$out" | cut -f1)" "追跡ファイルの変更 → SKIP"
+assert_output_contains "未コミット変更あり" "$out" "SKIPの理由文は従来どおり"
+
+# 追跡変更 + 未追跡の混在 → SKIP（追跡変更が優先）
+: >"$REPO/.wt/w-tracked/also-untracked.md"
+assert_eq "SKIP" "$(classify_worktree "$REPO" "$REPO/.wt/w-tracked" tracked-br - "" | cut -f1)" "追跡変更と未追跡の混在 → SKIP"
+
+# --force なら追跡変更があっても DELETE
+FORCE=1
+assert_eq "DELETE" "$(classify_worktree "$REPO" "$REPO/.wt/w-tracked" tracked-br - "" | cut -f1)" "--force なら追跡変更でも DELETE"
+FORCE=0
+
+# 完全に clean なら件数併記なし
+git -C "$REPO" worktree add -q "$REPO/.wt/w-clean" -b clean-br
+out=$(classify_worktree "$REPO" "$REPO/.wt/w-clean" clean-br - "")
+assert_eq "DELETE" "$(echo "$out" | cut -f1)" "clean → DELETE"
+assert_output_lacks "未追跡" "$out" "cleanなら未追跡の併記なし"
+
+# ヘルパー単体
+assert_eq 0 "$(count_untracked "$REPO/.wt/w-clean")" "count_untracked: clean は 0"
+assert_eq 2 "$(count_untracked "$REPO/.wt/w-untracked")" "count_untracked: 2件"
+assert_eq 0 "$(count_untracked /nonexistent/path)" "count_untracked: 存在しないパスは 0"
+
+unset WORKTREE_CLEANUP_PR_STATE_CMD
 teardown
 echo ""
 
