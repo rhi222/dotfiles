@@ -107,6 +107,10 @@ echo ""
 echo "[1] CLI表面"
 output=$(bash "$CLEANUP" --help 2>&1)
 assert_output_contains "usage" "$output" "--help が使い方を表示する"
+# --force の説明が実挙動（追跡ファイル限定の dirty 判定）に一致していることを検証する。
+# 未追跡のみは --force なしで削除されるため、help がその旨を伝えないと利用者が誤解する。
+assert_output_contains "追跡ファイルに未コミット変更" "$output" "--force の説明が追跡ファイル限定であることを示す"
+assert_output_contains "未追跡ファイルのみの場合は --force なしでも削除対象" "$output" "未追跡のみは --force なしで削除される旨を伝える"
 
 exit_code=0
 output=$(bash "$CLEANUP" --bogus-option 2>&1) || exit_code=$?
