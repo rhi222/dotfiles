@@ -296,13 +296,19 @@ classify_worktree() {
 
   case "$pr" in
     MERGED* | CLOSED*)
-      local untracked
+      local reason="$pr" untracked
+      # --force 時は追跡ファイルの未コミット変更が破棄される。何が失われるか見えるよう、
+      # 追跡変更があれば DELETE 行に明示する。FORCE=0 のときは追跡変更ありはルール4で
+      # SKIP 済みなのでここには到達しない（＝この注記は --force のときだけ出る）。
+      if [ "$FORCE" -eq 1 ] && has_tracked_changes "$path"; then
+        reason="$reason（未コミット変更あり・破棄されます）"
+      fi
+      # 未追跡ファイルがあれば件数を併記する（使い捨てスクラッチを黙って消さないため）。
       untracked=$(count_untracked "$path")
       if [ "$untracked" -gt 0 ]; then
-        printf 'DELETE\t%s（未追跡 %s 件あり）\n' "$pr" "$untracked"
-      else
-        printf 'DELETE\t%s\n' "$pr"
+        reason="$reason（未追跡 $untracked 件あり）"
       fi
+      printf 'DELETE\t%s\n' "$reason"
       ;;
     NONE)
       printf 'KEEP\tPR なし\n'
@@ -406,11 +412,6 @@ print_summary() {
 # DELETE候補を削除し、prunable を掃除する。個別の失敗では止まらない。
 execute_deletions() {
   local entry del_repo del_path repo
-  local force_args=()
-
-  # スクリプトの --force は git へも伝播させる。dirty な worktree の remove は
-  # --force なしでは git 自身が exit 128 で拒否するため（git 2.54.0 で実測）。
-  [ "$FORCE" -eq 1 ] && force_args=(--force)
 
   if [ "${#DELETE_PATHS[@]}" -gt 0 ]; then
     section "削除の実行"
@@ -421,8 +422,25 @@ execute_deletions() {
       # ため process_repo と同じ手動分解に揃える。
       del_repo="${entry%%$'\t'*}"
       del_path="${entry#*$'\t'}"
+      # DELETE 候補は常に --force で remove する。FORCE 変数による分岐はしない。
+      #   なぜ常に --force か:
+      #   (1) git worktree remove は追跡変更だけでなく未追跡ファイルが1つでもあると
+      #       --force なしで exit 128 で拒否する（git 2.54.0 で実測）。未追跡のみの
+      #       MERGED を既定モード（--force なし）でも消せるようにするには常に --force が要る。
+      #   (2) 安全性は classify_worktree が担保している。DELETE に到達するのは
+      #       locked/prunable/detached でなく、かつ「追跡ファイルに未コミット変更なし」
+      #       または利用者が明示的に --force を指定したものだけ。よって git に --force を
+      #       渡しても、消えるのは「消してよいと判定されたもの」に限られる。
+      #   -f -f（二重 force）は実装しない。locked は必ず SKIP されるので不要で、
+      #   locked を強制削除する手段はあえて持たせない。
+      # stderr は握り潰さず利用者に見せる（prune 側と同じ体裁で 2 スペース字下げ）。
+      # git worktree remove はディレクトリ削除に失敗しても admin エントリを消すことがあり
+      # （孤児ディレクトリが残り以降 git worktree list に出ず、このツールで永久に検出できない
+      # ゴミになる）、その失敗理由はまさに利用者が知るべき情報のため。
+      # set -o pipefail 下では pipeline の終了ステータスは git の失敗を拾える
+      # （git が非ゼロ・sed が 0 なら pipeline は git の非ゼロを返す）。
       # git -C はリポジトリ側を指す。削除対象の worktree 内を指すと cwd が消える。
-      if git -C "$del_repo" worktree remove "${force_args[@]}" "$del_path" 2>/dev/null; then
+      if git -C "$del_repo" worktree remove --force "$del_path" 2>&1 | sed 's/^/  /'; then
         echo "  ${C_GREEN}削除${C_RESET}: $del_path"
       else
         echo "  ${C_YELLOW}削除に失敗（継続します）${C_RESET}: $del_path" >&2
