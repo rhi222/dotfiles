@@ -87,6 +87,19 @@ teardown() {
   TEST_DIR=""
 }
 
+# fixtureリポジトリを作る。worktreeは各テストで必要な分だけ生やす。
+setup() {
+  TEST_DIR=$(mktemp -d)
+  REPO="$TEST_DIR/repo"
+  mkdir -p "$REPO"
+  git -C "$REPO" init -q -b main
+  git -C "$REPO" config user.email "test@example.com"
+  git -C "$REPO" config user.name "test"
+  echo "# fixture" >"$REPO/README.md"
+  git -C "$REPO" add README.md
+  git -C "$REPO" commit -qm "init"
+}
+
 echo "=== worktree-cleanup.sh テスト ==="
 echo ""
 
@@ -118,6 +131,52 @@ assert_eq "12K" "$(format_kb 12)" "format_kb: 12KB → 12K"
 
 # 存在しないパスは必ず 0 を返す（呼び出し側が $(( )) で加算するため）
 assert_eq 0 "$(path_size_kb /nonexistent/path/xyz)" "path_size_kb: 存在しないパスは 0"
+echo ""
+
+# --- 2. worktreeメタデータの抽出 ---
+echo "[2] worktreeメタデータの抽出"
+setup
+git -C "$REPO" worktree add -q "$REPO/.wt/normal" -b normal
+git -C "$REPO" worktree add -q "$REPO/.wt/lockme" -b lockme
+git -C "$REPO" worktree lock --reason "claude session (pid 123)" "$REPO/.wt/lockme"
+git -C "$REPO" worktree add -q --detach "$REPO/.wt/det"
+git -C "$REPO" worktree add -q "$REPO/.wt/gone" -b gone
+rm -rf "$REPO/.wt/gone"
+# ディレクトリ名とブランチ名がずれるケース（実環境で発生している）
+git -C "$REPO" worktree add -q "$REPO/.wt/dirname-differs" -b actual-branch-name
+
+wt_out=$(list_worktrees "$REPO")
+
+# フィールド区切りのタブは $'\t' で明示する（リテラルタブに依存しない）
+TB=$'\t'
+assert_output_lacks "${REPO}${TB}main${TB}" "$wt_out" "main worktree は含まれない"
+assert_output_contains "$REPO/.wt/normal${TB}normal${TB}-${TB}" "$wt_out" "通常のworktree: flagsは -"
+assert_output_contains "$REPO/.wt/lockme${TB}lockme${TB}locked${TB}claude session (pid 123)" "$wt_out" "locked: flagsとdetailを拾う"
+assert_output_contains "$REPO/.wt/det${TB}${TB}-${TB}" "$wt_out" "detached: branchは空文字"
+assert_output_contains "$REPO/.wt/gone${TB}gone${TB}prunable${TB}" "$wt_out" "prunable: flagsに prunable"
+assert_output_contains "$REPO/.wt/dirname-differs${TB}actual-branch-name${TB}-${TB}" "$wt_out" "ブランチ名はディレクトリ名ではなくbranch行から取る"
+assert_eq 5 "$(echo "$wt_out" | grep -c .)" "linked worktree は5件"
+teardown
+echo ""
+
+# --- 3. リポジトリの走査 ---
+echo "[3] リポジトリの走査"
+setup
+# 走査ルート配下に2つ目のリポジトリを作る
+REPO2="$TEST_DIR/nested/repo2"
+mkdir -p "$REPO2"
+git -C "$REPO2" init -q -b main
+git -C "$REPO2" config user.email "test@example.com"
+git -C "$REPO2" config user.name "test"
+echo "x" >"$REPO2/f"
+git -C "$REPO2" add f
+git -C "$REPO2" commit -qm "init"
+
+repos_out=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" discover_repos)
+assert_output_contains "$REPO" "$repos_out" "走査ルート直下のリポジトリを見つける"
+assert_output_contains "$REPO2" "$repos_out" "ネストしたリポジトリも見つける"
+assert_eq 2 "$(echo "$repos_out" | grep -c .)" "リポジトリは2件"
+teardown
 echo ""
 
 # =============================================================================
