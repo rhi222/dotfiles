@@ -38,6 +38,23 @@ assert_eq() {
   fi
 }
 
+assert_output_contains() {
+  local expected="$1"
+  local actual="$2"
+  local test_name="$3"
+
+  TOTAL=$((TOTAL + 1))
+  if echo "$actual" | grep -qF "$expected"; then
+    PASS=$((PASS + 1))
+    echo "  PASS: $test_name"
+  else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $test_name"
+    echo "    expected to contain: [$expected]"
+    echo "    actual:              [$actual]"
+  fi
+}
+
 # npm_select_targets <outdated_json> <installed_names> <name...>
 # 出力（name@latest の改行区切り）を | 区切りに畳んで比較する
 select_targets() {
@@ -193,6 +210,86 @@ assert_eq "No package changes." \
   "$out" \
   "失敗時も diff 報告まで到達する"
 rm -f "$FAKE_STATE"
+
+echo ""
+echo "[5] worktree cleanup check"
+
+# daily-update.sh の source 時に LOG_FILE は実運用ログ
+# (~/.local/state/daily-update/YYYY-MM-DD.log) を指している。
+# run_step_soft はそこに追記するため、テスト中は一時ファイルへ差し替える。
+WT_TEST_DIR="$(mktemp -d)"
+LOG_FILE="$WT_TEST_DIR/test.log"
+
+# run_step_soft は失敗しても failures に積まない
+failures=()
+run_step_soft "always fails" bash -c 'exit 3' >/dev/null 2>&1
+assert_eq 0 "${#failures[@]}" "run_step_soft は失敗を failures に積まない"
+
+# run_step は積む（既存挙動が壊れていないことの確認）
+failures=()
+run_step "always fails" bash -c 'exit 3' >/dev/null 2>&1
+assert_eq 1 "${#failures[@]}" "run_step は失敗を failures に積む"
+
+# powershell.exe のスタブ。渡された引数を丸ごとログに書き出す。
+# SCRIPT_DIR は実ディレクトリのままなので本物の lib/notify-windows-toast.sh が
+# source され、その中の send_windows_toast が powershell.exe を呼ぶ。つまり通知経路
+# 全体を本物のコードで通し、最終段の powershell.exe だけをスタブ化して検証する。
+STUB_BIN="$(mktemp -d)"
+cat >"$STUB_BIN/powershell.exe" <<EOF
+#!/bin/bash
+echo "TOAST_CALLED args=[\$*]" >>"$WT_TEST_DIR/toast.log"
+EOF
+chmod +x "$STUB_BIN/powershell.exe"
+
+# 候補3件を返す偽 worktree-cleanup.sh。SCRIPT_DIR は差し替えず、掃除スクリプトの
+# 場所だけを WORKTREE_CLEANUP_SCRIPT で偽物に向ける。
+FAKE_SCRIPTS="$(mktemp -d)"
+FAKE_SCRIPT="$FAKE_SCRIPTS/worktree-cleanup.sh"
+cat >"$FAKE_SCRIPT" <<'EOF'
+#!/bin/bash
+echo "worktree-cleanup: DELETE_CANDIDATES=3 PRUNE=0 SKIP=0 KEEP=0"
+EOF
+
+: >"$WT_TEST_DIR/toast.log"
+output=$(PATH="$STUB_BIN:$PATH" \
+  WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPT" \
+  WORKTREE_CLEANUP_NOTIFY_THRESHOLD=5 \
+  worktree_cleanup_check 2>&1)
+assert_output_contains "候補: 3 件" "$output" "候補件数をログに出す"
+assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "閾値未満では通知しない"
+
+: >"$WT_TEST_DIR/toast.log"
+output=$(PATH="$STUB_BIN:$PATH" \
+  WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPT" \
+  WORKTREE_CLEANUP_NOTIFY_THRESHOLD=3 \
+  worktree_cleanup_check 2>&1)
+assert_eq 1 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "閾値以上で通知する"
+# 通知本文に候補件数が入っていること（利用者が何件あるか通知だけで分かる）。
+# 本物の send_windows_toast は powershell.exe に -Command 文字列として本文を渡すため、
+# 引数を丸ごと記録すれば本文を検証できる。
+assert_output_contains "3 件" "$(cat "$WT_TEST_DIR/toast.log")" "通知本文に候補件数を含む"
+
+# powershell.exe が無い環境（WSL2 以外）では通知をスキップし、それでも成功扱い。
+# PATH を coreutils だけに絞って powershell.exe を確実に見つからなくする
+# （/nonexistent にすると bash/grep 等も消えて件数抽出が 0 になり、ゲート自体を
+# 通らなくなるため、掃除スクリプト実行と件数抽出に必要なコマンドは残す）。
+: >"$WT_TEST_DIR/toast.log"
+exit_code=0
+output=$(PATH="/usr/bin:/bin" \
+  WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPT" \
+  WORKTREE_CLEANUP_NOTIFY_THRESHOLD=3 \
+  worktree_cleanup_check 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "powershell.exe が無くても成功扱い"
+assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "powershell.exe が無ければ通知しない"
+
+# 掃除スクリプトが無い環境ではスキップして成功扱い
+exit_code=0
+output=$(WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPTS/does-not-exist.sh" \
+  worktree_cleanup_check 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "worktree-cleanup.sh が無くても成功扱い"
+assert_output_contains "スキップ" "$output" "スキップの理由を出す"
+
+rm -rf "$WT_TEST_DIR" "$STUB_BIN" "$FAKE_SCRIPTS"
 
 echo ""
 echo "=== 結果 ==="
