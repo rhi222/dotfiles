@@ -455,6 +455,114 @@ assert_contains "Docker が起動していません" "$out" "デーモン停止�
 teardown
 echo ""
 
+# --- 6. dclean の削除実行 ---
+echo "[6] dclean の prune 実行"
+
+# 6-1. 確認プロンプトで n を入れたら何も消さない
+setup
+out="$(printf 'n\n' | run_dclean 'dclean')"
+assert_contains "実行しますか?" "$out" "確認プロンプトを出す"
+assert_contains "中止しました" "$out" "n なら中止する"
+assert_not_contains "prune" "$(cat "$FAKE_LOG")" "n なら prune を呼ばない"
+teardown
+
+# 6-2. 空入力（Enter のみ）も中止扱い
+setup
+out="$(printf '\n' | run_dclean 'dclean')"
+assert_contains "中止しました" "$out" "Enter のみなら中止する"
+assert_not_contains "prune" "$(cat "$FAKE_LOG")" "Enter のみなら prune を呼ばない"
+teardown
+
+# 6-3. y で軽掃除が走る
+setup
+out="$(printf 'y\n' | run_dclean 'dclean')"
+log="$(cat "$FAKE_LOG")"
+assert_contains "container prune -f" "$log" "軽: container prune を呼ぶ"
+assert_matches "^image prune -f$" "$log" "軽: image prune を -a なしで呼ぶ"
+assert_contains "volume prune -f" "$log" "軽: volume prune を呼ぶ"
+assert_matches "builder prune -f --filter until=168h --builder peaceful_curran" "$log" "軽: カレントビルダーを7日フィルタで掃除する"
+assert_matches "builder prune -f --filter until=168h --builder default" "$log" "軽: default ビルダーも7日フィルタで掃除する"
+assert_not_contains "image prune -a" "$log" "軽: image prune に -a を付けない"
+assert_not_contains "volume prune -a" "$log" "軽: volume prune に -a を付けない"
+assert_not_contains "builder prune -a" "$log" "軽: builder prune に -a を付けない"
+assert_contains "回収:" "$out" "回収量を表示する"
+teardown
+
+# 6-4. -a で重掃除が走る
+setup
+out="$(printf 'y\n' | run_dclean 'dclean -a')"
+log="$(cat "$FAKE_LOG")"
+assert_contains "image prune -a -f" "$log" "重: image prune に -a を付ける"
+assert_matches "builder prune -a -f --builder peaceful_curran" "$log" "重: カレントビルダーを全掃除する"
+assert_matches "builder prune -a -f --builder default" "$log" "重: default ビルダーも全掃除する"
+assert_not_contains "volume prune -a" "$log" "重でも volume prune に -a を付けない"
+assert_not_contains "until=168h" "$log" "重は build cache のフィルタを付けない"
+teardown
+
+# 6-5. yes / Y も受け付ける
+setup
+printf 'yes\n' | run_dclean 'dclean' >/dev/null
+assert_contains "container prune" "$(cat "$FAKE_LOG")" "yes を受け付ける"
+teardown
+setup
+printf 'Y\n' | run_dclean 'dclean' >/dev/null
+assert_contains "container prune" "$(cat "$FAKE_LOG")" "大文字 Y を受け付ける"
+teardown
+
+# 6-6. 個別コマンドが失敗しても残りを続行する
+setup
+# image prune だけ失敗させるフェイクに差し替える
+cat >"$BIN/docker" <<'FAKE'
+#!/bin/bash
+echo "$*" >>"$DOCKER_FAKE_LOG"
+case "$1 $2" in
+  "info ")
+    echo ok
+    exit 0
+    ;;
+  "system df")
+    echo '{"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}'
+    exit 0
+    ;;
+  "image prune")
+    echo "Error response from daemon: boom" >&2
+    exit 1
+    ;;
+esac
+case "$1" in
+  ps) exit 0 ;;
+  volume) exit 0 ;;
+  buildx | builder)
+    [[ "$2" == ls ]] && exit 0
+    [[ "$2" == du ]] && exit 0
+    echo "Total reclaimed space: 1.6GB"
+    exit 0
+    ;;
+  container)
+    echo "Total reclaimed space: 2.5GB"
+    exit 0
+    ;;
+esac
+exit 0
+FAKE
+chmod +x "$BIN/docker"
+out="$(printf 'y\n' | run_dclean 'dclean')"
+log="$(cat "$FAKE_LOG")"
+assert_contains "失敗" "$out" "失敗したコマンドを報告する"
+assert_contains "volume prune -f" "$log" "失敗後も後続の volume prune を実行する"
+assert_contains "builder prune" "$log" "失敗後も後続の builder prune を実行する"
+assert_eq "1" "$(printf 'y\n' | run_dclean 'dclean >/dev/null 2>&1; echo $status')" "失敗があれば status 1"
+teardown
+
+# 6-7. --refresh はキャッシュ更新だけで prune を呼ばない
+setup
+out="$(run_dclean 'dclean --refresh')"
+assert_eq "" "$out" "--refresh は何も出力しない"
+assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--refresh は prune を呼ばない"
+assert_eq "0" "$([[ -f "$CACHE" ]] && echo 0 || echo 1)" "--refresh はキャッシュを作る"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
