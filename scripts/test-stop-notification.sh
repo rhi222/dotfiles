@@ -144,7 +144,7 @@ T="$TEST_DIR/transcript.jsonl"
 append_assistant_text "$T" false "$(printf '1行目\n\n2行目\n3行目')"
 result=$(stop_notification_summary "$T")
 assert_eq "1行目 2行目 3行目" "$result" "改行が空白1個に畳まれる"
-assert_eq "1" "$(printf '%s' "$result" | wc -l | tr -d ' ')0" "出力は1行（末尾改行のみ）"
+assert_eq "$result" "${result//$'\n'/}" "出力に改行を含まない"
 teardown
 
 echo ""
@@ -152,6 +152,8 @@ echo "[6] stop_notification_summary: markdown記号を落とす"
 
 setup
 T="$TEST_DIR/transcript.jsonl"
+# markdown記号をそのまま渡したいのでシングルクォートで固定する
+# shellcheck disable=SC2016
 append_assistant_text "$T" false '## 完了 **太字** と `コード` と *強調*'
 result=$(stop_notification_summary "$T")
 assert_not_contains '`' "$result" "バッククォートが除去される"
