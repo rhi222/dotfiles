@@ -5,9 +5,9 @@
     "codex@openai-codex": true,
     "commit-commands@example-org-claude-marketplace": true,
     "domain-model@example-org-claude-marketplace": true,
-    "example-skills@anthropic-agent-skills": true,
+    "example-skills@anthropic-agent-skills": false,
     "superpowers@claude-plugins-official": true,
-    "typescript@example-org-claude-marketplace": true
+    "typescript@example-org-claude-marketplace": false
   },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
@@ -140,6 +140,9 @@
   },
   "plansDirectory": "./plans",
   "remoteControlAtStartup": true,
+  "skillOverrides": {
+    "frontend-design": "off"
+  },
   "skipAutoPermissionPrompt": true,
   "statusLine": {
     "command": "ccstatusline",
