@@ -109,6 +109,82 @@ format_kb() {
   fi
 }
 
+# ---- 走査 -------------------------------------------------------------------
+# パスを比較可能な形に正規化する。
+norm_path() {
+  local p="${1%/}"
+  realpath -m -- "$p" 2>/dev/null || printf '%s' "$p"
+}
+
+# 走査ルート配下のgitリポジトリ（非bare）を列挙する。
+discover_repos() {
+  local root git_dir
+  for root in $WORKTREE_CLEANUP_ROOTS; do
+    [ -d "$root" ] || continue
+    while IFS= read -r git_dir; do
+      [ -n "$git_dir" ] || continue
+      norm_path "$(dirname "$git_dir")"
+    done < <(find "$root" -maxdepth 4 -type d -name .git -prune 2>/dev/null)
+  done
+}
+
+# main worktree の正規化済みパスを返す。
+# git-common-dir は <メインworktree>/.git を指すので、その親がmain worktree。
+# レコード順（gitはmainを先頭に出す）に依存しないためにこの方法を使う。
+main_worktree_path() {
+  local repo="$1" common_dir
+  common_dir=$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+  norm_path "$(dirname "$common_dir")"
+}
+
+# linked worktree を TSV で列挙する。
+#   path <TAB> branch <TAB> flags <TAB> detail
+# branch は detached のとき空文字。flags は locked/prunable のカンマ区切り（無ければ -）。
+list_worktrees() {
+  local repo="$1"
+  local main_path porcelain
+  main_path=$(main_worktree_path "$repo") || return 1
+  porcelain=$(git -C "$repo" worktree list --porcelain 2>/dev/null) || return 1
+
+  local path="" branch="" flags="" detail="" out_flags="" line
+  # porcelain は各レコードの後に空行を置き、末尾も空行で終わる（git 2.54.0 で実測）。
+  # よって空行を見たタイミングでレコードを1件確定できる。
+  # ただし $(...) は末尾の改行を全て落とすので、最後のレコードを確定させるために
+  # herestring 側で空行を1つ補う（$'\n'）。
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path="${line#worktree }" ;;
+      "branch refs/heads/"*) branch="${line#branch refs/heads/}" ;;
+      "locked")
+        flags="$flags,locked"
+        ;;
+      "locked "*)
+        flags="$flags,locked"
+        detail="${line#locked }"
+        ;;
+      "prunable")
+        flags="$flags,prunable"
+        ;;
+      "prunable "*)
+        flags="$flags,prunable"
+        detail="${line#prunable }"
+        ;;
+      "")
+        # main worktree は除外する。flags が空なら "-" を出す。
+        if [ -n "$path" ] && [ "$(norm_path "$path")" != "$main_path" ]; then
+          out_flags="-"
+          [ -n "$flags" ] && out_flags="${flags#,}"
+          printf '%s\t%s\t%s\t%s\n' "$path" "$branch" "$out_flags" "$detail"
+        fi
+        path=""
+        branch=""
+        flags=""
+        detail=""
+        ;;
+    esac
+  done <<<"$porcelain"$'\n'
+}
+
 main() {
   parse_args "$@" || return 1
   return 0
