@@ -58,20 +58,6 @@ assert_suppress() {
   fi
 }
 
-assert_eq() {
-  local expected="$1" actual="$2" name="$3"
-  TOTAL=$((TOTAL + 1))
-  if [[ "$expected" == "$actual" ]]; then
-    PASS=$((PASS + 1))
-    echo "  PASS: $name"
-  else
-    FAIL=$((FAIL + 1))
-    echo "  FAIL: $name"
-    echo "    expected: [$expected]"
-    echo "    actual:   [$actual]"
-  fi
-}
-
 echo "=== notify-cooldown.sh テスト ==="
 echo ""
 
