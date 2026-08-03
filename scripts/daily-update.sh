@@ -79,6 +79,9 @@ main() {
   # 同様に、拡張の追加は gh-extensions.txt + setup-gh-extensions.sh。
   # ここは既存拡張の更新だけを回す（--pin 済みの拡張は据え置かれる）。
   run_step "gh extension upgrade" gh extension upgrade --all
+  # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
+  # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
+  run_step "claude settings pull" bash "$SCRIPT_DIR/sync-claude-settings.sh" pull
 
   echo "========================================" | tee -a "$LOG_FILE"
   if [ ${#failures[@]} -gt 0 ]; then

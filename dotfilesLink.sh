@@ -44,9 +44,9 @@ link_configs() {
     "$DOTFILES_DIR/.psqlrc|$HOME/.psqlrc"
 
     # Claude Code configuration
+    # settings.json は symlink にできないため setup_claude_settings で別途同期する
     "$DC/claude|$HOME/.config/claude"
     "$DC/claude/CLAUDE.md|$HOME/.claude/CLAUDE.md"
-    "$DC/claude/settings.json|$HOME/.claude/settings.json"
     "$DC/claude/commands|$HOME/.claude/commands"
     "$DC/claude/agents|$HOME/.claude/agents"
 
@@ -89,6 +89,18 @@ link_claude_skills() {
     skill_name="$(basename "$skill_dir")"
     safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
   done
+}
+
+# Claude Code の settings.json はコピーで同期する。
+# Claude Code が /config の操作などで実行時に書き戻す際、一時ファイル + rename で
+# 置き換えるため symlink にしても必ず実ファイル化してしまう（書き込まれない
+# CLAUDE.md や commands/ は symlink のままでよい）。詳細は sync-claude-settings.sh 冒頭。
+setup_claude_settings() {
+  if ! bash "$DOTFILES_DIR/scripts/sync-claude-settings.sh" push; then
+    echo "[WARN] ~/.claude/settings.json は更新しませんでした" >&2
+    echo "       実ファイル側を残す:     bash scripts/sync-claude-settings.sh pull" >&2
+    echo "       リポジトリ版で上書き:   bash scripts/sync-claude-settings.sh push --force" >&2
+  fi
 }
 
 # codex: 公式ドキュメントに従いローカル設定を ~/.codex/config.toml に置く
@@ -151,6 +163,7 @@ print_next_steps() {
 ensure_dirs
 link_configs
 link_claude_skills
+setup_claude_settings
 setup_codex
 grant_exec_permissions
 warn_missing_local_git
