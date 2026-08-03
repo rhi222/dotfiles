@@ -10,10 +10,19 @@
 
 set -euo pipefail
 
-# 呼び出し元コンテキスト。現状ロジックでは未使用だが、引数インターフェースとして受け取る
-# shellcheck disable=SC2034
+# 呼び出し元コンテキスト。stop は Claude Code の Stop フック、cron は定時実行。
 CONTEXT="${1:-stop}"
 NIPPO_DIR="${NIPPO_DIR:-$HOME/Obsidian/02_Daily}"
+
+# stop は応答が終わるたびに走るため、一日中真になり続ける低優先度チェック
+# （陳腐化検知・未完了タスク件数）は cron 側だけで報告する。
+# stop で出すのは、その場で手を動かすべき緊急度の高いものに限る。
+# 未知のコンテキストは取りこぼしを避けるため cron 相当（全チェック）とする。
+if [[ "$CONTEXT" == "stop" ]]; then
+  LOW_PRIORITY_CHECKS=0
+else
+  LOW_PRIORITY_CHECKS=1
+fi
 
 # 現在時刻の取得（NIPPO_NOWでオーバーライド可能）
 if [[ -n "${NIPPO_NOW:-}" ]]; then
@@ -72,12 +81,17 @@ for task in "${started_tasks[@]}"; do
   fi
 done
 
-# --- チェック4: 陳腐化検知 ---
+# --- チェック4: 陳腐化検知（低優先度） ---
 # 未完了タスク数を計算（チェック4と6で共用）
 # grep -c はマッチ0件でexit 1を返すため、set -e防御として || fallback が必須
-incomplete_count=$(grep -cE '^\s*- \[[ -]\]' "$NIPPO_FILE" 2>/dev/null) || incomplete_count=0
+# 日報は /mnt/c (9p) 上にあり1ファイル操作あたり数秒かかるので、
+# 結果を使わない stop では grep/stat 自体を走らせない
+incomplete_count=0
+if [[ "$LOW_PRIORITY_CHECKS" -eq 1 ]]; then
+  incomplete_count=$(grep -cE '^\s*- \[[ -]\]' "$NIPPO_FILE" 2>/dev/null) || incomplete_count=0
+fi
 
-if [[ "$incomplete_count" -gt 0 ]]; then
+if [[ "$LOW_PRIORITY_CHECKS" -eq 1 && "$incomplete_count" -gt 0 ]]; then
   file_mtime=$(stat -c %Y "$NIPPO_FILE" 2>/dev/null || echo "0")
   if [[ -n "${NIPPO_NOW:-}" ]]; then
     now_epoch=$(date -d "$NIPPO_NOW" +%s 2>/dev/null || echo "0")
@@ -100,8 +114,8 @@ if [[ "$HOUR" -ge 18 ]]; then
   fi
 fi
 
-# --- チェック6: 未完了タスク ---
-if [[ "$incomplete_count" -gt 0 ]]; then
+# --- チェック6: 未完了タスク（低優先度） ---
+if [[ "$LOW_PRIORITY_CHECKS" -eq 1 && "$incomplete_count" -gt 0 ]]; then
   echo "📋 未完了タスク: ${incomplete_count}件"
   exit 1
 fi
