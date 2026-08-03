@@ -54,6 +54,20 @@ assert_contains() {
   fi
 }
 
+assert_matches() {
+  local pattern="$1" actual="$2" test_name="$3"
+  TOTAL=$((TOTAL + 1))
+  if echo "$actual" | grep -qE "$pattern"; then
+    PASS=$((PASS + 1))
+    echo "  PASS: $test_name"
+  else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $test_name"
+    echo "    expected to match: $pattern"
+    echo "    actual: $actual"
+  fi
+}
+
 assert_not_contains() {
   local unexpected="$1" actual="$2" test_name="$3"
   TOTAL=$((TOTAL + 1))
@@ -152,10 +166,21 @@ JSON
     exit 0
     ;;
   buildx | builder)
+    if [[ "$2" == "ls" ]]; then
+      # ビルダー2つ。docker-container ドライバと daemon 側の default で別キャッシュを持つ。
+      echo '{"Current":true,"Driver":"docker-container","Name":"peaceful_curran"}'
+      echo '{"Current":false,"Driver":"docker","Name":"default"}'
+      exit 0
+    fi
     if [[ "$2" == "du" ]]; then
-      echo '{"ID":"a","Reclaimable":true,"Size":"577.8MB*","Type":"regular"}'
-      echo '{"ID":"b","Reclaimable":true,"Size":"1.026GB","Type":"regular"}'
-      echo '{"ID":"c","Reclaimable":false,"Size":"100MB","Type":"regular"}'
+      # ビルダーごとに異なるレコードを返し、合算されることを検証できるようにする
+      if [[ "$*" == *"--builder default"* ]]; then
+        echo '{"ID":"d","Reclaimable":true,"Size":"500MB","Type":"regular"}'
+      else
+        echo '{"ID":"a","Reclaimable":true,"Size":"577.8MB*","Type":"regular"}'
+        echo '{"ID":"b","Reclaimable":true,"Size":"1.026GB","Type":"regular"}'
+        echo '{"ID":"c","Reclaimable":false,"Size":"100MB","Type":"regular"}'
+      fi
       exit 0
     fi
     echo "Total reclaimed space: 1.6GB"
@@ -356,6 +381,76 @@ out="$(run_fish '__docker_clean_stats --long-running')"
 assert_contains "example-app_db_test" "$out" "長時間稼働の対象を出力する"
 assert_not_contains "buildx_buildkit" "$out" "除外対象は出力しない"
 assert_not_contains "suspicious_gagarin" "$out" "イメージ名で除外されたものは出力しない"
+
+teardown
+echo ""
+
+# dclean まで source して評価する。stdin は呼び出し側で与える。
+run_dclean() {
+  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" fish --no-config -c "
+    set -g docker_clean_cache_file '$CACHE'
+    source '$FUNC_DIR/__docker_clean_size_to_bytes.fish'
+    source '$FUNC_DIR/__docker_clean_format_bytes.fish'
+    source '$FUNC_DIR/__docker_clean_cache_file.fish'
+    source '$FUNC_DIR/__docker_clean_stats.fish'
+    source '$FUNC_DIR/dclean.fish'
+    $1
+  " 2>&1
+}
+
+# --- 5. dclean のプレビューと --status ---
+echo "[5] dclean --status / --help"
+setup
+
+out="$(run_dclean 'dclean --status')"
+assert_contains "掃除プレビュー（軽）" "$out" "軽モードのプレビュー見出しを出す"
+assert_contains "停止コンテナ" "$out" "停止コンテナ行がある"
+assert_contains "dangling image" "$out" "dangling image 行がある"
+assert_contains "未使用 volume" "$out" "未使用 volume 行がある"
+assert_contains "named volume は対象外" "$out" "named volume を守る注記がある"
+assert_contains "build cache" "$out" "build cache 行がある"
+assert_contains "回収見込み" "$out" "合計行がある"
+assert_contains "稼働中コンテナ" "$out" "稼働中コンテナの一覧見出しがある"
+assert_contains "example-app_db_test" "$out" "長時間稼働のコンテナ名を出す"
+
+# フェイク docker は匿名3件 + named1件を返す → 匿名だけ数える
+assert_matches "未使用 volume +3 件" "$out" "匿名 volume だけを数える（named は除く）"
+assert_matches "停止コンテナ +1 件" "$out" "停止コンテナは1件"
+assert_matches "dangling image +2 件" "$out" "dangling image は2件"
+# build cache は2ビルダー合算で Reclaimable:true が3件、577.8MB + 1.026GB + 500MB = 2.1GB
+assert_matches "build cache +3 件" "$out" "build cache は全ビルダーの Reclaimable:true を数える"
+assert_contains "2.1GB" "$out" "build cache のサイズを全ビルダーで合算する"
+assert_contains "全ビルダー合算" "$out" "全ビルダーを合算していることを注記する"
+
+# --status は削除コマンドを一切呼ばない
+assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--status は prune を呼ばない"
+
+# 重モード
+out="$(run_dclean 'dclean --status -a')"
+assert_contains "掃除プレビュー（重）" "$out" "重モードのプレビュー見出しを出す"
+assert_contains "未使用 image" "$out" "重モードは未使用 image 行になる"
+assert_matches "未使用 image +90 件" "$out" "未使用 image は TotalCount - Active"
+assert_not_contains "dangling image" "$out" "重モードに dangling image 行は出ない"
+assert_contains "12.5GB" "$out" "未使用 image のサイズは df の Reclaimable"
+
+# --help
+out="$(run_dclean 'dclean --help')"
+assert_contains "使い方" "$out" "--help は使い方を出す"
+assert_not_contains "プレビュー" "$out" "--help はプレビューを出さない"
+
+# 不明な引数
+assert_eq "2" "$(run_dclean 'dclean --bogus >/dev/null 2>&1; echo $status')" "不明な引数は status 2"
+
+# デーモン停止時
+out="$(PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" DOCKER_FAKE_DOWN=1 fish --no-config -c "
+  set -g docker_clean_cache_file '$CACHE'
+  source '$FUNC_DIR/__docker_clean_size_to_bytes.fish'
+  source '$FUNC_DIR/__docker_clean_format_bytes.fish'
+  source '$FUNC_DIR/__docker_clean_cache_file.fish'
+  source '$FUNC_DIR/__docker_clean_stats.fish'
+  source '$FUNC_DIR/dclean.fish'
+  dclean --status" 2>&1)"
+assert_contains "Docker が起動していません" "$out" "デーモン停止時はエラーメッセージを出す"
 
 teardown
 echo ""
