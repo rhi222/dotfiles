@@ -315,6 +315,35 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 - 略語: `dc` (docker compose), `dcl` (logs), `dcu` (up), `dcd` (down)
 - 複数のcomposeファイルの場所と命名パターンをサポート
 
+### Docker の掃除
+
+`dclean`（fish関数）で不要な Docker リソースを掃除する。fish起動時に溜まり具合を1行で通知する。
+
+| やりたいこと | コマンド                                                                   |
+| ------------ | -------------------------------------------------------------------------- |
+| 現状確認のみ | `dclean --status`                                                          |
+| 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 7日超のbuild cache） |
+| 重掃除       | `dclean -a`（軽 + 未使用image全部 + build cache全部）                      |
+| 使い方       | `dclean --help`                                                            |
+| 動作確認     | `bash scripts/test-docker-clean.sh`                                        |
+
+- **named volume は軽・重どちらでも削除しない。** `docker volume prune` に `-a` を付けないため、未使用でも named volume（DBデータ等）は残る。消すときは `docker volume rm` を明示的に叩く
+- **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断
+- **build cache は全ビルダーを対象にする。** `docker builder prune` は `docker buildx prune` のエイリアスで `--builder` を付けないとカレントビルダーしか掃除しない。docker-containerドライバのビルダーと daemon 側の `default` ビルダーは別のキャッシュを持つ（実測で11.2GBと13.0GB）ため、`__dclean_builders` で列挙して両方に対して実行する
+- プレビューのサイズは**上限**。`docker buildx du` の Size は共有レイヤを含むため、合算すると実際の回収量より大きく出る。実際の回収量は実行後の `回収:` 行を見る
+- `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下
+- 閾値と除外リストは変数で上書きできる（`99-local.fish` などで設定する）
+
+| 変数                              | 既定値                             | 意味                                      |
+| --------------------------------- | ---------------------------------- | ----------------------------------------- |
+| `docker_clean_size_threshold_gb`  | `5`                                | 回収可能サイズがこの値以上なら通知する    |
+| `docker_clean_uptime_threshold_h` | `12`                               | この時間を超えて稼働していたら一覧に出す  |
+| `docker_clean_ignore_patterns`    | `buildx_buildkit_*` `*example-org-mcp*` | 稼働一覧から除外する名前/イメージのグロブ |
+| `docker_clean_cache_ttl_h`        | `6`                                | キャッシュのTTL                           |
+
+除外パターンはコンテナ**名**とイメージ**名**の両方に照合する。`example-org-mcp` のコンテナ名は
+`suspicious_gagarin` のように自動生成されるため、イメージ名でしか除外できない。
+
 ### Neovimプラグイン管理
 
 - `lazy-lock.json` のロックファイルでlazy.nvimを使用したプラグイン管理
