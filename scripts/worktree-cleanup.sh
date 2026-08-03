@@ -299,11 +299,25 @@ process_repo() {
 
   section "$repo"
 
-  local path branch flags detail verdict reason line
+  local path branch flags detail verdict reason line cw_out
   local has_prunable=0
-  while IFS=$'\t' read -r path branch flags detail; do
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    # TAB は IFS の空白文字なので `IFS=$'\t' read` だと連続タブが1つに畳まれ、
+    # detached worktree の空 branch フィールドが消えて以降が1つずれる。
+    # 空フィールドを保持するためタブ区切りを手動で分解する。
+    path="${line%%$'\t'*}"
+    line="${line#*$'\t'}"
+    branch="${line%%$'\t'*}"
+    line="${line#*$'\t'}"
+    flags="${line%%$'\t'*}"
+    detail="${line#*$'\t'}"
     [ -n "$path" ] || continue
-    IFS=$'\t' read -r verdict reason < <(classify_worktree "$repo" "$path" "$branch" "$flags" "$detail")
+
+    # classify_worktree の出力も同じ理由で手動分解する（verdict/reason は空にならないが方法を揃える）。
+    cw_out=$(classify_worktree "$repo" "$path" "$branch" "$flags" "$detail")
+    verdict="${cw_out%%$'\t'*}"
+    reason="${cw_out#*$'\t'}"
 
     local label="${branch:-（detached）}"
     local size_note=""
