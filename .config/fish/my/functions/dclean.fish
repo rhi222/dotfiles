@@ -136,14 +136,16 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
     __dclean_row '未使用 volume' $vol_n (__docker_clean_format_bytes $vol_b) '※ named volume は対象外'
     set known (math "$known + $vol_b")
 
-    # build cache（全ビルダーを合算する。df の Build Cache は default ビルダーの分しか出ない）
+    # build cache
     #
-    # buildx du に --filter until= を渡しても無視される（実測で 1h でも 99999h でも
-    # 同じ件数が返る）ため、フィルタは付けない。軽モードはこのうち「使われていない
-    # ぶん」だけを消すので、表示される件数・サイズは軽モードの上限になる。
-    set -l bc_note '※全ビルダー合算 / 軽モードはこのうち未使用ぶんのみ'
-    test $mode = heavy; and set bc_note '※全ビルダー合算'
-
+    # 件数は全ビルダーを合算する（df の Build Cache は default ビルダーの分しか出ない）。
+    # buildx du に --filter until= を渡しても無視されるためフィルタは付けない。
+    #
+    # サイズは軽モードでは出さない。buildx du の Size は共有レイヤを含むうえ、軽モードは
+    # そのうち「使われていないぶん」だけを消すため、合算すると実際の回収量と桁が変わる
+    # （246件/5.4GB と表示して実際の回収が 0B になった）。df の Build Cache Reclaimable は
+    # default ビルダーの分しか見ないので代わりにもならない。実際の回収量は実行後の
+    # `回収:` 行で確認する。
     set -l sizes
     set -l builders (__dclean_builders)
     if test (count $builders) -eq 0
@@ -153,24 +155,27 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
             set -a sizes (docker buildx du --builder $b --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
         end
     end
-
     set -l bc_n (count $sizes)
-    set -l bc_b 0
-    if test $bc_n -gt 0
-        set bc_b (__docker_clean_size_to_bytes $sizes)
-        or set bc_b 0
+
+    if test $mode = heavy
+        set -l bc_b 0
+        if test $bc_n -gt 0
+            set bc_b (__docker_clean_size_to_bytes $sizes)
+            or set bc_b 0
+        end
+        __dclean_row 'build cache' $bc_n 最大(__docker_clean_format_bytes $bc_b) '※全ビルダー合算'
+        set known (math "$known + $bc_b")
+    else
+        __dclean_row 'build cache' $bc_n - '※全ビルダー合算 / うち未使用ぶんのみ削除'
     end
-    __dclean_row 'build cache' $bc_n 最大(__docker_clean_format_bytes $bc_b) $bc_note
-    set known (math "$known + $bc_b")
 
     echo '  ──────────────────────────────'
     echo "  回収見込み 最大 約 "(__docker_clean_format_bytes $known)
-    # 軽モードは image 行のサイズを出せない（共有レイヤのため）ので合計に入っていない。
-    # 重モードは df の Reclaimable を使うので image 分も合計に含まれている。
     if test $mode = heavy
         echo '  （buildx du のサイズは共有レイヤを含むため実際はこれより少ない）'
     else
-        echo '  （buildx du のサイズは共有レイヤを含むため実際はこれより少ない。image 分は未計上）'
+        echo '  （image と build cache の回収量は事前に確定できないため未計上。'
+        echo '    実際の回収量は実行後の「回収:」行を見る）'
     end
     echo ''
 
