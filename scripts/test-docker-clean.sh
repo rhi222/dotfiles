@@ -259,6 +259,8 @@ assert_eq "0" "$(run_fish '__docker_clean_stats --stale; echo $status')" "キャ
 run_fish '__docker_clean_stats --update' >/dev/null
 assert_eq "0" "$(run_fish '__docker_clean_stats --read >/dev/null 2>&1; echo $status')" "--update 後の --read は成功"
 assert_eq "" "$(run_fish '__docker_clean_stats --update')" "--update は stdout に何も出さない"
+assert_eq "0" "$(run_fish '__docker_clean_stats --update; echo $status')" "--update は成功を返す"
+assert_eq "0" "$(run_fish '__docker_clean_stats --update; __docker_clean_stats --update; echo $status')" "2回目の --update も成功を返す"
 assert_eq "4" "$(jq -r '.df | length' "$CACHE")" "df を4種別ぶん保存する"
 assert_eq "12.53GB (51%)" "$(jq -r '.df[] | select(.Type=="Images") | .Reclaimable' "$CACHE")" "Images の Reclaimable を保存する"
 assert_eq "3" "$(jq -r '.running | length' "$CACHE")" "稼働コンテナ3件を保存する"
@@ -558,8 +560,102 @@ teardown
 setup
 out="$(run_dclean 'dclean --refresh')"
 assert_eq "" "$out" "--refresh は何も出力しない"
+assert_eq "0" "$(run_dclean 'dclean --refresh; echo $status')" "--refresh は成功を返す"
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--refresh は prune を呼ばない"
 assert_eq "0" "$([[ -f "$CACHE" ]] && echo 0 || echo 1)" "--refresh はキャッシュを作る"
+teardown
+echo ""
+
+# --- 7. 起動時通知フック ---
+echo "[7] 13-docker-clean.fish"
+CONF="$(cd "$SCRIPT_DIR/../.config/fish/my/conf.d" && pwd)/13-docker-clean.fish"
+setup
+
+# フックを source して評価する。関数は fish_function_path から autoload させる。
+run_hook() {
+  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" fish --no-config -c "
+    set -g docker_clean_cache_file '$CACHE'
+    set -g fish_function_path '$FUNC_DIR' \$fish_function_path
+    source '$CONF'
+    $1
+  " 2>&1
+}
+
+# 7-1. 非対話シェルでは通知しない
+assert_eq "" "$(run_hook '')" "非対話では通知しない"
+
+# 7-2. 対話相当の関数を直接呼べば通知する
+cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [
+    {"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"},
+    {"Active":"0","Reclaimable":"6.776GB","Size":"13.03GB","TotalCount":"591","Type":"Build Cache"}
+  ],
+  "running": [
+    {"name":"example-app_db_test","image":"example-app_docker-test_db","uptime_seconds":86400}
+  ]
+}
+JSON
+out="$(run_hook '__docker_clean_greeting')"
+assert_contains "docker:" "$out" "閾値超えなら通知する"
+assert_contains "19.3GB" "$out" "回収可能量を表示する"
+
+# 7-3. 閾値未満なら黙る
+cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [{"Active":"6","Reclaimable":"1.0GB (10%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
+  "running": []
+}
+JSON
+assert_eq "" "$(run_hook '__docker_clean_greeting')" "閾値未満なら何も出さない"
+
+# 7-4. キャッシュが新しければ background 更新を投げない
+assert_not_contains "system df" "$(cat "$FAKE_LOG")" "キャッシュが新しければ docker を叩かない"
+
+# 7-5. キャッシュが古ければ background 更新を投げる（完了を待つ）
+jq --argjson t "$(($(date +%s) - 7 * 3600))" '.generated_at = $t' "$CACHE" >"$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
+: >"$FAKE_LOG"
+run_hook '__docker_clean_greeting' >/dev/null
+# background + disown なので完了を待つ
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  grep -q "system df" "$FAKE_LOG" && break
+  sleep 0.3
+done
+assert_contains "system df" "$(cat "$FAKE_LOG")" "キャッシュが古ければ background で更新する"
+
+# 7-6. 通知はキャッシュだけを見る（同期的に docker を叩かない）
+cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [{"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
+  "running": []
+}
+JSON
+: >"$FAKE_LOG"
+run_hook '__docker_clean_greeting' >/dev/null
+assert_eq "" "$(cat "$FAKE_LOG")" "新しいキャッシュがあれば docker を一切呼ばない"
+
+# 7-7. 実際の対話シェルで通知が出る（config.fish の読み込み順の回帰テスト）
+#
+# config.fish が my/conf.d を source する前に fish_function_path へ my/functions を
+# 足していないと、conf.d から関数を autoload できず fish_command_not_found が走り、
+# 通知は黙って出ないまま起動が 380ms 遅くなる。実際に一度これで壊れた。
+# XDG_STATE_HOME は環境変数なので conf.d より前に効き、キャッシュ位置を差し替えられる。
+XDG_DIR="$TEST_DIR/xdg"
+mkdir -p "$XDG_DIR/docker-clean"
+cat >"$XDG_DIR/docker-clean/stats.json" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [{"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
+  "running": []
+}
+JSON
+out="$(XDG_STATE_HOME="$XDG_DIR" fish -i -c exit 2>&1)"
+assert_contains "docker:" "$out" "実際の対話シェルで通知が出る"
+assert_not_contains "command not found" "$out" "autoload に失敗していない"
+
 teardown
 echo ""
 
