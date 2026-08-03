@@ -40,7 +40,9 @@ function dclean --description 'docker の不要リソースを掃除する（軽
 
     test $action = status; and return 0
 
-    read -l -P '実行しますか? [y/N] ' ans
+    # read -P のプロンプトは stdin が tty でないと出ないため、自分で出す（テストで検証したい）
+    printf '実行しますか? [y/N] ' >&2
+    read -l ans
     if not string match -qir '^y(es)?$' -- $ans
         echo 中止しました
         return 0
@@ -181,6 +183,69 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
         end
     end
     echo ''
+end
+
+# モードに応じた prune を順に実行する。
+# 1 つのコマンドが失敗しても残りは続行し、最後に失敗件数を報告する。
+function __dclean_run --description 'dclean の削除を実行する'
+    set -l mode $argv[1]
+
+    # NOTE: volume prune には軽・重どちらでも -a を付けない。
+    # -a なしなら匿名 volume だけが対象になり、named volume（DB データ）が守られる。
+    set -l cmds 'container prune -f'
+    if test $mode = heavy
+        set -a cmds 'image prune -a -f'
+    else
+        set -a cmds 'image prune -f'
+    end
+    set -a cmds 'volume prune -f'
+
+    # build cache は全ビルダーぶん実行する（__dclean_builders のコメント参照）
+    set -l bc_base 'builder prune -f --filter until=168h'
+    test $mode = heavy; and set bc_base 'builder prune -a -f'
+    set -l builders (__dclean_builders)
+    if test (count $builders) -eq 0
+        set -a cmds $bc_base
+    else
+        for b in $builders
+            set -a cmds "$bc_base --builder $b"
+        end
+    end
+
+    set -l failed 0
+    set -l reclaimed 0
+
+    for c in $cmds
+        set -l parts (string split ' ' -- $c)
+        echo "→ docker $c"
+        set -l out (docker $parts 2>&1)
+        if test $status -ne 0
+            echo "  失敗: docker $c"
+            printf '  %s\n' $out >&2
+            set failed (math "$failed + 1")
+            continue
+        end
+
+        for line in $out
+            printf '  %s\n' $line
+            # docker prune は "Total reclaimed space: 2.5GB"、
+            # buildkit の prune は "Total:\t6.776GB" を出す。どちらも拾う。
+            set -l m (string match -r '^(?:Total reclaimed space:|Total:)\s*(.+)$' -- (string trim -- $line))
+            if test (count $m) -ge 2
+                set -l b (__docker_clean_size_to_bytes $m[2] 2>/dev/null)
+                and set reclaimed (math "$reclaimed + $b")
+            end
+        end
+    end
+
+    echo ''
+    echo "回収: "(__docker_clean_format_bytes $reclaimed)
+
+    if test $failed -gt 0
+        echo "$failed 件のコマンドが失敗しました" >&2
+        return 1
+    end
+    return 0
 end
 
 function __dclean_humanize_uptime --description '秒数を「23 hours」形式にする'
