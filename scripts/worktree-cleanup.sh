@@ -66,7 +66,9 @@ usage: worktree-cleanup.sh [--execute] [--force] [--size]
 
   (オプションなし)  dry-run。削除候補を一覧表示する
   --execute         実際に削除する
-  --force           未コミット変更・未追跡ファイルがある worktree も削除する
+  --force           追跡ファイルに未コミット変更がある worktree も削除する
+                    （未追跡ファイルのみの場合は --force なしでも削除対象になり、
+                     理由文に「未追跡 N 件あり」と件数を併記する）
   --size            DELETE 候補のサイズを測って解放見込みを表示する
   -h, --help        この使い方を表示する
 EOS
