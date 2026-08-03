@@ -54,6 +54,20 @@ assert_contains() {
   fi
 }
 
+assert_not_contains() {
+  local unexpected="$1" actual="$2" test_name="$3"
+  TOTAL=$((TOTAL + 1))
+  if echo "$actual" | grep -qF -e "$unexpected"; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $test_name"
+    echo "    expected NOT to contain: $unexpected"
+    echo "    actual: $actual"
+  else
+    PASS=$((PASS + 1))
+    echo "  PASS: $test_name"
+  fi
+}
+
 # 純関数だけを source して式を評価する（docker 不要）
 run_pure() {
   fish --no-config -c "
@@ -254,6 +268,94 @@ assert_eq "1" "$([[ -f "$CACHE" ]] && echo 0 || echo 1)" "デーモン停止時�
 
 # 不明な引数
 assert_eq "2" "$(run_fish '__docker_clean_stats --bogus >/dev/null 2>&1; echo $status')" "不明な引数は status 2"
+
+teardown
+echo ""
+
+# --- 4. 通知判定と除外パターン ---
+echo "[4] __docker_clean_stats --notice"
+setup
+
+# フィクスチャ: Images の Reclaimable と 3 コンテナの稼働秒数だけを可変にする。
+# Images 以外の Reclaimable は合計 152.317MB になるよう小さく固定してある。
+# こうしておくと「Images を 1.0GB にすればサイズ閾値 5GB 未満」が成立し、
+# サイズ条件と稼働条件を独立に検証できる。
+write_cache() {
+  local reclaim_images="$1" up1="$2" up2="$3" up3="$4"
+  cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [
+    {"Active":"6","Reclaimable":"$reclaim_images","Size":"24.48GB","TotalCount":"96","Type":"Images"},
+    {"Active":"6","Reclaimable":"2.037MB (48%)","Size":"4.215MB","TotalCount":"7","Type":"Containers"},
+    {"Active":"3","Reclaimable":"50.28MB (0%)","Size":"9.531GB","TotalCount":"99","Type":"Local Volumes"},
+    {"Active":"0","Reclaimable":"100MB","Size":"13.03GB","TotalCount":"591","Type":"Build Cache"}
+  ],
+  "running": [
+    {"name":"wbc-booking-record_db_test","image":"wbc-booking-record_docker-test_db","uptime_seconds":$up1},
+    {"name":"buildx_buildkit_peaceful_curran0","image":"moby/buildkit:buildx-stable-1","uptime_seconds":$up2},
+    {"name":"suspicious_gagarin","image":"whale-pool.fdev:5000/forcia-remote-mcp/forcia-mcp:latest","uptime_seconds":$up3}
+  ]
+}
+JSON
+}
+
+# 4-1. サイズ超え + 長時間稼働1件（除外2件を差し引いた結果）
+write_cache "12.53GB (51%)" 86400 86400 86400
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_contains "docker:" "$out" "通知に docker: を含む"
+# 12.53GB + 2.037MB + 50.28MB + 100MB = 12.682317GB → 12.7GB
+assert_contains "12.7GB" "$out" "回収可能量の合計を表示する"
+assert_contains "12h超稼働 1件" "$out" "除外後の長時間稼働は1件"
+assert_contains "dclean" "$out" "実行コマンドを案内する"
+assert_eq "0" "$(run_fish '__docker_clean_stats --notice >/dev/null; echo $status')" "通知ありは status 0"
+
+# 4-2. サイズ未満 + 長時間稼働なし → 何も出さない
+write_cache "1.0GB (10%)" 3600 3600 3600
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_eq "" "$out" "閾値未満なら何も出さない"
+assert_eq "1" "$(run_fish '__docker_clean_stats --notice >/dev/null 2>&1; echo $status')" "閾値未満は status 1"
+
+# 4-3. サイズ未満だが長時間稼働あり → 稼働だけ通知する
+write_cache "1.0GB (10%)" 86400 3600 3600
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_contains "12h超稼働 1件" "$out" "サイズ未満でも稼働があれば通知する"
+assert_not_contains "回収可能" "$out" "サイズ未満なら回収可能量は出さない"
+
+# 4-4. サイズ超えだが長時間稼働なし → サイズだけ通知する
+write_cache "12.53GB (51%)" 3600 3600 3600
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_contains "回収可能" "$out" "サイズ超えなら回収可能量を出す"
+assert_not_contains "超稼働" "$out" "長時間稼働なしなら稼働の記述は出さない"
+
+# 4-5. 除外パターンが効いている（buildkit と mcp は数えない）
+write_cache "1.0GB (10%)" 3600 86400 86400
+out="$(run_fish '__docker_clean_stats --notice')"
+assert_eq "" "$out" "除外対象だけが長時間稼働なら通知しない"
+
+# 4-6. 閾値を変数で上書きできる
+write_cache "1.0GB (10%)" 3600 3600 3600
+out="$(run_fish 'set -g docker_clean_size_threshold_gb 1; __docker_clean_stats --notice')"
+assert_contains "回収可能" "$out" "サイズ閾値を下げれば通知する"
+write_cache "1.0GB (10%)" 7200 3600 3600
+out="$(run_fish 'set -g docker_clean_uptime_threshold_h 1; __docker_clean_stats --notice')"
+assert_contains "1h超稼働 1件" "$out" "稼働閾値を下げれば通知する"
+write_cache "1.0GB (10%)" 3600 86400 3600
+out="$(run_fish 'set -g docker_clean_ignore_patterns "nomatch*"; __docker_clean_stats --notice')"
+assert_contains "12h超稼働 1件" "$out" "除外パターンを外せば buildkit も数える"
+
+# 4-7. キャッシュが無い/壊れている → 何も出さない
+rm -f "$CACHE"
+assert_eq "" "$(run_fish '__docker_clean_stats --notice')" "キャッシュ無しなら何も出さない"
+echo 'not json' >"$CACHE"
+assert_eq "" "$(run_fish '__docker_clean_stats --notice')" "壊れたキャッシュなら何も出さない"
+
+# 4-8. --long-running は除外後の一覧を返す
+write_cache "1.0GB (10%)" 86400 86400 86400
+out="$(run_fish '__docker_clean_stats --long-running')"
+assert_contains "wbc-booking-record_db_test" "$out" "長時間稼働の対象を出力する"
+assert_not_contains "buildx_buildkit" "$out" "除外対象は出力しない"
+assert_not_contains "suspicious_gagarin" "$out" "イメージ名で除外されたものは出力しない"
 
 teardown
 echo ""
