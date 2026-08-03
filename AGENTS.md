@@ -17,6 +17,29 @@
 - 開発ツール (mise, lazygit, gitui, etc.)
 - Claude Code設定 (`.config/claude/`)
 
+`~/.claude/settings.json` だけは例外でリンクせずコピー同期する（次節）。
+
+### Claude Code settings.json の同期
+
+`~/.claude/settings.json` は **シンボリックリンクにしない**。Claude Code が `/config` でのテーマ変更・プラグインの有効無効・`skillOverrides` などを実行時に書き戻すとき、一時ファイル + rename で置き換えるためリンクが必ず外れて実ファイル化する。`CLAUDE.md` や `commands/` は書き込まれないのでリンクのままでよい。
+
+そこで `scripts/sync-claude-settings.sh` でコピー同期する。**実ファイルを正とし、リポジトリがそれを追いかける**。
+
+| やりたいこと            | コマンド                                            |
+| ----------------------- | --------------------------------------------------- |
+| 差分の確認              | `bash scripts/sync-claude-settings.sh status`       |
+| 実ファイル → リポジトリ | `bash scripts/sync-claude-settings.sh pull`         |
+| リポジトリ → 実ファイル | `bash scripts/sync-claude-settings.sh push`         |
+| 新環境 bootstrap        | `./dotfilesLink.sh`（内部で `push` する）           |
+| 更新                    | `daily-update.sh` が `pull` を自動実行              |
+
+- 保存時に `jq -S` でキー順を正規化するので、差分は常に意味のある変更だけになる
+- `push` は実ファイルとリポジトリに差分があると既定で拒否する。`/config` での変更を消さないため。上書きしてよいときだけ `push --force`
+- 不正なJSONは相手側へ伝播させずに失敗する
+- `daily-update.sh` の `pull` は作業ツリーに差分を出すだけ。コミットするかは人間が判断する
+
+動作確認は `bash scripts/test-sync-claude-settings.sh`。
+
 ### aptパッケージ管理
 
 `scripts/apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する（`#`で始まる行はコメントとして無視される）。
