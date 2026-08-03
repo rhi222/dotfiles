@@ -58,8 +58,8 @@ function __dclean_usage --description 'dclean の使い方を表示する'
     echo '使い方: dclean [-a|--all] [--status] [--refresh] [-h|--help]'
     echo ''
     echo '  (引数なし)      軽掃除: 停止コンテナ / dangling image / 匿名 volume /'
-    echo '                  7日より古い build cache を削除する'
-    echo '  -a, --all       重掃除: 上記 + 未使用 image 全部 + build cache 全部'
+    echo '                  使われていない build cache を削除する'
+    echo '  -a, --all       重掃除: 上記 + 未使用 image 全部 + 共有ぶんも含む build cache 全部'
     echo '  --status        現状の集計と稼働中コンテナ一覧のみ表示（削除しない）'
     echo '  --refresh       キャッシュ更新のみ（起動時通知が background で使う）'
     echo '  -h, --help      この使い方を表示する'
@@ -135,20 +135,20 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
     set known (math "$known + $vol_b")
 
     # build cache（全ビルダーを合算する。df の Build Cache は default ビルダーの分しか出ない）
-    set -l bc_filter --filter until=168h
-    set -l bc_note '※7日より古いもの / 全ビルダー合算'
-    if test $mode = heavy
-        set bc_filter
-        set bc_note '※全ビルダー合算'
-    end
+    #
+    # buildx du に --filter until= を渡しても無視される（実測で 1h でも 99999h でも
+    # 同じ件数が返る）ため、フィルタは付けない。軽モードはこのうち「使われていない
+    # ぶん」だけを消すので、表示される件数・サイズは軽モードの上限になる。
+    set -l bc_note '※全ビルダー合算 / 軽モードはこのうち未使用ぶんのみ'
+    test $mode = heavy; and set bc_note '※全ビルダー合算'
 
     set -l sizes
     set -l builders (__dclean_builders)
     if test (count $builders) -eq 0
-        set sizes (docker buildx du $bc_filter --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
+        set sizes (docker buildx du --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
     else
         for b in $builders
-            set -a sizes (docker buildx du --builder $b $bc_filter --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
+            set -a sizes (docker buildx du --builder $b --format json 2>/dev/null | jq -r 'select(.Reclaimable == true) | .Size')
         end
     end
 
@@ -200,8 +200,15 @@ function __dclean_run --description 'dclean の削除を実行する'
     end
     set -a cmds 'volume prune -f'
 
-    # build cache は全ビルダーぶん実行する（__dclean_builders のコメント参照）
-    set -l bc_base 'builder prune -f --filter until=168h'
+    # build cache は全ビルダーぶん実行する（__dclean_builders のコメント参照）。
+    #
+    # `--filter until=<duration>` は使わない。実測で docker ドライバ・docker-container
+    # ドライバのどちらでも `Total: 0B` になり、7日以上前のレコードが残っていても
+    # 一切回収されなかった。フィルタなしなら 5.142GB 回収でき、df の Reclaimable も
+    # 0B になる。軽と重の区別は -a の有無だけで付ける。
+    #   軽 (-a なし): 使われていないキャッシュを消す
+    #   重 (-a あり): 共有・参照されているキャッシュも消す
+    set -l bc_base 'builder prune -f'
     test $mode = heavy; and set bc_base 'builder prune -a -f'
     set -l builders (__dclean_builders)
     if test (count $builders) -eq 0
