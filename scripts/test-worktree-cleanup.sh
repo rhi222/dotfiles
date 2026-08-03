@@ -294,6 +294,50 @@ unset WORKTREE_CLEANUP_PR_STATE_CMD
 teardown
 echo ""
 
+# --- 6. レポート出力とサマリ ---
+echo "[6] レポート出力とサマリ"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+case "$2" in
+  merged-br) echo "MERGED #10737" ;;
+  open-br) echo "OPEN #11068" ;;
+  *) echo "NONE" ;;
+esac
+EOF
+chmod +x "$STUB"
+
+git -C "$REPO" worktree add -q "$REPO/.wt/w-merged" -b merged-br
+git -C "$REPO" worktree add -q "$REPO/.wt/w-open" -b open-br
+git -C "$REPO" worktree add -q "$REPO/.wt/w-locked" -b locked-br
+git -C "$REPO" worktree lock --reason "claude session" "$REPO/.wt/w-locked"
+git -C "$REPO" worktree add -q "$REPO/.wt/w-gone" -b gone-br
+rm -rf "$REPO/.wt/w-gone"
+
+# dry-run のエンドツーエンド実行
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" 2>&1)
+assert_output_contains "[DELETE]" "$output" "DELETE行が出る"
+assert_output_contains "merged-br" "$output" "DELETE対象のブランチ名が出る"
+assert_output_contains "MERGED #10737" "$output" "PR番号が出る"
+assert_output_contains "[KEEP" "$output" "KEEP行が出る"
+assert_output_contains "[SKIP" "$output" "SKIP行が出る"
+assert_output_contains "[PRUNE" "$output" "PRUNE行が出る"
+assert_output_contains "DELETE_CANDIDATES=1" "$output" "機械可読サマリのDELETE件数"
+assert_output_contains "PRUNE=1" "$output" "機械可読サマリのPRUNE件数"
+assert_output_contains "SKIP=1" "$output" "機械可読サマリのSKIP件数"
+assert_output_contains "KEEP=1" "$output" "機械可読サマリのKEEP件数"
+assert_output_contains "dry-run" "$output" "dry-runの案内が出る"
+
+# dry-run は何も削除しない
+assert_dir_exists "$REPO/.wt/w-merged" "dry-runではDELETE候補を削除しない"
+
+# --size は解放見込みを出す
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --size 2>&1)
+assert_output_contains "解放見込み" "$output" "--size で解放見込みを表示する"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
