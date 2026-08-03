@@ -5,9 +5,11 @@
 # background + disown で投げる（13-docker-clean.fish を参照）。
 #
 # サブコマンド:
-#   --update  docker を叩いてキャッシュを書く（stdout には出さない）
-#   --read    キャッシュの JSON を出力。無い/壊れていれば return 1
-#   --stale   キャッシュが TTL 超または不在なら return 0
+#   --update        docker を叩いてキャッシュを書く（stdout には出さない）
+#   --read          キャッシュの JSON を出力。無い/壊れていれば return 1
+#   --stale         キャッシュが TTL 超または不在なら return 0
+#   --notice        閾値超えなら通知1行を出力して return 0、そうでなければ return 1
+#   --long-running  除外後の長時間稼働コンテナを name<TAB>image<TAB>秒 で列挙する
 
 function __docker_clean_stats --description 'docker 使用状況のキャッシュ管理'
     set -l cache (__docker_clean_cache_file)
@@ -21,6 +23,12 @@ function __docker_clean_stats --description 'docker 使用状況のキャッシ�
             return $status
         case --stale
             __docker_clean_stats_stale $cache
+            return $status
+        case --notice
+            __docker_clean_stats_notice $cache
+            return $status
+        case --long-running
+            __docker_clean_stats_long_running $cache
             return $status
         case '*'
             echo "__docker_clean_stats: 不明な引数: $argv" >&2
@@ -103,4 +111,80 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
         return 1
     end
     mv $tmp $cache
+end
+
+# 長時間稼働コンテナを name<TAB>image<TAB>uptime_seconds で出力する。
+# 除外パターンはコンテナ名とイメージ名の両方に対してグロブ照合する。
+# example-org-mcp のコンテナ名は自動生成（suspicious_gagarin 等）で識別できないため、
+# イメージ名側での照合が必須。
+function __docker_clean_stats_long_running --description '除外後の長時間稼働コンテナを列挙する'
+    set -l cache $argv[1]
+    test -f $cache; or return 1
+
+    set -l thr_h 12
+    if set -q docker_clean_uptime_threshold_h; and test -n "$docker_clean_uptime_threshold_h"
+        set thr_h $docker_clean_uptime_threshold_h
+    end
+    set -l thr_s (math "round($thr_h * 3600)")
+
+    set -l ignore 'buildx_buildkit_*' '*example-org-mcp*'
+    if set -q docker_clean_ignore_patterns; and test (count $docker_clean_ignore_patterns) -gt 0
+        set ignore $docker_clean_ignore_patterns
+    end
+
+    for line in (jq -r '.running[]? | "\(.name)\t\(.image)\t\(.uptime_seconds)"' $cache 2>/dev/null)
+        set -l f (string split \t -- $line)
+        test (count $f) -ge 3; or continue
+
+        set -l skip 0
+        for p in $ignore
+            if string match -q -- $p $f[1]; or string match -q -- $p $f[2]
+                set skip 1
+                break
+            end
+        end
+        test $skip -eq 1; and continue
+
+        string match -qr '^[0-9]+$' -- $f[3]; or continue
+        test $f[3] -gt $thr_s; and echo $line
+    end
+end
+
+# 閾値超えなら通知 1 行を出力して return 0、そうでなければ何も出さず return 1。
+function __docker_clean_stats_notice --description '起動時通知の1行を生成する'
+    set -l cache $argv[1]
+    __docker_clean_stats_read $cache >/dev/null 2>&1
+    or return 1
+
+    set -l size_thr_gb 5
+    if set -q docker_clean_size_threshold_gb; and test -n "$docker_clean_size_threshold_gb"
+        set size_thr_gb $docker_clean_size_threshold_gb
+    end
+    set -l thr_h 12
+    if set -q docker_clean_uptime_threshold_h; and test -n "$docker_clean_uptime_threshold_h"
+        set thr_h $docker_clean_uptime_threshold_h
+    end
+
+    set -l reclaim (jq -r '.df[]?.Reclaimable' $cache 2>/dev/null)
+    set -l bytes 0
+    if test (count $reclaim) -gt 0
+        set bytes (__docker_clean_size_to_bytes $reclaim)
+        or set bytes 0
+    end
+
+    set -l long (count (__docker_clean_stats_long_running $cache))
+
+    # NOTE: fish 4.x の math は論理演算子を持たないため、math で整数化してから test -ge で比較する。
+    set -l size_over 0
+    test $bytes -ge (math "round($size_thr_gb * 1000000000)"); and set size_over 1
+
+    if test $size_over -eq 0; and test $long -eq 0
+        return 1
+    end
+
+    set -l parts
+    test $size_over -eq 1; and set -a parts (__docker_clean_format_bytes $bytes)" 回収可能"
+    test $long -gt 0; and set -a parts "$thr_h""h超稼働 $long""件"
+
+    echo "🗑  docker: "(string join ' / ' $parts)"  → dclean"
 end
