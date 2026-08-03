@@ -319,18 +319,19 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 
 `dclean`（fish関数）で不要な Docker リソースを掃除する。fish起動時に溜まり具合を1行で通知する。
 
-| やりたいこと | コマンド                                                                   |
-| ------------ | -------------------------------------------------------------------------- |
-| 現状確認のみ | `dclean --status`                                                          |
-| 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 7日超のbuild cache） |
-| 重掃除       | `dclean -a`（軽 + 未使用image全部 + build cache全部）                      |
-| 使い方       | `dclean --help`                                                            |
-| 動作確認     | `bash scripts/test-docker-clean.sh`                                        |
+| やりたいこと | コマンド                                                                        |
+| ------------ | ------------------------------------------------------------------------------- |
+| 現状確認のみ | `dclean --status`                                                               |
+| 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 未使用のbuild cache）      |
+| 重掃除       | `dclean -a`（軽 + 未使用image全部 + 共有ぶんも含むbuild cache全部）             |
+| 使い方       | `dclean --help`                                                                 |
+| 動作確認     | `bash scripts/test-docker-clean.sh`                                             |
 
 - **named volume は軽・重どちらでも削除しない。** `docker volume prune` に `-a` を付けないため、未使用でも named volume（DBデータ等）は残る。消すときは `docker volume rm` を明示的に叩く
 - **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断
 - **build cache は全ビルダーを対象にする。** `docker builder prune` は `docker buildx prune` のエイリアスで `--builder` を付けないとカレントビルダーしか掃除しない。docker-containerドライバのビルダーと daemon 側の `default` ビルダーは別のキャッシュを持つ（実測で11.2GBと13.0GB）ため、`__dclean_builders` で列挙して両方に対して実行する
-- プレビューのサイズは**上限**。`docker buildx du` の Size は共有レイヤを含むため、合算すると実際の回収量より大きく出る。実際の回収量は実行後の `回収:` 行を見る
+- **`--filter until=<duration>` は使わない。** 実測で docker / docker-container どちらのドライバでも `Total: 0B` になり、7日以上前のレコードが445件残っていても一切回収されなかった。フィルタなしなら同じ状態から5.142GB回収でき `df` の Reclaimable も 0B になる。`docker buildx du` 側も `--filter until=` を無視する（1hでも99999hでも同件数）。そのため軽/重の区別は `-a` の有無だけで付けている
+- プレビューのサイズは**上限**。`docker buildx du` の Size は共有レイヤを含むため合算すると実際の回収量より大きく出るうえ、軽モードはそのうち未使用ぶんしか消さない。実際の回収量は実行後の `回収:` 行を見る
 - `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下
 - 閾値と除外リストは変数で上書きできる（`99-local.fish` などで設定する）
 

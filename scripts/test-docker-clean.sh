@@ -482,11 +482,13 @@ log="$(cat "$FAKE_LOG")"
 assert_contains "container prune -f" "$log" "軽: container prune を呼ぶ"
 assert_matches "^image prune -f$" "$log" "軽: image prune を -a なしで呼ぶ"
 assert_contains "volume prune -f" "$log" "軽: volume prune を呼ぶ"
-assert_matches "builder prune -f --filter until=168h --builder peaceful_curran" "$log" "軽: カレントビルダーを7日フィルタで掃除する"
-assert_matches "builder prune -f --filter until=168h --builder default" "$log" "軽: default ビルダーも7日フィルタで掃除する"
+assert_matches "^builder prune -f --builder peaceful_curran$" "$log" "軽: カレントビルダーを掃除する"
+assert_matches "^builder prune -f --builder default$" "$log" "軽: default ビルダーも掃除する"
 assert_not_contains "image prune -a" "$log" "軽: image prune に -a を付けない"
 assert_not_contains "volume prune -a" "$log" "軽: volume prune に -a を付けない"
 assert_not_contains "builder prune -a" "$log" "軽: builder prune に -a を付けない"
+# until フィルタは docker/docker-container どちらのドライバでも効かず Total: 0B になるため使わない
+assert_not_contains "until=" "$log" "軽: 効かない until フィルタを渡さない"
 assert_contains "回収:" "$out" "回収量を表示する"
 teardown
 
@@ -495,10 +497,10 @@ setup
 out="$(printf 'y\n' | run_dclean 'dclean -a')"
 log="$(cat "$FAKE_LOG")"
 assert_contains "image prune -a -f" "$log" "重: image prune に -a を付ける"
-assert_matches "builder prune -a -f --builder peaceful_curran" "$log" "重: カレントビルダーを全掃除する"
-assert_matches "builder prune -a -f --builder default" "$log" "重: default ビルダーも全掃除する"
+assert_matches "^builder prune -a -f --builder peaceful_curran$" "$log" "重: カレントビルダーを全掃除する"
+assert_matches "^builder prune -a -f --builder default$" "$log" "重: default ビルダーも全掃除する"
 assert_not_contains "volume prune -a" "$log" "重でも volume prune に -a を付けない"
-assert_not_contains "until=168h" "$log" "重は build cache のフィルタを付けない"
+assert_not_contains "until=" "$log" "重も until フィルタを渡さない"
 teardown
 
 # 6-5. yes / Y も受け付ける
