@@ -22,3 +22,4 @@ local: https://github.com/vercel-labs/agent-skills.git skills/composition-patter
 ogulcancelik/pi-extensions herdr
 mattpocock/skills grilling
 mattpocock/skills grill-me  # /grill-me → grilling を呼ぶだけのラッパー
+github/gh-stack gh-stack
