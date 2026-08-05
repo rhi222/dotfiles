@@ -30,6 +30,8 @@
         ├── __docker_clean_format_bytes.fish  # バイト数→人間可読
         ├── __docker_clean_size_to_bytes.fish # 人間可読サイズ→バイト数
         ├── __docker_clean_stats.fish         # docker使用状況のキャッシュ管理
+        ├── __ghq_list_cache_path.fish    # gfのghq listキャッシュのパス解決
+        ├── __ghq_list_cache_refresh.fish # 同キャッシュのアトミック更新
         ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
         ├── __wt_format_rows.fish    # worktree一覧の整形（main/.wt/claude タグ付け）
         ├── __wt_lock_reason.fish    # worktreeのlock理由取得
@@ -40,6 +42,7 @@
         ├── fkill.fish               # プロセス選択終了
         ├── ftmux.fish               # tmux window/session/pane選択
         ├── gf.fish                  # ghq管理リポジトリへcd（キャッシュ付き）
+        ├── ghq.fish                 # ghqラッパー（get等の後にgfのキャッシュ更新）
         ├── git-fsw.fish             # Gitブランチ選択・切り替え
         ├── mv2main.fish             # mainワークツリーへmv/cp
         ├── mvuntracked.fish         # 未追跡ファイルをmainワークツリーへ移動

@@ -252,6 +252,31 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - `.config/git/commit-conventions.txt` でテンプレート利用可能
 - 最近のブランチ用 `gbr` 略語でブランチ管理
 
+### ghq リポジトリへの移動（gf）
+
+`gf` は `ghq list` の結果を `~/.cache/ghq-list` にキャッシュして fzf に流す。パス解決は
+`__ghq_list_cache_path`、更新は `__ghq_list_cache_refresh` に分離してある。
+
+**キャッシュ更新は fzf を出す「前」に background で投げる。** 以前は `cd` の後に投げていたが、
+fzf を ESC でキャンセルすると `or return` で抜けて更新が走らなかった。そのため
+「`ghq get` → `gf` に出ない → ESC → もう一度 `gf`」を繰り返しても永久に反映されず、
+一度どこかのリポジトリへ `cd` するまで直らなかった。fzf は先にキャッシュを開いてから読むので、
+更新の `mv`（アトミックな rename）が途中で走っても fzf 側は古い inode を読み切る。
+
+**加えて `ghq` 自体を fish 関数でラップし、リポジトリが増減した直後に同期でキャッシュを更新する。**
+gf 側の background 更新だけでは「clone 直後の `gf` に間に合う」保証がないため。対象は
+`get` / `clone` / `rm` / `create` / `migrate`（ghq 1.10.1 でリポジトリ集合が変わるもの）で、
+`list` / `root` などの読み取り系では更新しない。終了ステータスは素通しする。
+
+- **同期更新でよい根拠**: `ghq list` は実測 0.18 秒（43リポジトリ）。これから数秒かかる clone の直後に足す分としては無視できる
+- **`--wraps ghq` は付けない。** 関数名と同じで自己参照になるうえ、ghq は fish 補完を同梱していない（`complete | grep ghq` が0件）ので、ラッパー有無で補完に差が出ない
+- **`__ghq_list_cache_refresh` の中は `command ghq` で呼ぶ。** ラッパーを経由させず、キャッシュ更新がラッパーの実装に依存しないようにする
+- 中間ファイルは `$cache.$fish_pid.tmp`。ラッパーの同期更新と gf の background 更新が同時に走りうるため、固定名だと互いの中間ファイルを踏む
+- 更新失敗時はキャッシュを壊さず、stderr を `$cache.err` に上書きして残す（追記だと無限に肥大する）
+- テストは `$ghq_list_cache` でキャッシュ位置を差し替えて実キャッシュを避ける
+
+動作確認は `bash scripts/test-gf-cache.sh`。
+
 ### worktree初期化のリポジトリ別カスタム
 
 `git wt` でworktreeを作成すると `scripts/worktree-init.sh` が走り、共通処理（gitignore対象の
