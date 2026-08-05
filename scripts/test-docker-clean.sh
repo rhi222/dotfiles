@@ -87,6 +87,7 @@ run_pure() {
   fish --no-config -c "
     source '$FUNC_DIR/__docker_clean_size_to_bytes.fish'
     source '$FUNC_DIR/__docker_clean_format_bytes.fish'
+    source '$FUNC_DIR/__docker_clean_container_kind.fish'
     $1
   " 2>&1
 }
@@ -127,10 +128,11 @@ JSON
       # 停止コンテナ 1 件
       echo "aaaa111"
     else
-      # 稼働コンテナ 3 件
+      # 稼働コンテナ 3 件（DOCKER_FAKE_ORPHAN=1 で orphan を 1 件足す）
       echo "c1"
       echo "c2"
       echo "c3"
+      [[ -n "${DOCKER_FAKE_ORPHAN:-}" ]] && echo "c4"
     fi
     exit 0
     ;;
@@ -138,12 +140,21 @@ JSON
     # StartedAt は現在時刻から逆算する（c1=24h前, c2=24h前, c3=1h前）。
     # fish 側は実時刻で稼働秒数を計算するため、固定 epoch を使うとズレる。
     now="${DOCKER_FAKE_NOW:-$(date +%s)}"
-    printf '/wbc-booking-record_db_test|wbc-booking-record_docker-test_db|%s\n' \
-      "$(date -u -d "@$((now - 86400))" +%Y-%m-%dT%H:%M:%S.000000000Z)"
-    printf '/buildx_buildkit_peaceful_curran0|moby/buildkit:buildx-stable-1|%s\n' \
-      "$(date -u -d "@$((now - 86400))" +%Y-%m-%dT%H:%M:%S.000000000Z)"
-    printf '/suspicious_gagarin|whale-pool.fdev:5000/forcia-remote-mcp/forcia-mcp:latest|%s\n' \
-      "$(date -u -d "@$((now - 3600))" +%Y-%m-%dT%H:%M:%S.000000000Z)"
+    ts() { date -u -d "@$1" +%Y-%m-%dT%H:%M:%S.000000000Z; }
+    # compose 管理。working_dir は既定で / を指すので test -d が真になり compose と判定される。
+    printf '/wbc-booking-record_db_test|wbc-booking-record_docker-test_db|%s|wbc-booking-record|%s|false\n' \
+      "$(ts $((now - 86400)))" "${DOCKER_FAKE_COMPOSE_DIR:-/}"
+    # standalone（--rm なし）
+    printf '/buildx_buildkit_peaceful_curran0|moby/buildkit:buildx-stable-1|%s|||false\n' \
+      "$(ts $((now - 86400)))"
+    # standalone（--rm あり → 停止で削除される）
+    printf '/suspicious_gagarin|whale-pool.fdev:5000/forcia-remote-mcp/forcia-mcp:latest|%s|||true\n' \
+      "$(ts $((now - 3600)))"
+    # orphan（compose 管理だが working_dir が消えている）。テストが明示的に有効化する。
+    if [[ -n "${DOCKER_FAKE_ORPHAN:-}" ]]; then
+      printf '/pms-api-localstack|localstack/localstack:4.4|%s|deadproject|%s|false\n' \
+        "$(ts $((now - 86400)))" "${DOCKER_FAKE_ORPHAN_DIR:-/nonexistent-worktree-xyz}"
+    fi
     exit 0
     ;;
   images)
@@ -212,10 +223,14 @@ teardown() {
 
 # フェイク docker を PATH の先頭に置き、キャッシュを差し替えて fish 式を評価する
 run_fish() {
-  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" fish --no-config -c "
+  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" \
+    DOCKER_FAKE_ORPHAN="${DOCKER_FAKE_ORPHAN:-}" \
+    DOCKER_FAKE_COMPOSE_DIR="${DOCKER_FAKE_COMPOSE_DIR:-/}" \
+    fish --no-config -c "
     set -g docker_clean_cache_file '$CACHE'
     source '$FUNC_DIR/__docker_clean_size_to_bytes.fish'
     source '$FUNC_DIR/__docker_clean_format_bytes.fish'
+    source '$FUNC_DIR/__docker_clean_container_kind.fish'
     source '$FUNC_DIR/__docker_clean_cache_file.fish'
     source '$FUNC_DIR/__docker_clean_stats.fish'
     $1
@@ -269,7 +284,26 @@ assert_eq "wbc-booking-record_db_test" "$(jq -r '.running[0].name' "$CACHE")" "�
 assert_eq "true" "$(jq -r '.running[0].uptime_seconds >= 86395 and .running[0].uptime_seconds <= 86410' "$CACHE")" "稼働秒数を算出する"
 assert_eq "true" "$(jq -r '.generated_at > 0' "$CACHE")" "取得時刻を記録する"
 
+# 種別判定に必要な label とフラグを保存する
+assert_eq "2" "$(jq -r '.schema' "$CACHE")" "スキーマ版を記録する"
+assert_eq "wbc-booking-record" "$(jq -r '.running[0].compose_project' "$CACHE")" "compose project の label を保存する"
+assert_eq "/" "$(jq -r '.running[0].compose_dir' "$CACHE")" "compose working_dir の label を保存する"
+assert_eq "false" "$(jq -r '.running[0].auto_remove' "$CACHE")" "AutoRemove を保存する（偽）"
+assert_eq "" "$(jq -r '.running[1].compose_project' "$CACHE")" "compose 管理外は project が空"
+assert_eq "true" "$(jq -r '.running[2].auto_remove' "$CACHE")" "AutoRemove を保存する（真）"
+assert_eq "true" "$(jq -r '.running[2].auto_remove | type == "boolean"' "$CACHE")" "AutoRemove は真偽値で保存する"
+
 assert_eq "1" "$(run_fish '__docker_clean_stats --stale; echo $status')" "更新直後は stale でない"
+
+# 旧スキーマのキャッシュは TTL 内でも stale 扱いにする。
+# 種別情報が無いキャッシュを読み続けると orphan 件数を出せないため、
+# 起動時の background 更新に乗せて次回から正しくする。
+jq 'del(.schema)' "$CACHE" >"$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
+assert_eq "0" "$(run_fish '__docker_clean_stats --stale; echo $status')" "schema 無しは stale"
+jq '.schema = 1' "$CACHE" >"$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
+assert_eq "0" "$(run_fish '__docker_clean_stats --stale; echo $status')" "古い schema は stale"
+run_fish '__docker_clean_stats --update' >/dev/null
+assert_eq "1" "$(run_fish '__docker_clean_stats --stale; echo $status')" "--update すれば stale でなくなる"
 # generated_at を 7 時間前に巻き戻すと TTL(6h) 超になる
 jq --argjson t "$(($(date +%s) - 7 * 3600))" '.generated_at = $t' "$CACHE" >"$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
 assert_eq "0" "$(run_fish '__docker_clean_stats --stale; echo $status')" "TTL超は stale"
@@ -312,6 +346,7 @@ write_cache() {
   cat >"$CACHE" <<JSON
 {
   "generated_at": $(date +%s),
+  "schema": 2,
   "df": [
     {"Active":"6","Reclaimable":"$reclaim_images","Size":"24.48GB","TotalCount":"96","Type":"Images"},
     {"Active":"6","Reclaimable":"2.037MB (48%)","Size":"4.215MB","TotalCount":"7","Type":"Containers"},
@@ -319,9 +354,24 @@ write_cache() {
     {"Active":"0","Reclaimable":"100MB","Size":"13.03GB","TotalCount":"591","Type":"Build Cache"}
   ],
   "running": [
-    {"name":"wbc-booking-record_db_test","image":"wbc-booking-record_docker-test_db","uptime_seconds":$up1},
-    {"name":"buildx_buildkit_peaceful_curran0","image":"moby/buildkit:buildx-stable-1","uptime_seconds":$up2},
-    {"name":"suspicious_gagarin","image":"whale-pool.fdev:5000/forcia-remote-mcp/forcia-mcp:latest","uptime_seconds":$up3}
+    {"name":"wbc-booking-record_db_test","image":"wbc-booking-record_docker-test_db","uptime_seconds":$up1,"compose_project":"","compose_dir":"","auto_remove":false},
+    {"name":"buildx_buildkit_peaceful_curran0","image":"moby/buildkit:buildx-stable-1","uptime_seconds":$up2,"compose_project":"","compose_dir":"","auto_remove":false},
+    {"name":"suspicious_gagarin","image":"whale-pool.fdev:5000/forcia-remote-mcp/forcia-mcp:latest","uptime_seconds":$up3,"compose_project":"","compose_dir":"","auto_remove":true}
+  ]
+}
+JSON
+}
+
+# 種別を明示したキャッシュ。compose_dir に実在しないパスを渡すと orphan になる。
+write_cache_kinds() {
+  local project="$1" dir="$2"
+  cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "schema": 2,
+  "df": [{"Active":"6","Reclaimable":"1.0GB (10%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
+  "running": [
+    {"name":"wbc-booking-record_db_test","image":"wbc-booking-record_docker-test_db","uptime_seconds":86400,"compose_project":"$project","compose_dir":"$dir","auto_remove":false}
   ]
 }
 JSON
@@ -426,15 +476,59 @@ write_cache "1.0GB (10%)" 86400 86400 86400
 out="$(run_fish 'set -g docker_clean_ignore_patterns "nomatch*"; __docker_clean_stats --long-running --excluded')"
 assert_eq "" "$out" "パターン不一致なら --excluded は空"
 
+# 4-10. --long-running は種別判定に必要な列も返す（プレビューが分類に使う）
+write_cache_kinds wbc-booking-record /
+out="$(run_fish '__docker_clean_stats --long-running')"
+assert_eq "6" "$(run_fish '__docker_clean_stats --long-running | head -1 | string split \t | count')" "--long-running は6列を返す"
+assert_contains "wbc-booking-record" "$out" "compose project を含む"
+
+# 4-11. orphan が1件以上なら通知に件数を併記する
+write_cache_kinds deadproject /nonexistent-worktree-xyz
+out="$(run_fish 'set -g docker_clean_size_threshold_gb 999; __docker_clean_stats --notice')"
+assert_contains "12h超稼働 1件（orphan 1）" "$out" "orphan の件数を併記する"
+
+# 4-12. orphan が0件なら括弧を付けない
+write_cache_kinds wbc-booking-record /
+out="$(run_fish 'set -g docker_clean_size_threshold_gb 999; __docker_clean_stats --notice')"
+assert_contains "12h超稼働 1件" "$out" "稼働件数は出す"
+assert_not_contains "orphan" "$out" "orphan 0件なら括弧を付けない"
+
+# 4-13. standalone は orphan に数えない
+write_cache "1.0GB (10%)" 86400 86400 86400
+out="$(run_fish 'set -g docker_clean_size_threshold_gb 999; __docker_clean_stats --notice')"
+assert_not_contains "orphan" "$out" "compose 管理外は orphan に数えない"
+
+# 4-14. 旧スキーマのキャッシュでは orphan 件数を出さない
+#
+# 種別の列を持たないキャッシュを読んでいる間に件数を書くと嘘になる。
+# 旧キャッシュには compose_project が無いため全件 standalone に落ち、結果として
+# 括弧は付かない。--stale が真になるので次回起動の background 更新で解消される。
+cat >"$CACHE" <<JSON
+{
+  "generated_at": $(date +%s),
+  "df": [{"Active":"6","Reclaimable":"1.0GB (10%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
+  "running": [
+    {"name":"wbc-booking-record_db_test","image":"wbc-booking-record_docker-test_db","uptime_seconds":86400}
+  ]
+}
+JSON
+out="$(run_fish 'set -g docker_clean_size_threshold_gb 999; __docker_clean_stats --notice')"
+assert_contains "12h超稼働 1件" "$out" "旧スキーマでも稼働件数は出す"
+assert_not_contains "orphan" "$out" "旧スキーマでは orphan 件数を出さない"
+
 teardown
 echo ""
 
 # dclean まで source して評価する。stdin は呼び出し側で与える。
 run_dclean() {
-  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" fish --no-config -c "
+  PATH="$BIN:$PATH" DOCKER_FAKE_LOG="$FAKE_LOG" \
+    DOCKER_FAKE_ORPHAN="${DOCKER_FAKE_ORPHAN:-}" \
+    DOCKER_FAKE_COMPOSE_DIR="${DOCKER_FAKE_COMPOSE_DIR:-/}" \
+    fish --no-config -c "
     set -g docker_clean_cache_file '$CACHE'
     source '$FUNC_DIR/__docker_clean_size_to_bytes.fish'
     source '$FUNC_DIR/__docker_clean_format_bytes.fish'
+    source '$FUNC_DIR/__docker_clean_container_kind.fish'
     source '$FUNC_DIR/__docker_clean_cache_file.fish'
     source '$FUNC_DIR/__docker_clean_stats.fish'
     source '$FUNC_DIR/dclean.fish'
@@ -458,8 +552,13 @@ assert_contains "稼働中コンテナ" "$out" "稼働中コンテナの一覧�
 assert_contains "wbc-booking-record_db_test" "$out" "長時間稼働のコンテナ名を出す"
 assert_contains "（除外 1 件" "$out" "除外件数を注記する"
 assert_contains "docker_clean_ignore_patterns" "$out" "除外を制御する変数名を案内する"
-assert_contains "docker container stop wbc-booking-record_db_test" "$out" "コピペ用の停止コマンドを出す"
-assert_contains "; dclean --refresh" "$out" "停止後にキャッシュ更新も走るよう連結する"
+assert_contains "[compose]" "$out" "compose 管理のコンテナに compose タグを付ける"
+assert_contains "docker compose -p wbc-booking-record down" "$out" "compose はプロジェクト単位の down を案内する"
+assert_contains "up で戻せます" "$out" "compose は up で戻せることを注記する"
+assert_matches "^  dclean --refresh$" "$out" "停止後のキャッシュ更新を独立行で案内する"
+# 既定の除外パターンで standalone は隠れ、orphan は居ないのでどちらのブロックも出ない
+assert_not_contains "docker container stop" "$out" "standalone が居なければ stop 行を出さない"
+assert_not_contains "# orphan" "$out" "orphan が居なければ orphan ブロックを出さない"
 
 # フェイク docker は匿名3件 + named1件を返す → 匿名だけ数える
 assert_matches "未使用 volume +3 件" "$out" "匿名 volume だけを数える（named は除く）"
@@ -480,6 +579,31 @@ assert_not_contains "除外" "$out" "除外0件なら注記を出さない"
 out="$(run_dclean 'set -g docker_clean_uptime_threshold_h 100; dclean --status')"
 assert_contains "閾値を超えて稼働しているコンテナはありません" "$out" "0件時のメッセージは維持"
 assert_not_contains "container stop" "$out" "0件なら停止コマンド例を出さない"
+
+# 5-2. orphan（compose 管理だが working_dir が消えている）
+out="$(DOCKER_FAKE_ORPHAN=1 run_dclean 'dclean --status')"
+assert_matches "^  \[orphan\] +pms-api-localstack +Up 24 hours" "$out" "orphan タグを括弧の外側でパディングする"
+assert_contains "└ working_dir なし: /nonexistent-worktree-xyz" "$out" "消えている working_dir のパスを出す"
+assert_contains "working_dir が消えているため up では戻せません" "$out" "orphan は up で戻せないことを注記する"
+assert_contains "docker compose -p deadproject down" "$out" "orphan もプロジェクト単位の down を案内する"
+# orphan と生存 compose は別ブロックに分ける（戻せるかどうかが違う）
+assert_contains "docker compose -p wbc-booking-record down" "$out" "生存 compose の down も併記する"
+
+# 5-3. standalone（--rm あり → 停止で削除される）
+out="$(run_dclean 'set -g docker_clean_ignore_patterns "nomatch*"; set -g docker_clean_uptime_threshold_h 0.5; dclean --status')"
+assert_matches "^  \[standalone\] +buildx_buildkit_peaceful_curran0 +Up 24 hours" "$out" "standalone タグを出す"
+assert_contains "※--rm: 停止で削除されます" "$out" "--rm のコンテナに警告を出す"
+assert_contains "docker container stop buildx_buildkit_peaceful_curran0 suspicious_gagarin" "$out" "standalone は container stop でまとめる"
+assert_contains "# standalone（※--rm のコンテナは停止で削除されます）" "$out" "standalone ブロックに --rm の注記を付ける"
+# compose 系は down、standalone は stop に振り分ける
+assert_contains "docker compose -p wbc-booking-record down" "$out" "compose は down 側に入る"
+assert_not_contains "docker container stop wbc-booking-record_db_test" "$out" "compose を stop 側に入れない"
+
+# 5-4. --rm の standalone が居なければ警告を出さない
+out="$(run_dclean 'set -g docker_clean_ignore_patterns "nomatch*"; dclean --status')"
+assert_contains "[standalone]" "$out" "standalone タグは出す"
+assert_not_contains "※--rm" "$out" "--rm が無ければ警告を出さない"
+assert_contains "docker container stop buildx_buildkit_peaceful_curran0" "$out" "stop コマンドは出す"
 
 # --status は削除コマンドを一切呼ばない
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--status は prune を呼ばない"
@@ -650,6 +774,7 @@ assert_eq "" "$(run_hook '')" "非対話では通知しない"
 cat >"$CACHE" <<JSON
 {
   "generated_at": $(date +%s),
+  "schema": 2,
   "df": [
     {"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"},
     {"Active":"0","Reclaimable":"6.776GB","Size":"13.03GB","TotalCount":"591","Type":"Build Cache"}
@@ -669,6 +794,7 @@ assert_matches "→ dclean$" "$out" "軽掃除で足りるなら dclean を案�
 cat >"$CACHE" <<JSON
 {
   "generated_at": $(date +%s),
+  "schema": 2,
   "df": [{"Active":"6","Reclaimable":"1.0GB (10%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
   "running": []
 }
@@ -693,6 +819,7 @@ assert_contains "system df" "$(cat "$FAKE_LOG")" "キャッシュが古ければ
 cat >"$CACHE" <<JSON
 {
   "generated_at": $(date +%s),
+  "schema": 2,
   "df": [{"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
   "running": []
 }
@@ -712,6 +839,7 @@ mkdir -p "$XDG_DIR/docker-clean"
 cat >"$XDG_DIR/docker-clean/stats.json" <<JSON
 {
   "generated_at": $(date +%s),
+  "schema": 2,
   "df": [{"Active":"6","Reclaimable":"12.53GB (51%)","Size":"24.48GB","TotalCount":"96","Type":"Images"}],
   "running": []
 }
@@ -721,6 +849,29 @@ assert_contains "docker:" "$out" "実際の対話シェルで通知が出る"
 assert_not_contains "command not found" "$out" "autoload に失敗していない"
 
 teardown
+echo ""
+
+# --- 8. コンテナの種別判定 ---
+echo "[8] __docker_clean_container_kind"
+
+MISSING="/nonexistent-worktree-xyz-$$"
+
+assert_eq "standalone" "$(run_pure '__docker_clean_container_kind "" ""')" "compose project が空なら standalone"
+assert_eq "standalone" "$(run_pure "__docker_clean_container_kind '' /tmp")" "project が空なら dir を見ずに standalone"
+assert_eq "compose" "$(run_pure "__docker_clean_container_kind proj /tmp")" "working_dir が存在すれば compose"
+assert_eq "orphan" "$(run_pure "__docker_clean_container_kind proj $MISSING")" "working_dir が消えていれば orphan"
+
+# working_dir label が無いときは orphan に倒さない。
+# orphan は削除を伴う `docker compose down` を案内する側なので、
+# 孤児だと証明できないものを孤児扱いしてはいけない。
+assert_eq "compose" "$(run_pure "__docker_clean_container_kind proj ''")" "working_dir 不明なら compose に倒す"
+assert_eq "standalone" "$(run_pure '__docker_clean_container_kind')" "引数なしは standalone"
+
+# working_dir がファイル（ディレクトリではない）なら orphan 扱いにする
+TMPF=$(mktemp)
+assert_eq "orphan" "$(run_pure "__docker_clean_container_kind proj $TMPF")" "working_dir がディレクトリでなければ orphan"
+rm -f "$TMPF"
+
 echo ""
 
 # =============================================================================
