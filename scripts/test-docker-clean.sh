@@ -458,7 +458,7 @@ assert_contains "稼働中コンテナ" "$out" "稼働中コンテナの一覧�
 assert_contains "example-app_db_test" "$out" "長時間稼働のコンテナ名を出す"
 assert_contains "（除外 1 件" "$out" "除外件数を注記する"
 assert_contains "docker_clean_ignore_patterns" "$out" "除外を制御する変数名を案内する"
-assert_contains "docker stop example-app_db_test" "$out" "コピペ用の停止コマンドを出す"
+assert_contains "docker container stop example-app_db_test" "$out" "コピペ用の停止コマンドを出す"
 
 # フェイク docker は匿名3件 + named1件を返す → 匿名だけ数える
 assert_matches "未使用 volume +3 件" "$out" "匿名 volume だけを数える（named は除く）"
@@ -478,7 +478,7 @@ assert_not_contains "除外" "$out" "除外0件なら注記を出さない"
 # 長時間稼働が0件なら停止コマンド例を出さない
 out="$(run_dclean 'set -g docker_clean_uptime_threshold_h 100; dclean --status')"
 assert_contains "閾値を超えて稼働しているコンテナはありません" "$out" "0件時のメッセージは維持"
-assert_not_contains "docker stop" "$out" "0件なら停止コマンド例を出さない"
+assert_not_contains "container stop" "$out" "0件なら停止コマンド例を出さない"
 
 # --status は削除コマンドを一切呼ばない
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--status は prune を呼ばない"
