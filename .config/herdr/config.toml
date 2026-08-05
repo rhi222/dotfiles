@@ -72,6 +72,7 @@ mouse_capture = true
 copy_on_select = true
 
 show_agent_labels_on_pane_borders = true
+agent_panel_sort = "spaces"
 [ui.toast]
 # WSL2 では OS 通知(system)に追加設定が要るため、まずアプリ内トーストで安全側に
 # 慣れたら "system" / "terminal" へ変更可
