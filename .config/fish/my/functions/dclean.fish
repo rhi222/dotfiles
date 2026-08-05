@@ -195,6 +195,17 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
     if test $excluded_n -gt 0
         echo "  （除外 $excluded_n 件 — docker_clean_ignore_patterns で非表示）"
     end
+    # 止めると判断したらコピペ1発で済むよう、一覧と同じコンテナ名を連結して出す。
+    # 実行はしない（停止は手動判断のまま）。
+    if test (count $long) -gt 0
+        set -l names
+        for line in $long
+            set -a names (string split \t -- $line)[1]
+        end
+        echo ''
+        echo '  停止する場合（コピペ用）:'
+        echo "  docker stop $names"
+    end
     echo ''
 end
 
