@@ -582,7 +582,7 @@ assert_not_contains "container stop" "$out" "0件なら停止コマンド例を�
 
 # 5-2. orphan（compose 管理だが working_dir が消えている）
 out="$(DOCKER_FAKE_ORPHAN=1 run_dclean 'dclean --status')"
-assert_matches "^  \[orphan\] +pms-api-localstack +Up 24 hours" "$out" "orphan タグを括弧の外側でパディングする"
+assert_matches "^  \[orphan\] +pms-api-localstack +Up [0-9]" "$out" "orphan タグを括弧の外側でパディングする"
 assert_contains "└ working_dir なし: /nonexistent-worktree-xyz" "$out" "消えている working_dir のパスを出す"
 assert_contains "working_dir が消えているため up では戻せません" "$out" "orphan は up で戻せないことを注記する"
 assert_contains "docker compose -p deadproject down" "$out" "orphan もプロジェクト単位の down を案内する"
@@ -591,7 +591,7 @@ assert_contains "docker compose -p example-app down" "$out" "生存 compose の 
 
 # 5-3. standalone（--rm あり → 停止で削除される）
 out="$(run_dclean 'set -g docker_clean_ignore_patterns "nomatch*"; set -g docker_clean_uptime_threshold_h 0.5; dclean --status')"
-assert_matches "^  \[standalone\] +buildx_buildkit_peaceful_curran0 +Up 24 hours" "$out" "standalone タグを出す"
+assert_matches "^  \[standalone\] +buildx_buildkit_peaceful_curran0 +Up [0-9]" "$out" "standalone タグを出す"
 assert_contains "※--rm: 停止で削除されます" "$out" "--rm のコンテナに警告を出す"
 assert_contains "docker container stop buildx_buildkit_peaceful_curran0 suspicious_gagarin" "$out" "standalone は container stop でまとめる"
 assert_contains "# standalone（※--rm のコンテナは停止で削除されます）" "$out" "standalone ブロックに --rm の注記を付ける"

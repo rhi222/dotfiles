@@ -9,7 +9,11 @@
 #   --read          キャッシュの JSON を出力。無い/壊れていれば return 1
 #   --stale         キャッシュが TTL 超または不在なら return 0
 #   --notice        閾値超えなら通知1行を出力して return 0、そうでなければ return 1
-#   --long-running  除外後の長時間稼働コンテナを name<TAB>image<TAB>秒 で列挙する
+#   --long-running  除外後の長時間稼働コンテナを列挙する（列は _parse のコメント参照）
+
+# キャッシュのスキーマ版。running[] の列を増やしたらここを上げる。
+# 古い版のキャッシュは TTL 内でも stale 扱いにして作り直す（_stale を参照）。
+set -g __docker_clean_schema_current 2
 
 function __docker_clean_stats --description 'docker 使用状況のキャッシュ管理'
     set -l cache (__docker_clean_cache_file)
@@ -52,8 +56,10 @@ end
 #
 # 結果は以下のグローバルに入る:
 #   __docker_clean_gen       generated_at（epoch 秒）
+#   __docker_clean_schema    schema（種別列を持たない旧キャッシュでは 0）
 #   __docker_clean_reclaim   df の Type<TAB>Reclaimable のリスト
-#   __docker_clean_running   稼働コンテナの name<TAB>image<TAB>秒 のリスト
+#   __docker_clean_running   稼働コンテナのリスト。列は
+#                            name<TAB>image<TAB>秒<TAB>compose_project<TAB>compose_dir<TAB>auto_remove
 function __docker_clean_stats_parse --description 'キャッシュを1回のjqで読みメモ化する'
     set -l cache $argv[1]
 
@@ -63,16 +69,21 @@ function __docker_clean_stats_parse --description 'キャッシュを1回のjq�
 
     set -g __docker_clean_parsed $cache
     set -g __docker_clean_gen 0
+    set -g __docker_clean_schema 0
     set -g __docker_clean_reclaim
     set -g __docker_clean_running
     set -g __docker_clean_parse_rc 1
 
     test -f $cache; or return 1
 
+    # auto_remove は `// false` ではなく `== true` で真偽を出す。
+    # jq の `//` は左辺が false でも右辺を採るため、`false // false` と書いても
+    # 意図は通るが読み違えやすい。`== true` なら null も false も "false" になる。
     set -l lines (jq -r '
         "G\t\(.generated_at // 0)",
+        "S\t\(.schema // 0)",
         (.df[]? | "R\t\(.Type)\t\(.Reclaimable)"),
-        (.running[]? | "C\t\(.name)\t\(.image)\t\(.uptime_seconds)")
+        (.running[]? | "C\t\(.name)\t\(.image)\t\(.uptime_seconds)\t\(.compose_project // "")\t\(.compose_dir // "")\t\(.auto_remove == true)")
     ' $cache 2>/dev/null)
     or return 1
     test (count $lines) -gt 0; or return 1
@@ -82,6 +93,8 @@ function __docker_clean_stats_parse --description 'キャッシュを1回のjq�
         switch $f[1]
             case G
                 set -g __docker_clean_gen $f[2]
+            case S
+                set -g __docker_clean_schema $f[2]
             case R
                 set -a __docker_clean_reclaim (string join \t $f[2..-1])
             case C
@@ -104,6 +117,11 @@ function __docker_clean_stats_stale --description 'キャッシュが TTL 超か
     __docker_clean_stats_parse $cache; or return 0
     string match -qr '^[0-9]+$' -- $__docker_clean_gen; or return 0
 
+    # スキーマが古ければ TTL 内でも作り直す。種別列（compose_project 等）を持たない
+    # キャッシュを読んでいる間は orphan 件数を出せないため、起動時の background
+    # 更新に乗せて次回から正しくする。
+    test "$__docker_clean_schema" = "$__docker_clean_schema_current"; or return 0
+
     set -l age (math (date +%s) - $__docker_clean_gen)
     test $age -ge (math "round($ttl_h * 3600)")
 end
@@ -119,22 +137,40 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
     or return 1
     test -n "$df"; or return 1
 
-    # 稼働コンテナ: 名前 / イメージ / 稼働秒数
+    # 稼働コンテナ: 名前 / イメージ / 稼働秒数 / compose の label / AutoRemove
+    #
+    # label は種別判定（__docker_clean_container_kind）に使う。取れなかった場合は
+    # 空文字になり standalone 扱いになる。`{{index .Config.Labels "..."}}` は
+    # Labels が nil でもキーが無くても空文字を返す（`<no value>` にはならない）。
     set -l now (date +%s)
     set -l running_lines
     set -l ids (docker ps -q 2>/dev/null)
     if test (count $ids) -gt 0
-        for line in (docker inspect --format '{{.Name}}|{{.Config.Image}}|{{.State.StartedAt}}' $ids 2>/dev/null)
+        set -l fmt '{{.Name}}|{{.Config.Image}}|{{.State.StartedAt}}'
+        set fmt "$fmt"'|{{index .Config.Labels "com.docker.compose.project"}}'
+        set fmt "$fmt"'|{{index .Config.Labels "com.docker.compose.project.working_dir"}}'
+        set fmt "$fmt"'|{{.HostConfig.AutoRemove}}'
+        for line in (docker inspect --format $fmt $ids 2>/dev/null)
             set -l f (string split '|' -- $line)
             test (count $f) -ge 3; or continue
             set -l name (string trim -l -c '/' -- $f[1])
             set -l started (date -d "$f[3]" +%s 2>/dev/null)
             test -n "$started"; or set started $now
+            set -l project ''
+            test (count $f) -ge 4; and set project $f[4]
+            set -l dir ''
+            test (count $f) -ge 5; and set dir $f[5]
+            set -l autorm false
+            test (count $f) -ge 6; and test "$f[6]" = true; and set autorm true
             set -a running_lines (jq -nc \
                 --arg name "$name" \
                 --arg image "$f[2]" \
                 --argjson up (math "$now - $started") \
-                '{name: $name, image: $image, uptime_seconds: $up}')
+                --arg project "$project" \
+                --arg dir "$dir" \
+                --argjson autorm $autorm \
+                '{name: $name, image: $image, uptime_seconds: $up,
+                  compose_project: $project, compose_dir: $dir, auto_remove: $autorm}')
         end
     end
 
@@ -150,9 +186,10 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
     set -l tmp $cache.tmp.$fish_pid
     jq -n \
         --argjson generated_at $now \
+        --argjson schema $__docker_clean_schema_current \
         --argjson df "$df" \
         --argjson running "$running" \
-        '{generated_at: $generated_at, df: $df, running: $running}' >$tmp
+        '{generated_at: $generated_at, schema: $schema, df: $df, running: $running}' >$tmp
     or begin
         rm -f $tmp
         return 1
@@ -254,7 +291,20 @@ function __docker_clean_stats_notice --description '起動時通知の1行を生
         and set heavy_bytes (math "$light_bytes + $extra")
     end
 
-    set -l long (count (__docker_clean_stats_long_running $cache))
+    set -l long_rows (__docker_clean_stats_long_running $cache)
+    set -l long (count $long_rows)
+
+    # orphan（compose 管理だが working_dir が消えている）は確実な停止候補なので
+    # 件数だけ併記する。種別列を持たない旧キャッシュでは compose_project が空に
+    # なって全件 standalone に落ちるため、自然に 0 件になり括弧は付かない
+    # （そのキャッシュは _stale 側で作り直しの対象になる）。
+    set -l orphan 0
+    for row in $long_rows
+        set -l f (string split \t -- $row)
+        test (count $f) -ge 5; or continue
+        test (__docker_clean_container_kind $f[4] $f[5]) = orphan
+        and set orphan (math "$orphan + 1")
+    end
 
     # NOTE: fish 4.x の math は論理演算子を持たないため、math で整数化してから test -ge で比較する。
     set -l thr (math "round($size_thr_gb * 1000000000)")
@@ -273,9 +323,12 @@ function __docker_clean_stats_notice --description '起動時通知の1行を生
         return 1
     end
 
+    set -l long_msg "$thr_h""h超稼働 $long""件"
+    test $orphan -gt 0; and set long_msg "$long_msg（orphan $orphan）"
+
     set -l parts
     test -n "$size_msg"; and set -a parts $size_msg
-    test $long -gt 0; and set -a parts "$thr_h""h超稼働 $long""件"
+    test $long -gt 0; and set -a parts $long_msg
     test -z "$size_msg"; and set cmd 'dclean --status'
 
     echo "🗑  docker: "(string join ' / ' $parts)"  → $cmd"

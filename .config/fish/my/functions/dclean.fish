@@ -181,12 +181,20 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
 
     echo '稼働中コンテナ（停止は手動判断）'
     set -l long (__docker_clean_stats --long-running)
-    if test (count $long) -eq 0
+    set -l rows (__dclean_classify_running $long)
+    if test (count $rows) -eq 0
         echo '  （閾値を超えて稼働しているコンテナはありません）'
     else
-        for line in $long
-            set -l f (string split \t -- $line)
-            printf '  %-36s Up %s\n' $f[1] (__dclean_humanize_uptime $f[3])
+        for row in $rows
+            set -l r (string split \t -- $row)
+            # タグのパディングは括弧の外側に入れる（[main  ] ではなく [main]  ）。
+            # wt / wtd の一覧と同じ規約。ASCII なので string pad の East Asian 幅も絡まない。
+            set -l tag (string pad -r -w 13 -- "[$r[1]]")
+            set -l note ''
+            test "$r[6]" = true; and set note '   ※--rm: 停止で削除されます'
+            printf '  %s%-36s Up %s%s\n' $tag $r[2] (__dclean_humanize_uptime $r[3]) $note
+            # orphan だけ理由を添える。どの worktree の残骸か分かるのが実用上の価値。
+            test "$r[1]" = orphan; and printf '               └ working_dir なし: %s\n' $r[5]
         end
     end
     # 除外パターンで非表示になっている閾値超えコンテナがあることを示す。
@@ -195,21 +203,82 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
     if test $excluded_n -gt 0
         echo "  （除外 $excluded_n 件 — docker_clean_ignore_patterns で非表示）"
     end
-    # 止めると判断したらコピペ1発で済むよう、一覧と同じコンテナ名を連結して出す。
-    # 実行はしない（停止は手動判断のまま）。
+    # 止めると判断したらコピペで済むよう、種別ごとにコマンドを出す。実行はしない
+    # （停止は手動判断のまま）。
     #
-    # --refresh も繋げる。起動時通知はキャッシュしか読まないため、停止しただけでは
-    # TTL（既定6h）が切れるまで古い件数を通知し続ける（実際にそうなった）。
-    if test (count $long) -gt 0
-        set -l names
-        for line in $long
-            set -a names (string split \t -- $line)[1]
+    # 種別で分けるのは、停止の可逆性がまるで違うため。
+    #   compose … レシピが docker-compose.yml に残るので up で戻せる
+    #   orphan  … working_dir ごと消えているので戻せない（が確実な停止候補）
+    #   standalone … レシピが docker 側に残らない。--rm なら停止＝即削除
+    #
+    # compose 系は `docker compose -p <project> down` にする。`-p` を付ければ
+    # compose ファイル無し・任意の cwd から label 経由でプロジェクトを解決でき、
+    # compose が作った network も一緒に回収される。
+    #
+    # --refresh は最終行に独立して出す。起動時通知はキャッシュしか読まないため、
+    # 停止しただけでは TTL（既定6h）が切れるまで古い件数を通知し続ける。
+    if test (count $rows) -gt 0
+        set -l orphan_projects
+        set -l compose_projects
+        set -l standalone_names
+        set -l standalone_rm 0
+        for row in $rows
+            set -l r (string split \t -- $row)
+            switch $r[1]
+                case orphan
+                    contains -- $r[4] $orphan_projects; or set -a orphan_projects $r[4]
+                case compose
+                    contains -- $r[4] $compose_projects; or set -a compose_projects $r[4]
+                case standalone
+                    set -a standalone_names $r[2]
+                    test "$r[6]" = true; and set standalone_rm 1
+            end
         end
+
         echo ''
         echo '  停止する場合（コピペ用）:'
-        echo "  docker container stop $names; dclean --refresh"
+        if test (count $orphan_projects) -gt 0
+            echo '  # orphan（working_dir が消えているため up では戻せません）'
+            for p in $orphan_projects
+                echo "  docker compose -p $p down"
+            end
+        end
+        if test (count $compose_projects) -gt 0
+            echo '  # compose（up で戻せます）'
+            for p in $compose_projects
+                echo "  docker compose -p $p down"
+            end
+        end
+        if test (count $standalone_names) -gt 0
+            if test $standalone_rm -eq 1
+                echo '  # standalone（※--rm のコンテナは停止で削除されます）'
+            else
+                echo '  # standalone'
+            end
+            echo "  docker container stop $standalone_names"
+        end
+        echo '  dclean --refresh'
     end
     echo ''
+end
+
+# --long-running の行に種別を前置する。
+# 出力の列: kind<TAB>name<TAB>秒<TAB>compose_project<TAB>compose_dir<TAB>auto_remove
+#
+# 表示ループとコピペ用コマンドのループが同じ分類を使えるよう、判定を1箇所に寄せる。
+# 列が足りない行（種別列を持たない旧キャッシュ）でも落とさず standalone に倒す。
+function __dclean_classify_running --description '稼働コンテナ行に種別を前置する'
+    for line in $argv
+        set -l f (string split \t -- $line)
+        test (count $f) -ge 3; or continue
+        set -l project ''
+        test (count $f) -ge 4; and set project $f[4]
+        set -l dir ''
+        test (count $f) -ge 5; and set dir $f[5]
+        set -l autorm ''
+        test (count $f) -ge 6; and set autorm $f[6]
+        echo (string join \t (__docker_clean_container_kind $project $dir) $f[1] $f[3] $project $dir $autorm)
+    end
 end
 
 # モードに応じた prune を順に実行する。
