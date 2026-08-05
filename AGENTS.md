@@ -40,6 +40,34 @@
 
 動作確認は `bash scripts/test-sync-claude-settings.sh`。
 
+### statusline（ccstatusline）
+
+statusline は `ccstatusline`（`settings.json` の `statusLine.command`）で描画し、レイアウトは
+`.config/ccstatusline/settings.json` で管理する（`dotfilesLink.sh` がリンクする）。
+
+1行目のモデル名だけは標準の `model` ウィジェットを使わず、`custom-command` ウィジェットから
+`.config/claude/scripts/statusline-model.sh` を呼んでいる。**標準の `model` ウィジェットは色が
+固定値で、モデルによって見た目を変えられないため。** `custom-command` は stdin に Claude Code の
+statusline JSON をそのまま渡し、`preserveColors: true` なら stdout の ANSI を保持するので、
+スクリプト側で配色を出し分けられる。
+
+| モデル   | 表示                                                  |
+| -------- | ----------------------------------------------------- |
+| Fable    | `⚡FABLE 5⚡`（黄背景・黒文字・太字の反転バッジ）        |
+| それ以外 | `Model: <名前>`（cyan。標準ウィジェットと同じ見た目）  |
+
+- **Fable 判定は `model.id` の前方一致（`claude-fable*`）と `display_name` の部分一致の両方で行う。** `display_name` の実際の表記を実機で確認できていないため、どちらか一方でも拾えるようにしている
+- 黒文字は `30` ではなく 256色の `38;5;0` で指定する。太字と併せると `30` が灰色に化ける端末があるため
+- `display_name` が無ければ `model.id` を使い、末尾の `(1M context)` のような括弧書きは落とす（標準ウィジェットと同じ挙動に合わせている）
+- `jq` が無い環境では `Model: ?` を返して exit 0 する。statusline 全体を壊さないため、この経路では外部コマンドを一切呼ばない
+- 実行時間は約32ms/回。`timeout` は 3000ms に設定している
+
+動作確認は `bash scripts/test-statusline-model.sh`。見た目は statusline JSON を流し込んで確認する。
+
+```fish
+echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"current_dir":"."}}' | ccstatusline
+```
+
 ### aptパッケージ管理
 
 `scripts/apt-packages.txt` にWSL2環境で必要なaptパッケージを管理している。新しいaptパッケージが必要になった場合はこのファイルに追加する（`#`で始まる行はコメントとして無視される）。
