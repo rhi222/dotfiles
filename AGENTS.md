@@ -328,13 +328,13 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 | 動作確認     | `bash scripts/test-docker-clean.sh`                                             |
 
 - **named volume は軽・重どちらでも削除しない。** `docker volume prune` に `-a` を付けないため、未使用でも named volume（DBデータ等）は残る。消すときは `docker volume rm` を明示的に叩く
-- **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断。一覧の下にコピペ用の `docker container stop <名前...>` を出す。除外パターンで非表示のコンテナが閾値を超えている場合は `（除外 N 件）` を注記する（`docker ps` と件数が合わず不足に見えるのを防ぐため）
+- **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断。一覧の下にコピペ用の `docker container stop <名前...>; dclean --refresh` を出す。`--refresh` まで繋げるのは、停止しただけでは起動時通知がキャッシュのTTLが切れるまで古い件数を出し続けるため（実際になった）。除外パターンで非表示のコンテナが閾値を超えている場合は `（除外 N 件）` を注記する（`docker ps` と件数が合わず不足に見えるのを防ぐため）
 - **build cache は全ビルダーを対象にする。** `docker builder prune` は `docker buildx prune` のエイリアスで `--builder` を付けないとカレントビルダーしか掃除しない。docker-containerドライバのビルダーと daemon 側の `default` ビルダーは別のキャッシュを持つ（実測で11.2GBと13.0GB）ため、`__dclean_builders` で列挙して両方に対して実行する
 - **`--filter until=<duration>` は使わない。** 実測で docker / docker-container どちらのドライバでも `Total: 0B` になり、7日以上前のレコードが445件残っていても一切回収されなかった。フィルタなしなら同じ状態から5.142GB回収でき `df` の Reclaimable も 0B になる。`docker buildx du` 側も `--filter until=` を無視する（1hでも99999hでも同件数）。そのため軽/重の区別は `-a` の有無だけで付けている
 - **通知は「軽掃除で消える分」と「重掃除でしか消えない分」を分けて判定する。** `docker system df` の `Images` Reclaimable は「どのコンテナからも参照されていない image」の量で dangling かは問わない。軽掃除の `image prune -f` は dangling だけを消すため、`Images` を軽掃除の根拠にすると `dclean` しても通知が消え続ける（実際になった）。`Images` 由来が主なら通知は `→ dclean -a` を案内する。`Containers` / `Local Volumes` / `Build Cache` の Reclaimable は軽掃除の prune が回収する量に対応する（実測で prune 後 0B になる）
 - **軽モードは image と build cache の回収量を事前に出さない。** dangling image は共有レイヤのため確定できず、build cache は `buildx du` の合算（246件/5.4GB）と実際の回収量（0B）が桁違いになる。`df` の Build Cache Reclaimable は `default` ビルダーの分しか見ないので代わりにもならない。実際の回収量は実行後の `回収:` 行を見る
 - 意図的に未使用 image を残していて通知が邪魔な場合は `docker_clean_size_threshold_gb` を上げる
-- `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下
+- `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下。**キャッシュを読むだけなので、コンテナを停止しても通知の件数はすぐには変わらない。** 即座に反映したいときは `dclean --refresh`（`dclean` / `dclean --status` の実行でも更新される）
 - 閾値と除外リストは変数で上書きできる（`99-local.fish` などで設定する）
 
 | 変数                              | 既定値                             | 意味                                      |
