@@ -204,7 +204,7 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
         end
         echo ''
         echo '  停止する場合（コピペ用）:'
-        echo "  docker stop $names"
+        echo "  docker container stop $names"
     end
     echo ''
 end
