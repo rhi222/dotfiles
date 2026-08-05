@@ -81,28 +81,28 @@ SONNET='{"model":{"id":"claude-sonnet-5","display_name":"Sonnet 5"}}'
 
 echo "=== Fable のとき反転バッジを出す ==="
 assert_visible "バッジのテキストは ⚡FABLE 5⚡" "$FABLE" '⚡FABLE 5⚡'
-# 黄背景(48;5;226) + 黒文字(38;5;0) + 太字(1) の反転バッジ
-assert_contains "黄背景の ANSI を含む" "$FABLE" '48;5;226'
-assert_contains "黒文字の ANSI を含む" "$FABLE" '38;5;0'
+# くすんだオリーブ背景(48;5;58) + 淡いカーキ文字(38;5;186) + 太字(1) のバッジ
+assert_contains "オリーブ背景の ANSI を含む" "$FABLE" '48;5;58'
+assert_contains "カーキ文字の ANSI を含む" "$FABLE" '38;5;186'
 assert_contains "リセットで終わる" "$FABLE" '^[[0m'
 assert_not_contains "Model: プレフィックスは付けない" "$FABLE" 'Model:'
 
 echo "=== id だけが Fable でもバッジを出す（display_name の表記揺れ対策） ==="
 assert_contains "id 前方一致で判定する" \
-  '{"model":{"id":"claude-fable-5-20260101","display_name":"Claude 5"}}' '48;5;226'
+  '{"model":{"id":"claude-fable-5-20260101","display_name":"Claude 5"}}' '48;5;58'
 assert_contains "id の大文字小文字は無視する" \
-  '{"model":{"id":"claude-FABLE-5"}}' '48;5;226'
+  '{"model":{"id":"claude-FABLE-5"}}' '48;5;58'
 
 echo "=== display_name だけが Fable でもバッジを出す ==="
 assert_contains "display_name 部分一致で判定する" \
-  '{"model":{"id":"claude-5-experimental","display_name":"Fable 5 mini"}}' '48;5;226'
+  '{"model":{"id":"claude-5-experimental","display_name":"Fable 5 mini"}}' '48;5;58'
 
 echo "=== Fable 以外は従来表示（cyan の Model: <名前>） ==="
 assert_visible "Opus は括弧を落として Model: Opus 5" "$OPUS" 'Model: Opus 5'
 assert_contains "cyan の ANSI を含む" "$OPUS" '^[[36m'
-assert_not_contains "バッジの背景色は使わない" "$OPUS" '48;5;226'
+assert_not_contains "バッジの背景色は使わない" "$OPUS" '48;5;58'
 assert_visible "Sonnet も同様" "$SONNET" 'Model: Sonnet 5'
-assert_not_contains "opus に fable は含まれない（誤検知しない）" "$OPUS" '48;5;226'
+assert_not_contains "opus に fable は含まれない（誤検知しない）" "$OPUS" '48;5;58'
 
 echo "=== フォールバック ==="
 assert_visible "display_name が無ければ id を使う" \
