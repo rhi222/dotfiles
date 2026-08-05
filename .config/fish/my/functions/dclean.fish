@@ -197,6 +197,9 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
     end
     # 止めると判断したらコピペ1発で済むよう、一覧と同じコンテナ名を連結して出す。
     # 実行はしない（停止は手動判断のまま）。
+    #
+    # --refresh も繋げる。起動時通知はキャッシュしか読まないため、停止しただけでは
+    # TTL（既定6h）が切れるまで古い件数を通知し続ける（実際にそうなった）。
     if test (count $long) -gt 0
         set -l names
         for line in $long
@@ -204,7 +207,7 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
         end
         echo ''
         echo '  停止する場合（コピペ用）:'
-        echo "  docker container stop $names"
+        echo "  docker container stop $names; dclean --refresh"
     end
     echo ''
 end
