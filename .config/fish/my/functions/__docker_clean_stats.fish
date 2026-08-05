@@ -165,10 +165,23 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
     return 0
 end
 
+# 除外パターン（既定 + docker_clean_ignore_patterns による上書き）にマッチするか。
+# コンテナ名とイメージ名の両方に照合する。forcia-mcp のコンテナ名は自動生成
+# （suspicious_gagarin 等）で識別できないため、イメージ名側での照合が必須。
+function __docker_clean_is_ignored --description 'コンテナが除外パターンにマッチするか'
+    set -l ignore 'buildx_buildkit_*' '*forcia-mcp*'
+    if set -q docker_clean_ignore_patterns; and test (count $docker_clean_ignore_patterns) -gt 0
+        set ignore $docker_clean_ignore_patterns
+    end
+    for p in $ignore
+        if string match -q -- $p $argv[1]; or string match -q -- $p $argv[2]
+            return 0
+        end
+    end
+    return 1
+end
+
 # 長時間稼働コンテナを name<TAB>image<TAB>uptime_seconds で出力する。
-# 除外パターンはコンテナ名とイメージ名の両方に対してグロブ照合する。
-# forcia-mcp のコンテナ名は自動生成（suspicious_gagarin 等）で識別できないため、
-# イメージ名側での照合が必須。
 function __docker_clean_stats_long_running --description '除外後の長時間稼働コンテナを列挙する'
     set -l cache $argv[1]
     __docker_clean_stats_parse $cache; or return 1
@@ -179,24 +192,10 @@ function __docker_clean_stats_long_running --description '除外後の長時間�
     end
     set -l thr_s (math "round($thr_h * 3600)")
 
-    set -l ignore 'buildx_buildkit_*' '*forcia-mcp*'
-    if set -q docker_clean_ignore_patterns; and test (count $docker_clean_ignore_patterns) -gt 0
-        set ignore $docker_clean_ignore_patterns
-    end
-
     for line in $__docker_clean_running
         set -l f (string split \t -- $line)
         test (count $f) -ge 3; or continue
-
-        set -l skip 0
-        for p in $ignore
-            if string match -q -- $p $f[1]; or string match -q -- $p $f[2]
-                set skip 1
-                break
-            end
-        end
-        test $skip -eq 1; and continue
-
+        __docker_clean_is_ignored $f[1] $f[2]; and continue
         string match -qr '^[0-9]+$' -- $f[3]; or continue
         test $f[3] -gt $thr_s; and echo $line
     end
