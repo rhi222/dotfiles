@@ -4,8 +4,10 @@
     [
       {
         "id": "1",
-        "type": "model",
-        "color": "cyan"
+        "type": "custom-command",
+        "commandPath": "$HOME/.config/claude/scripts/statusline-model.sh",
+        "timeout": 3000,
+        "preserveColors": true
       },
       {
         "id": "2",
