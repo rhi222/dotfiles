@@ -28,7 +28,7 @@ function __docker_clean_stats --description 'docker 使用状況のキャッシ�
             __docker_clean_stats_notice $cache
             return $status
         case --long-running
-            __docker_clean_stats_long_running $cache
+            __docker_clean_stats_long_running $cache $argv[2..-1]
             return $status
         case '*'
             echo "__docker_clean_stats: 不明な引数: $argv" >&2
@@ -182,8 +182,13 @@ function __docker_clean_is_ignored --description 'コンテナが除外パター
 end
 
 # 長時間稼働コンテナを name<TAB>image<TAB>uptime_seconds で出力する。
-function __docker_clean_stats_long_running --description '除外後の長時間稼働コンテナを列挙する'
+# 既定は除外パターン適用後の一覧。--excluded を付けると逆に
+# 「閾値超えだが除外パターンにマッチした」側を列挙する（プレビューの注記用）。
+function __docker_clean_stats_long_running --description '長時間稼働コンテナを列挙する'
     set -l cache $argv[1]
+    set -l want_excluded 0
+    contains -- --excluded $argv[2..-1]; and set want_excluded 1
+
     __docker_clean_stats_parse $cache; or return 1
 
     set -l thr_h 12
@@ -195,9 +200,12 @@ function __docker_clean_stats_long_running --description '除外後の長時間�
     for line in $__docker_clean_running
         set -l f (string split \t -- $line)
         test (count $f) -ge 3; or continue
-        __docker_clean_is_ignored $f[1] $f[2]; and continue
         string match -qr '^[0-9]+$' -- $f[3]; or continue
-        test $f[3] -gt $thr_s; and echo $line
+        test $f[3] -gt $thr_s; or continue
+
+        set -l ignored 0
+        __docker_clean_is_ignored $f[1] $f[2]; and set ignored 1
+        test $ignored -eq $want_excluded; and echo $line
     end
 end
 

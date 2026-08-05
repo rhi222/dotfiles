@@ -189,6 +189,12 @@ function __dclean_preview --description 'dclean のプレビューを表示す�
             printf '  %-36s Up %s\n' $f[1] (__dclean_humanize_uptime $f[3])
         end
     end
+    # 除外パターンで非表示になっている閾値超えコンテナがあることを示す。
+    # 出さないと docker ps と件数が合わず「表示に不足がある」ように見える。
+    set -l excluded_n (count (__docker_clean_stats --long-running --excluded))
+    if test $excluded_n -gt 0
+        echo "  （除外 $excluded_n 件 — docker_clean_ignore_patterns で非表示）"
+    end
     echo ''
 end
 
