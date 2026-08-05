@@ -265,6 +265,29 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - 固有スクリプトが失敗しても警告が出るだけで worktree 作成フローは継続する（`worktree-init.sh` は exit 0）
 - 該当スクリプトが無いリポジトリ、または origin未設定のリポジトリでは共通処理のみ実行される
 
+### worktree 一覧のタグ表示（wt / wtd）
+
+`wt` / `wtd` の fzf 一覧の1列目に、その worktree の由来をタグで出す。整形は
+`__wt_format_rows`、メインworktreeの解決は `__wt_main_path` に分離している。
+
+| タグ     | 意味                                         |
+| -------- | -------------------------------------------- |
+| `main`   | メインworktree（本体）                       |
+| `.wt`    | `git wt` が作る `.wt/` 配下                  |
+| `claude` | Claude Code が作る `.claude/worktrees/` 配下 |
+| `wt`     | それ以外の場所にあるリンクworktree           |
+
+**メイン判定は `git worktree list --porcelain` の先頭エントリとの実パス一致で行う。**
+以前はパスに `.wt` を含むかだけで見ていたため、`.claude/worktrees/` 配下の worktree が
+`[main]` と表示されていた（`.claude` に `.wt` は含まれないため）。逆にメインworktreeの
+パスに `.wt` が含まれると `[.wt]` になる誤判定もあった。置き場所が増えても壊れないよう、
+「メインかどうか」だけを git に聞き、由来の細分はパスの位置で行う。
+
+タグのパディングは**括弧の外側**に入れる（`[main]  `）。`[main  ]` のように内側へ入れると
+`wt` / `wtd` が `awk` で拾うフィールド番号がずれる。
+
+動作確認は `bash scripts/test-wt-select.sh`。
+
 ### worktree の掃除
 
 消し忘れた worktree を洗い出して削除する。**既定は dry-run** で、実削除には `--execute` が必要。

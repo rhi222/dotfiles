@@ -31,7 +31,9 @@
         ├── __docker_clean_size_to_bytes.fish # 人間可読サイズ→バイト数
         ├── __docker_clean_stats.fish         # docker使用状況のキャッシュ管理
         ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
+        ├── __wt_format_rows.fish    # worktree一覧の整形（main/.wt/claude タグ付け）
         ├── __wt_lock_reason.fish    # worktreeのlock理由取得
+        ├── __wt_main_path.fish      # メインworktreeの絶対パス取得
         ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
         ├── dclean.fish              # docker掃除（軽/重プリセット）
         ├── find_docker_compose.fish # Docker Compose自動発見
