@@ -408,6 +408,24 @@ assert_contains "example-app_db_test" "$out" "長時間稼働の対象を出力�
 assert_not_contains "buildx_buildkit" "$out" "除外対象は出力しない"
 assert_not_contains "suspicious_gagarin" "$out" "イメージ名で除外されたものは出力しない"
 
+# 4-9. --long-running --excluded は「閾値超えだが除外された」側を返す
+write_cache "1.0GB (10%)" 86400 86400 86400
+out="$(run_fish '__docker_clean_stats --long-running --excluded')"
+assert_contains "buildx_buildkit_peaceful_curran0" "$out" "--excluded は名前で除外されたものを出す"
+assert_contains "suspicious_gagarin" "$out" "--excluded はイメージ名で除外されたものを出す"
+assert_not_contains "example-app_db_test" "$out" "--excluded は表示対象を出さない"
+
+# 閾値未満なら除外対象でも数えない
+write_cache "1.0GB (10%)" 86400 86400 3600
+out="$(run_fish '__docker_clean_stats --long-running --excluded')"
+assert_contains "buildx_buildkit_peaceful_curran0" "$out" "閾値超えの除外対象は出す"
+assert_not_contains "suspicious_gagarin" "$out" "閾値未満は除外対象でも出さない"
+
+# 除外パターンを外せば --excluded は空になる
+write_cache "1.0GB (10%)" 86400 86400 86400
+out="$(run_fish 'set -g docker_clean_ignore_patterns "nomatch*"; __docker_clean_stats --long-running --excluded')"
+assert_eq "" "$out" "パターン不一致なら --excluded は空"
+
 teardown
 echo ""
 
@@ -438,6 +456,8 @@ assert_contains "build cache" "$out" "build cache 行がある"
 assert_contains "回収見込み" "$out" "合計行がある"
 assert_contains "稼働中コンテナ" "$out" "稼働中コンテナの一覧見出しがある"
 assert_contains "example-app_db_test" "$out" "長時間稼働のコンテナ名を出す"
+assert_contains "（除外 1 件" "$out" "除外件数を注記する"
+assert_contains "docker_clean_ignore_patterns" "$out" "除外を制御する変数名を案内する"
 
 # フェイク docker は匿名3件 + named1件を返す → 匿名だけ数える
 assert_matches "未使用 volume +3 件" "$out" "匿名 volume だけを数える（named は除く）"
@@ -449,6 +469,10 @@ assert_contains "全ビルダー合算" "$out" "全ビルダーを合算して�
 # 軽モードは build cache のサイズを出さない（buildx du の合算と実回収量が桁違いになるため）
 assert_contains "うち未使用ぶんのみ削除" "$out" "軽モードは削除範囲が一部であることを注記する"
 assert_not_contains "最大2.1GB" "$out" "軽モードは build cache のサイズを約束しない"
+
+# 除外が0件なら注記を出さない
+out="$(run_dclean 'set -g docker_clean_ignore_patterns "nomatch*"; dclean --status')"
+assert_not_contains "除外" "$out" "除外0件なら注記を出さない"
 
 # --status は削除コマンドを一切呼ばない
 assert_not_contains "prune" "$(cat "$FAKE_LOG")" "--status は prune を呼ばない"
