@@ -1,16 +1,25 @@
 function gf --description "cd to ghq-managed repo (cached ghq list)"
     type -q ghq; or return
 
-    set -l cache ~/.cache/ghq-list
+    set -l cache (__ghq_list_cache_path)
 
     # 初回またはキャッシュが空ならキャッシュを同期的に作成
     if not test -s $cache
-        mkdir -p ~/.cache
-        ghq list >$cache
+        __ghq_list_cache_refresh
     end
 
     # ghq root はfzf表示前に取得（選択後の遅延を回避）
     set -l root (ghq root)
+
+    # 次回用のキャッシュ更新は fzf を出す「前」に投げる。
+    # 以前は cd の後に投げていたが、fzf を ESC でキャンセルすると下の
+    # `or return` で抜けてしまい更新が走らなかった。そのため
+    # 「ghq get → gf に出ない → ESC → もう一度 gf」を繰り返しても永久に
+    # 反映されず、一度どこかのリポジトリへ cd するまで直らなかった。
+    # fzf は下でこのファイルを開いてから読むので、更新の mv（アトミックな
+    # rename）が途中で走っても fzf 側は古い inode を読み切る。
+    __ghq_list_cache_refresh >/dev/null 2>&1 &
+    disown
 
     set -l repo (fzf --bind "start:unbind(enter)" --bind "load:rebind(enter)" <$cache)
     or return
@@ -36,13 +45,4 @@ function gf --description "cd to ghq-managed repo (cached ghq list)"
             set -U _tide_prompt_$fish_pid (_tide_1_line_prompt)
         end
     end
-
-    # 次回用にバックグラウンドでキャッシュをアトミック更新。
-    # 失敗時は .tmp を残さず、stderr は .err に上書きして可視化する（追記だと無限に肥大する）。
-    fish -c "if ghq list >$cache.tmp 2>$cache.err
-        mv $cache.tmp $cache
-    else
-        rm -f $cache.tmp
-    end" &
-    disown
 end
