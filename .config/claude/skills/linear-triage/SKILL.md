@@ -52,7 +52,15 @@ linear_issues_in_state "Triage" | jq -r '.[] | "\(.identifier)\t\(.title)"'
 linear_issues_in_state "AI Queued" \
 | jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not) | .identifier'
 
-# 4) 期日超過
+# 4) role / em ラベルの欠落（週次の配分分析が読めなくなる）
+linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled","duplicate"]}}}) {
+  nodes { identifier title labels { nodes { name } } } } }' \
+| jq -r '.issues.nodes[]
+         | select(([.labels.nodes[].name|select(startswith("role:"))]|length)==0
+               or ([.labels.nodes[].name|select(startswith("em:"))]|length)==0)
+         | "\(.identifier) \(.title[0:40])"'
+
+# 5) 期日超過
 linear_issues_in_state "Todo" | jq -r --arg t "$(date +%F)" \
   '.[] | select(.dueDate != null and .dueDate < $t) | "\(.identifier) due=\(.dueDate)"'
 ```
