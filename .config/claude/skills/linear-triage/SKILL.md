@@ -1,0 +1,159 @@
+---
+name: linear-triage
+description: Linearの夕方triageを支援する。Todoをスコアリングして「今夜AIに投げるもの」を提案し、承認されたissueをai:ready形式（repo行・指示・検証方法）に整形してAI Readyへ遷移させる。あわせてTriageの受け入れと整合チェックを行う。「triage」「今夜の仕込み」「夜間dispatchの準備」「明日の準備」「Linearを整理」などで使用。
+argument-hint: "（引数不要。件数を絞るなら数字）"
+allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(ghq:*), Bash(grep:*), Bash(date:*), mcp__claude_ai_Atlassian__getJiraIssue
+---
+
+# Linear夕方triage
+
+夜間dispatch（`scripts/linear-dispatch-cron.sh`）に渡すissueを選んで整形する。
+設計の全体像は `~/Obsidian/01_Inbox/2026-08-06-linear-command-layer-design.md`。矛盾したら設計docが正。
+
+GraphQLのsnippetは `../linear-add/references/api-recipes.md` を使う。
+
+## 絶対に守ること
+
+- **GitHub / Jira へ書き戻さない。** `gh` は読み取りのみ
+- **勝手に `AI Ready` へ遷移させない。** 整形内容を必ず人間に見せて添削を受けてから反映する
+
+## 手順
+
+### 0. 状況を出す（まずこれだけ見せる）
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+for s in "判断待ち" "AI Ready" "Triage" "Todo"; do
+  printf '%s: %s件\n' "$s" "$(linear_issues_in_state "$s" | jq 'length')"
+done
+```
+
+**「判断待ち」が10件（`LINEAR_WIP_LIMIT`）以上ならtriageを止める。**
+生成速度＞判断速度で仕組みが破綻しているので、先に朝の判断を促す。
+夜間dispatch側も同じ閾値で自動停止するため、仕込んでも実行されない。
+
+### 1. 整合チェック（毎回やる）
+
+実際に発生した崩れなので毎回見る。件数だけ出し、0件なら1行で済ませる。
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+
+# 1) closedな親の下で開いている子（親を閉じたときの取り残し。実際に起きた）
+linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled"]}}}) {
+  nodes { identifier parent { identifier state { type } } } } }' \
+| jq -r '.issues.nodes[] | select(.parent != null and (.parent.state.type | IN("completed","canceled")))
+         | "\(.identifier) の親 \(.parent.identifier) が closed"'
+
+# 2) Triageに残ったままの機械起票（スイープが落としたきり親に紐付いていない）
+linear_issues_in_state "Triage" | jq -r '.[] | "\(.identifier)\t\(.title)"'
+
+# 3) AI Ready なのに repo: 行が無い（dispatchが弾いてTodoへ差し戻す前に気づける）
+linear_issues_in_state "AI Ready" \
+| jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not) | .identifier'
+
+# 4) 期日超過
+linear_issues_in_state "Todo" | jq -r --arg t "$(date +%F)" \
+  '.[] | select(.dueDate != null and .dueDate < $t) | "\(.identifier) due=\(.dueDate)"'
+```
+
+見つかったものは**その場で直さず報告する**。親子の取り残しは「子も閉じる」か「親から切り離して
+単独の課題にする」かで判断が分かれるため、人間に聞く。
+
+### 2. Triageを受け入れる（あれば）
+
+Triageは**機械が拾ったものの受信箱**。スイープが起票したdraft PRが入っている。
+1件ずつ以下を決めて、`Todo` か `Canceled` へ送る。
+
+- 既存の親課題にぶら下げる（`parentId` を設定）
+- 新しい親課題を作る（`/linear-add` の規約に従う。Jiraキーがあれば拾う）
+- やらないので `Canceled`
+
+**親の単位はJiraが決める。** 複数PRを1つの親にまとめる前に、各PRのJiraキーが同一かを
+`gh pr view <番号> --repo <owner/repo> --json title,headRefName` で確認する。
+ブランチ名にキーが入っていることが多い。
+
+### 3. 今夜AIに投げる候補をスコアリングする
+
+`Todo` から、`ai:blocked-human` が付いていないものを対象に3軸で評価する。
+
+| 軸 | 高い条件 |
+| --- | --- |
+| **緊急度** | `dueDate` が近い／超過している。`createdAt` からの滞留日数が長い |
+| **AI委譲可能度** | 自己完結して検証可能（テスト・lint・ビルドで成否が決まる）。コード変更を伴う実装・リファクタ・調査は高い。関係者調整・意思決定は低い |
+| **人間判断残量** | 朝の判断が「diffを見てマージ可否を決めるだけ」に近いほど高い |
+
+**子の緊急度は親の `dueDate` を継承して評価する。**
+期日はJira由来なので**親（課題）にしか付かない**が、dispatchできるのは `repo:` 行を持つ
+**子（工程）**。素直に子の `dueDate` だけを見ると、いちばん急ぐ仕事が候補から漏れる。
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled"]}}}) {
+  nodes { identifier title dueDate createdAt
+          parent { identifier dueDate }
+          labels { nodes { name } } } } }' \
+| jq -r --arg t "$(date +%F)" '
+  [.issues.nodes[]
+   | select((.labels.nodes|map(.name)|index("ai:blocked-human")) == null)
+   | . + {eff_due: (.dueDate // .parent.dueDate)}
+   | select(.parent != null)]                       # dispatch対象は子だけ
+  | sort_by(.eff_due // "9999-99-99")
+  | .[] | "\(.identifier)\tdue=\(.eff_due // "-")\t\(if (.eff_due // "9999") < $t then "超過" else "  " end)\t\(.title[0:40])"'
+```
+
+- **`draft仕上げ:` の子issueは有力候補**。成果物が既にあり、残りが仕上げだけのことが多い
+- **親課題（課題そのもの）は投げない**。成果物を持たないので `repo:` 行が書けない
+- 思考タスク（体制の構想・意見のまとめ・概念整理）は **`ai:blocked-human` を付けて対象外にする**。
+  AIに投げても人間の判断が全部残るため、夜間に回す意味がない
+
+上位3件（`LINEAR_DISPATCH_MAX` と同数）を表で提示し、AskUserQuestionで選択を求める。
+スコアの根拠（期日・滞留日数・なぜ委譲できると判断したか）を必ず添える。
+
+### 4. 承認されたissueを整形する
+
+本文を以下の形にして、**人間に見せて添削を受けてから** `AI Ready` へ遷移させる。
+
+```
+repo: github.com/<owner>/<name>
+
+期待アウトカム: <元の記述を保持>
+
+## AIへの指示
+
+<具体的な作業指示。対象ファイル・実装方針・完了条件>
+
+## 検証方法
+
+<テストコマンド・確認手順>
+```
+
+- **`repo:` は行頭に書く。** dispatchは `^repo:` の行頭一致で読む
+- **`repo:` の値は子の元URL（PR URL）から機械的に導ける。** スイープが起票した子は
+  `元URL: https://github.com/<owner>/<name>/pull/<n>` を持つので、そこから切り出す
+
+  ```bash
+  sed -E 's#.*(github\.com/[^/]+/[^/]+)/pull/.*#\1#'
+  # https://github.com/example-org/example-repo/pull/11087 → github.com/example-org/example-repo
+  ```
+
+- **repoがローカルに実在するか確認する**（`ls "$(ghq root)/github.com/<owner>/<name>"`）。
+  無ければ整形せず報告する。dispatchはworktreeを作れず差し戻す
+- Linearは `github.com/...` を自動でmarkdownリンク化するが、dispatch側のパーサは
+  リンク記法に対応済みなのでそのままでよい
+- `ai:ready` ラベルを付ける
+
+指示は**AIが単独で完遂できる粒度**まで具体化する。曖昧なまま投げると、翌朝
+「何をどう判断すればいいか分からないdraft PR」が増えて判断コストが上がる。
+
+### 5. 最後に確認を出す
+
+- 今夜投げる件数と、それぞれの期待アウトカム
+- 「判断待ち」の見込み件数（現在＋今夜の投入数）がWIP上限を超えないか
+
+## 注意
+
+- このskillは**起票しない**。新規タスクの起票は `/linear-add`
+- `dueDate` はJiraが持つ。Linear側で勝手に日付を作らない
+- 夜間dispatchは現在 **cron未登録**（headless実行の `git push` 権限問題が未解決）。
+  `AI Ready` に置いても自動では走らないので、手動実行するか、権限問題の解決を待つ
