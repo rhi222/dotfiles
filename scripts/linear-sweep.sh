@@ -9,6 +9,11 @@
 # 有効化: touch ~/.config/linear-sweep-enabled
 # 無効化: rm ~/.config/linear-sweep-enabled
 #
+# --if-not-today を付けると、当日すでに実行済みなら何もせず終了する。
+# fish の起動時フック（.config/fish/my/conf.d/14-linear-sweep.fish）から呼ぶ用。
+# WSL2のcronはPC停止中の時刻を飛ばし anacron も無いため、cronだけだと
+# 8:00に起動していない日はスイープが落ちる。
+#
 # Jiraを有効にする場合: ~/.config/linear/jira.env に
 #   JIRA_BASE_URL=https://<org>.atlassian.net
 #   JIRA_EMAIL=<email>
@@ -26,6 +31,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
 
 SEEN="${LINEAR_SWEEP_SEEN:-$HOME/.local/state/linear-sweep/seen.txt}"
+# 当日すでに走ったかの記録。--if-not-today で参照する
+LAST_RUN="${LINEAR_SWEEP_LAST_RUN:-$HOME/.local/state/linear-sweep/last-run}"
 # 1回のスイープで起票する上限。初回の様子見や、想定外の大量起票を防ぐ保険
 LINEAR_SWEEP_MAX="${LINEAR_SWEEP_MAX:-50}"
 swept_count=0
@@ -111,8 +118,22 @@ sweep_jira() {
 
 main() {
   [[ -f "$HOME/.config/linear-sweep-enabled" ]] || exit 0
+
+  # --if-not-today: 当日すでに実行済みなら静かに抜ける。
+  # WSL2のcronはPCが停止していた時刻のジョブをスキップし、anacronも入っていないため
+  # 8:00に起動していない日はスイープが丸ごと落ちる。シェル起動時フックから毎回
+  # 呼んでも1日1回に収まるようにして、cronの取りこぼしを拾う。
+  if [[ "${1:-}" == "--if-not-today" ]]; then
+    if [[ -f "$LAST_RUN" && "$(cat "$LAST_RUN" 2>/dev/null)" == "$(date +%F)" ]]; then
+      exit 0
+    fi
+  fi
+
   sweep_github
   sweep_jira
+
+  mkdir -p "$(dirname "$LAST_RUN")"
+  date +%F > "$LAST_RUN"
   echo "$(date): linear-sweep done"
 }
 
