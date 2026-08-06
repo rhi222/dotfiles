@@ -272,6 +272,21 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
   `READ` しか無いのでdispatchできない**（`example-org/*` は `ADMIN`）
 - コミットが0件ならpushもPR作成もしない（実装に到達しなかったとみなす）
 
+**Cycleは1週間・月曜始まりの宣言型**（Jiraのsprint相当。2026-08-06に有効化）。
+
+| 設定 | 値 | 理由 |
+| ---- | ---- | ---- |
+| `cycleDuration` | 1（週） | `nippo-weekly` の週次振り返りとリズムを合わせる |
+| `cycleStartDay` | **2** | **これで月曜始まりになる**（1は日曜。実測で確認） |
+| `cycleIssueAutoAssignStarted/Completed` | false | 自動で入ると「記録」になり、計画と実績の差分が取れない |
+| `issueEstimationType` | fibonacci | 親（大）と子（小）が混在するため件数ではvelocityが読めない |
+
+- **Cycleに載せるのは実作業単位。** 子issueがあれば子を、無ければ親を入れる。
+  子を持つ親は入れない（二重計上になる）。親課題は複数Cycleにまたがる前提で、
+  期限はProjectのtarget dateで追う
+- `uncompletedIssuesUponClose` に繰り越しが残るので、**繰り越し回数が滞留の機械的な検出手段**になる
+  （created日時より鋭い。「7/3から1ヶ月」のような滞留を3週目で拾える）
+
 **Project名のprefixは判定順で決める**（MECEにしない。先に当たった方が勝ち）。判定するのは
 動機ではなく成果物。`worktree-cleanup.sh` の判定表と同じ方式。
 
