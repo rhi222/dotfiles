@@ -61,6 +61,15 @@ dispatch_bounce() {
   linear_issue_move "$1" "Todo"
 }
 
+# dispatch_parse_pr_url <description> → owner/name/number（例 example-org/repo1/42）。無ければ非0
+# LinearはURLをmarkdownリンク化するので、リンク記法でも素のURLでも拾えるようにする
+dispatch_parse_pr_url() {
+  local m
+  m=$(grep -oE 'github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pull/[0-9]+' <<<"$1" | head -1)
+  [[ -n "$m" ]] || return 1
+  sed -E 's#^github\.com/##' <<<"$m" | sed -E 's#/pull/#/#'
+}
+
 # dispatch_can_create_pr <owner/name>
 # PR作成に足る権限があれば0。無い/判定不能なら非0（安全側に倒す）
 dispatch_can_create_pr() {
@@ -75,16 +84,27 @@ dispatch_can_create_pr() {
 # dispatch_one <issue-json>
 dispatch_one() {
   local issue="$1"
-  local id identifier title desc repo repo_path wt branch log pr_url status
+  local id identifier title desc repo repo_path wt branch log status
+  local mode existing_pr pr_ref pr_json pr_state pr_url
   id=$(jq -r '.id' <<<"$issue")
   identifier=$(jq -r '.identifier' <<<"$issue")
   title=$(jq -r '.title' <<<"$issue")
   desc=$(jq -r '.description // ""' <<<"$issue")
 
-  if ! repo=$(dispatch_parse_repo "$desc"); then
-    dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行が無い。追記して AI Ready に戻してほしい"
-    echo "$identifier: BOUNCED (no repo)"
-    return 0
+  # モード判定: 本文に既存PRのURLがあれば「継続」、無ければ「新規」。
+  # draft仕上げ系の子issueは既存のdraft PRを指しているので、新規ブランチを切ると
+  # 元のPRと無関係な重複PRができてしまう
+  if pr_ref=$(dispatch_parse_pr_url "$desc"); then
+    mode="continue"
+    repo="github.com/${pr_ref%/*}"        # example-org/repo1/42 → github.com/example-org/repo1
+    existing_pr="${pr_ref##*/}"           # → 42
+  else
+    mode="new"
+    if ! repo=$(dispatch_parse_repo "$desc"); then
+      dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行も既存PRのURLも無い。どちらかを書いて AI Ready に戻してほしい"
+      echo "$identifier: BOUNCED (no repo)"
+      return 0
+    fi
   fi
   repo_path="$(ghq root)/$repo"
   if [[ ! -d "$repo_path" ]]; then
@@ -101,13 +121,41 @@ dispatch_one() {
     return 0
   fi
 
-  branch="linear/$identifier"
   wt="$repo_path/.wt/linear-$identifier"
-  if ! git -C "$repo_path" worktree add "$wt" -b "$branch" >/dev/null 2>&1; then
-    dispatch_bounce "$id" "dispatch失敗: worktree作成に失敗（\`$branch\` が既存の可能性。前回分を整理してほしい）"
-    echo "$identifier: BOUNCED (worktree)"
-    return 0
+  if [[ "$mode" == "continue" ]]; then
+    # 既存PRのブランチを取ってきて、その上で作業する
+    pr_json=$(gh pr view "$existing_pr" --repo "${repo#github.com/}" \
+                --json headRefName,state,url 2>/dev/null) || {
+      dispatch_bounce "$id" "dispatch失敗: 既存PR #${existing_pr} の情報を取得できなかった"
+      echo "$identifier: BOUNCED (pr view)"
+      return 0
+    }
+    branch=$(jq -r '.headRefName' <<<"$pr_json")
+    pr_state=$(jq -r '.state' <<<"$pr_json")
+    pr_url=$(jq -r '.url' <<<"$pr_json")
+    if [[ "$pr_state" != "OPEN" ]]; then
+      dispatch_bounce "$id" "dispatch失敗: 既存PR #${existing_pr} は ${pr_state} で、続きを進められない"
+      echo "$identifier: BOUNCED (pr not open)"
+      return 0
+    fi
+    git -C "$repo_path" fetch origin "$branch" >/dev/null 2>&1 || true
+    if ! git -C "$repo_path" worktree add "$wt" "$branch" >/dev/null 2>&1; then
+      dispatch_bounce "$id" "dispatch失敗: worktree作成に失敗（\`$branch\` が既にどこかでcheckout済みの可能性）"
+      echo "$identifier: BOUNCED (worktree)"
+      return 0
+    fi
+  else
+    branch="linear/$identifier"
+    if ! git -C "$repo_path" worktree add "$wt" -b "$branch" >/dev/null 2>&1; then
+      dispatch_bounce "$id" "dispatch失敗: worktree作成に失敗（\`$branch\` が既存の可能性。前回分を整理してほしい）"
+      echo "$identifier: BOUNCED (worktree)"
+      return 0
+    fi
   fi
+
+  # 作業前のHEADを控える。コミットが積まれたかの判定を両モードで共通にする
+  local head_before
+  head_before=$(git -C "$wt" rev-parse HEAD 2>/dev/null || echo "")
 
   linear_issue_move "$id" "AI Running"
 
@@ -137,10 +185,10 @@ $desc
     return 0
   fi
 
-  # コミットが積まれたか確認する。0件なら実装できていないので進めない
-  local commits
-  commits=$(git -C "$wt" rev-list --count HEAD ^"$(git -C "$repo_path" rev-parse --abbrev-ref HEAD)" 2>/dev/null || echo 0)
-  if [[ "${commits:-0}" -eq 0 ]]; then
+  # コミットが積まれたか確認する。作業前のHEADと比べるので両モードで同じ判定が使える
+  local head_after
+  head_after=$(git -C "$wt" rev-parse HEAD 2>/dev/null || echo "")
+  if [[ -z "$head_after" || "$head_after" == "$head_before" ]]; then
     dispatch_finish_failed "$id" "$identifier" "$log" "コミットが1つも積まれていない（実装に到達しなかった）"
     return 0
   fi
@@ -149,18 +197,21 @@ $desc
   # agentに任せるとClaude Codeの権限層に阻まれる（許可リストでは上書きできない）うえ、
   # そもそもagentにネットワーク書き込み権限を渡さずに済む
   if ! git -C "$wt" push -u origin "$branch" >/dev/null 2>&1; then
-    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ \`$branch\`）"
+    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ `$branch`）"
     return 0
   fi
 
-  local pr_url
-  if ! pr_url=$(gh pr create --draft --repo "${repo#github.com/}" --head "$branch" \
-                  --title "$title" --body "夜間dispatchによる自動実装。レビュー前のdraft。" 2>&1); then
-    dispatch_finish_failed "$id" "$identifier" "$log" "gh pr create に失敗した: $pr_url"
-    return 0
+  # 継続モードは既存PRにコミットが乗るだけなので、新規PRは作らない
+  if [[ "$mode" == "new" ]]; then
+    if ! pr_url=$(gh pr create --draft --repo "${repo#github.com/}" --head "$branch" \
+                    --title "$title" --body "夜間dispatchによる自動実装。レビュー前のdraft。" 2>&1); then
+      dispatch_finish_failed "$id" "$identifier" "$log" "gh pr create に失敗した: $pr_url"
+      return 0
+    fi
+    linear_comment "$id" "夜間dispatch完了（新規PR）: $pr_url"
+  else
+    linear_comment "$id" "夜間dispatch完了（既存PRを更新）: $pr_url"
   fi
-
-  linear_comment "$id" "夜間dispatch完了: $pr_url"
   linear_issue_move "$id" "判断待ち"
   echo "$identifier: OK $pr_url"
 }

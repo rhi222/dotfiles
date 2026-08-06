@@ -56,6 +56,8 @@ chmod +x "$tmp/bin/curl"
 cat > "$tmp/bin/claude" <<'EOF'
 #!/bin/bash
 echo "$*" >> "${CLAUDE_LOG:?}"
+# コミットを積んだことにする（HEADが進む）。CLAUDE_NO_COMMIT=1 なら積まない
+[[ "${CLAUDE_NO_COMMIT:-0}" == "1" ]] || echo "after-$RANDOM" > "${HEAD_FILE:?}"
 echo "implemented and committed"
 EOF
 chmod +x "$tmp/bin/claude"
@@ -75,9 +77,10 @@ if [[ "$*" == *"worktree add"* ]]; then
     case "$a" in */.wt/*) mkdir -p "$a" ;; esac
   done
 fi
-# rev-list でコミット有無を判定している箇所に答える（GIT_COMMITS で件数を差し替える）
-if [[ "$*" == *"rev-list"* ]]; then
-  echo "${GIT_COMMITS:-2}"
+# コミット有無は rev-parse HEAD の前後比較で判定される。
+# claude stub が HEAD_FILE を書き換えることで「コミットが積まれた」を模す
+if [[ "$*" == *"rev-parse HEAD"* ]]; then
+  cat "${HEAD_FILE:?}" 2>/dev/null || echo "base"
 fi
 [[ "$*" == *"push"* && "${GIT_PUSH_FAIL:-0}" == "1" ]] && exit 1
 exit 0
@@ -106,11 +109,13 @@ export PATH="$tmp/bin:$PATH"
 export CURL_LOG="$tmp/curl.log"
 export CLAUDE_LOG="$tmp/claude.log"
 export GIT_LOG="$tmp/git.log"
+export HEAD_FILE="$tmp/head"
+echo "base" > "$HEAD_FILE"
 export GH_LOG="$tmp/gh.log"
 export GHQ_ROOT="$tmp/ghq"
 # CLAUDE_BINの既定は $HOME/.local/bin/claude。テストではPATH上のstubを使う
 export CLAUDE_BIN="claude"
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 
 echo '{"data": {"issues": {"nodes": []}}}' > "$tmp/wip-empty.json"
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-5", "title": "調査", "description": "repo: github.com/example-org/repo1\n期待アウトカム: x", "url": "u"}]}}}' > "$tmp/ready-one.json"
@@ -132,7 +137,7 @@ check "WIP上限超過でスキップする" grep -q "WIP" <<<"$out2"
 check "WIP超過時はclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 
 # 3. 正常系 → claude実行 → スクリプトがpush＋PR作成 → コメント＋判断待ちへ遷移
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "claudeが実行される" test -s "$CLAUDE_LOG"
@@ -147,7 +152,7 @@ check "agentのallowedToolsにgh/pushを渡さない" bash -c "! grep -qE 'Bash\
 # 3-2. コミットが無い → push/PRせずTodoへ差し戻す
 : > "$CURL_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
-  GIT_COMMITS=0 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+  CLAUDE_NO_COMMIT=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "コミット0件ならpushしない" bash -c "! grep -q 'push' '$GIT_LOG'"
 check "コミット0件ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
@@ -165,7 +170,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
 check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
 # 3-7. 継続モード: 本文にPR URLがあれば既存ブランチで作業し、新規PRを作らない
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "継続モードでclaudeが実行される" test -s "$CLAUDE_LOG"
@@ -177,14 +182,14 @@ check "継続モードは既存PR URLをコメントする" grep -q "pull/42" "$
 check "継続モードも判断待ち(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
 
 # 3-8. 継続モード: PRがOPENでなければ実行しない
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
   GH_PR_STATE=MERGED LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "PRがOPENでなければclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 check "PRがOPENでなければTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
 # 3-5. PR作成権限が無い → agentを走らせる前に弾く
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PERM=READ LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "権限不足ならclaudeを実行しない" test ! -s "$CLAUDE_LOG"
@@ -192,7 +197,7 @@ check "権限不足ならworktreeも作らない" bash -c "! grep -q 'worktree a
 check "権限不足ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
 # 3-6. 権限確認そのものが失敗 → 判定不能なので実行しない（安全側に倒す）
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PERM_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "権限確認が失敗したらclaudeを実行しない" test ! -s "$CLAUDE_LOG"
