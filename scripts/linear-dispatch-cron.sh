@@ -1,5 +1,5 @@
 #!/bin/bash
-# LinearのAI Ready issueを夜間にheadless Claudeで実行し、draft PRまで進める
+# LinearのAI Queued issueを夜間にheadless Claudeで実行し、draft PRまで進める
 #
 # crontab設定例:
 #   0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
@@ -14,10 +14,10 @@
 #               linear/<identifier> ブランチを切って新規PRを作る
 #   どちらも無ければTodoへ差し戻す。残りの本文全体がそのままプロンプトの素材になる
 #
-# 起動条件は state = "AI Ready" の1点。ラベルは見ない（stateと二重に持たない）
+# 起動条件は state = "AI Queued" の1点。ラベルは見ない（stateと二重に持たない）
 #
 # 安全弁:
-#   - 「判断待ち」が LINEAR_WIP_LIMIT（既定10）件以上なら実行しない
+#   - 「AI Review」が LINEAR_WIP_LIMIT（既定10）件以上なら実行しない
 #   - 1晩の実行上限 LINEAR_DISPATCH_MAX（既定3）
 #   - 成果物はdraft PRまで。マージはしない
 #
@@ -106,7 +106,7 @@ dispatch_one() {
   else
     mode="new"
     if ! repo=$(dispatch_parse_repo "$desc"); then
-      dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行も既存PRのURLも無い。どちらかを書いて AI Ready に戻してほしい"
+      dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行も既存PRのURLも無い。どちらかを書いて AI Queued に戻してほしい"
       echo "$identifier: BOUNCED (no repo)"
       return 0
     fi
@@ -217,7 +217,7 @@ $desc
   else
     linear_comment "$id" "夜間dispatch完了（既存PRを更新）: $pr_url"
   fi
-  linear_issue_move "$id" "判断待ち"
+  linear_issue_move "$id" "AI Review"
   echo "$identifier: OK $pr_url"
 }
 
@@ -240,16 +240,16 @@ main() {
   [[ -f "$HOME/.config/linear-dispatch-enabled" ]] || exit 0
 
   local wip ready count issue
-  wip=$(linear_issues_in_state "判断待ち" | jq 'length')
+  wip=$(linear_issues_in_state "AI Review" | jq 'length')
   if [[ "$wip" -ge "$LINEAR_WIP_LIMIT" ]]; then
-    echo "$(date): WIP上限（判断待ち ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
+    echo "$(date): WIP上限（AI Review ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
     exit 0
   fi
 
-  ready=$(linear_issues_in_state "AI Ready")
+  ready=$(linear_issues_in_state "AI Queued")
   count=$(jq 'length' <<<"$ready")
   if [[ "$count" -eq 0 ]]; then
-    echo "$(date): AI Readyが0件。何もしない"
+    echo "$(date): AI Queuedが0件。何もしない"
     exit 0
   fi
 

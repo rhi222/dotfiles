@@ -19,7 +19,7 @@ echo "lin_api_test" > "$tmp/config/linear/api-key"
 cat > "$tmp/config/linear/config.json" <<'EOF'
 {
   "team_id": "team-uuid-1",
-  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Ready": "st-ready", "AI Running": "st-run", "判断待ち": "st-judge", "Done": "st-done"},
+  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Queued": "st-ready", "AI Running": "st-run", "AI Review": "st-judge", "Done": "st-done"},
   "labels": {"src:github": "lb-gh", "src:jira": "lb-jira"}
 }
 EOF
@@ -42,7 +42,7 @@ source "$LIB"
 
 # 1. config読み出し
 check "linear_configがteam_idを返す" test "$(linear_config '.team_id')" = "team-uuid-1"
-check "linear_state_idが解決できる" test "$(linear_state_id 'AI Ready')" = "st-ready"
+check "linear_state_idが解決できる" test "$(linear_state_id 'AI Queued')" = "st-ready"
 check "linear_label_idが解決できる" test "$(linear_label_id 'src:github')" = "lb-gh"
 check "未知のstate名は非0" bash -c "source '$LIB'; ! linear_state_id 'NoSuch'"
 
@@ -72,12 +72,12 @@ check "payloadにassigneeIdが入る（My Issuesに出すため）" grep -q 'use
 # 5. linear_issues_in_state がnodes配列を返す
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-1", "title": "t", "description": "d", "url": "u"}]}}}' > "$tmp/list.json"
 export CURL_RESPONSE="$tmp/list.json"
-check "issues_in_stateが配列を返す" test "$(linear_issues_in_state 'AI Ready' | jq 'length')" = "1"
+check "issues_in_stateが配列を返す" test "$(linear_issues_in_state 'AI Queued' | jq 'length')" = "1"
 
 # 6. linear_issue_move / linear_comment が成功する
 echo '{"data": {"issueUpdate": {"success": true}}}' > "$tmp/move.json"
 export CURL_RESPONSE="$tmp/move.json"
-check "issue_moveが成功する" linear_issue_move "i1" "判断待ち"
+check "issue_moveが成功する" linear_issue_move "i1" "AI Review"
 echo '{"data": {"commentCreate": {"success": true}}}' > "$tmp/comment.json"
 export CURL_RESPONSE="$tmp/comment.json"
 check "commentが成功する" linear_comment "i1" "body"

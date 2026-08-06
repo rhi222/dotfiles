@@ -11,7 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
 
-REQUIRED_STATES=("Triage" "Todo" "AI Ready" "AI Running" "判断待ち" "Done")
+REQUIRED_STATES=("Triage" "Todo" "AI Queued" "AI Running" "AI Review" "Done")
 REQUIRED_LABELS=("ai:blocked-human" "src:jira" "src:slack" "src:github" "src:esa" "src:todoist" "role:player" "role:manager" "em:people" "em:tech" "em:project" "em:product")
 
 data=$(linear_gql '{ teams { nodes { id key name

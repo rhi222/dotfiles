@@ -138,7 +138,7 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 コネクタが使えない環境ではPRタイトルで代用し、その旨をメモに残す。
 
 - **子issueの本文には行頭に `repo: github.com/<owner>/<name>` の行を書く。** 夜間dispatchは
-  `^repo:` の行頭一致でこの行を読み、無い子は AI Ready に置かれても Todo へ差し戻される
+  `^repo:` の行頭一致でこの行を読み、無い子は AI Queued に置かれても Todo へ差し戻される
 
 ### 4. ラベルを付ける（role と em を必ず1つずつ）
 

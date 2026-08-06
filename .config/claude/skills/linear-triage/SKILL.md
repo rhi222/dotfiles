@@ -1,6 +1,6 @@
 ---
 name: linear-triage
-description: Linearの夕方triageを支援する。Todoをスコアリングして「今夜AIに投げるもの」を提案し、承認されたissueを実行可能な形（repo行・指示・検証方法）に整形してAI Readyへ遷移させる。あわせてTriageの受け入れと整合チェックを行う。「triage」「今夜の仕込み」「夜間dispatchの準備」「明日の準備」「Linearを整理」などで使用。
+description: Linearの夕方triageを支援する。Todoをスコアリングして「今夜AIに投げるもの」を提案し、承認されたissueを実行可能な形（repo行・指示・検証方法）に整形してAI Queuedへ遷移させる。あわせてTriageの受け入れと整合チェックを行う。「triage」「今夜の仕込み」「夜間dispatchの準備」「明日の準備」「Linearを整理」などで使用。
 argument-hint: "（引数不要。件数を絞るなら数字）"
 allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(ghq:*), Bash(grep:*), Bash(date:*), mcp__claude_ai_Atlassian__getJiraIssue
 ---
@@ -15,7 +15,7 @@ GraphQLのsnippetは `../linear-add/references/api-recipes.md` を使う。
 ## 絶対に守ること
 
 - **GitHub / Jira へ書き戻さない。** `gh` は読み取りのみ
-- **勝手に `AI Ready` へ遷移させない。** 整形内容を必ず人間に見せて添削を受けてから反映する
+- **勝手に `AI Queued` へ遷移させない。** 整形内容を必ず人間に見せて添削を受けてから反映する
 
 ## 手順
 
@@ -23,12 +23,12 @@ GraphQLのsnippetは `../linear-add/references/api-recipes.md` を使う。
 
 ```bash
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-for s in "判断待ち" "AI Ready" "Triage" "Todo"; do
+for s in "AI Review" "AI Queued" "Triage" "Todo"; do
   printf '%s: %s件\n' "$s" "$(linear_issues_in_state "$s" | jq 'length')"
 done
 ```
 
-**「判断待ち」が10件（`LINEAR_WIP_LIMIT`）以上ならtriageを止める。**
+**「AI Review」が10件（`LINEAR_WIP_LIMIT`）以上ならtriageを止める。**
 生成速度＞判断速度で仕組みが破綻しているので、先に朝の判断を促す。
 夜間dispatch側も同じ閾値で自動停止するため、仕込んでも実行されない。
 
@@ -48,8 +48,8 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 # 2) Triageに残ったままの機械起票（スイープが落としたきり親に紐付いていない）
 linear_issues_in_state "Triage" | jq -r '.[] | "\(.identifier)\t\(.title)"'
 
-# 3) AI Ready なのに repo: 行が無い（dispatchが弾いてTodoへ差し戻す前に気づける）
-linear_issues_in_state "AI Ready" \
+# 3) AI Queued なのに repo: 行が無い（dispatchが弾いてTodoへ差し戻す前に気づける）
+linear_issues_in_state "AI Queued" \
 | jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not) | .identifier'
 
 # 4) 期日超過
@@ -112,7 +112,7 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 
 ### 4. 承認されたissueを整形する
 
-dispatchの起動条件は **state = `AI Ready`** の1点（ラベルは見ない）。
+dispatchの起動条件は **state = `AI Queued`** の1点（ラベルは見ない）。
 パイプライン上の位置はstateで表し、ラベルと二重に持たない。
 
 **dispatchは本文の内容で2モードに分かれる。整形時にどちらになるかを意識する。**
@@ -126,7 +126,7 @@ dispatchの起動条件は **state = `AI Ready`** の1点（ラベルは見な�
 `repo:` 行を足す必要はない（足しても継続モードが優先される）。
 継続モードはPRが `OPEN` でなければ差し戻される。
 
-本文を以下の形にして、**人間に見せて添削を受けてから** `AI Ready` へ遷移させる。
+本文を以下の形にして、**人間に見せて添削を受けてから** `AI Queued` へ遷移させる。
 
 継続モード（既存PRの仕上げ）:
 
@@ -178,11 +178,11 @@ repo: github.com/<owner>/<name>
 ### 5. 最後に確認を出す
 
 - 今夜投げる件数と、それぞれの期待アウトカム
-- 「判断待ち」の見込み件数（現在＋今夜の投入数）がWIP上限を超えないか
+- 「AI Review」の見込み件数（現在＋今夜の投入数）がWIP上限を超えないか
 
 ## 注意
 
 - このskillは**起票しない**。新規タスクの起票は `/linear-add`
 - `dueDate` はJiraが持つ。Linear側で勝手に日付を作らない
-- 夜間dispatchは現在 **cron未登録**（数日運用してから判断する方針）。`AI Ready` に置いても
+- 夜間dispatchは現在 **cron未登録**（数日運用してから判断する方針）。`AI Queued` に置いても
   自動では走らない。試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear-dispatch-cron.sh`

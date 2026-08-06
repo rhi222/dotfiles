@@ -30,8 +30,8 @@ cat > "$tmp/full.json" <<'EOF'
   "id": "team-1", "key": "NSY", "name": "Nsym",
   "states": {"nodes": [
     {"id": "s1", "name": "Triage"}, {"id": "s2", "name": "Todo"},
-    {"id": "s3", "name": "AI Ready"}, {"id": "s4", "name": "AI Running"},
-    {"id": "s5", "name": "判断待ち"}, {"id": "s6", "name": "Done"}]},
+    {"id": "s3", "name": "AI Queued"}, {"id": "s4", "name": "AI Running"},
+    {"id": "s5", "name": "AI Review"}, {"id": "s6", "name": "Done"}]},
   "labels": {"nodes": [
     {"id": "l2", "name": "ai:blocked-human"},
     {"id": "l3", "name": "src:jira"}, {"id": "l4", "name": "src:slack"},
@@ -62,7 +62,7 @@ EOF
 rm -f "$tmp/config/linear/config.json"
 out=$(CURL_RESPONSE="$tmp/missing.json" bash "$SCRIPT" 2>&1)
 check "state不足で非0" bash -c "export CURL_RESPONSE='$tmp/missing.json'; ! bash '$SCRIPT'"
-check "不足state名を表示する" grep -q "AI Ready" <<<"$out"
+check "不足state名を表示する" grep -q "AI Queued" <<<"$out"
 check "不足時はconfig.jsonを書かない" test ! -f "$tmp/config/linear/config.json"
 
 rm -rf "$tmp"
