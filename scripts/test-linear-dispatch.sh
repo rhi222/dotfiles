@@ -72,6 +72,13 @@ cat > "$tmp/bin/ghq" <<'EOF'
 EOF
 cat > "$tmp/bin/git" <<'EOF'
 #!/bin/bash
+# worktree add のときは実際にディレクトリを作る。
+# 作らないと dispatch_one の `cd "$wt"` が失敗し、claude まで到達しない
+if [[ "$*" == *"worktree add"* ]]; then
+  for a in "$@"; do
+    case "$a" in */.wt/*) mkdir -p "$a" ;; esac
+  done
+fi
 exit 0
 EOF
 chmod +x "$tmp/bin/ghq" "$tmp/bin/git"
@@ -80,6 +87,8 @@ export PATH="$tmp/bin:$PATH"
 export CURL_LOG="$tmp/curl.log"
 export CLAUDE_LOG="$tmp/claude.log"
 export GHQ_ROOT="$tmp/ghq"
+# CLAUDE_BINの既定は $HOME/.local/bin/claude。テストではPATH上のstubを使う
+export CLAUDE_BIN="claude"
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"
 
 echo '{"data": {"issues": {"nodes": []}}}' > "$tmp/wip-empty.json"
@@ -105,7 +114,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "claudeが実行される" test -s "$CLAUDE_LOG"
 check "PR URLがコメントされる" grep -q "pull/99" "$CURL_LOG"
-check "判断待ち(s5)へ遷移する" grep -q '"s5"' "$CURL_LOG"
+check "判断待ち(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
 check "プロンプトにLinear識別子を書かせない" grep -q "identifierを書かない\|NSY-xx" "$CLAUDE_LOG"
 
 # 4. repo行が無い → claudeを実行せずTodoへ差し戻し
@@ -129,7 +138,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
 check "失敗時はTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 check "失敗ログがコメントされる" grep -q "went wrong" "$CURL_LOG"
 
-rm -rf "$tmp"
+[[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

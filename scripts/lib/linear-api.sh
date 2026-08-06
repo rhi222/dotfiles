@@ -20,7 +20,8 @@ linear_gql() {
   local query="$1" vars="${2:-"{}"}"
   local key payload resp
   key=$(linear_api_key) || return 1
-  payload=$(jq -n --arg q "$query" --argjson v "$vars" '{query: $q, variables: $v}') || return 1
+  # -c で1行にする。HTTP bodyとして自然で、ログの grep も行単位で効く
+  payload=$(jq -nc --arg q "$query" --argjson v "$vars" '{query: $q, variables: $v}') || return 1
   resp=$(curl -sS -X POST "$LINEAR_API_URL" \
     -H "Authorization: $key" -H "Content-Type: application/json" \
     --data "$payload") || { echo "linear-api: HTTPエラー" >&2; return 1; }

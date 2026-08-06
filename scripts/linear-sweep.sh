@@ -21,7 +21,8 @@
 # Linear → 外部 の一方向のみ。test-linear-sweep.sh がこれを検証する。
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# $0 ではなく BASH_SOURCE を使う（source されても lib を解決できるようにする）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
 
 SEEN="${LINEAR_SWEEP_SEEN:-$HOME/.local/state/linear-sweep/seen.txt}"
