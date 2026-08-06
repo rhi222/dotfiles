@@ -98,6 +98,10 @@ check "activity_sinceがstateを含む" test "$(linear_activity_since '2026-08-0
 check "activity_sinceがラベルを含む" test "$(linear_activity_since '2026-08-06' | jq -r '.[0].labels.nodes[0].name')" = "role:player"
 check "payloadに指定日時が入る" grep -q '2026-08-06' "$CURL_LOG"
 
+# 配分の集計にCanceledが混ざると「ラベル未設定」が水増しされるため除外する
+# （Doneは成果なので残す。Canceled/Duplicateだけを外す）
+check "canceledを除外するフィルタを送る" grep -q 'canceled' "$CURL_LOG"
+
 rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
