@@ -201,6 +201,75 @@ crontab -e
 
 無効化は `rm ~/.config/esa-weekly-enabled`。動作確認は `bash scripts/test-esa-weekly-cron.sh`。
 
+### Linear個人司令塔（タスク集約とAI夜間ディスパッチ）
+
+タスクはLinear（https://linear.app/nsym・team `NSY`）に集約する。**LinearはSoTではなく
+「ポインタの司令塔」**で、issueは元URL＋期待アウトカム＋判断状態だけを持つ。本体はJira /
+GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
+`01_Inbox/2026-08-06-linear-command-layer-design.md`。
+
+| やりたいこと          | コマンド                                                        |
+| --------------------- | --------------------------------------------------------------- |
+| 初期設定（ID解決）    | `bash scripts/linear-bootstrap.sh`                              |
+| 起票                  | `/linear-add`（対話skill。規約を自動適用する）                  |
+| draft PR→Triage起票  | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                |
+| 夜間ディスパッチ      | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
+| 動作確認              | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` 計4本 |
+
+- 認証は `~/.config/linear/api-key`（chmod 600）、設定は `linear-bootstrap.sh` が生成する `config.json`
+- 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled`
+- 共通ライブラリは `scripts/lib/linear-api.sh`。`linear_issue_create` は**assigneeを自動で自分にする**（未アサインだとMy Issuesに出ないため）
+
+**リンクは Linear → 外部の一方向のみ。GitHub / Jira には一切書き戻さない。**
+どちらもチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。「LinearのNSY-Xと
+紐づけました」のような紐づけコメントもしない。ポインタはLinear側にだけ置けば足りる。
+
+- スイープは読み取りAPIのみ使う（`gh` は `search`、Jira は GET）
+- 例外はagentが成果物として新規に作るPRだけ。そのPR本文にもLinearのidentifierを書かない
+- `test-linear-sweep.sh` は gh stub が `search` 以外で呼ばれると落ちるので、これを検知できる
+
+**スイープ対象は自分のopen draft PRのみ。** 他者PRのレビュー依頼はGitHubの受信箱と二重管理に
+なるうえ常時20〜30件あり、Triageが溢れて「人間が選別する受信箱」として機能しなくなる（初回
+スイープの実測で27件中22件がレビュー依頼だった）。bot作成PRも除外する
+（`LINEAR_SWEEP_EXCLUDE_AUTHORS`、既定 `*[bot]`）。
+
+**夜間ディスパッチは「判断待ち」が `LINEAR_WIP_LIMIT`（既定10）件以上だと止まる。**
+生成速度＞判断速度は仕組みが破綻しているシグナルなので、朝の判断タイムで捌いてから再開する。
+
+- issue本文の `repo: github.com/<owner>/<name>` 行がdispatchの必須契約（無ければTodoへ差し戻し）
+- worktreeは `<repo>/.wt/linear-<identifier>` に作られ、掃除は `worktree-cleanup.sh` が拾う
+- 成果物はdraft PRまで。マージは必ず人間
+- **未解決**: headless実行では `git push` の権限プロンプトに答えられずPR作成に到達しない。
+  cron専用設定で `Bash(git push:*)` 等を明示許可する対応が必要
+
+**Project名のprefixは判定順で決める**（MECEにしない。先に当たった方が勝ち）。判定するのは
+動機ではなく成果物。`worktree-cleanup.sh` の判定表と同じ方式。
+
+| 順  | prefix            | 判定の問い                                       |
+| --- | ----------------- | ------------------------------------------------ |
+| 1   | `案件_`           | 特定の顧客案件のためだけの仕事か                 |
+| 2   | `技術採用_`       | 採用活動そのものか（候補者を探す・口説く・選ぶ） |
+| 3   | `組織課題_`       | 対象がヒトか（体制・育成・評価・自分の働き方）   |
+| 4   | `QA_`             | 品質の確かめ方が変わるか                         |
+| 5   | `プロダクト開発_` | 作るもの・作り方が変わるか                       |
+| 6   | `other_`          | どれでもない（受け皿）                           |
+
+issueは**親＝課題（Jiraチケットと1:1）/ 子＝工程**の2階層。**親の単位はJiraが決める**ので、
+複数PRを1つの親にまとめる前に各PRのJiraキーが同一かを確認する（見た目の類似でまとめて
+あとから割り直した実例あり）。ラベルは直交する2軸で、`role:player` / `role:manager`
+（自分が手を動かしたか／人を動かしたか）と `em:people` / `em:tech` / `em:project` /
+`em:product`（EMの職能）。Projectは「どの成果物の一部か」、labelは「自分のどの職能の仕事か」
+で別の問いに答えるので競合しない。
+
+Jiraの `summary` / `duedate` / 完了条件は claude.ai の Atlassian コネクタで読み込める
+（`cloudId` は `example-org.atlassian.net`）。**`status` は同期しない**（Linearのstateは自分の
+作業状態で、Jiraの進行状態とは別物）。この経路は対話セッション限定で、cronでは使えない。
+
+**日報からのタスク転記は廃止した**（`nippo-add`）。転記ループは完了を検知せず、終わった
+タスクがゾンビとして残り続けたため。実例として「執行役員会の発表準備」は7/3から8/6まで
+1ヶ月転記され続けていたが完了済みだった。移行時の棚卸しでは滞留25件のうち11件が
+「完了済み or もうやらない」だった。
+
 ## 設定アーキテクチャ
 
 ### Neovim設定構造
