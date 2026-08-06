@@ -86,6 +86,12 @@ EOF
 cat > "$tmp/bin/gh" <<'EOF'
 #!/bin/bash
 echo "$*" >> "${GH_LOG:?}"
+# 事前チェック: PR作成権限の確認。GH_PERM で差し替える
+if [[ "$*" == *"repo view"* ]]; then
+  [[ "${GH_PERM_FAIL:-0}" == "1" ]] && { echo "gh: not found" >&2; exit 1; }
+  echo "${GH_PERM:-ADMIN}"
+  exit 0
+fi
 [[ "${GH_PR_FAIL:-0}" == "1" ]] && { echo "gh: pr create failed" >&2; exit 1; }
 echo "https://github.com/example-org/repo1/pull/99"
 EOF
@@ -150,6 +156,20 @@ check "push失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PR_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+
+# 3-5. PR作成権限が無い → agentを走らせる前に弾く
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  GH_PERM=READ LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "権限不足ならclaudeを実行しない" test ! -s "$CLAUDE_LOG"
+check "権限不足ならworktreeも作らない" bash -c "! grep -q 'worktree add' '$GIT_LOG'"
+check "権限不足ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+
+# 3-6. 権限確認そのものが失敗 → 判定不能なので実行しない（安全側に倒す）
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  GH_PERM_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "権限確認が失敗したらclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 
 # 4. repo行が無い → claudeを実行せずTodoへ差し戻し
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"
