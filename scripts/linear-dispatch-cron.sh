@@ -32,9 +32,14 @@ LINEAR_DISPATCH_MAX="${LINEAR_DISPATCH_MAX:-3}"
 ALLOWED_TOOLS="Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh:*),Bash(jq:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python3:*),Bash(pytest:*),Bash(make:*),Bash(cargo:*),Bash(go:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
 
 # dispatch_parse_repo <description> → repo（例 github.com/example-org/repo1）。無ければ非0
+#
+# Linearは本文中の `github.com/owner/name` を自動でmarkdownリンクに変換するため
+# `repo: [github.com/o/n](<http://github.com/o/n>)` の形で保存されることがある。
+# host/owner/name の3要素だけを抜き出してどちらの形式でも同じ結果にする。
 dispatch_parse_repo() {
-  local repo
-  repo=$(grep -oE '^repo:[[:space:]]*[^[:space:]]+' <<<"$1" | head -1 | sed 's/^repo:[[:space:]]*//')
+  local line repo
+  line=$(grep -m1 -E '^repo:' <<<"$1") || return 1
+  repo=$(grep -oE '[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+' <<<"$line" | head -1)
   [[ -n "$repo" ]] || return 1
   echo "$repo"
 }

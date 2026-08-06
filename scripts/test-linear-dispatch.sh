@@ -30,6 +30,10 @@ desc_ok=$'調査タスク\nrepo: github.com/example-org/repo1\n期待アウト�
 check "repo行をパースできる" test "$(dispatch_parse_repo "$desc_ok")" = "github.com/example-org/repo1"
 check "repo行が無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_repo 'repo指定なし本文'"
 
+# Linearは github.com/... を自動でmarkdownリンク化するため、その形式も解釈できること
+desc_md=$'repo: [github.com/rhi222/dotfiles](<http://github.com/rhi222/dotfiles>)\n期待アウトカム: x'
+check "markdownリンク化されたrepo行もパースできる" test "$(dispatch_parse_repo "$desc_md")" = "github.com/rhi222/dotfiles"
+
 log_ok=$'作業した\nPR_URL: https://github.com/example-org/repo1/pull/99'
 check "PR URLをパースできる" test "$(dispatch_parse_pr_url "$log_ok")" = "https://github.com/example-org/repo1/pull/99"
 check "PR URLが無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_pr_url 'URLなしログ'"
