@@ -21,7 +21,7 @@ echo "lin_api_test" > "$tmp/home/.config/linear/api-key"
 cat > "$tmp/home/.config/linear/config.json" <<'EOF'
 {"team_id": "t1",
  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Ready": "st-r", "AI Running": "st-x", "判断待ち": "st-j", "Done": "st-d"},
- "labels": {"src:github": "lb-gh", "src:jira": "lb-jira", "ai:ready": "lb-r", "ai:blocked-human": "lb-b", "src:slack": "lb-s", "src:esa": "lb-e", "src:todoist": "lb-t", "role:player": "lb-rp", "role:manager": "lb-rm", "em:people": "lb-ep", "em:tech": "lb-et", "em:project": "lb-epj", "em:product": "lb-epd"}}
+ "labels": {"src:github": "lb-gh", "src:jira": "lb-jira", "ai:blocked-human": "lb-b", "src:slack": "lb-s", "src:esa": "lb-e", "src:todoist": "lb-t", "role:player": "lb-rp", "role:manager": "lb-rm", "em:people": "lb-ep", "em:tech": "lb-et", "em:project": "lb-epj", "em:product": "lb-epd"}}
 EOF
 
 # stub gh: 呼び出しを記録し、search 以外（書き込み系）が来たら異常終了する

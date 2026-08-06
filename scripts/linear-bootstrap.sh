@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
 
 REQUIRED_STATES=("Triage" "Todo" "AI Ready" "AI Running" "判断待ち" "Done")
-REQUIRED_LABELS=("ai:ready" "ai:blocked-human" "src:jira" "src:slack" "src:github" "src:esa" "src:todoist" "role:player" "role:manager" "em:people" "em:tech" "em:project" "em:product")
+REQUIRED_LABELS=("ai:blocked-human" "src:jira" "src:slack" "src:github" "src:esa" "src:todoist" "role:player" "role:manager" "em:people" "em:tech" "em:project" "em:product")
 
 data=$(linear_gql '{ teams { nodes { id key name
   states { nodes { id name } }

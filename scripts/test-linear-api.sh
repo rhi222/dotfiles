@@ -20,7 +20,7 @@ cat > "$tmp/config/linear/config.json" <<'EOF'
 {
   "team_id": "team-uuid-1",
   "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Ready": "st-ready", "AI Running": "st-run", "判断待ち": "st-judge", "Done": "st-done"},
-  "labels": {"ai:ready": "lb-ready", "src:github": "lb-gh", "src:jira": "lb-jira"}
+  "labels": {"src:github": "lb-gh", "src:jira": "lb-jira"}
 }
 EOF
 
@@ -43,7 +43,7 @@ source "$LIB"
 # 1. config読み出し
 check "linear_configがteam_idを返す" test "$(linear_config '.team_id')" = "team-uuid-1"
 check "linear_state_idが解決できる" test "$(linear_state_id 'AI Ready')" = "st-ready"
-check "linear_label_idが解決できる" test "$(linear_label_id 'ai:ready')" = "lb-ready"
+check "linear_label_idが解決できる" test "$(linear_label_id 'src:github')" = "lb-gh"
 check "未知のstate名は非0" bash -c "source '$LIB'; ! linear_state_id 'NoSuch'"
 
 # 2. linear_gql 正常系: .data を返す

@@ -33,7 +33,7 @@ cat > "$tmp/full.json" <<'EOF'
     {"id": "s3", "name": "AI Ready"}, {"id": "s4", "name": "AI Running"},
     {"id": "s5", "name": "判断待ち"}, {"id": "s6", "name": "Done"}]},
   "labels": {"nodes": [
-    {"id": "l1", "name": "ai:ready"}, {"id": "l2", "name": "ai:blocked-human"},
+    {"id": "l2", "name": "ai:blocked-human"},
     {"id": "l3", "name": "src:jira"}, {"id": "l4", "name": "src:slack"},
     {"id": "l5", "name": "src:github"}, {"id": "l6", "name": "src:esa"},
     {"id": "l7", "name": "src:todoist"}, {"id": "l8", "name": "role:player"},
@@ -49,7 +49,7 @@ check "bootstrapが成功する" bash "$SCRIPT"
 check "config.jsonが生成される" test -f "$tmp/config/linear/config.json"
 check "team_idが入る" test "$(jq -r '.team_id' "$tmp/config/linear/config.json")" = "team-1"
 check "state 6件が入る" test "$(jq '.states | length' "$tmp/config/linear/config.json")" = "6"
-check "label 13件が入る" test "$(jq '.labels | length' "$tmp/config/linear/config.json")" = "13"
+check "label 12件が入る" test "$(jq '.labels | length' "$tmp/config/linear/config.json")" = "12"
 
 # 2. state不足: 非0で失敗し、不足名を表示する
 cat > "$tmp/missing.json" <<'EOF'

@@ -18,7 +18,7 @@ echo "lin_api_test" > "$tmp/home/.config/linear/api-key"
 cat > "$tmp/home/.config/linear/config.json" <<'EOF'
 {"team_id": "t1",
  "states": {"Triage": "s1", "Todo": "s2", "AI Ready": "s3", "AI Running": "s4", "判断待ち": "s5", "Done": "s6"},
- "labels": {"ai:ready": "l1", "ai:blocked-human": "l2", "src:jira": "l3", "src:slack": "l4", "src:github": "l5", "src:esa": "l6"}}
+ "labels": {"ai:blocked-human": "l2", "src:jira": "l3", "src:slack": "l4", "src:github": "l5", "src:esa": "l6"}}
 EOF
 
 # --- 関数単体テスト（sourceして呼ぶ） ---

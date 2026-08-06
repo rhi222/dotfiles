@@ -143,7 +143,6 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 | em    | `em:project`                                                        | 進行・段取り・リスク・調整                                            |
 | em    | `em:product`                                                        | 何を作るか・仕様・ドメイン・価値                                      |
 | src   | `src:github` / `src:jira` / `src:slack` / `src:esa` / `src:todoist` | 流入元（該当すれば付ける）                                            |
-| ai    | `ai:ready`                                                          | 夜間dispatchに投げられる状態（このskillでは付けない。triageで付ける） |
 | ai    | `ai:blocked-human`                                                  | 人間の判断・調整が必要                                                |
 
 draft PRの仕上げは常に `role:player` + `em:tech`。

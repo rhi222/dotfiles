@@ -1,6 +1,6 @@
 ---
 name: linear-triage
-description: Linearの夕方triageを支援する。Todoをスコアリングして「今夜AIに投げるもの」を提案し、承認されたissueをai:ready形式（repo行・指示・検証方法）に整形してAI Readyへ遷移させる。あわせてTriageの受け入れと整合チェックを行う。「triage」「今夜の仕込み」「夜間dispatchの準備」「明日の準備」「Linearを整理」などで使用。
+description: Linearの夕方triageを支援する。Todoをスコアリングして「今夜AIに投げるもの」を提案し、承認されたissueを実行可能な形（repo行・指示・検証方法）に整形してAI Readyへ遷移させる。あわせてTriageの受け入れと整合チェックを行う。「triage」「今夜の仕込み」「夜間dispatchの準備」「明日の準備」「Linearを整理」などで使用。
 argument-hint: "（引数不要。件数を絞るなら数字）"
 allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(ghq:*), Bash(grep:*), Bash(date:*), mcp__claude_ai_Atlassian__getJiraIssue
 ---
@@ -112,6 +112,9 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 
 ### 4. 承認されたissueを整形する
 
+dispatchの起動条件は **state = `AI Ready`** の1点（ラベルは見ない）。
+パイプライン上の位置はstateで表し、ラベルと二重に持たない。
+
 本文を以下の形にして、**人間に見せて添削を受けてから** `AI Ready` へ遷移させる。
 
 ```
@@ -141,7 +144,6 @@ repo: github.com/<owner>/<name>
   無ければ整形せず報告する。dispatchはworktreeを作れず差し戻す
 - Linearは `github.com/...` を自動でmarkdownリンク化するが、dispatch側のパーサは
   リンク記法に対応済みなのでそのままでよい
-- `ai:ready` ラベルを付ける
 
 指示は**AIが単独で完遂できる粒度**まで具体化する。曖昧なまま投げると、翌朝
 「何をどう判断すればいいか分からないdraft PR」が増えて判断コストが上がる。
