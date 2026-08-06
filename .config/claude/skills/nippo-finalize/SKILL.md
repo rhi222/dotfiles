@@ -3,7 +3,7 @@ name: nippo-finalize
 description: 日報の事実情報を整理して仕上げる（4軸評価レポートを自動生成、内省欄は空白で残す）。「日報を仕上げて」「finalize」「今日のまとめ」「日報を完成」「事実整理」など業務終了時の整理で使用。内省的な問いの生成は nippo-reflection を使う。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(command:*), Bash(gh:*), Bash(jq:*), Bash(sort:*), Bash(paste:*), mcp__claude_ai_Slack__slack_search_public_and_private
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(command:*), Bash(gh:*), Bash(jq:*), Bash(sort:*), Bash(paste:*), Bash(bash:*), Bash(source:*), Bash(ghq:*), mcp__claude_ai_Slack__slack_search_public_and_private
 ---
 
 # 日報完成化コマンド
@@ -12,7 +12,7 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
 ## 概要
 
-本日の日報ドラフトファイルと目標ファイル（nippo-goals.md）を分析し、4軸評価に基づいた振り返りレポートを自動生成して日報に追記します。Slackの発言とGitHubのPR活動を事実情報として自動収集し、分析の根拠にします。
+本日の日報ドラフトファイルと目標ファイル（nippo-goals.md）を分析し、4軸評価に基づいた振り返りレポートを自動生成して日報に追記します。Slackの発言・GitHubのPR活動・Linearの課題の動きを事実情報として自動収集し、分析の根拠にします。
 
 ## 入力・出力
 
@@ -38,18 +38,39 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
    - `gh` で当日の作成PR / マージPR / レビュー状況 / 実施したレビューを収集
    - 「## GitHub活動」セクションとして日報に追記
 
-4. **Phase 4: AI分析準備**
+4. **Phase 3-2: Linear活動収集・作業サマリ生成**
+   - 当日動いたissueを取得する（`updatedAt` が今日以降＝state遷移・コメント・編集で更新された）
+
+     ```bash
+     source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+     linear_activity_since "$(date +%F)"
+     ```
+
+   - 「## 今日の作業サマリ（Linear）」セクションとして日報に追記する。内容は以下:
+
+     | 項目 | 出し方 |
+     | --- | --- |
+     | 完了 | `state.type == "completed"` のissue。identifier＋タイトル |
+     | 進行中 | `In Progress` / `AI Running` のissue |
+     | AI Review待ち | `AI Review` のissue（＝翌朝の判断対象） |
+     | 職能の配分 | `em:*` ラベルを集計して件数を並べる |
+
+   - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない
+   - GitHub活動（Phase 3）と重複して見えることがあるが、**視点が違うので両方残す**。
+     GitHub活動は「どのPRを動かしたか」、Linear作業サマリは「どの課題が前に進んだか」
+
+5. **Phase 4: AI分析準備**
    - 日報ドラフトの構造化読み込み
    - 目標設定ファイル（nippo-goals.md）の読み込み
 
-5. **Phase 5: AI分析・レポート生成**
+6. **Phase 5: AI分析・レポート生成**
    - `system-prompt.md` のペルソナに従い分析を実行
    - 重点4軸での活動分析
-   - 作業ログ・GitHub活動からの自動セクション生成
+   - 作業ログ・GitHub活動・Linear作業サマリからの自動セクション生成
    - 時間サマリ生成
    - `output-format.md` のフォーマットで出力
 
-6. **Phase 6: 結果追記**
+7. **Phase 6: 結果追記**
    - 分析結果を元ファイルに追記
 
 ## 前提条件
