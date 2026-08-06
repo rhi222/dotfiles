@@ -53,7 +53,9 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-echo '{"data": {"issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-9", "url": "u"}}}}'
+# viewer は linear_issue_create が assigneeId 解決のために呼ぶ
+echo '{"data": {"viewer": {"id": "user-me"},
+                "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-9", "url": "u"}}}}'
 EOF
 chmod +x "$tmp/bin/curl"
 

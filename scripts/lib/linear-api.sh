@@ -53,14 +53,25 @@ linear_issues_in_state() {
   }' "$(jq -n --arg t "$team" --arg s "$sid" '{team: $t, state: $s}')" | jq '.issues.nodes'
 }
 
+# linear_viewer_id → 認証ユーザーのid（同一プロセス内でキャッシュする）
+linear_viewer_id() {
+  if [[ -z "${_linear_viewer_id:-}" ]]; then
+    _linear_viewer_id=$(linear_gql '{ viewer { id } }' | jq -er '.viewer.id') || return 1
+  fi
+  echo "$_linear_viewer_id"
+}
+
 # linear_issue_create <title> <description> <state名> [label名] → {id, identifier, url}
+#
+# assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
 linear_issue_create() {
   local title="$1" desc="$2" state="$3" label="${4:-}"
-  local team sid input
+  local team sid me input
   team=$(linear_config '.team_id') || return 1
   sid=$(linear_state_id "$state") || return 1
-  input=$(jq -n --arg t "$team" --arg ti "$title" --arg d "$desc" --arg s "$sid" \
-    '{teamId: $t, title: $ti, description: $d, stateId: $s}')
+  me=$(linear_viewer_id) || return 1
+  input=$(jq -n --arg t "$team" --arg ti "$title" --arg d "$desc" --arg s "$sid" --arg a "$me" \
+    '{teamId: $t, title: $ti, description: $d, stateId: $s, assigneeId: $a}')
   if [[ -n "$label" ]]; then
     local lid
     lid=$(linear_label_id "$label") || return 1

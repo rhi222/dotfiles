@@ -56,13 +56,18 @@ echo '{"data": null, "errors": [{"message": "boom"}]}' > "$tmp/err.json"
 check "GraphQLエラーで非0" bash -c "source '$LIB'; export CURL_RESPONSE='$tmp/err.json'; ! linear_gql '{ viewer { id } }'"
 
 # 4. linear_issue_create がmutationを発行しissueを返す
-echo '{"data": {"issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-1", "url": "https://linear.app/nsym/issue/NSY-1"}}}}' > "$tmp/create.json"
+#    viewerとissueCreateの2回curlが呼ばれるため、レスポンスは両方を含む形にする
+cat > "$tmp/create.json" <<'EOF'
+{"data": {"viewer": {"id": "user-me"},
+          "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-1", "url": "https://linear.app/nsym/issue/NSY-1"}}}}
+EOF
 export CURL_RESPONSE="$tmp/create.json"
 : > "$CURL_LOG"
 out=$(linear_issue_create "title x" "desc y" "Triage" "src:github")
 check "issue_createがidentifierを返す" test "$(jq -r '.identifier' <<<"$out")" = "NSY-1"
 check "payloadにstateIdが入る" grep -q 'st-triage' "$CURL_LOG"
 check "payloadにlabelIdが入る" grep -q 'lb-gh' "$CURL_LOG"
+check "payloadにassigneeIdが入る（My Issuesに出すため）" grep -q 'user-me' "$CURL_LOG"
 
 # 5. linear_issues_in_state がnodes配列を返す
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-1", "title": "t", "description": "d", "url": "u"}]}}}' > "$tmp/list.json"
