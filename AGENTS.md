@@ -239,8 +239,22 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 - issue本文の `repo: github.com/<owner>/<name>` 行がdispatchの必須契約（無ければTodoへ差し戻し）
 - worktreeは `<repo>/.wt/linear-<identifier>` に作られ、掃除は `worktree-cleanup.sh` が拾う
 - 成果物はdraft PRまで。マージは必ず人間
-- **未解決**: headless実行では `git push` の権限プロンプトに答えられずPR作成に到達しない。
-  cron専用設定で `Bash(git push:*)` 等を明示許可する対応が必要
+
+**push と PR作成はagentではなくスクリプトが行う。** Claude Code は `git push` を許可リストで
+上書きできない（`--allowedTools` / settings.json の `permissions.allow` / `acceptEdits` /
+`dontAsk` のいずれでも拒否される。`git ls-remote` のような読み取りは通る）。headlessのagentに
+任せると必ずPR作成に到達しないため、役割を分ける。
+
+| 担当 | 範囲 |
+| ------- | -------------------------------------------------------------- |
+| agent | 実装してworktree内でコミットするまで（`gh` を渡さない） |
+| スクリプト | `git push` と `gh pr create --draft`（素のbash。権限層を通らない） |
+
+- **PR作成権限はagent実行前に確認する**（`gh repo view --json viewerPermission`）。
+  無いまま走らせるとagentを丸ごと1回動かした末に最後だけ失敗する。判定不能な場合も実行しない
+- `gh` は業務アカウント `example-org-nishiyama` で認証されている。**個人リポジトリ（`rhi222/*`）は
+  `READ` しか無いのでdispatchできない**（`example-org/*` は `ADMIN`）
+- コミットが0件ならpushもPR作成もしない（実装に到達しなかったとみなす）
 
 **Project名のprefixは判定順で決める**（MECEにしない。先に当たった方が勝ち）。判定するのは
 動機ではなく成果物。`worktree-cleanup.sh` の判定表と同じ方式。
