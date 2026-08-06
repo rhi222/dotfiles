@@ -105,6 +105,30 @@ check "2回目はissueCreateを呼ばない" bash -c "! grep -q issueCreate '$CU
 # 4. jira.envなし → Jiraはスキップ（エラーにならない）
 check "jira.env無しでも正常終了" test -f "$seen"
 
+# 4-2. --if-not-today: 当日まだ走っていなければ実行、走っていればスキップ
+tmp3=$(mktemp -d)
+mkdir -p "$tmp3/.config/linear" "$tmp3/.local/state"
+cp "$tmp/home/.config/linear/api-key" "$tmp3/.config/linear/"
+cp "$tmp/home/.config/linear/config.json" "$tmp3/.config/linear/"
+touch "$tmp3/.config/linear-sweep-enabled"
+lastrun="$tmp3/.local/state/linear-sweep/last-run"
+
+out=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" bash "$SCRIPT" --if-not-today 2>&1)
+check "初回は--if-not-todayでも実行する" grep -q "linear-sweep done" <<<"$out"
+check "実行するとlast-runに当日日付を記録する" test "$(cat "$lastrun" 2>/dev/null)" = "$(date +%F)"
+
+out=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" bash "$SCRIPT" --if-not-today 2>&1)
+check "同日2回目は静かにスキップする" test -z "$out"
+
+echo "2000-01-01" > "$lastrun"
+out=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" bash "$SCRIPT" --if-not-today 2>&1)
+check "last-runが古い日付なら実行する" grep -q "linear-sweep done" <<<"$out"
+
+# --if-not-today が無ければ日付に関係なく毎回走る（cronからの呼び出し）
+out=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" bash "$SCRIPT" 2>&1)
+check "引数なしなら当日実行済みでも走る" grep -q "linear-sweep done" <<<"$out"
+rm -rf "$tmp3"
+
 # 5. 外部システムへの書き戻しをしない（read-onlyの強制）
 check "ghはsearchしか呼ばない" bash -c "! grep -qvE '^(search|api|auth) ' '$GH_LOG'"
 check "gh issue commentを呼ばない" bash -c "! grep -q 'issue comment' '$GH_LOG'"
