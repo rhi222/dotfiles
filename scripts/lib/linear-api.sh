@@ -76,11 +76,16 @@ linear_viewer_id() {
 #
 # 日報の作業サマリ（今日動いたもの）と週次の傾向分析（role/em の配分）で使う。
 # updatedAt は state遷移・コメント・本文編集で更新されるので「触った」の代理指標になる。
+#
+# canceled / duplicate は除外する。閉じたissueにラベルを付け直すことはないので、
+# 集計に混ざると「ラベル未設定」が水増しされて配分が読めなくなる。
+# Done は成果なので残す。
 linear_activity_since() {
   local team
   team=$(linear_config '.team_id') || return 1
   linear_gql 'query($team: ID!, $since: DateTimeOrDuration!) {
-    issues(filter: {team: {id: {eq: $team}}, updatedAt: {gte: $since}},
+    issues(filter: {team: {id: {eq: $team}}, updatedAt: {gte: $since},
+                    state: {type: {nin: ["canceled", "duplicate"]}}},
            orderBy: updatedAt, first: 100) {
       nodes {
         identifier title url updatedAt
