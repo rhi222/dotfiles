@@ -115,7 +115,34 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 dispatchの起動条件は **state = `AI Ready`** の1点（ラベルは見ない）。
 パイプライン上の位置はstateで表し、ラベルと二重に持たない。
 
+**dispatchは本文の内容で2モードに分かれる。整形時にどちらになるかを意識する。**
+
+| 本文 | モード | dispatchの動作 |
+| --- | --- | --- |
+| 既存PRのURLがある | 継続 | そのPRのブランチで作業。**新規PRは作らない** |
+| `repo:` 行のみ | 新規 | `linear/<identifier>` ブランチを切って新規draft PRを作る |
+
+`draft仕上げ:` の子issueは `元URL:` に既存PRを持つので**自動的に継続モード**になる。
+`repo:` 行を足す必要はない（足しても継続モードが優先される）。
+継続モードはPRが `OPEN` でなければ差し戻される。
+
 本文を以下の形にして、**人間に見せて添削を受けてから** `AI Ready` へ遷移させる。
+
+継続モード（既存PRの仕上げ）:
+
+```
+元URL: <PRのURL>
+
+## AIへの指示
+
+<残っている作業。レビュー指摘への対応、テスト追加、など>
+
+## 検証方法
+
+<テストコマンド・確認手順>
+```
+
+新規モード（ゼロから実装）:
 
 ```
 repo: github.com/<owner>/<name>
@@ -131,7 +158,7 @@ repo: github.com/<owner>/<name>
 <テストコマンド・確認手順>
 ```
 
-- **`repo:` は行頭に書く。** dispatchは `^repo:` の行頭一致で読む
+- **`repo:` は行頭に書く**（新規モードのみ）。dispatchは `^repo:` の行頭一致で読む
 - **`repo:` の値は子の元URL（PR URL）から機械的に導ける。** スイープが起票した子は
   `元URL: https://github.com/<owner>/<name>/pull/<n>` を持つので、そこから切り出す
 
@@ -157,5 +184,5 @@ repo: github.com/<owner>/<name>
 
 - このskillは**起票しない**。新規タスクの起票は `/linear-add`
 - `dueDate` はJiraが持つ。Linear側で勝手に日付を作らない
-- 夜間dispatchは現在 **cron未登録**（headless実行の `git push` 権限問題が未解決）。
-  `AI Ready` に置いても自動では走らないので、手動実行するか、権限問題の解決を待つ
+- 夜間dispatchは現在 **cron未登録**（数日運用してから判断する方針）。`AI Ready` に置いても
+  自動では走らない。試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear-dispatch-cron.sh`

@@ -242,7 +242,17 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 **夜間ディスパッチは「判断待ち」が `LINEAR_WIP_LIMIT`（既定10）件以上だと止まる。**
 生成速度＞判断速度は仕組みが破綻しているシグナルなので、朝の判断タイムで捌いてから再開する。
 
-- issue本文の `repo: github.com/<owner>/<name>` 行がdispatchの必須契約（無ければTodoへ差し戻し）
+- **起動条件は state = `AI Ready` の1点。ラベルは見ない**（パイプライン上の位置はstateで表し、
+  ラベルと二重に持たない。`ai:blocked-human` だけは「そもそも委譲できない」属性なのでstateと直交する）
+- dispatchは本文の内容で2モードに分かれる
+
+| 本文 | モード | 動作 |
+| ---------------- | ------ | ---------------------------------------------------------- |
+| 既存PRのURLがある | 継続 | そのPRのブランチをcheckoutして続きを進める。**新規PRは作らない** |
+| `repo:` 行のみ | 新規 | `linear/<identifier>` ブランチを切って新規draft PRを作る |
+
+  `draft仕上げ` の子issueは既存draft PRを指しているので継続モードになる。
+  新規ブランチ方式のままだと重複PRができていた。継続モードはPRが `OPEN` でなければ実行しない
 - worktreeは `<repo>/.wt/linear-<identifier>` に作られ、掃除は `worktree-cleanup.sh` が拾う
 - 成果物はdraft PRまで。マージは必ず人間
 

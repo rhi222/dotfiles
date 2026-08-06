@@ -7,9 +7,14 @@
 # 有効化: touch ~/.config/linear-dispatch-enabled
 # 無効化: rm ~/.config/linear-dispatch-enabled
 #
-# issue本文の契約:
-#   repo: github.com/<owner>/<name>   ← 必須。無ければTodoへ差し戻す
-#   （残りの本文全体がそのままプロンプトの素材になる）
+# issue本文の契約（2モード）:
+#   継続モード: 本文に既存PRのURL（github.com/o/n/pull/N）があれば、そのPRのブランチを
+#               checkoutして続きを進める。新規PRは作らない
+#   新規モード: PR URLが無ければ `repo: github.com/<owner>/<name>` 行を読み、
+#               linear/<identifier> ブランチを切って新規PRを作る
+#   どちらも無ければTodoへ差し戻す。残りの本文全体がそのままプロンプトの素材になる
+#
+# 起動条件は state = "AI Ready" の1点。ラベルは見ない（stateと二重に持たない）
 #
 # 安全弁:
 #   - 「判断待ち」が LINEAR_WIP_LIMIT（既定10）件以上なら実行しない
