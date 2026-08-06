@@ -61,6 +61,17 @@ dispatch_bounce() {
   linear_issue_move "$1" "Todo"
 }
 
+# dispatch_can_create_pr <owner/name>
+# PR作成に足る権限があれば0。無い/判定不能なら非0（安全側に倒す）
+dispatch_can_create_pr() {
+  local perm
+  perm=$(gh repo view "$1" --json viewerPermission -q '.viewerPermission' 2>/dev/null) || return 1
+  case "$perm" in
+    ADMIN | MAINTAIN | WRITE) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # dispatch_one <issue-json>
 dispatch_one() {
   local issue="$1"
@@ -79,6 +90,14 @@ dispatch_one() {
   if [[ ! -d "$repo_path" ]]; then
     dispatch_bounce "$id" "dispatch失敗: ローカルにrepoが無い: \`$repo_path\`（ghq get してほしい）"
     echo "$identifier: BOUNCED (no local repo)"
+    return 0
+  fi
+
+  # PR作成権限を先に確認する。無いまま走らせると、agentを1回丸ごと動かした末に
+  # 最後の gh pr create だけが失敗して数分とトークンを捨てることになる
+  if ! dispatch_can_create_pr "${repo#github.com/}"; then
+    dispatch_bounce "$id" "dispatch失敗: \`${repo#github.com/}\` にPRを作る権限が無い（またはgh認証が別アカウント）。ghのログイン先を確認してほしい"
+    echo "$identifier: BOUNCED (no PR permission)"
     return 0
   fi
 
