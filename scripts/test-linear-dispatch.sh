@@ -86,6 +86,11 @@ EOF
 cat > "$tmp/bin/gh" <<'EOF'
 #!/bin/bash
 echo "$*" >> "${GH_LOG:?}"
+# 継続モード: 既存PRのブランチと状態を返す
+if [[ "$*" == *"pr view"* ]]; then
+  echo "{\"headRefName\": \"${GH_PR_BRANCH:-feat/existing}\", \"state\": \"${GH_PR_STATE:-OPEN}\", \"url\": \"https://github.com/example-org/repo1/pull/42\"}"
+  exit 0
+fi
 # 事前チェック: PR作成権限の確認。GH_PERM で差し替える
 if [[ "$*" == *"repo view"* ]]; then
   [[ "${GH_PERM_FAIL:-0}" == "1" ]] && { echo "gh: not found" >&2; exit 1; }
@@ -110,6 +115,8 @@ export CLAUDE_BIN="claude"
 echo '{"data": {"issues": {"nodes": []}}}' > "$tmp/wip-empty.json"
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-5", "title": "調査", "description": "repo: github.com/example-org/repo1\n期待アウトカム: x", "url": "u"}]}}}' > "$tmp/ready-one.json"
 echo '{"data": {"issues": {"nodes": [{"id": "i2", "identifier": "NSY-6", "title": "repo無し", "description": "repo行がない本文", "url": "u"}]}}}' > "$tmp/ready-norepo.json"
+# 継続モード: 本文に既存PRのURLがある
+echo '{"data": {"issues": {"nodes": [{"id": "i3", "identifier": "NSY-7", "title": "draft仕上げ: 既存PRの続き", "description": "元URL: https://github.com/example-org/repo1/pull/42", "url": "u"}]}}}' > "$tmp/ready-existing-pr.json"
 jq -n '{data: {issues: {nodes: [range(10) | {id: "i\(.)", identifier: "NSY-\(.)", title: "t", description: "", url: "u"}]}}}' > "$tmp/wip-full.json"
 
 # 1. フラグなし → 静かにスキップ
@@ -156,6 +163,25 @@ check "push失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PR_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+
+# 3-7. 継続モード: 本文にPR URLがあれば既存ブランチで作業し、新規PRを作らない
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "継続モードでclaudeが実行される" test -s "$CLAUDE_LOG"
+check "継続モードは既存ブランチでworktreeを作る" grep -q "feat/existing" "$GIT_LOG"
+check "継続モードはlinear/NSY-7ブランチを作らない" bash -c "! grep -q 'linear/NSY-7' '$GIT_LOG'"
+check "継続モードもpushする" grep -q "push" "$GIT_LOG"
+check "継続モードは新規PRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
+check "継続モードは既存PR URLをコメントする" grep -q "pull/42" "$CURL_LOG"
+check "継続モードも判断待ち(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
+
+# 3-8. 継続モード: PRがOPENでなければ実行しない
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
+  GH_PR_STATE=MERGED LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "PRがOPENでなければclaudeを実行しない" test ! -s "$CLAUDE_LOG"
+check "PRがOPENでなければTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
 # 3-5. PR作成権限が無い → agentを走らせる前に弾く
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
