@@ -32,18 +32,27 @@ case "$1" in
   search|api|auth) ;;
   *) echo "gh stub: 書き込み系サブコマンドが呼ばれた: $1" >&2; exit 99 ;;
 esac
-echo '[{"url": "https://github.com/example-org/repo1/pull/1", "title": "PR one"},
-      {"url": "https://github.com/example-org/repo2/pull/2", "title": "PR two"}]'
+# レビュー依頼で呼ばれたら異常終了する（スイープ対象外なので呼んではいけない）
+if [[ "$*" == *review-requested* ]]; then
+  echo "gh stub: レビュー依頼を検索した（対象外のはず）" >&2; exit 98
+fi
+# bot作成PRを1件混ぜて、除外されることを検証する
+echo '[{"url": "https://github.com/example-org/repo1/pull/1", "title": "PR one", "author": {"login": "human-dev"}},
+      {"url": "https://github.com/example-org/repo9/pull/9", "title": "bump foo", "author": {"login": "dependabot[bot]"}}]'
 EOF
 chmod +x "$tmp/bin/gh"
 
-# stub curl: issueCreate成功を返し、payloadと引数を記録
+# stub curl: issueCreate成功を返す。
+# payloadは1行、それ以外の引数は "ARGS:" 行に分けて記録する
+# （ARGS行にpayloadを混ぜると payload の grep -c が二重に数えてしまう）
 cat > "$tmp/bin/curl" <<'EOF'
 #!/bin/bash
-echo "ARGS: $*" >> "${CURL_LOG:?}"
+args=""
 while [[ $# -gt 0 ]]; do
-  if [[ "$1" == "--data" ]]; then echo "$2" >> "${CURL_LOG:?}"; shift 2; else shift; fi
+  if [[ "$1" == "--data" ]]; then echo "$2" >> "${CURL_LOG:?}"; shift 2
+  else args="$args $1"; shift; fi
 done
+echo "ARGS:$args" >> "${CURL_LOG:?}"
 echo '{"data": {"issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-9", "url": "u"}}}}'
 EOF
 chmod +x "$tmp/bin/curl"
@@ -66,6 +75,22 @@ check "seenファイルにURLが記録される" grep -q "repo1/pull/1" "$seen"
 check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
 check "src:githubラベルが付く" grep -q "lb-gh" "$CURL_LOG"
 check "Triageに起票される" grep -q "st-triage" "$CURL_LOG"
+check "bot作成PRは起票しない" bash -c "! grep -q 'repo9/pull/9' '$CURL_LOG'"
+check "bot作成PRはseenにも入れない" bash -c "! grep -q 'repo9/pull/9' '$seen'"
+check "自分のdraft PRは起票される" grep -q "repo1/pull/1" "$CURL_LOG"
+check "レビュー依頼は検索すらしない" bash -c "! grep -q 'review-requested' '$GH_LOG'"
+check "起票タイトルはdraft仕上げ" grep -q 'draft仕上げ' "$CURL_LOG"
+
+# 2-2. LINEAR_SWEEP_MAX で起票数を絞れる（gh stubは2種類の検索に各2件返すので計4件相当）
+tmp2=$(mktemp -d)
+mkdir -p "$tmp2/.config/linear" "$tmp2/.local/state"
+cp "$tmp/home/.config/linear/api-key" "$tmp2/.config/linear/"
+cp "$tmp/home/.config/linear/config.json" "$tmp2/.config/linear/"
+touch "$tmp2/.config/linear-sweep-enabled"
+: > "$CURL_LOG"
+HOME="$tmp2" LINEAR_CONFIG_DIR="$tmp2/.config/linear" LINEAR_SWEEP_MAX=1 bash "$SCRIPT" >/dev/null 2>&1
+check "LINEAR_SWEEP_MAX=1で1件しか起票しない" test "$(grep -c 'issueCreate' "$CURL_LOG")" = "1"
+rm -rf "$tmp2"
 
 # 3. 再実行 → seen済みは起票しない（冪等）
 : > "$CURL_LOG"
@@ -80,7 +105,7 @@ check "ghはsearchしか呼ばない" bash -c "! grep -qvE '^(search|api|auth) '
 check "gh issue commentを呼ばない" bash -c "! grep -q 'issue comment' '$GH_LOG'"
 check "gh pr commentを呼ばない" bash -c "! grep -q 'pr comment' '$GH_LOG'"
 check "gh pr editを呼ばない" bash -c "! grep -q 'pr edit' '$GH_LOG'"
-check "curlはLinear宛のみ（Jira等へPOSTしない）" bash -c "! grep -E '^ARGS:' '$GH_LOG' >/dev/null; ! grep -E '^ARGS:.*atlassian' '$CURL_LOG'"
+check "curlはLinear宛のみ（Jira等へPOSTしない）" bash -c "! grep -E '^ARGS:.*atlassian' '$CURL_LOG'"
 
 rm -rf "$tmp"
 echo "---"
