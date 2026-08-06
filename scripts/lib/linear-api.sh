@@ -71,6 +71,28 @@ linear_viewer_id() {
   echo "$_linear_viewer_id"
 }
 
+# linear_activity_since <YYYY-MM-DD>
+#   → 指定日以降に更新されたissue [{identifier, title, url, updatedAt, state, labels, project, parent}]
+#
+# 日報の作業サマリ（今日動いたもの）と週次の傾向分析（role/em の配分）で使う。
+# updatedAt は state遷移・コメント・本文編集で更新されるので「触った」の代理指標になる。
+linear_activity_since() {
+  local team
+  team=$(linear_config '.team_id') || return 1
+  linear_gql 'query($team: ID!, $since: DateTimeOrDuration!) {
+    issues(filter: {team: {id: {eq: $team}}, updatedAt: {gte: $since}},
+           orderBy: updatedAt, first: 100) {
+      nodes {
+        identifier title url updatedAt
+        state { name type }
+        labels { nodes { name } }
+        project { name }
+        parent { identifier }
+      }
+    }
+  }' "$(jq -n --arg t "$team" --arg s "$1" '{team: $t, since: $s}')" | jq '.issues.nodes'
+}
+
 # linear_issue_create <title> <description> <state名> [label名...] → {id, identifier, url}
 #
 # assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
