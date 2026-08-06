@@ -45,15 +45,15 @@ sweep_author_excluded() {
   return 1
 }
 
-# sweep_item <url> <title> <label名>
+# sweep_item <url> <title> <label名...>
 # seen済みならスキップ、未登録ならTriageに起票してseenへ追記する
 sweep_item() {
-  local url="$1" title="$2" label="$3"
+  local url="$1" title="$2"; shift 2
   [[ -f "$SEEN" ]] && grep -qxF "$url" "$SEEN" && return 0
   if [[ "$swept_count" -ge "$LINEAR_SWEEP_MAX" ]]; then
     return 0
   fi
-  linear_issue_create "$title" "元URL: $url" "Triage" "$label" >/dev/null
+  linear_issue_create "$title" "元URL: $url" "Triage" "$@" >/dev/null
   mkdir -p "$(dirname "$SEEN")"
   echo "$url" >> "$SEEN"
   swept_count=$((swept_count + 1))
@@ -75,7 +75,9 @@ sweep_github() {
         echo "skip(bot): $(jq -r '.url' <<<"$pr")"
         continue
       fi
-      sweep_item "$(jq -r '.url' <<<"$pr")" "draft仕上げ: $(jq -r '.title' <<<"$pr")" "src:github"
+      # draft仕上げは常に自分の実装作業なので role/em を起票時に確定できる
+      sweep_item "$(jq -r '.url' <<<"$pr")" "draft仕上げ: $(jq -r '.title' <<<"$pr")" \
+        "src:github" "role:player" "em:tech"
     done < <(jq -c '.[]' <<<"$json")
   else
     echo "linear-sweep: gh検索に失敗（draft）。スキップする" >&2
@@ -102,6 +104,7 @@ sweep_jira() {
   local issue key
   while read -r issue; do
     key=$(jq -r '.key' <<<"$issue")
+    # Jiraチケットは親課題の粒度。role/emはtriageで人間が決めるので付けない
     sweep_item "$JIRA_BASE_URL/browse/$key" "[$key] $(jq -r '.fields.summary' <<<"$issue")" "src:jira"
   done < <(jq -c '.issues[]?' <<<"$resp")
 }

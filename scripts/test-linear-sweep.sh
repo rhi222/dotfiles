@@ -82,6 +82,9 @@ check "bot作成PRはseenにも入れない" bash -c "! grep -q 'repo9/pull/9' '
 check "自分のdraft PRは起票される" grep -q "repo1/pull/1" "$CURL_LOG"
 check "レビュー依頼は検索すらしない" bash -c "! grep -q 'review-requested' '$GH_LOG'"
 check "起票タイトルはdraft仕上げ" grep -q 'draft仕上げ' "$CURL_LOG"
+# src:* だけだと後からrole/emをバックフィルする羽目になるので起票時に確定させる
+check "role:playerラベルが付く" grep -q 'lb-rp' "$CURL_LOG"
+check "em:techラベルが付く" grep -q 'lb-et' "$CURL_LOG"
 
 # 2-2. LINEAR_SWEEP_MAX で起票数を絞れる（gh stubは2種類の検索に各2件返すので計4件相当）
 tmp2=$(mktemp -d)

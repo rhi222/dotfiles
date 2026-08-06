@@ -62,22 +62,25 @@ linear_viewer_id() {
   echo "$_linear_viewer_id"
 }
 
-# linear_issue_create <title> <description> <state名> [label名] → {id, identifier, url}
+# linear_issue_create <title> <description> <state名> [label名...] → {id, identifier, url}
 #
 # assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
+# labelは可変長。role:* / em:* を起票時に付けられるようにしてある
+# （src:* だけだと後からまとめてバックフィルする羽目になる）
 linear_issue_create() {
-  local title="$1" desc="$2" state="$3" label="${4:-}"
-  local team sid me input
+  local title="$1" desc="$2" state="$3"
+  shift 3
+  local team sid me input lid label
   team=$(linear_config '.team_id') || return 1
   sid=$(linear_state_id "$state") || return 1
   me=$(linear_viewer_id) || return 1
   input=$(jq -n --arg t "$team" --arg ti "$title" --arg d "$desc" --arg s "$sid" --arg a "$me" \
-    '{teamId: $t, title: $ti, description: $d, stateId: $s, assigneeId: $a}')
-  if [[ -n "$label" ]]; then
-    local lid
+    '{teamId: $t, title: $ti, description: $d, stateId: $s, assigneeId: $a, labelIds: []}')
+  for label in "$@"; do
+    [[ -n "$label" ]] || continue
     lid=$(linear_label_id "$label") || return 1
-    input=$(jq --arg l "$lid" '. + {labelIds: [$l]}' <<<"$input")
-  fi
+    input=$(jq --arg l "$lid" '.labelIds += [$l]' <<<"$input")
+  done
   linear_gql 'mutation($input: IssueCreateInput!) {
     issueCreate(input: $input) { success issue { id identifier url } }
   }' "$(jq -n --argjson i "$input" '{input: $i}')" | jq '.issueCreate.issue'
