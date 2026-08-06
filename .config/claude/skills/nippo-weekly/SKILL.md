@@ -3,7 +3,7 @@ name: nippo-weekly
 description: 週次振り返りレポートを生成する。「今週の振り返り」「ウィークリー」「weekly」「週次レポート」「1週間のまとめ」などで使用。過去7日間の日報を分析し、4軸評価トレンドと来週のアクションプランを含む成長レポートを生成する。
 disable-model-invocation: true
 argument-hint: "[週番号 YYYY-Wnn] (省略時は今週)"
-allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(mkdir:*), Bash(bash:*), Bash(python3:*)
+allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(mkdir:*), Bash(bash:*), Bash(python3:*), Bash(source:*), Bash(jq:*), Bash(ghq:*)
 ---
 
 # 週次振り返りコマンド
@@ -113,6 +113,49 @@ echo "  • レポート: $WEEKLY_FILE"
 # 過去の週次レポート一覧（直近5週分）
 ls -lt "$WEEKLY_DIR"/nippo-weekly.*.md 2>/dev/null | head -5
 ```
+
+## Linearラベルによる傾向分析
+
+日報の本文だけでは「何をやったか」しか分からない。**どの職能に時間が寄ったか**は
+Linearの `role:*` / `em:*` ラベルでしか見えないので、週次ではここを主軸に据える。
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+SINCE=$(date -d '6 days ago' +%F)
+linear_activity_since "$SINCE" > /tmp/linear-week.json
+
+# role × em のクロス集計
+jq -r '[.[] | {r: ([.labels.nodes[].name|select(startswith("role:"))]|first//"role:?"),
+               e: ([.labels.nodes[].name|select(startswith("em:"))]|first//"em:?")}]
+       | group_by([.r,.e]) | map({k:"\(.[0].r) × \(.[0].e)", n:length}) | sort_by(-.n)[]
+       | "\(.n)件\t\(.k)"' /tmp/linear-week.json
+
+# Project別
+jq -r '[.[] | .project.name // "（なし）"] | group_by(.)
+       | map({p:.[0], n:length}) | sort_by(-.n)[] | "\(.n)件\t\(.p)"' /tmp/linear-week.json
+
+# 完了したもの
+jq -r '[.[] | select(.state.type=="completed")] | .[] | "\(.identifier) \(.title)"' /tmp/linear-week.json
+```
+
+### 何を読み取るか
+
+**配分の偏りを北極星と突き合わせる。** nippo-goals.md の北極星は
+「組織を前に進める人／ただし技術が分かる人であり続ける」なので、両輪が回っているかを見る。
+
+| 観点 | 見方 |
+| --- | --- |
+| `role:player` vs `role:manager` | playerに寄りすぎ＝組織を前に進める時間が取れていない。managerに寄りすぎ＝技術が分かる人でなくなる |
+| `em:*` の欠落 | 0件の職能があれば名指しする（例: 今週 `em:people` が0件） |
+| Project の集中 | 1つのProjectに偏っていれば、他のIn Progress Projectが止まっている |
+| ラベル無し（`role:?` / `em:?`） | 多いとラベル運用が崩れている。件数を報告する |
+
+### 書き方の制約
+
+- **毎週同じ観点を並べない。** 前週と比べて動いた軸だけを書く
+- **件数を断定的な結論に変換しない。** 「em:people が0件」は事実だが、
+  「人に向き合えていない」は解釈。解釈を書くなら根拠（どのissueが動かなかったか）を添える
+- Linearにアクセスできない場合はこの節ごと省略し、日報ベースの分析だけで出力する
 
 ## AI分析の詳細
 
