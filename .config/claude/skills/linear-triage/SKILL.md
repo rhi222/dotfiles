@@ -63,7 +63,27 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 # 5) 期日超過
 linear_issues_in_state "Todo" | jq -r --arg t "$(date +%F)" \
   '.[] | select(.dueDate != null and .dueDate < $t) | "\(.identifier) due=\(.dueDate)"'
+
+# 6) Projectのオーバービュー（週1回でよい。月曜のCycle計画時が目安）
+#    projects と issues を1クエリにまとめると "Query too complex" で弾かれるので分ける
+linear_gql '{ projects(first: 50) { nodes { id name state targetDate } } }' > /tmp/pj.json
+linear_gql '{ issues(first: 250) { nodes { project { id } state { type } } } }' > /tmp/iss.json
+jq -r --arg t "$(date +%F)" --slurpfile iss /tmp/iss.json '
+  ($iss[0].issues.nodes) as $I |
+  .projects.nodes
+  | map(. as $p | {name, state, targetDate,
+      open: ([$I[] | select(.project.id == $p.id and (.state.type|IN("completed","canceled")|not))]|length)})
+  | sort_by(.state != "started", .name)[]
+  | "\(if .state=="started" then "▶" else " " end) \(.name)  \(.state)  open=\(.open)  target=\(.targetDate // "未設定")\(if .targetDate!=null and .targetDate<$t then " ⚠超過" else "" end)\(if .open==0 then " ⚠open0件" else "" end)"' /tmp/pj.json
 ```
+
+Projectで見るのは3点。
+
+| 症状 | 意味 | 打ち手 |
+| --- | --- | --- |
+| **open 0件** | 中身が無いのにProjectだけ存在する | 完了なら `completed`、やらないなら削除。「いつかやる」なら `Planned` のまま置いてよいがtarget dateは外す |
+| **target未設定** | 「期限のある塊」というProjectの定義から外れている | 期限を入れるか、期限が決められないなら常設カテゴリ化しているサインなので分割・削除を検討 |
+| **In Progress が4つを超える** | 並行しすぎ | どれかを `Planned` に戻す |
 
 見つかったものは**その場で直さず報告する**。親子の取り残しは「子も閉じる」か「親から切り離して
 単独の課題にする」かで判断が分かれるため、人間に聞く。
