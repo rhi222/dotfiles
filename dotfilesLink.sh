@@ -126,6 +126,10 @@ grant_exec_permissions() {
   chmod +x "$DOTFILES_DIR/scripts/nippo-cron.sh" 2>/dev/null || true
   chmod +x "$DOTFILES_DIR/scripts/worktree-init.sh" 2>/dev/null || true
   chmod +x "$DOTFILES_DIR/scripts/test-worktree-init.sh" 2>/dev/null || true
+  # Linear個人司令塔のcronスクリプト
+  chmod +x "$DOTFILES_DIR/scripts/linear-sweep.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/linear-dispatch-cron.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/linear-bootstrap.sh" 2>/dev/null || true
 }
 
 # gitignore されているローカル git 設定の存在チェック（.gitconfig が include している）
