@@ -218,6 +218,12 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 
 - 認証は `~/.config/linear/api-key`（chmod 600）、設定は `linear-bootstrap.sh` が生成する `config.json`
 - 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled`
+- **スイープはcronだけに頼らない。** WSL2のcronは**PCが停止していた時刻のジョブを実行せず**、
+  anacronも入れていないため、8:00に起動していない日は丸ごと落ちる。
+  `.config/fish/my/conf.d/14-linear-sweep.fish` がその日の最初の対話シェル起動時にも
+  `--if-not-today` 付きで1回だけ走らせて取りこぼしを拾う（`$XDG_STATE_HOME` 相当の
+  `~/.local/state/linear-sweep/last-run` で当日実行済みかを判定）。
+  cronと併存しても `seen.txt` の重複排除があるので二重起票しない
 - 共通ライブラリは `scripts/lib/linear-api.sh`。`linear_issue_create` は**assigneeを自動で自分にする**（未アサインだとMy Issuesに出ないため）
 
 **リンクは Linear → 外部の一方向のみ。GitHub / Jira には一切書き戻さない。**
