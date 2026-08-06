@@ -17,6 +17,7 @@ allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(
 ## 使うライブラリ
 
 `$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh` を source して使う。
+Bashツールの呼び出しは毎回新しいシェルなので、`source` と関数呼び出しは1つのコマンドにまとめる。
 
 ```bash
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
@@ -27,8 +28,28 @@ linear_comment "<issueId>" "<body>"
 linear_gql '<query>' '<variables-json>'
 ```
 
+ID解決のヘルパー: `linear_config '.team_id'` / `linear_state_id "<state名>"` /
+`linear_label_id "<label名>"` / `linear_viewer_id`。
+
 `linear_issue_create` は assignee を自動で自分にする（未アサインだと My Issues に出ない）。
-Project・親子・複数ラベルを一度に設定したい場合は `linear_gql` で `issueCreate` を直接叩く。
+Project・親子を設定したい場合は `linear_gql` で `issueCreate` を直接叩く。このとき
+**`assigneeId` は自動では付かないので必ず入れる**。付け忘れると My Issues に出ないissueが
+静かにできあがる。
+
+```bash
+input=$(jq -n \
+  --arg team "$(linear_config '.team_id')" \
+  --arg state "$(linear_state_id 'Todo')" \
+  --arg me "$(linear_viewer_id)" \
+  --arg title "<title>" --arg desc "<description>" \
+  '{teamId: $team, stateId: $state, assigneeId: $me, title: $title, description: $desc,
+    labelIds: ["<labelId>"], projectId: "<projectId>", parentId: "<親issueのid>"}')
+linear_gql 'mutation($input: IssueCreateInput!) {
+  issueCreate(input: $input) { success issue { id identifier url } }
+}' "$(jq -n --argjson i "$input" '{input: $i}')" | jq '.issueCreate.issue'
+```
+
+labelId は `linear_label_id` で引く。`projectId` / `parentId` は不要ならキーごと省く。
 
 ## 絶対に守ること
 
@@ -49,6 +70,20 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
   - `example-api` はJira管理外（GitHub issueで管理）。Jiraキーが無くても異常ではない
 - **Jira URL** → キーとタイトルを取る。Jira APIの認証情報は無いので、URLからキーだけ抜き、タイトルは利用者に聞くか本文から推測する
 - **Slack / esa URL** → そのまま元URLとして持つ
+
+材料が揃ったら、**起票する前に重複を確認する**。スイープの重複判定はURL一致なので、
+手動起票も同じ基準で既存issueを検索する。
+
+```bash
+linear_gql 'query($team: ID!, $q: String!) {
+  issues(filter: {team: {id: {eq: $team}}, searchableContent: {contains: $q}}, first: 5) {
+    nodes { identifier title url }
+  }
+}' "$(jq -n --arg t "$(linear_config '.team_id')" --arg q "<元URLまたはJiraキー>" '{team: $t, q: $q}')"
+```
+
+ヒットしたら新規には作らず利用者に確認する。既存issueへのコメント追記や子issueの追加で
+済むことが多い。
 
 ### 2. Projectを決める
 
@@ -87,6 +122,20 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 - **PRを伴う課題は1PRでも親子に分ける**（PRの本数はあとから増えるため）。子のタイトルは `draft仕上げ: <PRタイトル>`
 - **PRを伴わない思考タスクは親1枚**（体制の構想、意見のまとめ、概念整理など）。工程が出たら後から子を足す
 - 子は都度必要なものだけ。定型4工程（実装／レビュー依頼／社内連絡／リリース）を空で並べない
+
+**親の単位はJiraが決める。見た目の類似でまとめない。**
+複数PRを1つの親にぶら下げる前に、**各PRのJiraキーが同一かを必ず確認する**。
+異なるならPRごとに親を立てる。
+
+実例: `example-repo-record#1857`（バッチコマンドのレジストリ方式）と `#1854`（ruff＋CI整備）は
+どちらも「Pythonバッチ関連」に見えたので1つの親にまとめたが、実際は `BETADEV-9268` と
+`BETADEV-9250` の別チケットで、あとから親を2つに割り直すことになった。
+ブランチ名（`BETADEV-9268-refactor-batch-command`）にキーが入っていることが多いので必ず見る。
+
+**課題名はJiraチケット名称が正。** Jira APIの認証情報が無い環境ではPRタイトルで代用してよいが、
+その旨をメモに残すか、あとでJira側の名称に合わせる。
+- **子issueの本文には行頭に `repo: github.com/<owner>/<name>` の行を書く。** 夜間dispatchは
+  `^repo:` の行頭一致でこの行を読み、無い子は AI Ready に置かれても Todo へ差し戻される
 
 ### 4. ラベルを付ける（role と em を必ず1つずつ）
 
