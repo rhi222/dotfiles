@@ -29,7 +29,9 @@ source "$SCRIPT_DIR/lib/linear-api.sh"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 LINEAR_WIP_LIMIT="${LINEAR_WIP_LIMIT:-10}"
 LINEAR_DISPATCH_MAX="${LINEAR_DISPATCH_MAX:-3}"
-ALLOWED_TOOLS="Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh:*),Bash(jq:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python3:*),Bash(pytest:*),Bash(make:*),Bash(cargo:*),Bash(go:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
+# agentには gh を渡さない。push・PR作成はスクリプトの責務なので、
+# ネットワーク書き込み権限をagentに与える必要がない
+ALLOWED_TOOLS="Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(jq:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python3:*),Bash(pytest:*),Bash(make:*),Bash(cargo:*),Bash(go:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
 
 # dispatch_parse_repo <description> → repo（例 github.com/example-org/repo1）。無ければ非0
 #
@@ -99,30 +101,64 @@ $desc
 # 進め方の契約
 - TDDで進める（テスト先行）。既存のテスト・lintを壊さない
 - こまめにconventional commitsでコミットする（Claude署名は付けない）
-- 完了したらブランチをpushし、\`gh pr create --draft\` でdraft PRを作る
+- **pushしない。PRも作らない。** この2つは呼び出し元のスクリプトが行う
 - PR本文にLinearのissue識別子（NSY-xx）を書かない。既存のGitHub issue / Jira
   チケットへのコメント・ラベル付与・ステータス変更も一切しない
-- 最後に、標準出力の最終行として「PR_URL: <作成したPRのURL>」を必ず出力する
-- 途中で完遂不能と判断したら、理由を出力して終了する（PR_URL行は出さない）"
+- 既存のGitHub issue / Jira チケットへのコメント・ラベル付与・ステータス変更も一切しない
+- 完了条件はローカルコミットが積まれていること。テストが通る状態で終える
+- 途中で完遂不能と判断したら、理由を出力してコミットせずに終了する"
 
   set +e
   log=$(cd "$wt" && "$CLAUDE_BIN" -p "$prompt" --allowedTools "$ALLOWED_TOOLS" 2>&1)
   status=$?
   set -e
 
-  if [[ $status -eq 0 ]] && pr_url=$(dispatch_parse_pr_url "$log"); then
-    linear_comment "$id" "夜間dispatch完了: $pr_url"
-    linear_issue_move "$id" "判断待ち"
-    echo "$identifier: OK $pr_url"
-  else
-    linear_comment "$id" "夜間dispatch失敗。ログ末尾:
+  if [[ $status -ne 0 ]]; then
+    dispatch_finish_failed "$id" "$identifier" "$log" "claude実行が異常終了した（exit $status）"
+    return 0
+  fi
+
+  # コミットが積まれたか確認する。0件なら実装できていないので進めない
+  local commits
+  commits=$(git -C "$wt" rev-list --count HEAD ^"$(git -C "$repo_path" rev-parse --abbrev-ref HEAD)" 2>/dev/null || echo 0)
+  if [[ "${commits:-0}" -eq 0 ]]; then
+    dispatch_finish_failed "$id" "$identifier" "$log" "コミットが1つも積まれていない（実装に到達しなかった）"
+    return 0
+  fi
+
+  # push と PR作成はスクリプトが行う。
+  # agentに任せるとClaude Codeの権限層に阻まれる（許可リストでは上書きできない）うえ、
+  # そもそもagentにネットワーク書き込み権限を渡さずに済む
+  if ! git -C "$wt" push -u origin "$branch" >/dev/null 2>&1; then
+    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ \`$branch\`）"
+    return 0
+  fi
+
+  local pr_url
+  if ! pr_url=$(gh pr create --draft --repo "${repo#github.com/}" --head "$branch" \
+                  --title "$title" --body "夜間dispatchによる自動実装。レビュー前のdraft。" 2>&1); then
+    dispatch_finish_failed "$id" "$identifier" "$log" "gh pr create に失敗した: $pr_url"
+    return 0
+  fi
+
+  linear_comment "$id" "夜間dispatch完了: $pr_url"
+  linear_issue_move "$id" "判断待ち"
+  echo "$identifier: OK $pr_url"
+}
+
+# dispatch_finish_failed <issueId> <identifier> <claudeログ> <理由>
+# 理由とログ末尾をコメントしてTodoへ差し戻す（黙って消えないようにする）
+dispatch_finish_failed() {
+  local id="$1" identifier="$2" log="$3" reason="$4"
+  linear_comment "$id" "夜間dispatch失敗: ${reason}
+
+ログ末尾:
 
 \`\`\`
 $(tail -20 <<<"$log")
 \`\`\`"
-    linear_issue_move "$id" "Todo"
-    echo "$identifier: FAILED"
-  fi
+  linear_issue_move "$id" "Todo"
+  echo "$identifier: FAILED ($reason)"
 }
 
 main() {

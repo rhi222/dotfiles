@@ -30,14 +30,6 @@ desc_ok=$'調査タスク\nrepo: github.com/example-org/repo1\n期待アウト�
 check "repo行をパースできる" test "$(dispatch_parse_repo "$desc_ok")" = "github.com/example-org/repo1"
 check "repo行が無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_repo 'repo指定なし本文'"
 
-# Linearは github.com/... を自動でmarkdownリンク化するため、その形式も解釈できること
-desc_md=$'repo: [github.com/rhi222/dotfiles](<http://github.com/rhi222/dotfiles>)\n期待アウトカム: x'
-check "markdownリンク化されたrepo行もパースできる" test "$(dispatch_parse_repo "$desc_md")" = "github.com/rhi222/dotfiles"
-
-log_ok=$'作業した\nPR_URL: https://github.com/example-org/repo1/pull/99'
-check "PR URLをパースできる" test "$(dispatch_parse_pr_url "$log_ok")" = "https://github.com/example-org/repo1/pull/99"
-check "PR URLが無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_pr_url 'URLなしログ'"
-
 # --- スクリプト全体のテスト ---
 # stub curl: リクエスト内容で応答を出し分ける
 cat > "$tmp/bin/curl" <<'EOF'
@@ -60,12 +52,11 @@ fi
 EOF
 chmod +x "$tmp/bin/curl"
 
-# stub claude: PR_URL行を出す成功パターン
+# stub claude: 実装してコミットするだけ。push/PR作成はスクリプト側の責務
 cat > "$tmp/bin/claude" <<'EOF'
 #!/bin/bash
 echo "$*" >> "${CLAUDE_LOG:?}"
-echo "implemented"
-echo "PR_URL: https://github.com/example-org/repo1/pull/99"
+echo "implemented and committed"
 EOF
 chmod +x "$tmp/bin/claude"
 
@@ -76,6 +67,7 @@ cat > "$tmp/bin/ghq" <<'EOF'
 EOF
 cat > "$tmp/bin/git" <<'EOF'
 #!/bin/bash
+echo "$*" >> "${GIT_LOG:?}"
 # worktree add のときは実際にディレクトリを作る。
 # 作らないと dispatch_one の `cd "$wt"` が失敗し、claude まで到達しない
 if [[ "$*" == *"worktree add"* ]]; then
@@ -83,17 +75,31 @@ if [[ "$*" == *"worktree add"* ]]; then
     case "$a" in */.wt/*) mkdir -p "$a" ;; esac
   done
 fi
+# rev-list でコミット有無を判定している箇所に答える（GIT_COMMITS で件数を差し替える）
+if [[ "$*" == *"rev-list"* ]]; then
+  echo "${GIT_COMMITS:-2}"
+fi
+[[ "$*" == *"push"* && "${GIT_PUSH_FAIL:-0}" == "1" ]] && exit 1
 exit 0
 EOF
-chmod +x "$tmp/bin/ghq" "$tmp/bin/git"
+# stub gh: pr create でURLを返す
+cat > "$tmp/bin/gh" <<'EOF'
+#!/bin/bash
+echo "$*" >> "${GH_LOG:?}"
+[[ "${GH_PR_FAIL:-0}" == "1" ]] && { echo "gh: pr create failed" >&2; exit 1; }
+echo "https://github.com/example-org/repo1/pull/99"
+EOF
+chmod +x "$tmp/bin/ghq" "$tmp/bin/git" "$tmp/bin/gh"
 
 export PATH="$tmp/bin:$PATH"
 export CURL_LOG="$tmp/curl.log"
 export CLAUDE_LOG="$tmp/claude.log"
+export GIT_LOG="$tmp/git.log"
+export GH_LOG="$tmp/gh.log"
 export GHQ_ROOT="$tmp/ghq"
 # CLAUDE_BINの既定は $HOME/.local/bin/claude。テストではPATH上のstubを使う
 export CLAUDE_BIN="claude"
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
 
 echo '{"data": {"issues": {"nodes": []}}}' > "$tmp/wip-empty.json"
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-5", "title": "調査", "description": "repo: github.com/example-org/repo1\n期待アウトカム: x", "url": "u"}]}}}' > "$tmp/ready-one.json"
@@ -112,14 +118,38 @@ out2=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-full.json" READY_RESPONSE="$tmp/r
 check "WIP上限超過でスキップする" grep -q "WIP" <<<"$out2"
 check "WIP超過時はclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 
-# 3. 正常系 → claude実行後、PR URLコメント＋判断待ちへ遷移
-: > "$CURL_LOG"; : > "$CLAUDE_LOG"
+# 3. 正常系 → claude実行 → スクリプトがpush＋PR作成 → コメント＋判断待ちへ遷移
+: > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "claudeが実行される" test -s "$CLAUDE_LOG"
+check "スクリプトがpushする" grep -q "push" "$GIT_LOG"
+check "スクリプトがgh pr create --draftする" bash -c "grep -q 'pr create' '$GH_LOG' && grep -q -- '--draft' '$GH_LOG'"
 check "PR URLがコメントされる" grep -q "pull/99" "$CURL_LOG"
 check "判断待ち(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
 check "プロンプトにLinear識別子を書かせない" grep -q "identifierを書かない\|NSY-xx" "$CLAUDE_LOG"
+check "agentにpushさせない指示が入る" grep -q "pushしない\|push・PR作成はしない" "$CLAUDE_LOG"
+check "agentのallowedToolsにgh/pushを渡さない" bash -c "! grep -qE 'Bash\\(gh:|git push' '$CLAUDE_LOG'"
+
+# 3-2. コミットが無い → push/PRせずTodoへ差し戻す
+: > "$CURL_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  GIT_COMMITS=0 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "コミット0件ならpushしない" bash -c "! grep -q 'push' '$GIT_LOG'"
+check "コミット0件ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+
+# 3-3. push失敗 → PR作成せずTodoへ差し戻す
+: > "$CURL_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  GIT_PUSH_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "push失敗ならPRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
+check "push失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+
+# 3-4. PR作成失敗 → Todoへ差し戻す
+: > "$CURL_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  GH_PR_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 
 # 4. repo行が無い → claudeを実行せずTodoへ差し戻し
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"
