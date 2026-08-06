@@ -82,6 +82,22 @@ echo '{"data": {"commentCreate": {"success": true}}}' > "$tmp/comment.json"
 export CURL_RESPONSE="$tmp/comment.json"
 check "commentが成功する" linear_comment "i1" "body"
 
+# 7. linear_activity_since: 指定日時以降に更新されたissueを返す
+cat > "$tmp/activity.json" <<'EOF'
+{"data": {"issues": {"nodes": [
+  {"identifier": "NSY-1", "title": "t1", "url": "u1", "updatedAt": "2026-08-06T10:00:00Z",
+   "state": {"name": "Done", "type": "completed"},
+   "labels": {"nodes": [{"name": "role:player"}, {"name": "em:tech"}]},
+   "project": {"name": "P1"}, "parent": null}
+]}}}
+EOF
+export CURL_RESPONSE="$tmp/activity.json"
+: > "$CURL_LOG"
+check "activity_sinceが配列を返す" test "$(linear_activity_since '2026-08-06' | jq 'length')" = "1"
+check "activity_sinceがstateを含む" test "$(linear_activity_since '2026-08-06' | jq -r '.[0].state.name')" = "Done"
+check "activity_sinceがラベルを含む" test "$(linear_activity_since '2026-08-06' | jq -r '.[0].labels.nodes[0].name')" = "role:player"
+check "payloadに指定日時が入る" grep -q '2026-08-06' "$CURL_LOG"
+
 rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
