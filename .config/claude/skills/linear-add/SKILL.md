@@ -2,7 +2,7 @@
 name: linear-add
 description: Linear（linear.app/nsym・team NSY）にタスクを起票する。prefix判定・Project選択・親子構造・Jira番号抽出・ラベル付与を規約どおりに自動適用する。「Linearに起票」「これチケット化して」「タスク積んで」「issue作って」やPR/JiraのURLを渡された文脈で使用。
 argument-hint: "<やること、またはPR/JiraのURL>"
-allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(grep:*), Bash(sed:*), Bash(date:*)
+allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(grep:*), Bash(sed:*), Bash(date:*), mcp__claude_ai_Atlassian__getJiraIssue
 ---
 
 # Linearへの起票
@@ -10,9 +10,6 @@ allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(
 タスク管理はLinear（https://linear.app/nsym・team `NSY`）に集約している。
 **Linearは真実の源泉ではなく「ポインタの司令塔」**で、issueは元URL＋期待アウトカム＋判断状態だけを持つ。
 本体はJira / GitHub / Slack / esa 側にある。
-
-設計の全体像とその根拠は `~/Obsidian/01_Inbox/2026-08-06-linear-command-layer-design.md`。
-このskillはそこで決めた規約の**運用手順**を持つ。矛盾したら設計docが正。
 
 ## 使うライブラリ
 
@@ -28,28 +25,9 @@ linear_comment "<issueId>" "<body>"
 linear_gql '<query>' '<variables-json>'
 ```
 
-ID解決のヘルパー: `linear_config '.team_id'` / `linear_state_id "<state名>"` /
-`linear_label_id "<label名>"` / `linear_viewer_id`。
-
 `linear_issue_create` は assignee を自動で自分にする（未アサインだと My Issues に出ない）。
-Project・親子を設定したい場合は `linear_gql` で `issueCreate` を直接叩く。このとき
-**`assigneeId` は自動では付かないので必ず入れる**。付け忘れると My Issues に出ないissueが
-静かにできあがる。
-
-```bash
-input=$(jq -n \
-  --arg team "$(linear_config '.team_id')" \
-  --arg state "$(linear_state_id 'Todo')" \
-  --arg me "$(linear_viewer_id)" \
-  --arg title "<title>" --arg desc "<description>" \
-  '{teamId: $team, stateId: $state, assigneeId: $me, title: $title, description: $desc,
-    labelIds: ["<labelId>"], projectId: "<projectId>", parentId: "<親issueのid>"}')
-linear_gql 'mutation($input: IssueCreateInput!) {
-  issueCreate(input: $input) { success issue { id identifier url } }
-}' "$(jq -n --argjson i "$input" '{input: $i}')" | jq '.issueCreate.issue'
-```
-
-labelId は `linear_label_id` で引く。`projectId` / `parentId` は不要ならキーごと省く。
+Project・親子の設定や重複チェックなど `linear_gql` を直接叩く操作は、GraphQLを手書きせず
+`references/api-recipes.md` のsnippetを使う（`assigneeId` の付け忘れ等の落とし穴込みで書いてある）。
 
 ## 絶対に守ること
 
@@ -68,20 +46,33 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
   - タイトル・本文・ブランチ名から `[A-Z][A-Z0-9]+-[0-9]+` を拾ってJiraキー候補にする
   - **`AP3-001` のような仕様書の項番を拾うことがある。** 実在するJiraプロジェクトキー（`ALPHADEV` / `BETADEV` など）か確認し、怪しければ採用せず利用者に確認する
   - `example-api` はJira管理外（GitHub issueで管理）。Jiraキーが無くても異常ではない
-- **Jira URL** → キーとタイトルを取る。Jira APIの認証情報は無いので、URLからキーだけ抜き、タイトルは利用者に聞くか本文から推測する
+- **Jira URL / Jiraキー** → **claude.ai の Atlassian コネクタで中身を読む**（`mcp__claude_ai_Atlassian__getJiraIssue`）。
+  `cloudId` は `example-org.atlassian.net`。取れるものが多いので必ず引く。
+
+  ```
+  fields: ["summary", "duedate", "status", "description", "priority"]
+  ```
+
+  | Jiraの項目 | Linearへの反映先 |
+  | --- | --- |
+  | `summary` | タイトル（`{summary} [KEY]`）。ただし後述の但し書きあり |
+  | `duedate` | `dueDate`（型は `TimelessDate!`。`YYYY-MM-DD` 文字列） |
+  | `description` の「完了条件」 | 本文の `完了条件:`。BETADEV系は明記されていることが多い |
+  | `status` | Linearのstateは自分の作業状態なので**同期しない**。参考程度 |
+
+  **`duedate` は null のことが多い。** null なら `dueDate` を設定しない（勝手に日付を作らない）。
+
+  **ST障害系（ALPHADEV）の `summary` は機械生成で非常に長い**
+  （例: `【障害(ST)】_予約_領収書を発行する…_ST1_JTH_G011_03_04-1-6`）。
+  そのままだとLinearの一覧で読めないので、**要点を残した短い課題名＋キー**にしてよい。
+  Jiraキーが入っていれば正確な照合はできる。BETADEV系のように読める `summary` はそのまま使う。
+
+  この経路は**対話セッション限定**（cronのheadless実行ではMCP認証が使えない）。
+  自動同期が要るならJira APIトークンが別途必要になる。
 - **Slack / esa URL** → そのまま元URLとして持つ
 
 材料が揃ったら、**起票する前に重複を確認する**。スイープの重複判定はURL一致なので、
-手動起票も同じ基準で既存issueを検索する。
-
-```bash
-linear_gql 'query($team: ID!, $q: String!) {
-  issues(filter: {team: {id: {eq: $team}}, searchableContent: {contains: $q}}, first: 5) {
-    nodes { identifier title url }
-  }
-}' "$(jq -n --arg t "$(linear_config '.team_id')" --arg q "<元URLまたはJiraキー>" '{team: $t, q: $q}')"
-```
-
+手動起票も同じ基準で既存issueを検索する（`references/api-recipes.md` の重複チェックsnippet）。
 ヒットしたら新規には作らず利用者に確認する。既存issueへのコメント追記や子issueの追加で
 済むことが多い。
 
@@ -96,14 +87,14 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 新規に作る場合、**prefixは判定順で決める（先に当たった方が勝ち。MECEにしない）**。
 判定するのは**動機ではなく成果物**。
 
-| 順 | prefix | 判定の問い |
-| --- | --- | --- |
-| 1 | `案件_` | 特定の顧客案件のためだけの仕事か（その案件が終われば消える） |
-| 2 | `技術採用_` | 採用活動そのものか（候補者を探す・口説く・選ぶ） |
-| 3 | `組織課題_` | 対象がヒトか（体制・育成・評価・自分の働き方。採用活動以外） |
-| 4 | `QA_` | 品質の確かめ方が変わるか（テスト・検証・レビュー） |
-| 5 | `プロダクト開発_` | 作るもの・作り方が変わるか（機能・設計・リリース・基盤・ドメイン整理） |
-| 6 | `other_` | どれでもない（受け皿） |
+| 順  | prefix            | 判定の問い                                                             |
+| --- | ----------------- | ---------------------------------------------------------------------- |
+| 1   | `案件_`           | 特定の顧客案件のためだけの仕事か（その案件が終われば消える）           |
+| 2   | `技術採用_`       | 採用活動そのものか（候補者を探す・口説く・選ぶ）                       |
+| 3   | `組織課題_`       | 対象がヒトか（体制・育成・評価・自分の働き方。採用活動以外）           |
+| 4   | `QA_`             | 品質の確かめ方が変わるか（テスト・検証・レビュー）                     |
+| 5   | `プロダクト開発_` | 作るもの・作り方が変わるか（機能・設計・リリース・基盤・ドメイン整理） |
+| 6   | `other_`          | どれでもない（受け皿）                                                 |
 
 - 「リリースプロセスの標準化」は手順の話なので4で止まらず `プロダクト開発_`
 - 「リリース前後の回帰試験自動化」は検証なので `QA_`
@@ -114,10 +105,10 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 
 ### 3. 親子を決める
 
-| 階層 | 単位 | 持つもの |
-| --- | --- | --- |
+| 階層    | 単位                       | 持つもの                       |
+| ------- | -------------------------- | ------------------------------ |
 | 親issue | 1課題（Jiraチケットと1:1） | Jira番号 / role / em / Project |
-| 子issue | 工程 | `repo:` 行（夜間dispatch対象） |
+| 子issue | 工程                       | `repo:` 行（夜間dispatch対象） |
 
 - **PRを伴う課題は1PRでも親子に分ける**（PRの本数はあとから増えるため）。子のタイトルは `draft仕上げ: <PRタイトル>`
 - **PRを伴わない思考タスクは親1枚**（体制の構想、意見のまとめ、概念整理など）。工程が出たら後から子を足す
@@ -132,8 +123,10 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 `BETADEV-9250` の別チケットで、あとから親を2つに割り直すことになった。
 ブランチ名（`BETADEV-9268-refactor-batch-command`）にキーが入っていることが多いので必ず見る。
 
-**課題名はJiraチケット名称が正。** Jira APIの認証情報が無い環境ではPRタイトルで代用してよいが、
-その旨をメモに残すか、あとでJira側の名称に合わせる。
+**課題名はJiraチケット名称が正**（手順1のAtlassianコネクタで取れる）。
+ただしST障害系のように機械生成で長すぎる `summary` は、要点を残して短くしてよい。
+コネクタが使えない環境ではPRタイトルで代用し、その旨をメモに残す。
+
 - **子issueの本文には行頭に `repo: github.com/<owner>/<name>` の行を書く。** 夜間dispatchは
   `^repo:` の行頭一致でこの行を読み、無い子は AI Ready に置かれても Todo へ差し戻される
 
@@ -141,27 +134,27 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 
 2軸は直交する。`role:player + em:tech`（自分で実装した）と `role:manager + em:tech`（技術方針を決めた）を区別する。
 
-| group | label | 意味 |
-| --- | --- | --- |
-| role | `role:player` | 自分が手を動かす |
-| role | `role:manager` | 人を動かす・決める |
-| em | `em:people` | 人・採用・育成・評価・体制 |
-| em | `em:tech` | 技術方針・設計・実装・基盤・品質 |
-| em | `em:project` | 進行・段取り・リスク・調整 |
-| em | `em:product` | 何を作るか・仕様・ドメイン・価値 |
-| src | `src:github` / `src:jira` / `src:slack` / `src:esa` / `src:todoist` | 流入元（該当すれば付ける） |
-| ai | `ai:ready` | 夜間dispatchに投げられる状態（このskillでは付けない。triageで付ける） |
-| ai | `ai:blocked-human` | 人間の判断・調整が必要 |
+| group | label                                                               | 意味                                                                  |
+| ----- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| role  | `role:player`                                                       | 自分が手を動かす                                                      |
+| role  | `role:manager`                                                      | 人を動かす・決める                                                    |
+| em    | `em:people`                                                         | 人・採用・育成・評価・体制                                            |
+| em    | `em:tech`                                                           | 技術方針・設計・実装・基盤・品質                                      |
+| em    | `em:project`                                                        | 進行・段取り・リスク・調整                                            |
+| em    | `em:product`                                                        | 何を作るか・仕様・ドメイン・価値                                      |
+| src   | `src:github` / `src:jira` / `src:slack` / `src:esa` / `src:todoist` | 流入元（該当すれば付ける）                                            |
+| ai    | `ai:ready`                                                          | 夜間dispatchに投げられる状態（このskillでは付けない。triageで付ける） |
+| ai    | `ai:blocked-human`                                                  | 人間の判断・調整が必要                                                |
 
 draft PRの仕上げは常に `role:player` + `em:tech`。
 
 ### 5. stateを決める
 
-| state | 使いどころ |
-| --- | --- |
-| `Triage` | **機械が拾ったものだけ**。手動起票では使わない |
-| `Todo` | 今のサイクルでやる |
-| `Backlog` | 棚上げ。やると決めきれていない |
+| state     | 使いどころ                                     |
+| --------- | ---------------------------------------------- |
+| `Triage`  | **機械が拾ったものだけ**。手動起票では使わない |
+| `Todo`    | 今のサイクルでやる                             |
+| `Backlog` | 棚上げ。やると決めきれていない                 |
 
 ### 6. 本文を書く
 
@@ -200,6 +193,12 @@ PR:
 
 **タイトル規約**: 親課題でJiraチケットがある場合は `{jiraチケット名称} [ALPHADEV-1234]`。
 半角スペースを1つ空けて角括弧。Jiraが無い課題には付けない（組織課題・自主的なリファクタなど）。
+
+### 6-2. 期日を設定する
+
+Jiraの `duedate` があれば **親課題にだけ** `dueDate` として入れる（null なら設定しない。
+子＝工程はJiraに対応物が無いので付けない）。手順は `references/api-recipes.md` の
+「期日を設定する（dueDate）」。
 
 ### 7. 起票して結果を報告する
 
