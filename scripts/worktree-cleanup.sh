@@ -35,6 +35,11 @@ FREED_KB=0
 DELETE_PATHS=()
 PRUNE_REPOS=()
 
+# 実削除の結果（execute_deletions が更新する）。N_DELETE は「DELETE と判定した件数」で
+# あって削除の成否とは無関係なので、実際に消せた件数は別に持つ。
+N_DELETED=0
+N_DELETE_FAILED=0
+
 # 走査ルート（スペース区切り）。テストから一時ディレクトリを指すために上書きできる。
 WORKTREE_CLEANUP_ROOTS="${WORKTREE_CLEANUP_ROOTS:-/data/git-repos}"
 # PR状態取得コマンドの差し替え口。テストは gh を叩かずにスタブを渡す。
@@ -397,7 +402,17 @@ process_repo() {
 
 print_summary() {
   section "サマリ"
-  echo "  DELETE 候補: $N_DELETE 件"
+  # dry-run と --execute で意味が違うので文言を分ける。--execute のまま「候補」と出すと
+  # 「消したのにまだ候補が残っている」と読めるうえ、削除に失敗した分まで成功に見える。
+  if [ "$EXECUTE" -eq 1 ]; then
+    echo "  削除       : $N_DELETED 件"
+    # 失敗0件のときに行を出すと、失敗が常態のように見えるので出さない。
+    if [ "$N_DELETE_FAILED" -gt 0 ]; then
+      echo "  ${C_YELLOW}削除失敗   : $N_DELETE_FAILED 件${C_RESET}"
+    fi
+  else
+    echo "  DELETE 候補: $N_DELETE 件"
+  fi
   echo "  PRUNE  対象: $N_PRUNE 件"
   echo "  SKIP       : $N_SKIP 件 (locked $N_SKIP_LOCKED / detached $N_SKIP_DETACHED / 未コミット変更 $N_SKIP_DIRTY)"
   echo "  KEEP       : $N_KEEP 件"
@@ -405,7 +420,13 @@ print_summary() {
     echo "  解放見込み : $(format_kb "$FREED_KB")"
   fi
   # 機械可読サマリ行。daily-update.sh はこの行から件数を取る（表示行はgrepしない）。
-  echo "worktree-cleanup: DELETE_CANDIDATES=$N_DELETE PRUNE=$N_PRUNE SKIP=$N_SKIP KEEP=$N_KEEP"
+  # DELETE_CANDIDATES は常に分類結果の件数。--execute のときだけ実削除の内訳を後ろに足す
+  # （daily-update.sh は dry-run でしか読まないので既存フィールドの意味は変えない）。
+  local machine="worktree-cleanup: DELETE_CANDIDATES=$N_DELETE PRUNE=$N_PRUNE SKIP=$N_SKIP KEEP=$N_KEEP"
+  if [ "$EXECUTE" -eq 1 ]; then
+    machine="$machine DELETED=$N_DELETED DELETE_FAILED=$N_DELETE_FAILED"
+  fi
+  echo "$machine"
 }
 
 # ---- 実行 -------------------------------------------------------------------
@@ -441,8 +462,10 @@ execute_deletions() {
       # （git が非ゼロ・sed が 0 なら pipeline は git の非ゼロを返す）。
       # git -C はリポジトリ側を指す。削除対象の worktree 内を指すと cwd が消える。
       if git -C "$del_repo" worktree remove --force "$del_path" 2>&1 | sed 's/^/  /'; then
+        N_DELETED=$((N_DELETED + 1))
         echo "  ${C_GREEN}削除${C_RESET}: $del_path"
       else
+        N_DELETE_FAILED=$((N_DELETE_FAILED + 1))
         echo "  ${C_YELLOW}削除に失敗（継続します）${C_RESET}: $del_path" >&2
       fi
     done
