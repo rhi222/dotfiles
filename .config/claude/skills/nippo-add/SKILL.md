@@ -55,15 +55,43 @@ Linearにアクセスできない場合（config未生成・オフライン）�
    - パス: `~/Obsidian/02_Daily/nippo-goals.md`
 
 2. **データソース**:
-   - **Linearの実タスク**: 候補は日報の転記ではなくLinearから取る
+   - **Linearの実タスク**: 候補は日報の転記ではなく**進行中のCycle**から取る
 
      ```bash
      source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-     linear_issues_in_state "Todo"
+     linear_cycle_issues | jq '[.[]
+       | select(.state.name | IN("Todo","In Progress"))
+       | select((.children.nodes | length) == 0)]'
      ```
 
-     期日超過（`dueDate` が今日より前）と滞留日数の長いものを優先する。
-     `role` / `em` ラベルの偏り（例: 今週 `em:people` が0件）も手薄な軸の判断に使える
+     **stateは名前の許可リストで絞る。`state.type` では絞れない。**
+     `In Progress` / `My Review` / `Waiting` / `AI Running` は**すべて `started` 型**なので、
+     型で見るとボールが他人やAIにあるものまで候補に入る（実際 `Waiting` の
+     「pms api 疎通試験」が混ざった）。stateの軸は「ボールの所持者」なので、
+     残すのは**自分にボールがあって、かつ判断ではなく作業のもの**＝ `Todo` と `In Progress` だけ。
+
+     | state | 候補に入れるか | 理由 |
+     | --- | --- | --- |
+     | `Todo` / `In Progress` | ✅ | ボールが自分にあり、手を動かす対象 |
+     | `My Review` | ❌ | 「朝の判断タイム」で別枠に出るので二重になる |
+     | `Waiting` | ❌ | ボールが他人にある |
+     | `AI Queued` / `AI Running` | ❌ | ボールがAIにある |
+
+     **子を持つ親も除外する。** 親と子が並んで提案されるのを防ぐ
+     （実作業単位は子のほう。`/linear-triage` の整合チェック6と同じ理由）。
+
+     **Todo全体ではなくCycleから取る。** Cycleは「今週やると自分で宣言したもの」なので、
+     期日や滞留日数といった機械的な代理指標より選定の根拠が強い（実測でTodo 42件 → Cycle 16件）。
+
+     期日超過（`dueDate` が今日より前）を最優先し、次に `role` / `em` ラベルの偏り
+     （例: 今週 `em:people` が0件）で手薄な軸を拾う。
+
+     **`estimate` は件数の目安にとどめ、時間に換算しない。** fibonacciは相対見積もりなので、
+     velocityが2〜3サイクル溜まるまでポイント→時間の換算は嘘の数字になる。
+     「今日の予定」で計算した空き時間と突き合わせるのは、実績が出てから。
+
+     アクティブなCycleが無い週（`linear_cycle_issues` が空配列）は
+     `linear_issues_in_state "Todo"` にフォールバックする。
    - **達成基準**: 4軸の `- [ ]` チェックボックスから未完了のものを抽出し、Linearのタスクと突き合わせる
    - **行動習慣**: 「毎日（5分）どれか1つ」のリストからランダム/ローテーション
    - **直近の日報**（任意）: 過去数日の日報を読み、手薄な軸を優先
