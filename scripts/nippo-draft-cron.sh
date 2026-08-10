@@ -12,6 +12,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/cron-claude.sh"
+
 # フラグファイルで有効化チェック
 FLAG="$HOME/.config/nippo-draft-enabled"
 if [[ ! -f "$FLAG" ]]; then
@@ -25,16 +28,19 @@ if [[ "$DOW" -ge 6 && "${NIPPO_DRAFT_FORCE:-0}" != "1" ]]; then
 fi
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
+# GitHub活動の収集を含むが、対象は当日分だけなので短めでよい
+CLAUDE_TIMEOUT="${NIPPO_DRAFT_TIMEOUT:-900}"
 VAULT="${NIPPO_VAULT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian}"
 PROMPT="/nippo-finalize"
 # nippo-finalize の allowed-tools に合わせて許可を最小化する
 ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(command:*),Bash(gh:*),Bash(jq:*),Bash(sort:*),Bash(paste:*)"
 
 if [[ "${NIPPO_DRAFT_DRY_RUN:-0}" == "1" ]]; then
-  echo "DRY_RUN: cd $VAULT && $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""
+  echo "DRY_RUN: cd $VAULT && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""
   exit 0
 fi
 
 cd "$VAULT"
-"$CLAUDE_BIN" -p "$PROMPT" --allowedTools "$ALLOWED_TOOLS"
+cron_run_claude "日報ドラフト仕上げ" "$CLAUDE_TIMEOUT" "$CLAUDE_BIN" \
+  -p "$PROMPT" --allowedTools "$ALLOWED_TOOLS"
 echo "$(date): nippo draft finalized"

@@ -31,8 +31,11 @@ set -euo pipefail
 # （bash -c 経由だと $0 が "bash" になり lib の解決に失敗する）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
+source "$SCRIPT_DIR/lib/cron-claude.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
+# 実装タスクを1件まるごと任せるので長い。それでも上限は要る（夜間に無人で走るため）
+CLAUDE_TIMEOUT="${LINEAR_DISPATCH_TIMEOUT:-3600}"
 LINEAR_WIP_LIMIT="${LINEAR_WIP_LIMIT:-10}"
 LINEAR_DISPATCH_MAX="${LINEAR_DISPATCH_MAX:-3}"
 # agentには gh を渡さない。push・PR作成はスクリプトの責務なので、
@@ -174,10 +177,15 @@ $desc
 - 途中で完遂不能と判断したら、理由を出力してコミットせずに終了する"
 
   set +e
-  log=$(cd "$wt" && "$CLAUDE_BIN" -p "$prompt" --allowedTools "$ALLOWED_TOOLS" 2>&1)
+  log=$(cd "$wt" && cron_run_claude "$identifier の実装" "$CLAUDE_TIMEOUT" "$CLAUDE_BIN" \
+    -p "$prompt" --allowedTools "$ALLOWED_TOOLS" 2>&1)
   status=$?
   set -e
 
+  if [[ $status -eq 124 ]]; then
+    dispatch_finish_failed "$id" "$identifier" "$log" "claude実行が${CLAUDE_TIMEOUT}秒でタイムアウトした"
+    return 0
+  fi
   if [[ $status -ne 0 ]]; then
     dispatch_finish_failed "$id" "$identifier" "$log" "claude実行が異常終了した（exit $status）"
     return 0

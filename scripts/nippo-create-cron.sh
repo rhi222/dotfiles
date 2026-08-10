@@ -13,6 +13,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/cron-claude.sh"
+
 # フラグファイルで有効化チェック
 FLAG="$HOME/.config/nippo-create-enabled"
 if [[ ! -f "$FLAG" ]]; then
@@ -26,6 +29,8 @@ if [[ "$DOW" -ge 6 && "${NIPPO_CREATE_FORCE:-0}" != "1" ]]; then
 fi
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
+# テンプレートを埋めるだけなので短い。始業時刻までに終わる必要がある
+CLAUDE_TIMEOUT="${NIPPO_CREATE_TIMEOUT:-600}"
 VAULT="${NIPPO_VAULT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian}"
 NIPPO_FILE="$VAULT/02_Daily/nippo.$(date +%Y-%m-%d).md"
 # 引数なしで呼ぶと、ファイルが無い場合は新規作成のみが走る（作業ログの追記は発生しない）
@@ -34,7 +39,7 @@ PROMPT="/nippo-add"
 ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),mcp__claude_ai_Google_Calendar__list_events"
 
 if [[ "${NIPPO_CREATE_DRY_RUN:-0}" == "1" ]]; then
-  echo "DRY_RUN: cd $VAULT && $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""
+  echo "DRY_RUN: cd $VAULT && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""
   exit 0
 fi
 
@@ -45,5 +50,6 @@ if [[ -f "$NIPPO_FILE" ]]; then
 fi
 
 cd "$VAULT"
-"$CLAUDE_BIN" -p "$PROMPT" --allowedTools "$ALLOWED_TOOLS"
+cron_run_claude "日報ファイル作成" "$CLAUDE_TIMEOUT" "$CLAUDE_BIN" \
+  -p "$PROMPT" --allowedTools "$ALLOWED_TOOLS"
 echo "$(date): nippo file created -> $NIPPO_FILE"

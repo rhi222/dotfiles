@@ -36,7 +36,21 @@ check "DRY_RUNでesa-weekly-reportを呼ぶ予定が表示される" grep -q "es
 out3=$(HOME="$tmp_home2" ESA_WEEKLY_DRY_RUN=1 CLAUDE_BIN=/nonexistent/claude bash "$SCRIPT" 2>&1)
 check "DRY_RUNではclaudeを実行しない" grep -q "DRY_RUN" <<<"$out3"
 
-rm -rf "$tmp_home1" "$tmp_home2"
+# 4. ハングしても打ち切られること。
+# cron から無人で走るので、止まらないと次の週次実行まで残り続ける
+hang=$(mktemp -d)
+printf '#!/bin/bash\nsleep 60\n' >"$hang/claude"
+chmod +x "$hang/claude"
+
+start=$(date +%s)
+out4=$(HOME="$tmp_home2" CLAUDE_BIN="$hang/claude" ESA_WEEKLY_TIMEOUT=2 bash "$SCRIPT" 2>&1)
+rc4=$?
+elapsed=$(($(date +%s) - start))
+check "ハングしたらタイムアウトで打ち切る" test "$elapsed" -lt 30
+check "タイムアウトは非0で終わる" test "$rc4" -ne 0
+check "タイムアウトしたと分かる出力を出す" grep -q "タイムアウト" <<<"$out4"
+
+rm -rf "$tmp_home1" "$tmp_home2" "$hang"
 
 echo "---"
 echo "pass: $pass, fail: $fail"
