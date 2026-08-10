@@ -120,6 +120,24 @@ setup_codex() {
   safe_link "$DC/codex/config.toml" ~/.codex/config.toml
 }
 
+# pre-commit hook を有効にする。このリポジトリは public なので、社内固有情報を
+# 含むコミットを commit の手前で止める。詳細は scripts/secret-scan.sh 冒頭。
+#
+# 機密語辞書はリポジトリではなく ~/.config/dotfiles/ に置く。辞書そのものが
+# 機密なので、コミットすると分離した意味が消えるため。
+setup_git_hooks() {
+  git -C "$DOTFILES_DIR" config core.hooksPath scripts/hooks
+  chmod +x "$DOTFILES_DIR/scripts/hooks/pre-commit" 2>/dev/null || true
+
+  local patterns="$HOME/.config/dotfiles/secret-patterns.txt"
+  if [ ! -f "$patterns" ]; then
+    mkdir -p "$(dirname "$patterns")"
+    cp "$DOTFILES_DIR/scripts/secret-patterns.txt.example" "$patterns"
+    echo "[INFO] $patterns を雛形から作成しました" >&2
+    echo "       社内固有の語を追記してください（この内容はコミットされません）" >&2
+  fi
+}
+
 # 日報通知スクリプトに実行権限を付与
 grant_exec_permissions() {
   chmod +x "$DOTFILES_DIR/scripts/nippo-check.sh" 2>/dev/null || true
@@ -169,6 +187,7 @@ link_configs
 link_claude_skills
 setup_claude_settings
 setup_codex
+setup_git_hooks
 grant_exec_permissions
 warn_missing_local_git
 report_skipped

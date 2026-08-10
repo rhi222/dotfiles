@@ -1,0 +1,8 @@
+#!/bin/bash
+# ステージ済みの内容に社内固有情報が無いか検査する。
+# ロジックは scripts/secret-scan.sh 側にある（lint とテストの対象にするため。
+# git hook はファイル名が固定で .sh を付けられず、scripts/lint.sh の対象から外れる）。
+set -uo pipefail
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec bash "$HOOK_DIR/../secret-scan.sh" --staged
