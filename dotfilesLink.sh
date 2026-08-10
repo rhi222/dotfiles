@@ -171,14 +171,17 @@ grant_exec_permissions() {
   chmod +x "$DOTFILES_DIR/scripts/linear-bootstrap.sh" 2>/dev/null || true
 }
 
-# gitignore されているローカル git 設定の存在チェック（.gitconfig が include している）
+# gitignore されているローカル git 設定の存在チェック。
+#
+# config-work は対象にしない。.gitconfig が無条件で include するのは config-local だけで、
+# 業務用設定は config-local 側の includeIf から参照する任意の仕組みになっている
+# （includeIf を書かない端末では config-work は読まれないので、無くて正しい）。
+# 以前は両方を要求していたため、使っていない端末でも毎回 WARN が出ていた。
 warn_missing_local_git() {
-  local local_conf
-  for local_conf in "$DC/git/config-local" "$DC/git/config-work"; do
-    if [ ! -e "$local_conf" ]; then
-      echo "[WARN] $local_conf がありません。.config/git/README.md を参照して作成してください" >&2
-    fi
-  done
+  if [ ! -e "$DC/git/config-local" ]; then
+    echo "[WARN] $DC/git/config-local がありません。user.name / user.email を書いてください" >&2
+    echo "       業務用の設定を分けたい場合は、このファイルに includeIf で config-work を足します" >&2
+  fi
 }
 
 # 実ディレクトリのためスキップした項目があれば一覧を出して失敗終了する
