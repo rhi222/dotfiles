@@ -337,6 +337,10 @@ echo ""
 echo "[4] __docker_clean_stats --notice"
 setup
 
+# 既定の除外パターンは buildx_buildkit_* のみ。イメージ名側での除外も効くことを
+# 検証したいので、テストでは常駐コンテナを模したイメージ名パターンを明示的に足す。
+IGNORE_WITH_IMAGE='set -g docker_clean_ignore_patterns "buildx_buildkit_*" "*example-org-mcp*"; '
+
 # フィクスチャ: Images の Reclaimable と 3 コンテナの稼働秒数だけを可変にする。
 # Images 以外の Reclaimable は合計 152.317MB になるよう小さく固定してある。
 # こうしておくと「Images を 1.0GB にすればサイズ閾値 5GB 未満」が成立し、
@@ -383,7 +387,7 @@ JSON
 # 軽掃除の image prune -f は dangling だけを消すため、Images を軽掃除の根拠にすると
 # 「dclean しても通知が消えない」状態になる（実際になった）。
 write_cache "12.53GB (51%)" 86400 86400 86400
-out="$(run_fish '__docker_clean_stats --notice')"
+out="$(run_fish "${IGNORE_WITH_IMAGE}__docker_clean_stats --notice")"
 assert_contains "docker:" "$out" "通知に docker: を含む"
 # 12.53GB + 2.037MB + 50.28MB + 100MB = 12.682317GB → 12.7GB
 assert_contains "12.7GB" "$out" "回収可能量の合計を表示する"
@@ -431,7 +435,7 @@ assert_not_contains "超稼働" "$out" "長時間稼働なしなら稼働の記�
 
 # 4-5. 除外パターンが効いている（buildkit と mcp は数えない）
 write_cache "1.0GB (10%)" 3600 86400 86400
-out="$(run_fish '__docker_clean_stats --notice')"
+out="$(run_fish "${IGNORE_WITH_IMAGE}__docker_clean_stats --notice")"
 assert_eq "" "$out" "除外対象だけが長時間稼働なら通知しない"
 
 # 4-6. 閾値を変数で上書きできる
@@ -453,14 +457,14 @@ assert_eq "" "$(run_fish '__docker_clean_stats --notice')" "壊れたキャッ�
 
 # 4-8. --long-running は除外後の一覧を返す
 write_cache "1.0GB (10%)" 86400 86400 86400
-out="$(run_fish '__docker_clean_stats --long-running')"
+out="$(run_fish "${IGNORE_WITH_IMAGE}__docker_clean_stats --long-running")"
 assert_contains "example-app_db_test" "$out" "長時間稼働の対象を出力する"
 assert_not_contains "buildx_buildkit" "$out" "除外対象は出力しない"
 assert_not_contains "suspicious_gagarin" "$out" "イメージ名で除外されたものは出力しない"
 
 # 4-9. --long-running --excluded は「閾値超えだが除外された」側を返す
 write_cache "1.0GB (10%)" 86400 86400 86400
-out="$(run_fish '__docker_clean_stats --long-running --excluded')"
+out="$(run_fish "${IGNORE_WITH_IMAGE}__docker_clean_stats --long-running --excluded")"
 assert_contains "buildx_buildkit_peaceful_curran0" "$out" "--excluded は名前で除外されたものを出す"
 assert_contains "suspicious_gagarin" "$out" "--excluded はイメージ名で除外されたものを出す"
 assert_not_contains "example-app_db_test" "$out" "--excluded は表示対象を出さない"

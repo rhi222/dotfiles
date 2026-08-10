@@ -203,10 +203,13 @@ function __docker_clean_stats_update --description 'docker を叩いてキャッ
 end
 
 # 除外パターン（既定 + docker_clean_ignore_patterns による上書き）にマッチするか。
-# コンテナ名とイメージ名の両方に照合する。example-org-mcp のコンテナ名は自動生成
+# コンテナ名とイメージ名の両方に照合する。ツールが起動するコンテナは名前が自動生成
 # （suspicious_gagarin 等）で識別できないため、イメージ名側での照合が必須。
+#
+# 既定は buildx のビルダーだけにする。常駐させている個別のコンテナは環境ごとに違うので、
+# 除外したいものは 99-local.fish で docker_clean_ignore_patterns を設定して足す。
 function __docker_clean_is_ignored --description 'コンテナが除外パターンにマッチするか'
-    set -l ignore 'buildx_buildkit_*' '*example-org-mcp*'
+    set -l ignore 'buildx_buildkit_*'
     if set -q docker_clean_ignore_patterns; and test (count $docker_clean_ignore_patterns) -gt 0
         set ignore $docker_clean_ignore_patterns
     end
