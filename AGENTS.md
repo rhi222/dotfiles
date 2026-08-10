@@ -33,25 +33,49 @@ bash scripts/apt-setup.sh          # apt パッケージ（WSL2）
 
 #### 2. 雛形が無いファイルを移植する
 
-**旧環境からコピーする**（再作成が非現実的なもの）。
+対象は下の「機密ファイル台帳」の A と B。移植方法は3種類ある。
 
-| ファイル | 中身 |
+| 記号 | 意味 |
 | --- | --- |
-| `.config/claude/skills/cross-repo-investigate/repos.yml` | 社内リポジトリのエイリアス表 |
-| `.config/claude/skills/cross-repo-auto-discover/` | ディレクトリごと（`repos.yml` は上への symlink） |
-| `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json` | 週次レポート対象の記事番号 |
-| `.config/AutoHotkey/scripts/snippets-local.ahk` | 社内向けスニペットの登録 |
-| `.config/AutoHotkey/ahk-snippets/js/` | 上が参照する JS 本体 |
-| `.config/AutoHotkey/ahk-snippets/passwords/` | 資格情報（`README.md` だけ追跡） |
+| **コピー** | 旧環境から持ってくる。再作成が非現実的（社内リポジトリ一覧・JS本体・資格情報など） |
+| **手書き** | 雛形が無いので手で書く |
+| **雛形** | `dotfilesLink.sh` が `.example` から作る。**中身は空なので値を埋める** |
 
-**手で書く**もの。
+#### 機密ファイル台帳
 
-| ファイル | 中身 | 無いとどうなるか |
+**値そのものはここに書かない。** どこに何があるかと、移植方法だけを記録する。
+`.gitignore` の全エントリのうち、機密を含むものを機微度で3段に分けた。
+
+**A. 資格情報**（漏れると即座に悪用される）
+
+| パス | 中身 | 移植 |
 | --- | --- | --- |
-| `.config/git/config-local` | git の `user.*` | `.gitconfig` が `include` しているので git が警告を出す |
-| `.config/git/config-work` | 業務用 git 設定 | 同上 |
-| `.config/fish/my/conf.d/99-local.fish` | `ESA_ACCESS_TOKEN`・`docker_clean_ignore_patterns` | esa skill が動かない／dclean の除外が効かない |
-| `~/.config/linear/api-key`（`chmod 600`） | Linear の APIキー | Linear 系すべてが動かない |
+| `.config/AutoHotkey/ahk-snippets/passwords/` 配下5件 | AWS・オペレータ・RDP の ID とパスワード（`README.md` と `.gitkeep` だけ追跡） | コピー |
+| `.config/fish/my/conf.d/99-local.fish` | esa の APIトークン、`docker_clean_ignore_patterns` | 手書き |
+| `~/.config/linear/api-key` | Linear の APIキー（`chmod 600`） | 手書き |
+| `~/.claude/settings.json` | 社内 marketplace の定義を含む | `dotfilesLink.sh` が push（`sync-claude-settings.sh` がマスク） |
+
+**B. 社内固有情報**（システム構成が露出する）
+
+| パス | 中身 | 移植 |
+| --- | --- | --- |
+| `.config/claude/skills/cross-repo-investigate/repos.yml` | 社内リポジトリのパスと日本語エイリアスの対応表 | コピー |
+| `.config/claude/skills/cross-repo-auto-discover/` | ディレクトリごと（`repos.yml` は上への symlink） | コピー |
+| `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json` | 週次レポート対象の記事番号 | コピー |
+| `.config/AutoHotkey/ahk-snippets/js/` | 社内システムの DOM 操作スクリプト | コピー |
+| `.config/AutoHotkey/scripts/snippets-local.ahk` | 上を登録する定義 | コピー |
+| `~/.claude/local-context.md` | Jira cloudId・プロジェクトキー・GitLabホスト・esaチーム名・案件/顧客略号 | 雛形 |
+| `~/.config/dotfiles/secret-patterns.txt` | 機密語辞書（＝社内名の一覧そのもの） | 雛形 |
+| `.config/nvim/lua/my/local_config.lua` | HTTPS 非対応ホスト | 雛形 |
+| `.config/git/config-local` | git の `user.*`。`.gitconfig` が `include` しているので無いと警告が出る | 手書き |
+| `.config/git/config-work` | 業務用 git 設定 | 手書き |
+
+**C. 機密を含まない ignore**（移植不要）
+
+`plans/` / `docs/superpowers/` / `.superpowers/`（作業用スクラッチ）、
+`.config/tmux/plugins/` / `.config/yazi/plugins/`（プラグインマネージャが再取得）、
+`.claude/skills/`（`setup-claude-skills.sh` が再取得）、
+`.config/codex/config.toml`（雛形あり）、`.config/nvim/pack` / `.netrwhist`（nvim が作る）
 
 #### 3. 外部ツールを入れる
 
