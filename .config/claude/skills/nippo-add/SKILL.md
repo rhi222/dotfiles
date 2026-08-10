@@ -32,11 +32,11 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
 新規作成時は「今日のタスク」セクションに以下を埋める。
 
-1. **朝の判断タイム** — Linearの「AI Review」件数を取得して `{N}` を置換する
+1. **朝の判断タイム** — Linearの「My Review」件数を取得して `{N}` を置換する
 
    ```bash
    source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-   linear_issues_in_state "AI Review" | jq 'length'
+   linear_issues_in_state "My Review" | jq 'length'
    ```
 
 2. **今日やる3件** — Linearから選んで転記する。選び方は次節の目標逆算ロジックに従う

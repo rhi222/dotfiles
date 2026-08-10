@@ -52,7 +52,7 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
      | --- | --- |
      | 完了 | `state.type == "completed"` のissue。identifier＋タイトル |
      | 進行中 | `In Progress` / `AI Running` のissue |
-     | AI Review待ち | `AI Review` のissue（＝翌朝の判断対象） |
+     | My Review待ち | `My Review` のissue（＝翌朝の判断対象） |
      | 職能の配分 | `em:*` ラベルを集計して件数を並べる |
 
    - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない

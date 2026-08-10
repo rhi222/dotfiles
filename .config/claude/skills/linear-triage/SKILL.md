@@ -23,12 +23,12 @@ GraphQLのsnippetは `../linear-add/references/api-recipes.md` を使う。
 
 ```bash
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-for s in "AI Review" "AI Queued" "Triage" "Todo"; do
+for s in "My Review" "AI Queued" "Triage" "Todo"; do
   printf '%s: %s件\n' "$s" "$(linear_issues_in_state "$s" | jq 'length')"
 done
 ```
 
-**「AI Review」が10件（`LINEAR_WIP_LIMIT`）以上ならtriageを止める。**
+**「My Review」が10件（`LINEAR_WIP_LIMIT`）以上ならtriageを止める。**
 生成速度＞判断速度で仕組みが破綻しているので、先に朝の判断を促す。
 夜間dispatch側も同じ閾値で自動停止するため、仕込んでも実行されない。
 
@@ -206,7 +206,7 @@ repo: github.com/<owner>/<name>
 ### 5. 最後に確認を出す
 
 - 今夜投げる件数と、それぞれの期待アウトカム
-- 「AI Review」の見込み件数（現在＋今夜の投入数）がWIP上限を超えないか
+- 「My Review」の見込み件数（現在＋今夜の投入数）がWIP上限を超えないか
 
 ## 注意
 
