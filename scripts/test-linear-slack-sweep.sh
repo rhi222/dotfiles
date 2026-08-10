@@ -99,6 +99,34 @@ out7=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" "t" "o" 
 check "seen済みならskippedを返す" grep -q "^skipped(seen)" <<<"$out7"
 check "seen済みならAPIを呼ばない" test ! -s "$CURL_LOG"
 
+# --- create（重複あり） ---
+# stub curl を差し替え、issues.nodes に既存issueを1件返させる
+cat >"$tmp/bin/curl" <<'EOF'
+#!/bin/bash
+args=""
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--data" ]]; then echo "$2" >> "${CURL_LOG:?}"; shift 2
+  else args="$args $1"; shift; fi
+done
+echo "ARGS:$args" >> "${CURL_LOG:?}"
+echo '{"data": {"viewer": {"id": "user-me"},
+                "issues": {"nodes": [{"id": "i-old", "identifier": "NSY-42"}]},
+                "commentCreate": {"success": true}}}'
+EOF
+chmod +x "$tmp/bin/curl"
+
+: >"$LINEAR_SLACK_SWEEP_SEEN"
+: >"$CURL_LOG"
+out8=$(bash "$SCRIPT" create "C0EXAMPLE/9999.0" "$PERMALINK" "t" "o" "スレが再燃した" 2>&1)
+check "重複時はcommentedを返す" grep -q "^commented NSY-42$" <<<"$out8"
+check "重複時はissueCreateを呼ばない" test "$(grep -c 'issueCreate' "$CURL_LOG")" -eq 0
+check "重複時はcommentCreateを呼ぶ" grep -q "commentCreate" "$CURL_LOG"
+check "重複時もseenに追記する" grep -qxF "C0EXAMPLE/9999.0" "$LINEAR_SLACK_SWEEP_SEEN"
+# 照合はpermalinkのクエリ文字列を落とした中核部分だけで行う
+check "重複チェックは中核部分で照合する" grep -q '/archives/C0EXAMPLE/p1786335015733309' "$CURL_LOG"
+check "重複チェックのクエリにthread_tsを含めない" \
+  test "$(grep -c 'searchableContent.*thread_ts' "$CURL_LOG")" -eq 0
+
 # 5. 未知のサブコマンドは usage を出して非0で終わる
 bash "$SCRIPT" bogus >/dev/null 2>&1
 check "未知のサブコマンドで非0終了する" test $? -ne 0

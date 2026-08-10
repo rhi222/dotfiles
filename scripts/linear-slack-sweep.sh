@@ -45,6 +45,29 @@ seen_add() {
   echo "$1" >>"$SEEN"
 }
 
+# permalink_core <permalink>
+# クエリ文字列を落として /archives/<CID>/p<TS> だけにする。
+# Slackの「リンクをコピー」とAPIが返すpermalinkでクエリが違うため、
+# 照合はこの中核部分だけで行う
+permalink_core() {
+  sed -E 's|^.*(/archives/[^/?]+/p[0-9]+).*$|\1|' <<<"$1"
+}
+
+# linear_find_by_url <url-core> → {id, identifier} または {}
+# searchableContent はタイトルと本文の両方を見る（description より広い）。
+# includeArchived を付けるのは autoArchivePeriod が1ヶ月で、
+# 少し前のissueはアーカイブ側に居るため
+linear_find_by_url() {
+  local team
+  team=$(linear_config '.team_id') || return 1
+  linear_gql 'query($team: ID!, $q: String!) {
+    issues(filter: {team: {id: {eq: $team}}, searchableContent: {contains: $q}},
+           includeArchived: true, first: 1) {
+      nodes { id identifier }
+    }
+  }' "$(jq -n --arg t "$team" --arg q "$1" '{team: $t, q: $q}')" | jq '.issues.nodes[0] // {}'
+}
+
 cmd_create() {
   local key="$1" permalink="$2" title="$3" outcome="$4" summary="$5"
   # seen判定→起票→seen追記 を排他にする。skill は create をキーごとに
@@ -62,7 +85,19 @@ cmd_create() {
     echo "skipped(seen) $key"
     return 0
   fi
-  local body created ident
+  local body created ident core hit issue_id
+  core=$(permalink_core "$permalink")
+  hit=$(linear_find_by_url "$core") || return 1
+  issue_id=$(jq -r '.id // ""' <<<"$hit")
+  if [[ -n "$issue_id" ]]; then
+    ident=$(jq -r '.identifier' <<<"$hit")
+    # 同じスレが再燃したときにissueを増やさない。
+    # ポインタの司令塔なので、issueとスレは1:1に保つ
+    linear_comment "$issue_id" "$(printf 'Slackで再言及: %s\n\n%s\n' "$permalink" "$summary")" || return 1
+    seen_add "$key"
+    echo "commented $ident"
+    return 0
+  fi
   body=$(printf '元URL: %s\n\n期待アウトカム: %s\n\n## 経緯\n%s\n' "$permalink" "$outcome" "$summary")
   created=$(linear_issue_create "$title" "$body" "Triage" "src:slack") || return 1
   ident=$(jq -r '.identifier' <<<"$created")
