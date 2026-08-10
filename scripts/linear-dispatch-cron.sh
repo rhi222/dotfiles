@@ -57,9 +57,13 @@ dispatch_parse_repo() {
 
 # dispatch_bounce <issueId> <message>
 # 実行せずTodoへ差し戻す。理由をコメントに残す（黙って消えないようにする）
+#
+# API が落ちても呼び出し元を止めない。差し戻しに失敗しても issue は
+# AI Queued に残るだけで、翌晩また拾われる。1件のために夜間バッチ全体を
+# 止める方が損失が大きい
 dispatch_bounce() {
-  linear_comment "$1" "$2"
-  linear_issue_move "$1" "Todo"
+  linear_comment "$1" "$2" || echo "警告: コメントを残せなかった（issue $1）" >&2
+  linear_issue_move "$1" "Todo" || echo "警告: Todoへ戻せなかった（issue $1）" >&2
 }
 
 # dispatch_parse_pr_url <description> → owner/name/number（例 example-org/repo1/42）。無ければ非0
@@ -158,7 +162,13 @@ dispatch_one() {
   local head_before
   head_before=$(git -C "$wt" rev-parse HEAD 2>/dev/null || echo "")
 
-  linear_issue_move "$id" "AI Running"
+  # AI Running への遷移が通らないまま進むと、翌晩も AI Queued として拾われて
+  # 同じ実装を二重に走らせることになる。ここは通らなければ着手しない
+  if ! linear_issue_move "$id" "AI Running"; then
+    git -C "$repo_path" worktree remove --force "$wt" >/dev/null 2>&1 || true
+    echo "$identifier: SKIPPED (AI Runningへ遷移できなかった)"
+    return 0
+  fi
 
   local prompt="以下のタスクを完遂してほしい。
 
@@ -214,11 +224,15 @@ $desc
       dispatch_finish_failed "$id" "$identifier" "$log" "gh pr create に失敗した: $pr_url"
       return 0
     fi
-    linear_comment "$id" "夜間dispatch完了（新規PR）: $pr_url"
+    linear_comment "$id" "夜間dispatch完了（新規PR）: $pr_url" ||
+      echo "警告: 完了コメントを残せなかった（$identifier）" >&2
   else
-    linear_comment "$id" "夜間dispatch完了（既存PRを更新）: $pr_url"
+    linear_comment "$id" "夜間dispatch完了（既存PRを更新）: $pr_url" ||
+      echo "警告: 完了コメントを残せなかった（$identifier）" >&2
   fi
-  linear_issue_move "$id" "My Review"
+  # ここまで来ればPRは出来ている。state遷移に失敗しても成果は残るので止めない
+  linear_issue_move "$id" "My Review" ||
+    echo "警告: My Reviewへ遷移できなかった（$identifier）。手で移してほしい" >&2
   echo "$identifier: OK $pr_url"
 }
 
@@ -256,7 +270,9 @@ main() {
 
   # パイプにするとサブシェルになるためプロセス置換を使う
   while read -r issue; do
-    dispatch_one "$issue"
+    # 1件が想定外に落ちても残りは処理する。夜間バッチなので
+    # 先頭の1件で止まると朝まで誰も気付けない
+    dispatch_one "$issue" || echo "警告: dispatchが異常終了した。次のissueへ進む" >&2
   done < <(jq -c ".[:$LINEAR_DISPATCH_MAX][]" <<<"$ready")
   echo "$(date): linear-dispatch done"
 }

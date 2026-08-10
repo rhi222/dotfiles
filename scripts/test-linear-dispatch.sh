@@ -59,6 +59,16 @@ elif grep -q '\\"s5\\"' <<<"$data" || grep -q '"s5"' <<<"$data"; then
 elif grep -q 'issues(' <<<"$data"; then
   cat "${READY_RESPONSE:?}"      # AI Queued一覧
 elif grep -q 'issueUpdate' <<<"$data"; then
+  # MOVE_FAIL_ONCE を指すファイルがあれば、最初の state 遷移だけ失敗させる。
+  # 1件目のAPIが一時失敗したときに2件目以降が処理されるかを見るため
+  if [[ -n "${MOVE_FAIL_ONCE:-}" ]]; then
+    n=$(cat "$MOVE_FAIL_ONCE" 2>/dev/null || echo 0)
+    if [[ "$n" == "0" ]]; then
+      echo 1 >"$MOVE_FAIL_ONCE"
+      echo '{"errors": [{"message": "rate limited"}]}'
+      exit 0
+    fi
+  fi
   echo '{"data": {"issueUpdate": {"success": true}}}'
 else
   echo '{"data": {"commentCreate": {"success": true}}}'
@@ -142,6 +152,11 @@ echo '{"data": {"issues": {"nodes": [{"id": "i2", "identifier": "NSY-6", "title"
 # 継続モード: 本文に既存PRのURLがある
 echo '{"data": {"issues": {"nodes": [{"id": "i3", "identifier": "NSY-7", "title": "draft仕上げ: 既存PRの続き", "description": "元URL: https://github.com/example-org/repo1/pull/42", "url": "u"}]}}}' >"$tmp/ready-existing-pr.json"
 jq -n '{data: {issues: {nodes: [range(10) | {id: "i\(.)", identifier: "NSY-\(.)", title: "t", description: "", url: "u"}]}}}' >"$tmp/wip-full.json"
+# 2件を続けて処理させる。1件目のAPIが失敗しても2件目が落ちないことの確認用
+jq -n '{data: {issues: {nodes: [
+  {id: "ia", identifier: "NSY-11", title: "1件目", description: "repo: github.com/example-org/repo1", url: "u"},
+  {id: "ib", identifier: "NSY-12", title: "2件目", description: "repo: github.com/example-org/repo1", url: "u"}
+]}}}' >"$tmp/ready-two.json"
 
 # 1. フラグなし → 静かにスキップ
 out1=$(HOME="$tmp/home" bash "$SCRIPT" 2>&1)
@@ -247,6 +262,29 @@ echo base >"$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PERM_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "権限確認が失敗したらclaudeを実行しない" test ! -s "$CLAUDE_LOG"
+
+# 3-9. 1件目のAPIが一時失敗しても2件目の処理は続ける。
+# 夜間バッチなので、1件の rate limit で残り全部が落ちると朝まで気付けない
+cat >"$tmp/bin/claude" <<'EOF'
+#!/bin/bash
+echo "$*" >> "${CLAUDE_LOG:?}"
+[[ "${CLAUDE_NO_COMMIT:-0}" == "1" ]] || echo "after-$RANDOM" > "${HEAD_FILE:?}"
+echo "implemented and committed"
+EOF
+chmod +x "$tmp/bin/claude"
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+: >"$GIT_LOG"
+: >"$GH_LOG"
+echo base >"$HEAD_FILE"
+echo 0 >"$tmp/move-fail-once"
+out39=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-two.json" \
+  MOVE_FAIL_ONCE="$tmp/move-fail-once" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" 2>&1)
+# APIペイロードに出るのは identifier ではなく issue id。2件目は "ib"
+check "1件目のAPI失敗で2件目も処理される" grep -q '"ib"' "$CURL_LOG"
+check "1件目は着手せずスキップする" grep -q "NSY-11: SKIPPED" <<<"$out39"
+check "2件目はclaudeまで到達する" grep -q "夜間dispatch完了" "$CURL_LOG"
 
 # 4. repo行が無い → claudeを実行せずTodoへ差し戻し
 : >"$CURL_LOG"
