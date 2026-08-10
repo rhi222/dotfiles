@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "**.sh"
+      - ".shellcheckrc"
       - ".github/workflows/lint.yml"
   pull_request:
     paths:
       - "**.sh"
+      - ".shellcheckrc"
       - ".github/workflows/lint.yml"
 
 jobs:
@@ -17,11 +19,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # shellcheck は runner にプリインストール済み。shfmt は Go 経由で導入。
-      - name: Install shfmt
+      # ローカルと同じバージョンを明示的に固定する。
+      #
+      # 以前は shellcheck を runner のプリインストール、shfmt を `go install ...@latest`
+      # で入れていたため、ローカル（mise の shellcheck 0.11.0）と CI でバージョンが
+      # 食い違い「ローカルは緑なのに CI だけ赤」が起きていた（CI 側だけ SC2317 / SC2015 を
+      # 報告した）。
+      #
+      # グローバルの .config/mise/config.toml をそのまま使うことはしない。言語ランタイム
+      # 込みで約40ツールあり、CI に入れるには重すぎる。ここでは2つだけ mise 経由で入れる。
+      #
+      # ローカル側は `latest` 宣言なので、mise を更新したらここも合わせて上げる。
+      # 差分は "Show tool versions" の出力で気付ける。
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+          mise_toml: |
+            [tools]
+            "aqua:koalaman/shellcheck" = "0.11.0"
+            "aqua:mvdan/sh" = "3.13.1"
+
+      - name: Show tool versions
         run: |
-          go install mvdan.cc/sh/v3/cmd/shfmt@latest
-          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+          shellcheck --version | grep version
+          shfmt --version
 
       - name: Lint shell scripts
         run: bash scripts/lint.sh
