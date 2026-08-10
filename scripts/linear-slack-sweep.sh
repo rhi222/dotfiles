@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/linear-api.sh"
 
 SEEN="${LINEAR_SLACK_SWEEP_SEEN:-$HOME/.local/state/linear-slack-sweep/seen.txt}"
+LOCK="${LINEAR_SLACK_SWEEP_LOCK:-$HOME/.local/state/linear-slack-sweep/sweep.lock}"
 # 1回のスイープで処理する上限。スレを読む前の関門で切ると、
 # LLMの読解コストごと止まる
 LINEAR_SLACK_SWEEP_MAX="${LINEAR_SLACK_SWEEP_MAX:-20}"
@@ -39,6 +40,36 @@ cmd_unseen() {
   done
 }
 
+seen_add() {
+  mkdir -p "$(dirname "$SEEN")"
+  echo "$1" >>"$SEEN"
+}
+
+cmd_create() {
+  local key="$1" permalink="$2" title="$3" outcome="$4" summary="$5"
+  # seen判定→起票→seen追記 を排他にする。skill は create をキーごとに
+  # 別プロセスで呼ぶので、cron（8:10）と手動起動が重なると両方が
+  # seen判定を通過して同じスレを2回起票しうる。
+  #
+  # linear-sweep.sh の flock は -n（取れなければ即終了）だが、こちらは待つ。
+  # あちらは同じスイープの二重起動なので後発を捨ててよいが、こちらは
+  # キーごとに1プロセスなので捨てるとそのメッセージだけ起票されずに落ちる。
+  mkdir -p "$(dirname "$LOCK")"
+  exec 9>"$LOCK"
+  flock 9
+
+  if seen_has "$key"; then
+    echo "skipped(seen) $key"
+    return 0
+  fi
+  local body created ident
+  body=$(printf '元URL: %s\n\n期待アウトカム: %s\n\n## 経緯\n%s\n' "$permalink" "$outcome" "$summary")
+  created=$(linear_issue_create "$title" "$body" "Triage" "src:slack") || return 1
+  ident=$(jq -r '.identifier' <<<"$created")
+  seen_add "$key"
+  echo "created $ident"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage:
@@ -53,6 +84,10 @@ main() {
   [[ "$#" -gt 0 ]] && shift
   case "$sub" in
     unseen) cmd_unseen "$@" ;;
+    create)
+      [[ "$#" -eq 5 ]] || usage
+      cmd_create "$@"
+      ;;
     *) usage ;;
   esac
 }

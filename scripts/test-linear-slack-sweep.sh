@@ -33,6 +33,7 @@ EOF
 
 export LINEAR_CONFIG_DIR="$tmp/home/.config/linear"
 export LINEAR_SLACK_SWEEP_SEEN="$tmp/state/seen.txt"
+export LINEAR_SLACK_SWEEP_LOCK="$tmp/state/sweep.lock"
 
 # --- unseen ---
 
@@ -57,6 +58,46 @@ keys=()
 for i in $(seq 1 25); do keys+=("C1/$i.0"); done
 out4=$(LINEAR_SLACK_SWEEP_MAX=20 bash "$SCRIPT" unseen "${keys[@]}" 2>&1)
 check "上限20件で打ち切る" test "$(wc -l <<<"$out4")" -eq 20
+
+# stub curl: 重複なし（issues.nodes が空）→ issueCreate 成功 を返す。
+# payloadは1行、それ以外の引数は "ARGS:" 行に分けて記録する
+# （ARGS行にpayloadを混ぜると payload の grep -c が二重に数えてしまう）
+cat >"$tmp/bin/curl" <<'EOF'
+#!/bin/bash
+args=""
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--data" ]]; then echo "$2" >> "${CURL_LOG:?}"; shift 2
+  else args="$args $1"; shift; fi
+done
+echo "ARGS:$args" >> "${CURL_LOG:?}"
+echo '{"data": {"viewer": {"id": "user-me"},
+                "issues": {"nodes": []},
+                "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-100", "url": "u"}}}}'
+EOF
+chmod +x "$tmp/bin/curl"
+export PATH="$tmp/bin:$PATH"
+export CURL_LOG="$tmp/curl.log"
+
+# --- create（重複なし） ---
+: >"$LINEAR_SLACK_SWEEP_SEEN"
+: >"$CURL_LOG"
+PERMALINK="https://example.slack.com/archives/C0EXAMPLE/p1786335015733309?thread_ts=1784699205.854559&cid=C0EXAMPLE"
+out6=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" \
+  "PMS疎通試験の結果をまとめる" "試験結果を共有し、次の判断材料にする" "スレで疎通試験の話が出た" 2>&1)
+check "createがcreatedを返す" grep -q "^created NSY-100$" <<<"$out6"
+check "seenにキーが追記される" grep -qxF "C0EXAMPLE/1786335015.733309" "$LINEAR_SLACK_SWEEP_SEEN"
+check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
+check "Triageに起票する" grep -q "st-triage" "$CURL_LOG"
+check "src:slackラベルが付く" grep -q "lb-s" "$CURL_LOG"
+check "role/emラベルは付けない" test "$(grep -c 'lb-rp\|lb-et' "$CURL_LOG")" -eq 0
+check "本文に元URLが入る" grep -q "元URL" "$CURL_LOG"
+check "本文に期待アウトカムが入る" grep -q "期待アウトカム" "$CURL_LOG"
+
+# --- create（seen済みなら何もしない） ---
+: >"$CURL_LOG"
+out7=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" "t" "o" "s" 2>&1)
+check "seen済みならskippedを返す" grep -q "^skipped(seen)" <<<"$out7"
+check "seen済みならAPIを呼ばない" test ! -s "$CURL_LOG"
 
 # 5. 未知のサブコマンドは usage を出して非0で終わる
 bash "$SCRIPT" bogus >/dev/null 2>&1
