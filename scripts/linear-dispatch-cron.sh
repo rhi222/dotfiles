@@ -52,14 +52,6 @@ dispatch_parse_repo() {
   echo "$repo"
 }
 
-# dispatch_parse_pr_url <claude-log> → PR URL。無ければ非0
-dispatch_parse_pr_url() {
-  local url
-  url=$(grep -oE 'PR_URL:[[:space:]]*https://[^[:space:]]+' <<<"$1" | tail -1 | sed 's/^PR_URL:[[:space:]]*//')
-  [[ -n "$url" ]] || return 1
-  echo "$url"
-}
-
 # dispatch_bounce <issueId> <message>
 # 実行せずTodoへ差し戻す。理由をコメントに残す（黙って消えないようにする）
 dispatch_bounce() {

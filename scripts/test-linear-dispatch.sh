@@ -38,6 +38,12 @@ desc_ok=$'調査タスク\nrepo: github.com/example-org/repo1\n期待アウト�
 check "repo行をパースできる" test "$(dispatch_parse_repo "$desc_ok")" = "github.com/example-org/repo1"
 check "repo行が無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_repo 'repo指定なし本文'"
 
+# dispatch_parse_pr_url は本文からPR参照を拾う（モード判定の分岐点）。
+# 素のURLとmarkdownリンクの両方で同じ結果になること
+desc_pr=$'draft仕上げ\n元URL: https://github.com/example-org/repo1/pull/42'
+check "本文のPR URLをパースできる" test "$(dispatch_parse_pr_url "$desc_pr")" = "example-org/repo1/42"
+check "PR URLが無ければ非0" bash -c "source '$SCRIPT'; ! dispatch_parse_pr_url 'PR URLなし本文'"
+
 # --- スクリプト全体のテスト ---
 # stub curl: リクエスト内容で応答を出し分ける
 cat >"$tmp/bin/curl" <<'EOF'
