@@ -11,6 +11,8 @@
 #   1. SIGTERM で殺されても直前に開いていたバッファがセッションに保存されている
 #   2. 通常終了(:qa)でも従来どおり保存される（既存挙動の非回帰）
 #   3. ファイル引数付き起動では保存されない（args_allow_files_auto_save=false の維持）
+#
+# ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
 
 SESSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/sessions"

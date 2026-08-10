@@ -3,6 +3,8 @@
 #
 # XDG_DATA_HOME を差し替えるとプラグイン(lazy)の置き場ごと変わってしまうため、
 # 実際のセッションディレクトリを使い、一時 cwd 由来のセッションだけを後始末する。
+#
+# ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
 
 PASS=0

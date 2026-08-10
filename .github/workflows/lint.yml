@@ -1,15 +1,20 @@
 name: lint
 
 on:
+  # GitHub Actions は YAML のアンカー/エイリアスを解釈しないので、
+  # push と pull_request で同じ paths を素直に重複させる
   push:
     branches: [main]
     paths:
       - "**.sh"
+      # fish 関数（gf / wt / wtd / dclean）にもテストがあるので .fish でも起動する
+      - "**.fish"
       - ".shellcheckrc"
       - ".github/workflows/lint.yml"
   pull_request:
     paths:
       - "**.sh"
+      - "**.fish"
       - ".shellcheckrc"
       - ".github/workflows/lint.yml"
 
@@ -48,7 +53,13 @@ jobs:
       - name: Lint shell scripts
         run: bash scripts/lint.sh
 
+      # fish の関数（gf / wt / wtd / dclean）にもテストがあるので入れる。
+      # nvim / tmux / ghq / docker は要らない（各テストが stub を持つ）。
+      - name: Install fish
+        run: sudo apt-get update && sudo apt-get install -y fish
+
+      # 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
+      # 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。
+      # CIで動かせないものはテストファイル側の `# ci-skip:` で宣言する。
       - name: Run shell script tests
-        run: |
-          bash scripts/test-daily-update.sh
-          bash scripts/test-nippo-check.sh
+        run: bash scripts/run-tests.sh --ci
