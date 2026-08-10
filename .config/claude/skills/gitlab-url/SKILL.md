@@ -1,20 +1,28 @@
 ---
 name: gitlab-url
-description: GitLabのURL（http://gitlab.example.com/... 等）を渡されて、その先のリソース（issue、MR、ファイル、パイプライン、コミット等）を読み取り・書き込みしたいときに使う。「このMRを見て」「このissueにコメントして」「gitlab.example.comのURLの内容を教えて」「glabで操作して」等で使用。
+description: GitLabのURL（社内の自前ホストを含む）を渡されて、その先のリソース（issue、MR、ファイル、パイプライン、コミット等）を読み取り・書き込みしたいときに使う。「このMRを見て」「このissueにコメントして」「GitLabのURLの内容を教えて」「glabで操作して」等で使用。
 ---
 
 # gitlab-url
 
 GitLab の URL を `glab` CLI に変換して、URL 先のリソースを読み書きするためのリファレンス。
 
+## 社内固有の値
+
+社内GitLabのホスト名・プロトコル・よく使う group/project は
+`~/.claude/local-context.md` の「GitLab」節にある。**この skill には値を書かない**（dotfilesは public）。
+ファイルが無い、または必要な値が空なら、推測せず利用者に確認する。
+
+以下の例では `gitlab.example.com/group/project` をプレースホルダとして使う。
+
 ## 前提・環境の注意
 
 - glab は snap でインストールされている（`/snap/bin/glab`）。**サンドボックス内では `cannot preserve mount namespace` エラーで失敗する**ため、失敗したらサンドボックスなしで再実行する。
 - デフォルトホストは `gitlab.com`。**リポジトリ外から叩くときは必ずホストを指定する**：
-  - サブコマンド系: `-R <host>/<group>/<project>`（例: `-R gitlab.example.com/example-group/example-service`）
+  - サブコマンド系: `-R <host>/<group>/<project>`（例: `-R gitlab.example.com/group/project`）
   - `glab api`: `GITLAB_HOST=<host>` 環境変数（例: `GITLAB_HOST=gitlab.example.com glab api ...`）
 - 認証確認は `glab auth status --hostname <host>`。**`-h` は help になるので使わない。**
-- `gitlab.example.com` は認証設定済み（`api_protocol: http`）。認証切れ（401）のときは `glab auth login --hostname <host>` の実行をユーザーに依頼する。
+- 社内ホストは認証設定済み（プロトコルは `~/.claude/local-context.md` を参照。http のことがある）。認証切れ（401）のときは `glab auth login --hostname <host>` の実行をユーザーに依頼する。
 
 ## URL の解釈
 
@@ -27,7 +35,7 @@ http://<host>/<group>/<project>/-/<type>/<rest>
 - `/-/` より前が **project フルパス**（group は複数階層になりうる: `a/b/c/project`）
 - `/-/` より後がリソースタイプと識別子
 - `/-/` が無い URL は group か project か曖昧。`glab api "projects/<enc>"` が 404 なら `glab api "groups/<enc>"` を試す
-- `<enc>` = project フルパスの URL エンコード（`/` → `%2F`。例: `example-group%2Ftaco`）
+- `<enc>` = project フルパスの URL エンコード（`/` → `%2F`。例: `group%2Fproject`）
 
 ## URL タイプ → コマンド対応表（読み取り）
 
@@ -50,8 +58,8 @@ http://<host>/<group>/<project>/-/<type>/<rest>
 検証済みの実例:
 
 ```bash
-glab mr list -R gitlab.example.com/example-group/example-service
-GITLAB_HOST=gitlab.example.com glab api "projects/example-group%2Ftaco"
+glab mr list -R gitlab.example.com/group/project
+GITLAB_HOST=gitlab.example.com glab api "projects/group%2Fproject"
 ```
 
 ## 書き込み操作

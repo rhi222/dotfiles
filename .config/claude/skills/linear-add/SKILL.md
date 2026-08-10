@@ -11,6 +11,12 @@ allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(
 **Linearは真実の源泉ではなく「ポインタの司令塔」**で、issueは元URL＋期待アウトカム＋判断状態だけを持つ。
 本体はJira / GitHub / Slack / esa 側にある。
 
+## 社内固有の値
+
+Jiraの cloudId・プロジェクトキー・リポジトリ名などの社内固有値は
+`~/.claude/local-context.md` にある。**この skill には値を書かない**（dotfilesは public）。
+ファイルが無い、または必要な値が空なら、推測せず利用者に確認する。
+
 ## 使うライブラリ
 
 `$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh` を source して使う。
@@ -44,10 +50,10 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
 
 - **GitHub PR** → `gh pr view <番号> --repo <owner/repo> --json title,body,headRefName`
   - タイトル・本文・ブランチ名から `[A-Z][A-Z0-9]+-[0-9]+` を拾ってJiraキー候補にする
-  - **`AP3-001` のような仕様書の項番を拾うことがある。** 実在するJiraプロジェクトキー（`ALPHADEV` / `BETADEV` など）か確認し、怪しければ採用せず利用者に確認する
-  - `example-api` はJira管理外（GitHub issueで管理）。Jiraキーが無くても異常ではない
+  - **`AP3-001` のような仕様書の項番を拾うことがある。** 実在するJiraプロジェクトキー（`~/.claude/local-context.md` の「Jira」節）か確認し、怪しければ採用せず利用者に確認する
+  - 一部のリポジトリはJira管理外（GitHub issueで管理）。該当は `~/.claude/local-context.md` の「リポジトリ」節にある。Jiraキーが無くても異常ではない
 - **Jira URL / Jiraキー** → **claude.ai の Atlassian コネクタで中身を読む**（`mcp__claude_ai_Atlassian__getJiraIssue`）。
-  `cloudId` は `example-org.atlassian.net`。取れるものが多いので必ず引く。
+  `cloudId` は `~/.claude/local-context.md` の「Jira」節にある。取れるものが多いので必ず引く。
 
   ```
   fields: ["summary", "duedate", "status", "description", "priority"]
@@ -57,15 +63,16 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
   | --- | --- |
   | `summary` | タイトル（`{summary} [KEY]`）。ただし後述の但し書きあり |
   | `duedate` | `dueDate`（型は `TimelessDate!`。`YYYY-MM-DD` 文字列） |
-  | `description` の「完了条件」 | 本文の `完了条件:`。BETADEV系は明記されていることが多い |
+  | `description` の「完了条件」 | 本文の `完了条件:`。開発系プロジェクトは明記されていることが多い |
   | `status` | Linearのstateは自分の作業状態なので**同期しない**。参考程度 |
 
   **`duedate` は null のことが多い。** null なら `dueDate` を設定しない（勝手に日付を作らない）。
 
-  **ST障害系（ALPHADEV）の `summary` は機械生成で非常に長い**
-  （例: `【障害(ST)】_予約_領収書を発行する…_ST1_JTH_G011_03_04-1-6`）。
+  **ST障害系の `summary` は機械生成で非常に長い**
+  （例: `【障害(ST)】_予約_領収書を発行する…_ST1_CASE-A_G011_03_04-1-6`）。
+  どのプロジェクトキーが該当するかは `~/.claude/local-context.md` の「Jira」節にある。
   そのままだとLinearの一覧で読めないので、**要点を残した短い課題名＋キー**にしてよい。
-  Jiraキーが入っていれば正確な照合はできる。BETADEV系のように読める `summary` はそのまま使う。
+  Jiraキーが入っていれば正確な照合はできる。開発系のように読める `summary` はそのまま使う。
 
   この経路は**対話セッション限定**（cronのheadless実行ではMCP認証が使えない）。
   自動同期が要るならJira APIトークンが別途必要になる。
@@ -142,10 +149,10 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 複数PRを1つの親にぶら下げる前に、**各PRのJiraキーが同一かを必ず確認する**。
 異なるならPRごとに親を立てる。
 
-実例: `example-repo-record#1857`（バッチコマンドのレジストリ方式）と `#1854`（ruff＋CI整備）は
-どちらも「Pythonバッチ関連」に見えたので1つの親にまとめたが、実際は `BETADEV-9268` と
-`BETADEV-9250` の別チケットで、あとから親を2つに割り直すことになった。
-ブランチ名（`BETADEV-9268-refactor-batch-command`）にキーが入っていることが多いので必ず見る。
+実例: 同一リポジトリの2つのPR（バッチコマンドのレジストリ方式 / ruff＋CI整備）は
+どちらも「Pythonバッチ関連」に見えたので1つの親にまとめたが、実際は別のJiraチケットで、
+あとから親を2つに割り直すことになった。
+ブランチ名（`ABCDEV-9268-refactor-batch-command` の形）にキーが入っていることが多いので必ず見る。
 
 **課題名はJiraチケット名称が正**（手順1のAtlassianコネクタで取れる）。
 ただしST障害系のように機械生成で長すぎる `summary` は、要点を残して短くしてよい。
@@ -214,7 +221,7 @@ PR:
 終わりが定義されていないタスクは着手されない。
 利用者が言語化できない場合は、それ自体が「やると決まっていない」証拠なので `Backlog` に置く。
 
-**タイトル規約**: 親課題でJiraチケットがある場合は `{jiraチケット名称} [ALPHADEV-1234]`。
+**タイトル規約**: 親課題でJiraチケットがある場合は `{jiraチケット名称} [ABCDEV-1234]`。
 半角スペースを1つ空けて角括弧。Jiraが無い課題には付けない（組織課題・自主的なリファクタなど）。
 
 ### 6-2. 期日を設定する

@@ -21,11 +21,10 @@ curl -sf \
 
 ## チーム
 
-2つのチームがある:
-- `example-org`
-- `example-org-engineers`
+**チーム名は `~/.claude/local-context.md` の「esa」節にある**（dotfilesは public なので
+この skill には書かない）。ファイルが無い、または値が空なら、推測せず利用者に確認する。
 
-利用時は引数やコンテキストでチーム名を特定すること。
+利用時は引数やコンテキストでどのチームかを特定すること。
 
 ## URL体系
 

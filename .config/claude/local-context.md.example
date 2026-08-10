@@ -1,0 +1,43 @@
+# ローカルコンテキスト（雛形）
+
+社内固有の値をここに書く。**実体（`~/.claude/local-context.md`）は gitignore されており、
+dotfiles リポジトリには入らない。** このリポジトリは public なので、skill 側には値を持たせず
+このファイルを参照させる。
+
+skill はこのファイルを Read して値を解決する。**ファイルが無い、または値が空の場合は
+推測せず利用者に確認すること。**
+
+`dotfilesLink.sh` がこの `.example` から実体を作る。
+
+## Jira
+
+- cloudId（ホスト）: `<your-org>.atlassian.net`
+- プロジェクトキー
+  - 開発系: `<KEY1>`（`summary` はそのまま読める。完了条件が明記されていることが多い）
+  - ST障害系: `<KEY2>`（`summary` が機械生成で非常に長い。要点を残して短縮してよい）
+
+## GitLab
+
+- ホスト: `<gitlab-host>`
+- プロトコル: `http` / `https`（社内ホストは http のことがある）
+- よく使う group/project: `<group>/<project>`
+
+## esa
+
+- チーム: `<team1>` / `<team2>`
+
+## リポジトリ
+
+| リポジトリ | 備考 |
+| --- | --- |
+| `<owner>/<repo>` | |
+| `<owner>/<repo2>` | Jira管理外（GitHub issue で管理） |
+
+## 案件コード・顧客略号
+
+部長会レポートなどで使う略号。
+
+| 略号 | 対象 |
+| --- | --- |
+| `<CODE1>` | 案件 |
+| `<CUST1>` | 顧客 |

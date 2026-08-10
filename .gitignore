@@ -30,3 +30,7 @@ docs/superpowers/
 
 # nvim のローカル設定（社内ホスト名など）。雛形は local_config.lua.example
 .config/nvim/lua/my/local_config.lua
+
+# 社内固有値の集約先。実体は ~/.claude/local-context.md（リポジトリ外）だが、
+# .config/claude/ 配下に置いてしまった場合の保険として ignore しておく。
+.config/claude/local-context.md
