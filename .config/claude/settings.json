@@ -56,12 +56,23 @@
         "matcher": "EnterWorktree"
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.config/claude/hooks/herdr-claude-marker.sh end",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
           {
-            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session",
-            "timeout": 10,
+            "command": "$HOME/.config/claude/hooks/herdr-claude-marker.sh start",
+            "timeout": 5,
             "type": "command"
           }
         ],
