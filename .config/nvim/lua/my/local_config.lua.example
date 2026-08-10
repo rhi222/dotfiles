@@ -1,0 +1,16 @@
+-- ローカル専用の nvim 設定の雛形。
+--
+-- 実体は my/local_config.lua に置く（.gitignore 済み）。このリポジトリは public なので、
+-- 社内のホスト名などをここに直接書かない。
+--
+-- dotfilesLink.sh がこの .example から実体を作る。
+-- 実体が無くても nvim は起動する（pcall で読み込んでいるため）。
+
+return {
+	-- HTTPS で開けないホスト（社内の自前ホスティングなど）。
+	-- :OpenGitURL が URL を組み立てるとき、ここに含まれるホストだけ http:// を使う。
+	-- 部分一致（plain 検索）なので、ドットをエスケープする必要はない。
+	http_hosts = {
+		-- "gitlab.example.internal",
+	},
+}

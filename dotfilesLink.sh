@@ -138,6 +138,23 @@ setup_git_hooks() {
   fi
 }
 
+# gitignore されているローカル設定を雛形から作る。
+# いずれも社内固有の値を持つため、リポジトリには .example だけを置いている。
+setup_local_configs() {
+  local pairs=(
+    "$DC/nvim/lua/my/local_config.lua.example|$DC/nvim/lua/my/local_config.lua"
+  )
+  local pair src dest
+  for pair in "${pairs[@]}"; do
+    src="${pair%%|*}"
+    dest="${pair##*|}"
+    if [ ! -e "$dest" ] && [ -e "$src" ]; then
+      cp "$src" "$dest"
+      echo "[INFO] $dest を雛形から作成しました" >&2
+    fi
+  done
+}
+
 # 日報通知スクリプトに実行権限を付与
 grant_exec_permissions() {
   chmod +x "$DOTFILES_DIR/scripts/nippo-check.sh" 2>/dev/null || true
@@ -188,6 +205,7 @@ link_claude_skills
 setup_claude_settings
 setup_codex
 setup_git_hooks
+setup_local_configs
 grant_exec_permissions
 warn_missing_local_git
 report_skipped

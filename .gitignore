@@ -27,3 +27,6 @@ docs/superpowers/
 # 社内システム名を検知して発動するスキル。description の発動キーワードが
 # 社内システム名そのものなので、汎用化すると機能しなくなる。
 .config/claude/skills/cross-repo-auto-discover/
+
+# nvim のローカル設定（社内ホスト名など）。雛形は local_config.lua.example
+.config/nvim/lua/my/local_config.lua

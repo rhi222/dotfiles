@@ -5,6 +5,22 @@ local RepositoryType = {
 	BITBUCKET = "bitbucket",
 }
 
+-- HTTPS で開けないホスト（社内の自前ホスティングなど）。
+-- ホスト名は環境固有なので my/local_config.lua（gitignore）に置く。
+-- ファイルが無ければ空リストになり、常に https:// を使う。
+local ok_local, local_config = pcall(require, "my.local_config")
+local http_hosts = (ok_local and local_config.http_hosts) or {}
+
+local function isHttpHost(repo_url)
+	for _, host in ipairs(http_hosts) do
+		-- 第4引数 true で plain 検索。ホスト名のドットをパターンとして解釈させない
+		if repo_url:find(host, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
 -- 1) リモート URL のパースを Lua 文字列操作に置き換え
 local function getRepositoryURL()
 	-- 1) リモート URL を取得
@@ -80,8 +96,8 @@ end
 
 -- URL 組み立て
 local function generateGitUrl(repo_type, repo_url, hash, filepath, start_line, end_line)
-	-- gitlab.example.com ドメインの場合は HTTP、それ以外は HTTPS
-	local protocol = repo_url:match("gitlab%.fdev") and "http://" or "https://"
+	-- HTTPS 非対応のホスト（my/local_config.lua で指定）だけ HTTP にする
+	local protocol = isHttpHost(repo_url) and "http://" or "https://"
 	local base = protocol .. repo_url
 
 	-- ブラブ部はそのまま
@@ -112,7 +128,7 @@ local function OpenGitURL(mode)
 	local host = repo_url:match("^([^/]+)") or ""
 	if host:find("^github%.com$") or host:find("%.github%.com$") then
 		repo_type = RepositoryType.GITHUB
-	elseif host:find("^gitlab") or host:find("%.gitlab%.") or host == "gitlab.example.com" then
+	elseif host:find("^gitlab") or host:find("%.gitlab%.") then
 		repo_type = RepositoryType.GITLAB
 	elseif host:find("^bitbucket") or host:find("%.bitbucket%.") then
 		repo_type = RepositoryType.BITBUCKET
