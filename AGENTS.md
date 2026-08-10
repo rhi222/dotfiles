@@ -271,8 +271,8 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 
 - **PR作成権限はagent実行前に確認する**（`gh repo view --json viewerPermission`）。
   無いまま走らせるとagentを丸ごと1回動かした末に最後だけ失敗する。判定不能な場合も実行しない
-- `gh` は業務アカウント `example-org-nishiyama` で認証されている。**個人リポジトリ（`rhi222/*`）は
-  `READ` しか無いのでdispatchできない**（`example-org/*` は `ADMIN`）
+- `gh` は業務アカウントで認証されている。**個人リポジトリ（`rhi222/*`）は
+  `READ` しか無いのでdispatchできない**（業務orgのリポジトリは `ADMIN`）
 - コミットが0件ならpushもPR作成もしない（実装に到達しなかったとみなす）
 
 **Cycleは1週間・月曜始まりの宣言型**（Jiraのsprint相当。2026-08-06に有効化）。
@@ -310,7 +310,7 @@ issueは**親＝課題（Jiraチケットと1:1）/ 子＝工程**の2階層。*
 で別の問いに答えるので競合しない。
 
 Jiraの `summary` / `duedate` / 完了条件は claude.ai の Atlassian コネクタで読み込める
-（`cloudId` は `example-org.atlassian.net`）。**`status` は同期しない**（Linearのstateは自分の
+（`cloudId` は `~/.claude/local-context.md` を参照）。**`status` は同期しない**（Linearのstateは自分の
 作業状態で、Jiraの進行状態とは別物）。この経路は対話セッション限定で、cronでは使えない。
 
 **日報からのタスク転記は廃止した**（`nippo-add`）。転記ループは完了を検知せず、終わった
@@ -542,7 +542,7 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 - **判定順が要点。`working_dir` label が空のときは `orphan` にせず `compose` に倒す。** `orphan` は削除を伴う `down` を案内する側なので、孤児だと証明できないものを孤児扱いしてはいけない
 - **種別判定はキャッシュ読み出し時に行い、更新時に固定しない。** `test -d` は安いが、更新時に固定すると worktree を消した直後から最大6時間（TTL）`compose` と嘘をつく
 - **compose 系は `stop` ではなく `docker compose -p <project> down` を案内する。** `-p` を付ければ compose ファイル無し・任意の cwd から label 経由でプロジェクトを解決でき（Compose v5.4.0 で実機確認）、compose が作った network も一緒に回収される。プロジェクト単位で1行にまとめるので、同一プロジェクトの複数コンテナで重複しない
-- **`standalone` は `AutoRemove=true` のとき `※--rm: 停止で削除されます` を併記する。** レシピが docker 側に一切残らないうえ停止＝即削除になるため（実機の example-org-mcp のコンテナがこれ）。復活は起動元のツール経由しかない
+- **`standalone` は `AutoRemove=true` のとき `※--rm: 停止で削除されます` を併記する。** レシピが docker 側に一切残らないうえ停止＝即削除になるため（実機の社内MCPコンテナがこれ）。復活は起動元のツール経由しかない
 - **タグのパディングは括弧の外側に入れる**（`[main]  ` と同じ規約）。ASCII に揃えているので `string pad` の East Asian 文字幅も絡まない
 - **種別表示は除外適用後の一覧に対して行う。** 既定の除外パターンはどちらも standalone なので、既定設定では `[standalone]` 行はほぼ出ない。除外リストは「知っていて放置しているもの」の宣言として残している
 - **キャッシュには `schema` を持たせ、古い版は TTL 内でも stale 扱いにする。** 種別列（`compose_project` / `compose_dir` / `auto_remove`）を持たないキャッシュを読んでいる間は orphan 件数を出せないため、起動時の background 更新に乗せて次回から正しくする。`running[]` の列を増やしたら `__docker_clean_schema_current` を上げる
@@ -559,11 +559,14 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 | --------------------------------- | ---------------------------------- | ----------------------------------------- |
 | `docker_clean_size_threshold_gb`  | `5`                                | 回収可能サイズがこの値以上なら通知する    |
 | `docker_clean_uptime_threshold_h` | `12`                               | この時間を超えて稼働していたら一覧に出す  |
-| `docker_clean_ignore_patterns`    | `buildx_buildkit_*` `*example-org-mcp*` | 稼働一覧から除外する名前/イメージのグロブ |
+| `docker_clean_ignore_patterns`    | `buildx_buildkit_*`                | 稼働一覧から除外する名前/イメージのグロブ |
 | `docker_clean_cache_ttl_h`        | `6`                                | キャッシュのTTL                           |
 
-除外パターンはコンテナ**名**とイメージ**名**の両方に照合する。`example-org-mcp` のコンテナ名は
-`suspicious_gagarin` のように自動生成されるため、イメージ名でしか除外できない。
+除外パターンはコンテナ**名**とイメージ**名**の両方に照合する。ツールが起動するコンテナは
+`suspicious_gagarin` のように名前が自動生成されるため、イメージ名でしか除外できないことがある。
+
+**既定は buildx のビルダーだけにしている。** 常駐させている個別のコンテナは環境ごとに違うので、
+除外したいものは `99-local.fish`（gitignore）で `docker_clean_ignore_patterns` に足す。
 
 ### Neovimプラグイン管理
 

@@ -11,7 +11,7 @@
 #
 # 停止のリスクが種別で違うため分ける。compose はレシピが docker-compose.yml に
 # 残るので `docker compose up` で戻せる。standalone はレシピが docker 側に一切
-# 残らず、`--rm` 付きなら停止＝即削除になる（実機の example-org-mcp がこれ）。
+# 残らず、`--rm` 付きなら停止＝即削除になる（実機の社内MCPコンテナがこれ）。
 # orphan は置き場所ごと消えているので確実な停止候補になる。
 #
 # **判定順が要点。compose_dir が空のときは orphan にせず compose に倒す。**
