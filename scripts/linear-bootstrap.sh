@@ -51,5 +51,5 @@ jq '{
   team_key: .key,
   states: (.states.nodes | map({(.name): .id}) | add),
   labels: (.labels.nodes | map({(.name): .id}) | add)
-}' <<<"$team" > "$out"
+}' <<<"$team" >"$out"
 echo "linear-bootstrap: $out を生成した"

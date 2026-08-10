@@ -4,19 +4,26 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT="$SCRIPT_DIR/linear-bootstrap.sh"
-pass=0; fail=0
+pass=0
+fail=0
 
 check() {
-  local desc="$1"; shift
-  if "$@" >/dev/null 2>&1; then echo "ok: $desc"; pass=$((pass+1))
-  else echo "NG: $desc"; fail=$((fail+1)); fi
+  local desc="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    echo "ok: $desc"
+    pass=$((pass + 1))
+  else
+    echo "NG: $desc"
+    fail=$((fail + 1))
+  fi
 }
 
 tmp=$(mktemp -d)
 mkdir -p "$tmp/config/linear" "$tmp/bin"
-echo "lin_api_test" > "$tmp/config/linear/api-key"
+echo "lin_api_test" >"$tmp/config/linear/api-key"
 
-cat > "$tmp/bin/curl" <<'EOF'
+cat >"$tmp/bin/curl" <<'EOF'
 #!/bin/bash
 cat "${CURL_RESPONSE:?}"
 EOF
@@ -25,7 +32,7 @@ export PATH="$tmp/bin:$PATH"
 export LINEAR_CONFIG_DIR="$tmp/config/linear"
 
 # 全state/labelが揃っているレスポンス
-cat > "$tmp/full.json" <<'EOF'
+cat >"$tmp/full.json" <<'EOF'
 {"data": {"teams": {"nodes": [{
   "id": "team-1", "key": "NSY", "name": "Nsym",
   "states": {"nodes": [
@@ -56,7 +63,7 @@ check "src:mtgが入る" test "$(jq -r '.labels["src:mtg"]' "$tmp/config/linear/
 check "AI Reviewは残らない" test "$(jq -r '.states["AI Review"] // "null"' "$tmp/config/linear/config.json")" = "null"
 
 # 2. state不足: 非0で失敗し、不足名を表示する
-cat > "$tmp/missing.json" <<'EOF'
+cat >"$tmp/missing.json" <<'EOF'
 {"data": {"teams": {"nodes": [{
   "id": "team-1", "key": "NSY", "name": "Nsym",
   "states": {"nodes": [{"id": "s1", "name": "Triage"}, {"id": "s2", "name": "Todo"}]},

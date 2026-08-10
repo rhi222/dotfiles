@@ -55,14 +55,15 @@ sweep_author_excluded() {
 # sweep_item <url> <title> <label名...>
 # seen済みならスキップ、未登録ならTriageに起票してseenへ追記する
 sweep_item() {
-  local url="$1" title="$2"; shift 2
+  local url="$1" title="$2"
+  shift 2
   [[ -f "$SEEN" ]] && grep -qxF "$url" "$SEEN" && return 0
   if [[ "$swept_count" -ge "$LINEAR_SWEEP_MAX" ]]; then
     return 0
   fi
   linear_issue_create "$title" "元URL: $url" "Triage" "$@" >/dev/null
   mkdir -p "$(dirname "$SEEN")"
-  echo "$url" >> "$SEEN"
+  echo "$url" >>"$SEEN"
   swept_count=$((swept_count + 1))
   echo "swept: $url"
 }
@@ -135,7 +136,7 @@ main() {
   sweep_jira
 
   mkdir -p "$(dirname "$LAST_RUN")"
-  date +%F > "$LAST_RUN"
+  date +%F >"$LAST_RUN"
   echo "$(date): linear-sweep done"
 }
 

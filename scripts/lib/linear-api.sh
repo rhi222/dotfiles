@@ -10,8 +10,11 @@ LINEAR_CONFIG_DIR="${LINEAR_CONFIG_DIR:-$HOME/.config/linear}"
 
 linear_api_key() {
   local f="$LINEAR_CONFIG_DIR/api-key"
-  [[ -r "$f" ]] || { echo "linear-api: api-keyが見つからない: $f" >&2; return 1; }
-  tr -d '[:space:]' < "$f"
+  [[ -r "$f" ]] || {
+    echo "linear-api: api-keyが見つからない: $f" >&2
+    return 1
+  }
+  tr -d '[:space:]' <"$f"
 }
 
 # linear_gql <query> [variables-json]
@@ -24,7 +27,10 @@ linear_gql() {
   payload=$(jq -nc --arg q "$query" --argjson v "$vars" '{query: $q, variables: $v}') || return 1
   resp=$(curl -sS -X POST "$LINEAR_API_URL" \
     -H "Authorization: $key" -H "Content-Type: application/json" \
-    --data "$payload") || { echo "linear-api: HTTPエラー" >&2; return 1; }
+    --data "$payload") || {
+    echo "linear-api: HTTPエラー" >&2
+    return 1
+  }
   if jq -e '(.errors // []) | length > 0' <<<"$resp" >/dev/null 2>&1; then
     echo "linear-api: GraphQLエラー: $(jq -c '.errors' <<<"$resp")" >&2
     return 1
@@ -35,7 +41,10 @@ linear_gql() {
 # linear_config <jq-path>  例) linear_config '.team_id'
 linear_config() {
   local f="$LINEAR_CONFIG_DIR/config.json"
-  [[ -r "$f" ]] || { echo "linear-api: configが見つからない: $f（scripts/linear-bootstrap.sh を実行）" >&2; return 1; }
+  [[ -r "$f" ]] || {
+    echo "linear-api: configが見つからない: $f（scripts/linear-bootstrap.sh を実行）" >&2
+    return 1
+  }
   jq -er "$1" "$f"
 }
 

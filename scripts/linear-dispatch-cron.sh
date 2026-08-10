@@ -102,8 +102,8 @@ dispatch_one() {
   # 元のPRと無関係な重複PRができてしまう
   if pr_ref=$(dispatch_parse_pr_url "$desc"); then
     mode="continue"
-    repo="github.com/${pr_ref%/*}"        # example-org/repo1/42 → github.com/example-org/repo1
-    existing_pr="${pr_ref##*/}"           # → 42
+    repo="github.com/${pr_ref%/*}" # example-org/repo1/42 → github.com/example-org/repo1
+    existing_pr="${pr_ref##*/}"    # → 42
   else
     mode="new"
     if ! repo=$(dispatch_parse_repo "$desc"); then
@@ -131,7 +131,7 @@ dispatch_one() {
   if [[ "$mode" == "continue" ]]; then
     # 既存PRのブランチを取ってきて、その上で作業する
     pr_json=$(gh pr view "$existing_pr" --repo "${repo#github.com/}" \
-                --json headRefName,state,url 2>/dev/null) || {
+      --json headRefName,state,url 2>/dev/null) || {
       dispatch_bounce "$id" "dispatch失敗: 既存PR #${existing_pr} の情報を取得できなかった"
       echo "$identifier: BOUNCED (pr view)"
       return 0
@@ -203,14 +203,14 @@ $desc
   # agentに任せるとClaude Codeの権限層に阻まれる（許可リストでは上書きできない）うえ、
   # そもそもagentにネットワーク書き込み権限を渡さずに済む
   if ! git -C "$wt" push -u origin "$branch" >/dev/null 2>&1; then
-    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ `$branch`）"
+    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ $($branch)）"
     return 0
   fi
 
   # 継続モードは既存PRにコミットが乗るだけなので、新規PRは作らない
   if [[ "$mode" == "new" ]]; then
     if ! pr_url=$(gh pr create --draft --repo "${repo#github.com/}" --head "$branch" \
-                    --title "$title" --body "夜間dispatchによる自動実装。レビュー前のdraft。" 2>&1); then
+      --title "$title" --body "夜間dispatchによる自動実装。レビュー前のdraft。" 2>&1); then
       dispatch_finish_failed "$id" "$identifier" "$log" "gh pr create に失敗した: $pr_url"
       return 0
     fi
