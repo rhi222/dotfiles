@@ -202,15 +202,22 @@ print_next_steps() {
   echo "  無効化: rm ~/.config/nippo-notify-enabled"
 }
 
-# --- main ---
-ensure_dirs
-link_configs
-link_claude_skills
-setup_claude_settings
-setup_codex
-setup_git_hooks
-setup_local_configs
-grant_exec_permissions
-warn_missing_local_git
-report_skipped
-print_next_steps
+main() {
+  ensure_dirs
+  link_configs
+  link_claude_skills
+  setup_claude_settings
+  setup_codex
+  setup_git_hooks
+  setup_local_configs
+  grant_exec_permissions
+  warn_missing_local_git
+  report_skipped
+  print_next_steps
+}
+
+# source されたときは実行しない。テストから関数だけを呼べるようにするため
+# （このスクリプトは実際にリンクを張るので、読み込むだけで走ると環境を壊す）
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
