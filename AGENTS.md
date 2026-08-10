@@ -97,6 +97,7 @@ bash scripts/linear-bootstrap.sh                   # Linear の team/state/label
 | esa週次レポート | `~/.config/esa-weekly-enabled` | `0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh` |
 | Linear スイープ | `~/.config/linear-sweep-enabled` | `0 8 * * 1-5 $HOME/scripts/linear-sweep.sh` |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled` | `0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh` |
+| Slackスタンプ起票 | `~/.config/linear-slack-sweep-enabled` | `10 8 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh` |
 
 **headless の Claude を呼ぶものには全て timeout が掛かっている**（`lib/cron-claude.sh`）。
 誰も見ていない時間に走るので、ハングを放置すると次の起動まで残る。上限は仕事の重さで
@@ -359,10 +360,13 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 | 起票                | `/linear-add`（対話skill。規約を自動適用する）                  |
 | draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                |
 | 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
-| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` 計4本 |
+| Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日8:10）                         |
+| 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                        |
+| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` 計6本 |
 
 - 認証は `~/.config/linear/api-key`（chmod 600）、設定は `linear-bootstrap.sh` が生成する `config.json`
-- 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled`
+- 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled` /
+  `~/.config/linear-slack-sweep-enabled`
 - **スイープはcronだけに頼らない。** WSL2のcronは**PCが停止していた時刻のジョブを実行せず**、
   anacronも入れていないため、8:00に起動していない日は丸ごと落ちる。
   `.config/fish/my/conf.d/14-linear-sweep.fish` がその日の最初の対話シェル起動時にも
@@ -375,9 +379,33 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 どちらもチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。「LinearのNSY-Xと
 紐づけました」のような紐づけコメントもしない。ポインタはLinear側にだけ置けば足りる。
 
-- スイープは読み取りAPIのみ使う（`gh` は `search`、Jira は GET）
+- スイープは読み取りAPIのみ使う（`gh` は `search`、Jira は GET、Slack は search と read_thread）
 - 例外はagentが成果物として新規に作るPRだけ。そのPR本文にもLinearのidentifierを書かない
 - `test-linear-sweep.sh` は gh stub が `search` 以外で呼ばれると落ちるので、これを検知できる
+- Slack側の担保は許可リスト。`--allowedTools` に読み取り2つしか入れないことで書き込みを塞ぎ、
+  `test-linear-slack-sweep-cron.sh` がその文字列を検査する
+
+**Slackからの起票はスタンプ1つで完結する。** `:nishiyama_todo:` を押すと翌朝の
+`linear-slack-sweep` が拾い、Triage に「元URL＋期待アウトカム」の形で積む。
+
+- **Slack検索の `hasmy::emoji:` を候補生成に使い、リアクションの実在確認を最終防壁にする。**
+  絵文字名が実在の英単語だと本文にもフォールバックする（`hasmy::ticket:` が本文の
+  "air-ticketing" を拾った）。スレはどのみち読むので、この確認は追加コストゼロ
+- **重複判定のキーは permalink ではなく `<channel_id>/<message_ts>`。** permalink は
+  スレ内メッセージだと `?thread_ts=&cid=` が付いて同じメッセージでも文字列が揺れる
+- **検索窓は固定14日で「前回実行日」を持たない。** seen が冪等性を担保するので
+  何度スキャンしても二重起票にならず、cronが落ちた日は次回が勝手に拾い直す
+- **判断はagent、状態変更はスクリプト。** skillが要約とタイトルを作り、
+  `scripts/linear-slack-sweep.sh` が重複チェック・起票・seen追記を持つ。
+  夜間dispatchで push をスクリプト側に寄せたのと同じ分け方
+- **`create` の flock は待つ（`-n` を付けない）。** skillはキーごとに別プロセスで呼ぶので、
+  後発を捨てるとそのメッセージだけ起票されずに落ちる。`linear-sweep.sh` 側は同じスイープの
+  二重起動なので捨ててよい、という違い
+- **fish起動時フックには載せていない。** `claude -p` は数十秒かかるのでシェル起動を
+  ブロックする。取りこぼしは `/linear-slack-sweep` を手で叩いて拾う
+- **思い出し（`/linear-recall`）は確定と候補を区別する。** 元URL一致は確定、
+  `searchIssues` の全文検索は候補。どちらも `includeArchived: true` を付ける
+  （`autoArchivePeriod` が1ヶ月なので「昔やったはず」ほどアーカイブ側に居る）
 
 **スイープ対象は自分のopen draft PRのみ。** 他者PRのレビュー依頼はGitHubの受信箱と二重管理に
 なるうえ常時20〜30件あり、Triageが溢れて「人間が選別する受信箱」として機能しなくなる（初回
