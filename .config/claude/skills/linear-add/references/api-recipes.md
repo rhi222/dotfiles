@@ -57,7 +57,7 @@ linear_gql 'mutation($id: String!, $d: TimelessDate!) {
 }' "$(jq -n --arg i "<issueId>" --arg d "2026-08-05" '{id: $i, d: $d}')"
 ```
 
-- **Jiraの `duedate` が null なら設定しない**（勝手に日付を作らない）。実測ではBETADEV系はほぼnull、ALPHADEV系（ST障害）は入っていることが多い
+- **Jiraの `duedate` が null なら設定しない**（勝手に日付を作らない）。実測ではプロジェクトによって傾向が分かれ、開発系はほぼnull、ST障害系は入っていることが多い
 - 期日は**親課題にだけ**付ける。子（工程）はJiraに対応物が無い
 - すでに過ぎている期日でもそのまま入れる（超過していること自体が判断材料になる）
 - Linear UIに期日欄が見当たらないのは値が未設定なだけで、フィールド自体は常に存在する
