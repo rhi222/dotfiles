@@ -30,6 +30,7 @@ EOF
 
 # --- 関数単体テスト（sourceして呼ぶ） ---
 export LINEAR_CONFIG_DIR="$tmp/home/.config/linear"
+# shellcheck source=/dev/null  # 検査対象のパスは実行時に決まる
 source "$SCRIPT"
 set +eo pipefail # スクリプト側の set -euo pipefail をテストシェルへ持ち込まない
 
@@ -129,6 +130,7 @@ export CLAUDE_BIN="claude"
 echo base >"$HEAD_FILE"
 
 echo '{"data": {"issues": {"nodes": []}}}' >"$tmp/wip-empty.json"
+# shellcheck disable=SC2028  # \n はJSON文字列内のエスケープ。シェルで展開させたくない
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-5", "title": "調査", "description": "repo: github.com/example-org/repo1\n期待アウトカム: x", "url": "u"}]}}}' >"$tmp/ready-one.json"
 echo '{"data": {"issues": {"nodes": [{"id": "i2", "identifier": "NSY-6", "title": "repo無し", "description": "repo行がない本文", "url": "u"}]}}}' >"$tmp/ready-norepo.json"
 # 継続モード: 本文に既存PRのURLがある
@@ -262,6 +264,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
 check "失敗時はTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 check "失敗ログがコメントされる" grep -q "went wrong" "$CURL_LOG"
 
+# shellcheck disable=SC2015  # KEEP_TMP=1 のときだけ残す。echo は必ず成功するのでC節は誤爆しない
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"

@@ -1,0 +1,17 @@
+# shellcheck の設定。scripts/lint.sh と CI の lint ワークフローが参照する。
+
+# SC2016: Expressions don't expand in single quotes
+#
+# single quote を意図的に使っている箇所が多く、実害のある指摘が埋もれる。
+#   - GraphQL のクエリ本体（`query($team: ID!)` の $team は GraphQL の変数で、シェルではない）
+#   - fish のコードを文字列で渡す箇所（`echo rc=$status` の $status は fish の変数）
+#   - jq のフィルタ（`.[] | select(...)`）
+# いずれも展開されては困るので、single quote が正しい。
+disable=SC2016
+
+# SC2329: This function is never invoked
+#
+# このリポジトリのスクリプトは source されて外部から呼ばれる関数を多く持つ
+# （scripts/lib/*.sh の linear_* / dispatch_* など）。定義元だけを見ても
+# 呼び出しが見えないため、常に誤検知になる。
+disable=SC2329

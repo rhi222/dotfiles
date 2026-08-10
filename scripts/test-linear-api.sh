@@ -45,6 +45,7 @@ export PATH="$tmp/bin:$PATH"
 export LINEAR_CONFIG_DIR="$tmp/config/linear"
 export CURL_LOG="$tmp/curl.log"
 : >"$CURL_LOG"
+# shellcheck source=/dev/null  # 検査対象のパスは実行時に決まる
 source "$LIB"
 
 # 1. config読み出し
