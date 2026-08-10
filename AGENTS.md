@@ -6,6 +6,85 @@
 
 ## セットアップとインストール
 
+### 新環境の立ち上げ（通し手順）
+
+**`dotfilesLink.sh` だけでは完了しない。** gitignore しているファイルが必要で、その多くは
+雛形が無く旧環境からのコピーか手書きになる。以下の順で進める。
+
+#### 1. 前提を入れる
+
+```fish
+# ghq でこのリポジトリを取得（パスが SNIPPET_ROOT 等に埋まっているので ghq 配下に置く）
+ghq get rhi222/dotfiles
+cd (ghq root)/github.com/rhi222/dotfiles
+
+bash scripts/apt-setup.sh          # apt パッケージ（WSL2）
+./dotfilesLink.sh                  # リンク作成 + 雛形生成 + hook 有効化
+```
+
+`dotfilesLink.sh` が**自動で雛形を作る**のは次の4つ。**いずれも中身は空なので値を埋める。**
+
+| ファイル | 作る処理 | 埋める内容 |
+| --- | --- | --- |
+| `~/.config/dotfiles/secret-patterns.txt` | `setup_git_hooks` | 社内固有の語（これが無いと hook がザルになる） |
+| `~/.claude/local-context.md` | `setup_local_configs` | Jira cloudId・プロジェクトキー・GitLabホスト・esaチーム名・略号 |
+| `.config/nvim/lua/my/local_config.lua` | `setup_local_configs` | HTTPS 非対応ホスト |
+| `.config/codex/config.toml` | `setup_codex` | codex の設定 |
+
+#### 2. 雛形が無いファイルを移植する
+
+**旧環境からコピーする**（再作成が非現実的なもの）。
+
+| ファイル | 中身 |
+| --- | --- |
+| `.config/claude/skills/cross-repo-investigate/repos.yml` | 社内リポジトリのエイリアス表 |
+| `.config/claude/skills/cross-repo-auto-discover/` | ディレクトリごと（`repos.yml` は上への symlink） |
+| `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json` | 週次レポート対象の記事番号 |
+| `.config/AutoHotkey/scripts/snippets-local.ahk` | 社内向けスニペットの登録 |
+| `.config/AutoHotkey/ahk-snippets/js/` | 上が参照する JS 本体 |
+| `.config/AutoHotkey/ahk-snippets/passwords/` | 資格情報（`README.md` だけ追跡） |
+
+**手で書く**もの。
+
+| ファイル | 中身 | 無いとどうなるか |
+| --- | --- | --- |
+| `.config/git/config-local` | git の `user.*` | `.gitconfig` が `include` しているので git が警告を出す |
+| `.config/git/config-work` | 業務用 git 設定 | 同上 |
+| `.config/fish/my/conf.d/99-local.fish` | `ESA_ACCESS_TOKEN`・`docker_clean_ignore_patterns` | esa skill が動かない／dclean の除外が効かない |
+| `~/.config/linear/api-key`（`chmod 600`） | Linear の APIキー | Linear 系すべてが動かない |
+
+#### 3. 外部ツールを入れる
+
+```fish
+env STRICT=1 bash scripts/setup-claude-skills.sh   # 外部 agent skill
+env STRICT=1 bash scripts/setup-gh-extensions.sh   # gh 拡張
+bash scripts/linear-bootstrap.sh                   # Linear の team/state/label ID 解決
+```
+
+#### 4. 自動化を有効にする（任意・WSL2）
+
+**フラグを touch しないと動かない。** 各機能の詳細は後続の該当節を参照。
+
+| 機能 | フラグ | cron |
+| --- | --- | --- |
+| 日報リマインド通知 | `~/.config/nippo-notify-enabled` | `0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh` |
+| 日報ドラフト自動仕上げ | `~/.config/nippo-draft-enabled` | `30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh` |
+| esa週次レポート | `~/.config/esa-weekly-enabled` | `0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh` |
+| Linear スイープ | `~/.config/linear-sweep-enabled` | `0 8 * * 1-5 $HOME/scripts/linear-sweep.sh` |
+| Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled` | `0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh` |
+
+Windowsトースト通知には Windows 側で `Install-Module BurntToast` が別途必要。
+AutoHotkey は `bash .config/AutoHotkey/deploy-ahk-script.sh` で Windows 側へコピーする
+（`scripts/` 配下を全部コピーするので、gitignore された `snippets-local.ahk` も届く）。
+
+#### 5. 確認する
+
+```fish
+bash scripts/lint.sh                    # shellcheck + shfmt
+bash scripts/secret-scan.sh --tree      # 機密語スキャン（辞書を埋めた後に）
+for t in scripts/test-*.sh; bash $t; end # 全テスト
+```
+
 ### メインセットアップスクリプト
 
 `./dotfilesLink.sh` を実行して、すべての設定ファイルのシンボリックリンクを作成：
@@ -25,13 +104,13 @@
 
 そこで `scripts/sync-claude-settings.sh` でコピー同期する。**実ファイルを正とし、リポジトリがそれを追いかける**。
 
-| やりたいこと            | コマンド                                            |
-| ----------------------- | --------------------------------------------------- |
-| 差分の確認              | `bash scripts/sync-claude-settings.sh status`       |
-| 実ファイル → リポジトリ | `bash scripts/sync-claude-settings.sh pull`         |
-| リポジトリ → 実ファイル | `bash scripts/sync-claude-settings.sh push`         |
-| 新環境 bootstrap        | `./dotfilesLink.sh`（内部で `push` する）           |
-| 更新                    | `daily-update.sh` が `pull` を自動実行              |
+| やりたいこと            | コマンド                                      |
+| ----------------------- | --------------------------------------------- |
+| 差分の確認              | `bash scripts/sync-claude-settings.sh status` |
+| 実ファイル → リポジトリ | `bash scripts/sync-claude-settings.sh pull`   |
+| リポジトリ → 実ファイル | `bash scripts/sync-claude-settings.sh push`   |
+| 新環境 bootstrap        | `./dotfilesLink.sh`（内部で `push` する）     |
+| 更新                    | `daily-update.sh` が `pull` を自動実行        |
 
 - 保存時に `jq -S` でキー順を正規化するので、差分は常に意味のある変更だけになる
 - `push` は実ファイルとリポジトリに差分があると既定で拒否する。`/config` での変更を消さないため。上書きしてよいときだけ `push --force`
@@ -51,9 +130,9 @@ statusline は `ccstatusline`（`settings.json` の `statusLine.command`）で�
 statusline JSON をそのまま渡し、`preserveColors: true` なら stdout の ANSI を保持するので、
 スクリプト側で配色を出し分けられる。
 
-| モデル   | 表示                                                       |
-| -------- | ---------------------------------------------------------- |
-| Fable    | `⚡FABLE 5⚡`（オリーブ背景・カーキ文字・太字の反転バッジ）   |
+| モデル   | 表示                                                        |
+| -------- | ----------------------------------------------------------- |
+| Fable    | `⚡FABLE 5⚡`（オリーブ背景・カーキ文字・太字の反転バッジ） |
 | それ以外 | `Model: <名前>`（cyan。標準ウィジェットと同じ見た目）       |
 
 - **Fable 判定は `model.id` の前方一致（`claude-fable*`）と `display_name` の部分一致の両方で行う。** `display_name` の実際の表記を実機で確認できていないため、どちらか一方でも拾えるようにしている
@@ -92,11 +171,11 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 
 `gh` の拡張は宣言リスト `scripts/gh-extensions.txt` で管理する。skill が拡張コマンドを前提にしている場合（例: `gh-stack` skill → `gh stack`）、skill だけ入れても新環境で動かないため、拡張側もここに並べて宣言する。
 
-| やりたいこと     | コマンド                                                                         |
-| ---------------- | -------------------------------------------------------------------------------- |
+| やりたいこと     | コマンド                                                                          |
+| ---------------- | --------------------------------------------------------------------------------- |
 | 拡張追加         | `gh-extensions.txt` に `<owner>/<repo>[@<version>]` を追記 → 下の一括インストール |
 | 一括インストール | `bash scripts/setup-gh-extensions.sh`（インストール済みはskip）                   |
-| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-gh-extensions.sh`                               |
+| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-gh-extensions.sh`                                |
 | 更新             | `daily-update.sh` が `gh extension upgrade --all` を実行                          |
 | 削除             | `gh-extensions.txt` の行削除 + `gh extension remove <name>`                       |
 
@@ -108,8 +187,8 @@ Claude Code のフックと cron から、Windows側の `BurntToast` (PowerShell
 
 共通処理は `scripts/lib/` に分けている。
 
-| ファイル                      | 役割                                          |
-| ----------------------------- | --------------------------------------------- |
+| ファイル                      | 役割                                           |
+| ----------------------------- | ---------------------------------------------- |
 | `lib/notify-windows-toast.sh` | `send_windows_toast` — BurntToast 呼び出し     |
 | `lib/stop-notification.sh`    | Stop通知のタイトル・本文の組み立て             |
 | `lib/notify-cooldown.sh`      | `notify_cooldown_should_send` — 同一通知の抑止 |
@@ -208,13 +287,13 @@ crontab -e
 GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 `01_Inbox/2026-08-06-linear-command-layer-design.md`。
 
-| やりたいこと          | コマンド                                                        |
-| --------------------- | --------------------------------------------------------------- |
-| 初期設定（ID解決）    | `bash scripts/linear-bootstrap.sh`                              |
-| 起票                  | `/linear-add`（対話skill。規約を自動適用する）                  |
-| draft PR→Triage起票  | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                |
-| 夜間ディスパッチ      | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
-| 動作確認              | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` 計4本 |
+| やりたいこと        | コマンド                                                        |
+| ------------------- | --------------------------------------------------------------- |
+| 初期設定（ID解決）  | `bash scripts/linear-bootstrap.sh`                              |
+| 起票                | `/linear-add`（対話skill。規約を自動適用する）                  |
+| draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                |
+| 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
+| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` 計4本 |
 
 - 認証は `~/.config/linear/api-key`（chmod 600）、設定は `linear-bootstrap.sh` が生成する `config.json`
 - 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled`
@@ -246,16 +325,17 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
   ラベルと二重に持たない。`ai:blocked-human` だけは「そもそも委譲できない」属性なのでstateと直交する）
 - dispatchは本文の内容で2モードに分かれる
 
-| 本文 | モード | 動作 |
-| ---------------- | ------ | ---------------------------------------------------------- |
-| 既存PRのURLがある | 継続 | そのPRのブランチをcheckoutして続きを進める。**新規PRは作らない** |
-| `repo:` 行のみ | 新規 | `linear/<identifier>` ブランチを切って新規draft PRを作る |
+| 本文              | モード | 動作                                                             |
+| ----------------- | ------ | ---------------------------------------------------------------- |
+| 既存PRのURLがある | 継続   | そのPRのブランチをcheckoutして続きを進める。**新規PRは作らない** |
+| `repo:` 行のみ    | 新規   | `linear/<identifier>` ブランチを切って新規draft PRを作る         |
 
-  **子issueのタイトルのprefixがモードに対応する。** `draft仕上げ:` は既存draft PRを指すので継続、
-  `実装:` はPRがまだ無いので新規。新規ブランチ方式のままだと重複PRができていた。
-  継続モードはPRが `OPEN` でなければ実行しない。
-  `draft仕上げ:` は `linear-sweep.sh` の自動起票と `/linear-add` の手動起票の両方で使うが、
-  **どちらもPRが実在するものにしか付けない**（付けるとタイトルからモードを判別できなくなる）
+**子issueのタイトルのprefixがモードに対応する。** `draft仕上げ:` は既存draft PRを指すので継続、
+`実装:` はPRがまだ無いので新規。新規ブランチ方式のままだと重複PRができていた。
+継続モードはPRが `OPEN` でなければ実行しない。
+`draft仕上げ:` は `linear-sweep.sh` の自動起票と `/linear-add` の手動起票の両方で使うが、
+**どちらもPRが実在するものにしか付けない**（付けるとタイトルからモードを判別できなくなる）
+
 - worktreeは `<repo>/.wt/linear-<identifier>` に作られ、掃除は `worktree-cleanup.sh` が拾う
 - 成果物はdraft PRまで。マージは必ず人間
 
@@ -264,9 +344,9 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 `dontAsk` のいずれでも拒否される。`git ls-remote` のような読み取りは通る）。headlessのagentに
 任せると必ずPR作成に到達しないため、役割を分ける。
 
-| 担当 | 範囲 |
-| ------- | -------------------------------------------------------------- |
-| agent | 実装してworktree内でコミットするまで（`gh` を渡さない） |
+| 担当       | 範囲                                                               |
+| ---------- | ------------------------------------------------------------------ |
+| agent      | 実装してworktree内でコミットするまで（`gh` を渡さない）            |
 | スクリプト | `git push` と `gh pr create --draft`（素のbash。権限層を通らない） |
 
 - **PR作成権限はagent実行前に確認する**（`gh repo view --json viewerPermission`）。
@@ -277,12 +357,12 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 
 **Cycleは1週間・月曜始まりの宣言型**（Jiraのsprint相当。2026-08-06に有効化）。
 
-| 設定 | 値 | 理由 |
-| ---- | ---- | ---- |
-| `cycleDuration` | 1（週） | `nippo-weekly` の週次振り返りとリズムを合わせる |
-| `cycleStartDay` | **2** | **これで月曜始まりになる**（1は日曜。実測で確認） |
-| `cycleIssueAutoAssignStarted/Completed` | false | 自動で入ると「記録」になり、計画と実績の差分が取れない |
-| `issueEstimationType` | fibonacci | 親（大）と子（小）が混在するため件数ではvelocityが読めない |
+| 設定                                    | 値        | 理由                                                       |
+| --------------------------------------- | --------- | ---------------------------------------------------------- |
+| `cycleDuration`                         | 1（週）   | `nippo-weekly` の週次振り返りとリズムを合わせる            |
+| `cycleStartDay`                         | **2**     | **これで月曜始まりになる**（1は日曜。実測で確認）          |
+| `cycleIssueAutoAssignStarted/Completed` | false     | 自動で入ると「記録」になり、計画と実績の差分が取れない     |
+| `issueEstimationType`                   | fibonacci | 親（大）と子（小）が混在するため件数ではvelocityが読めない |
 
 - **Cycleに載せるのは実作業単位。** 子issueがあれば子を、無ければ親を入れる。
   子を持つ親は入れない（二重計上になる）。親課題は複数Cycleにまたがる前提で、
@@ -434,13 +514,13 @@ gf 側の background 更新だけでは「clone 直後の `gf` に間に合う�
 
 消し忘れた worktree を洗い出して削除する。**既定は dry-run** で、実削除には `--execute` が必要。
 
-| やりたいこと           | コマンド                                             |
-| ---------------------- | ---------------------------------------------------- |
-| 候補の確認（dry-run）  | `bash scripts/worktree-cleanup.sh`                   |
-| 解放見込みつきで確認   | `bash scripts/worktree-cleanup.sh --size`            |
-| 実削除                 | `bash scripts/worktree-cleanup.sh --execute`         |
+| やりたいこと               | コマンド                                             |
+| -------------------------- | ---------------------------------------------------- |
+| 候補の確認（dry-run）      | `bash scripts/worktree-cleanup.sh`                   |
+| 解放見込みつきで確認       | `bash scripts/worktree-cleanup.sh --size`            |
+| 実削除                     | `bash scripts/worktree-cleanup.sh --execute`         |
 | 追跡ファイルの変更ごと削除 | `bash scripts/worktree-cleanup.sh --execute --force` |
-| 動作確認               | `bash scripts/test-worktree-cleanup.sh`              |
+| 動作確認                   | `bash scripts/test-worktree-cleanup.sh`              |
 
 `git worktree list --porcelain` を起点にするため、worktree の置き場所を問わず拾える。
 `.wt/`（`git wt`）・`.claude/worktrees/`（Claude Code）・`/tmp`・旧 `~/git-worktrees/` が
@@ -449,14 +529,14 @@ gf 側の background 更新だけでは「clone 直後の `gf` に間に合う�
 
 判定は上から順に評価し、最初にマッチした時点で確定する。
 
-| 順 | 条件                                 | 判定       |
-| -- | ------------------------------------ | ---------- |
-| 1  | `locked`                             | **SKIP**   |
-| 2  | `prunable`（ディレクトリ消失）       | **PRUNE**  |
-| 3  | detached HEAD                        | **SKIP**   |
-| 4  | 追跡ファイルに未コミット変更あり     | **SKIP**   |
-| 5  | PR が MERGED または CLOSED           | **DELETE** |
-| 6  | それ以外（OPEN / PRなし / `gh` 失敗） | **KEEP**   |
+| 順  | 条件                                  | 判定       |
+| --- | ------------------------------------- | ---------- |
+| 1   | `locked`                              | **SKIP**   |
+| 2   | `prunable`（ディレクトリ消失）        | **PRUNE**  |
+| 3   | detached HEAD                         | **SKIP**   |
+| 4   | 追跡ファイルに未コミット変更あり      | **SKIP**   |
+| 5   | PR が MERGED または CLOSED            | **DELETE** |
+| 6   | それ以外（OPEN / PRなし / `gh` 失敗） | **KEEP**   |
 
 **`locked` を最優先にしているのが安全性の要。** Claude Code の worktree はセッション実行中に
 lock されるため、これを PR 状態より先に判定しないと作業中のディレクトリを消す。`--force` は
@@ -521,23 +601,23 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 
 `dclean`（fish関数）で不要な Docker リソースを掃除する。fish起動時に溜まり具合を1行で通知する。
 
-| やりたいこと | コマンド                                                                        |
-| ------------ | ------------------------------------------------------------------------------- |
-| 現状確認のみ | `dclean --status`                                                               |
-| 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 未使用のbuild cache）      |
-| 重掃除       | `dclean -a`（軽 + 未使用image全部 + 共有ぶんも含むbuild cache全部）             |
-| 使い方       | `dclean --help`                                                                 |
-| 動作確認     | `bash scripts/test-docker-clean.sh`                                             |
+| やりたいこと | コマンド                                                                     |
+| ------------ | ---------------------------------------------------------------------------- |
+| 現状確認のみ | `dclean --status`                                                            |
+| 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 未使用のbuild cache） |
+| 重掃除       | `dclean -a`（軽 + 未使用image全部 + 共有ぶんも含むbuild cache全部）          |
+| 使い方       | `dclean --help`                                                              |
+| 動作確認     | `bash scripts/test-docker-clean.sh`                                          |
 
 - **named volume は軽・重どちらでも削除しない。** `docker volume prune` に `-a` を付けないため、未使用でも named volume（DBデータ等）は残る。消すときは `docker volume rm` を明示的に叩く
 - **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断。一覧の下にコピペ用の停止コマンドを出し、最終行に `dclean --refresh` を添える。`--refresh` を促すのは、停止しただけでは起動時通知がキャッシュのTTLが切れるまで古い件数を出し続けるため（実際になった）。除外パターンで非表示のコンテナが閾値を超えている場合は `（除外 N 件）` を注記する（`docker ps` と件数が合わず不足に見えるのを防ぐため）
 - **一覧は種別タグを出し、停止コマンドを種別ごとに分ける。** 停止の可逆性がまるで違うため。判定は `__docker_clean_container_kind` に分離してある
 
-| タグ           | 意味                                          | 案内するコマンド                        |
-| -------------- | --------------------------------------------- | --------------------------------------- |
-| `[compose]`    | compose 管理で `working_dir` が存在する        | `docker compose -p <project> down`      |
-| `[orphan]`     | compose 管理だが `working_dir` が消えている    | 同上（ただし `up` では戻せない）        |
-| `[standalone]` | compose 管理外（`docker run` 由来）            | `docker container stop <名前...>`       |
+| タグ           | 意味                                        | 案内するコマンド                   |
+| -------------- | ------------------------------------------- | ---------------------------------- |
+| `[compose]`    | compose 管理で `working_dir` が存在する     | `docker compose -p <project> down` |
+| `[orphan]`     | compose 管理だが `working_dir` が消えている | 同上（ただし `up` では戻せない）   |
+| `[standalone]` | compose 管理外（`docker run` 由来）         | `docker container stop <名前...>`  |
 
 - **判定順が要点。`working_dir` label が空のときは `orphan` にせず `compose` に倒す。** `orphan` は削除を伴う `down` を案内する側なので、孤児だと証明できないものを孤児扱いしてはいけない
 - **種別判定はキャッシュ読み出し時に行い、更新時に固定しない。** `test -d` は安いが、更新時に固定すると worktree を消した直後から最大6時間（TTL）`compose` と嘘をつく
@@ -555,12 +635,12 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 - `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下。**キャッシュを読むだけなので、コンテナを停止しても通知の件数はすぐには変わらない。** 即座に反映したいときは `dclean --refresh`（`dclean` / `dclean --status` の実行でも更新される）
 - 閾値と除外リストは変数で上書きできる（`99-local.fish` などで設定する）
 
-| 変数                              | 既定値                             | 意味                                      |
-| --------------------------------- | ---------------------------------- | ----------------------------------------- |
-| `docker_clean_size_threshold_gb`  | `5`                                | 回収可能サイズがこの値以上なら通知する    |
-| `docker_clean_uptime_threshold_h` | `12`                               | この時間を超えて稼働していたら一覧に出す  |
-| `docker_clean_ignore_patterns`    | `buildx_buildkit_*`                | 稼働一覧から除外する名前/イメージのグロブ |
-| `docker_clean_cache_ttl_h`        | `6`                                | キャッシュのTTL                           |
+| 変数                              | 既定値              | 意味                                      |
+| --------------------------------- | ------------------- | ----------------------------------------- |
+| `docker_clean_size_threshold_gb`  | `5`                 | 回収可能サイズがこの値以上なら通知する    |
+| `docker_clean_uptime_threshold_h` | `12`                | この時間を超えて稼働していたら一覧に出す  |
+| `docker_clean_ignore_patterns`    | `buildx_buildkit_*` | 稼働一覧から除外する名前/イメージのグロブ |
+| `docker_clean_cache_ttl_h`        | `6`                 | キャッシュのTTL                           |
 
 除外パターンはコンテナ**名**とイメージ**名**の両方に照合する。ツールが起動するコンテナは
 `suspicious_gagarin` のように名前が自動生成されるため、イメージ名でしか除外できないことがある。
@@ -599,26 +679,26 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 置き場所は次のとおり。**リポジトリにあるのはプレースホルダ入りの `.example` だけ**で、
 値の実体は必ずリポジトリ外か gitignore 対象に置く。
 
-| 何を | どこに置くか | 雛形 |
-| --- | --- | --- |
-| Jira cloudId・プロジェクトキー・GitLabホスト・esaチーム名・リポジトリ名・案件/顧客略号 | `~/.claude/local-context.md` | `.config/claude/local-context.md.example` |
-| 機密語辞書 | `~/.config/dotfiles/secret-patterns.txt` | `scripts/secret-patterns.txt.example` |
-| nvim の HTTPS 非対応ホスト | `my/local_config.lua` | `my/local_config.lua.example` |
-| dclean の除外パターン | `99-local.fish` | − |
-| 社内向けAHKスニペット | `snippets-local.ahk` と `ahk-snippets/js/` | − |
-| 社内プラグインの有効化と marketplace 定義 | 実ファイルのみ。`sync-claude-settings.sh` がマスクする | − |
-| 社内システム名で発動する skill | `.config/claude/skills/cross-repo-auto-discover/` ごと ignore | − |
-| 例示・テストデータ | `example-org` / `example-repo` / `CUST-A` などの架空名でコミットしてよい | − |
+| 何を                                                                                   | どこに置くか                                                             | 雛形                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------- |
+| Jira cloudId・プロジェクトキー・GitLabホスト・esaチーム名・リポジトリ名・案件/顧客略号 | `~/.claude/local-context.md`                                             | `.config/claude/local-context.md.example` |
+| 機密語辞書                                                                             | `~/.config/dotfiles/secret-patterns.txt`                                 | `scripts/secret-patterns.txt.example`     |
+| nvim の HTTPS 非対応ホスト                                                             | `my/local_config.lua`                                                    | `my/local_config.lua.example`             |
+| dclean の除外パターン                                                                  | `99-local.fish`                                                          | −                                         |
+| 社内向けAHKスニペット                                                                  | `snippets-local.ahk` と `ahk-snippets/js/`                               | −                                         |
+| 社内プラグインの有効化と marketplace 定義                                              | 実ファイルのみ。`sync-claude-settings.sh` がマスクする                   | −                                         |
+| 社内システム名で発動する skill                                                         | `.config/claude/skills/cross-repo-auto-discover/` ごと ignore            | −                                         |
+| 例示・テストデータ                                                                     | `example-org` / `example-repo` / `CUST-A` などの架空名でコミットしてよい | −                                         |
 
 **辞書と `local-context.md` をリポジトリに置かないのが要点。** どちらも中身が機密そのもので、
 コミットすると分離した意味が消える。
 
 検査は2層。`scripts/secret-scan.sh` が両方の実体で、`--staged` と `--tree` の2モードを持つ。
 
-| 層 | いつ | 辞書 |
-| --- | --- | --- |
-| pre-commit hook（`core.hooksPath=scripts/hooks`） | commit の手前 | 実体（社内語を含む） |
-| GitHub Actions（`secret-scan.yml`） | push / PR | `.example`（汎用パターンのみ） |
+| 層                                                | いつ          | 辞書                           |
+| ------------------------------------------------- | ------------- | ------------------------------ |
+| pre-commit hook（`core.hooksPath=scripts/hooks`） | commit の手前 | 実体（社内語を含む）           |
+| GitHub Actions（`secret-scan.yml`）               | push / PR     | `.example`（汎用パターンのみ） |
 
 - **CI は辞書の実体を持てない**（public リポジトリなので Actions のログも公開される）。
   主の防壁は hook 側で、CI は push 後の最終防波堤
