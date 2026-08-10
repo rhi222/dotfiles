@@ -13,6 +13,18 @@ require("auto-session").setup({
 	args_allow_files_auto_save = false,
 	-- 削除済みworktree等の孤児セッションファイルを自動削除（30日）
 	purge_after_minutes = 43200,
+	-- herdr のペイン単位でセッションを分ける。
+	-- auto-session のセッション名は cwd 由来のため、同じ cwd で複数ペインを開くと
+	-- 1つのセッションファイルを共有し、最後に保存したペインの状態で上書きされる。
+	-- ペイン ID をタグとして混ぜ、ペインごとに別の状態で復元できるようにする。
+	-- herdr の外で起動した nvim は nil を返して従来どおり cwd 単位になる。
+	custom_session_tag = function()
+		local pane = vim.env.HERDR_PANE_ID
+		if pane and pane ~= "" then
+			return pane
+		end
+		return nil
+	end,
 	-- tmux kill-server等でSIGHUP/SIGTERM受信中のセッション保存をスキップ
 	pre_save_cmds = {
 		function()
