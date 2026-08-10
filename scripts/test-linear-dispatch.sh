@@ -183,6 +183,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
   GIT_PUSH_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "push失敗ならPRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
 check "push失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "push失敗コメントにブランチ名が入る" grep -q 'linear/NSY-5' "$CURL_LOG"
 
 # 3-4. PR作成失敗 → Todoへ差し戻す
 : >"$CURL_LOG"

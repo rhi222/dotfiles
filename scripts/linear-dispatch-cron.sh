@@ -203,7 +203,7 @@ $desc
   # agentに任せるとClaude Codeの権限層に阻まれる（許可リストでは上書きできない）うえ、
   # そもそもagentにネットワーク書き込み権限を渡さずに済む
   if ! git -C "$wt" push -u origin "$branch" >/dev/null 2>&1; then
-    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ $($branch)）"
+    dispatch_finish_failed "$id" "$identifier" "$log" "git push に失敗した（ブランチ $branch）"
     return 0
   fi
 
