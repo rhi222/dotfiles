@@ -49,6 +49,52 @@ read_normalized() {
   fi
 }
 
+# マスク対象キーの判定に使う ERE。辞書が無ければ空（＝マスクしない）。
+# 新環境で bootstrap 前に同期が壊れるのを避けるため、辞書不在は許容する。
+secret_regex() {
+  local patterns="${SECRET_PATTERNS:-$HOME/.config/dotfiles/secret-patterns.txt}"
+  [[ -f "$patterns" ]] || return 0
+  grep -vE '^[[:space:]]*(#|$)' "$patterns" | paste -sd'|'
+}
+
+# stdin の JSON から機密エントリを落として stdout に出す。
+#
+# 対象は enabledPlugins と extraKnownMarketplaces のキー。このリポジトリは public なので、
+# 社内プラグイン名とその git URL を入れない。値は見ずキー名だけで判定する
+# （キーが "<plugin>@<marketplace>" 形式で、marketplace 名に社名が入るため）。
+mask_secrets() {
+  local re
+  re=$(secret_regex)
+  if [[ -z "$re" ]]; then
+    jq -S .
+    return
+  fi
+  jq -S --arg re "$re" '
+    def strip(k):
+      if has(k) then .[k] |= with_entries(select(.key | test($re) | not)) else . end;
+    strip("enabledPlugins") | strip("extraKnownMarketplaces")
+  '
+}
+
+# リポジトリ版($1) に実ファイル($2) の機密エントリを戻して stdout に出す。
+# push でリポジトリ版を書き出すとき、実ファイル側にしかない社内設定を消さないために使う。
+merge_secrets() {
+  local repo_json="$1" live_json="$2" re
+  re=$(secret_regex)
+  if [[ -z "$re" ]]; then
+    printf '%s\n' "$repo_json" | jq -S .
+    return
+  fi
+  jq -S -n --argjson repo "$repo_json" --argjson live "$live_json" --arg re "$re" '
+    def secrets(src; k):
+      if (src | has(k)) then (src[k] | with_entries(select(.key | test($re)))) else {} end;
+    def restore(k):
+      (secrets($live; k)) as $s
+      | if ($s | length) == 0 then . else .[k] = ((.[k] // {}) + $s) end;
+    $repo | restore("enabledPlugins") | restore("extraKnownMarketplaces")
+  '
+}
+
 # $1 の正規化結果を $2 に書く。既に同一内容なら書かない（0=書いた, 1=変更なし）
 write_if_changed() {
   local content="$1" dest="$2"
@@ -66,6 +112,8 @@ cmd_pull() {
 
   local content
   content=$(read_normalized "$LIVE" "実ファイル") || return 1
+  # 社内固有のプラグイン設定はリポジトリに入れない（public のため）
+  content=$(printf '%s\n' "$content" | mask_secrets)
 
   if [[ -f "$REPO" ]] && printf '%s\n' "$content" | diff -q - "$REPO" >/dev/null 2>&1; then
     echo "変更なし: リポジトリは実ファイルと一致しています"
@@ -106,7 +154,11 @@ cmd_push() {
     return 1
   }
 
-  if [[ "$content" == "$live_content" ]]; then
+  # 実ファイル側の機密エントリはリポジトリに存在しないので、比較はマスク後どうしで行う。
+  # そうしないと機密の有無だけで常に「差分あり」になり、push が拒否され続ける。
+  local live_masked
+  live_masked=$(printf '%s\n' "$live_content" | mask_secrets)
+  if [[ "$content" == "$live_masked" ]]; then
     echo "変更なし: 実ファイルはリポジトリと一致しています"
     return 0
   fi
@@ -121,12 +173,15 @@ ERROR: 実ファイルとリポジトリに差分があるため push しませ�
 リポジトリ側で上書きしてよいなら push --force を実行してください。
 差分:
 EOF
-    diff <(printf '%s\n' "$content") <(printf '%s\n' "$live_content") >&2 || true
+    diff <(printf '%s\n' "$content") <(printf '%s\n' "$live_masked") >&2 || true
     return 1
   fi
 
-  write_if_changed "$content" "$LIVE"
-  echo "上書き: $LIVE をリポジトリ版で上書きしました"
+  # 実ファイル側にしかない社内設定を消さないよう、書き戻す前にマージする
+  local merged
+  merged=$(merge_secrets "$content" "$live_content")
+  write_if_changed "$merged" "$LIVE"
+  echo "上書き: $LIVE をリポジトリ版で上書きしました（社内設定は保持）"
 }
 
 cmd_status() {
@@ -134,6 +189,8 @@ cmd_status() {
   live_content=$(read_normalized "$LIVE" "実ファイル") || return 1
   repo_content=$(read_normalized "$REPO" "リポジトリ版") || return 1
 
+  # push と同じく、機密エントリの有無は差分として扱わない
+  live_content=$(printf '%s\n' "$live_content" | mask_secrets)
   if [[ "$live_content" == "$repo_content" ]]; then
     echo "一致: 実ファイルとリポジトリは同じ内容です"
     return 0

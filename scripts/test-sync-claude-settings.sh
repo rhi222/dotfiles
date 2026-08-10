@@ -296,6 +296,143 @@ assert_contains "使い方" "$(out_of "$r")" "使い方を表示する"
 teardown
 
 # =============================================================================
+# マスク: このリポジトリは public なので、社内プラグインの設定を入れない。
+# 実ファイルを正とする同期は保ったまま、機密エントリだけを落とす。
+# =============================================================================
+echo ""
+echo "=== マスク: pull は機密エントリをリポジトリに入れない ==="
+setup
+mask_patterns="$TEST_DIR/patterns.txt"
+printf 'secretcorp\n' >"$mask_patterns"
+export SECRET_PATTERNS="$mask_patterns"
+
+cat >"$LIVE" <<'EOF'
+{
+  "enabledPlugins": {
+    "cdk@secretcorp-marketplace": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "secretcorp-marketplace": {"source": {"source": "git", "url": "git@github.com:secretcorp/mp.git"}},
+    "anthropic-agent-skills": {"source": {"repo": "anthropics/skills", "source": "github"}}
+  },
+  "theme": "dark"
+}
+EOF
+
+r=$(run_sync pull)
+assert_exit 0 "$(exit_of "$r")" "マスクありでも pull は成功する" "$(out_of "$r")"
+if grep -q secretcorp "$REPO"; then
+  ng "pull がリポジトリから機密エントリを落とす" "$(grep -n secretcorp "$REPO")"
+else
+  ok "pull がリポジトリから機密エントリを落とす"
+fi
+if jq -e '.enabledPlugins["superpowers@claude-plugins-official"]' "$REPO" >/dev/null; then
+  ok "pull が機密でないエントリを残す"
+else
+  ng "pull が機密でないエントリを残す" "$(cat "$REPO")"
+fi
+if jq -e '.theme == "dark"' "$REPO" >/dev/null; then
+  ok "pull がマスク対象外のキーを保持する"
+else
+  ng "pull がマスク対象外のキーを保持する" "$(cat "$REPO")"
+fi
+teardown
+
+echo ""
+echo "=== マスク: push は実ファイルの機密エントリを消さない ==="
+setup
+mask_patterns="$TEST_DIR/patterns.txt"
+printf 'secretcorp\n' >"$mask_patterns"
+export SECRET_PATTERNS="$mask_patterns"
+
+cat >"$LIVE" <<'EOF'
+{
+  "enabledPlugins": {
+    "cdk@secretcorp-marketplace": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "secretcorp-marketplace": {"source": {"source": "git", "url": "git@github.com:secretcorp/mp.git"}}
+  },
+  "theme": "dark"
+}
+EOF
+cat >"$REPO" <<'EOF'
+{
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {},
+  "theme": "light"
+}
+EOF
+
+r=$(run_sync push --force)
+assert_exit 0 "$(exit_of "$r")" "push --force が成功する" "$(out_of "$r")"
+if jq -e '.enabledPlugins["cdk@secretcorp-marketplace"]' "$LIVE" >/dev/null; then
+  ok "push が実ファイルの機密エントリを保持する"
+else
+  ng "push が実ファイルの機密エントリを保持する" "$(cat "$LIVE")"
+fi
+if jq -e '.extraKnownMarketplaces["secretcorp-marketplace"]' "$LIVE" >/dev/null; then
+  ok "push が実ファイルの機密marketplaceを保持する"
+else
+  ng "push が実ファイルの機密marketplaceを保持する" "$(cat "$LIVE")"
+fi
+if jq -e '.theme == "light"' "$LIVE" >/dev/null; then
+  ok "push がリポジトリ側の変更を反映する"
+else
+  ng "push がリポジトリ側の変更を反映する" "$(cat "$LIVE")"
+fi
+teardown
+
+echo ""
+echo "=== マスク: status と push はマスク後どうしで比較する ==="
+setup
+mask_patterns="$TEST_DIR/patterns.txt"
+printf 'secretcorp\n' >"$mask_patterns"
+export SECRET_PATTERNS="$mask_patterns"
+
+cat >"$LIVE" <<'EOF'
+{
+  "enabledPlugins": {"cdk@secretcorp-marketplace": true},
+  "theme": "dark"
+}
+EOF
+cat >"$REPO" <<'EOF'
+{
+  "enabledPlugins": {},
+  "theme": "dark"
+}
+EOF
+
+r=$(run_sync status)
+assert_contains "一致" "$(out_of "$r")" "機密エントリの差だけなら status は一致と判定する"
+# push は差分ありと誤認して拒否してはいけない（機密は元々リポジトリに無いため）
+r=$(run_sync push)
+assert_exit 0 "$(exit_of "$r")" "機密エントリの差だけなら push は拒否しない" "$(out_of "$r")"
+teardown
+unset SECRET_PATTERNS
+
+echo ""
+echo "=== マスク: 辞書が無ければマスクしない ==="
+setup
+export SECRET_PATTERNS="$TEST_DIR/no-such-file.txt"
+cat >"$LIVE" <<'EOF'
+{"enabledPlugins": {"cdk@secretcorp-marketplace": true}}
+EOF
+r=$(run_sync pull)
+assert_exit 0 "$(exit_of "$r")" "辞書が無くても pull は成功する" "$(out_of "$r")"
+if grep -q secretcorp "$REPO"; then
+  ok "辞書が無ければマスクせずそのまま取り込む"
+else
+  ng "辞書が無ければマスクせずそのまま取り込む" "$(cat "$REPO")"
+fi
+teardown
+unset SECRET_PATTERNS
+
+# =============================================================================
 echo ""
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
