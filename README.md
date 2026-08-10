@@ -46,6 +46,14 @@ bash scripts/secret-scan.sh --tree
 
 ## ドキュメント
 
-- [AGENTS.md](AGENTS.md) — 設計判断とその理由。各機能の詳細はここに集約している（`CLAUDE.md` は同じファイルへの symlink）
-- [docs/git-worktree-tool.md](docs/git-worktree-tool.md) — worktree 運用
-- [docs/tmux-session-restore-strategy.md](docs/tmux-session-restore-strategy.md) — reboot 後のセッション復元
+[AGENTS.md](AGENTS.md) が入口で、各機能の要点と「なぜそうしたか」を持つ（`CLAUDE.md` は同じファイルへの symlink）。
+分量が大きく独立している話題は `docs/` に分けてある。
+
+| 文書 | 中身 |
+| --- | --- |
+| [docs/bootstrap.md](docs/bootstrap.md) | 新環境の立ち上げ手順と、gitignore しているファイルの台帳 |
+| [docs/linear-command-layer.md](docs/linear-command-layer.md) | Linear へのタスク集約とAI夜間ディスパッチ |
+| [docs/worktree.md](docs/worktree.md) | git worktree の初期化・一覧・掃除 |
+| [docs/docker-clean.md](docs/docker-clean.md) | `dclean` の判定と閾値 |
+| [docs/git-worktree-tool.md](docs/git-worktree-tool.md) | `git wt` 自体の使い方 |
+| [docs/tmux-session-restore-strategy.md](docs/tmux-session-restore-strategy.md) | reboot 後のセッション復元の設計経緯 |
