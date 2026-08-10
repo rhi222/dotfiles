@@ -31,12 +31,12 @@ cat > "$tmp/full.json" <<'EOF'
   "states": {"nodes": [
     {"id": "s1", "name": "Triage"}, {"id": "s2", "name": "Todo"},
     {"id": "s3", "name": "AI Queued"}, {"id": "s4", "name": "AI Running"},
-    {"id": "s5", "name": "AI Review"}, {"id": "s6", "name": "Done"}]},
+    {"id": "s5", "name": "My Review"}, {"id": "s6", "name": "Done"},
+    {"id": "s7", "name": "In Progress"}, {"id": "s8", "name": "Waiting"}]},
   "labels": {"nodes": [
-    {"id": "l2", "name": "ai:blocked-human"},
     {"id": "l3", "name": "src:jira"}, {"id": "l4", "name": "src:slack"},
-    {"id": "l5", "name": "src:github"}, {"id": "l6", "name": "src:esa"},
-    {"id": "l7", "name": "src:todoist"}, {"id": "l8", "name": "role:player"},
+    {"id": "l5", "name": "src:github"}, {"id": "l6", "name": "src:mtg"},
+    {"id": "l8", "name": "role:player"},
     {"id": "l9", "name": "role:manager"}, {"id": "l10", "name": "em:people"},
     {"id": "l11", "name": "em:tech"}, {"id": "l12", "name": "em:project"},
     {"id": "l13", "name": "em:product"}]}
@@ -48,8 +48,12 @@ export CURL_RESPONSE="$tmp/full.json"
 check "bootstrapが成功する" bash "$SCRIPT"
 check "config.jsonが生成される" test -f "$tmp/config/linear/config.json"
 check "team_idが入る" test "$(jq -r '.team_id' "$tmp/config/linear/config.json")" = "team-1"
-check "state 6件が入る" test "$(jq '.states | length' "$tmp/config/linear/config.json")" = "6"
-check "label 12件が入る" test "$(jq '.labels | length' "$tmp/config/linear/config.json")" = "12"
+check "state 8件が入る" test "$(jq '.states | length' "$tmp/config/linear/config.json")" = "8"
+check "label 10件が入る" test "$(jq '.labels | length' "$tmp/config/linear/config.json")" = "10"
+check "My Reviewが入る" test "$(jq -r '.states["My Review"]' "$tmp/config/linear/config.json")" = "s5"
+check "Waitingが入る" test "$(jq -r '.states["Waiting"]' "$tmp/config/linear/config.json")" = "s8"
+check "src:mtgが入る" test "$(jq -r '.labels["src:mtg"]' "$tmp/config/linear/config.json")" = "l6"
+check "AI Reviewは残らない" test "$(jq -r '.states["AI Review"] // "null"' "$tmp/config/linear/config.json")" = "null"
 
 # 2. state不足: 非0で失敗し、不足名を表示する
 cat > "$tmp/missing.json" <<'EOF'
