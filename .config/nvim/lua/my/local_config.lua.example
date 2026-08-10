@@ -11,6 +11,6 @@ return {
 	-- :OpenGitURL が URL を組み立てるとき、ここに含まれるホストだけ http:// を使う。
 	-- 部分一致（plain 検索）なので、ドットをエスケープする必要はない。
 	http_hosts = {
-		-- "gitlab.example.internal",
+		-- "gitlab.example.com",
 	},
 }

@@ -591,6 +591,46 @@ WSL2 のディスクイメージは中で削除しても自動では縮まない
 - `my/commands/`: カスタムユーザーコマンド
 - requireベースの読み込みパターンに従う
 
+## 社内固有情報を入れない運用
+
+**このリポジトリは public。** 社名・社内ホスト名・社内リポジトリ名・Jiraプロジェクトキー・
+案件コード・顧客略号を入れない。
+
+置き場所は次のとおり。**リポジトリにあるのはプレースホルダ入りの `.example` だけ**で、
+値の実体は必ずリポジトリ外か gitignore 対象に置く。
+
+| 何を | どこに置くか | 雛形 |
+| --- | --- | --- |
+| Jira cloudId・プロジェクトキー・GitLabホスト・esaチーム名・リポジトリ名・案件/顧客略号 | `~/.claude/local-context.md` | `.config/claude/local-context.md.example` |
+| 機密語辞書 | `~/.config/dotfiles/secret-patterns.txt` | `scripts/secret-patterns.txt.example` |
+| nvim の HTTPS 非対応ホスト | `my/local_config.lua` | `my/local_config.lua.example` |
+| dclean の除外パターン | `99-local.fish` | − |
+| 社内向けAHKスニペット | `snippets-local.ahk` と `ahk-snippets/js/` | − |
+| 社内プラグインの有効化と marketplace 定義 | 実ファイルのみ。`sync-claude-settings.sh` がマスクする | − |
+| 社内システム名で発動する skill | `.config/claude/skills/cross-repo-auto-discover/` ごと ignore | − |
+| 例示・テストデータ | `example-org` / `example-repo` / `CUST-A` などの架空名でコミットしてよい | − |
+
+**辞書と `local-context.md` をリポジトリに置かないのが要点。** どちらも中身が機密そのもので、
+コミットすると分離した意味が消える。
+
+検査は2層。`scripts/secret-scan.sh` が両方の実体で、`--staged` と `--tree` の2モードを持つ。
+
+| 層 | いつ | 辞書 |
+| --- | --- | --- |
+| pre-commit hook（`core.hooksPath=scripts/hooks`） | commit の手前 | 実体（社内語を含む） |
+| GitHub Actions（`secret-scan.yml`） | push / PR | `.example`（汎用パターンのみ） |
+
+- **CI は辞書の実体を持てない**（public リポジトリなので Actions のログも公開される）。
+  主の防壁は hook 側で、CI は push 後の最終防波堤
+- **辞書が無い環境では警告して通す。** 新環境で `dotfilesLink.sh` を走らせる前に
+  commit できなくなるのを避けるため。`dotfilesLink.sh` が `.example` から雛形を作る
+- **パス名も検査する。** ファイル名に社内システム名が入っていると、中身を置換しても残るため
+- **`.gitignore` に書く行自体が漏洩源になりうる。** ファイル名に社内名が入る場合は
+  ディレクトリ単位で ignore する
+- `--no-verify` は原則使わない
+
+動作確認は `bash scripts/test-secret-scan.sh`。
+
 ## 重要な注意事項
 
 - 一部の設定ファイルで日本語コメントを使用
