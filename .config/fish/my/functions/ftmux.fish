@@ -19,22 +19,8 @@ function ftmux --description "Fuzzy switch tmux window/session (works outside tm
         tmux new-session -d -s main
     end
 
-    # 共通: 整形済み入力(ID\t表示文字列)から fzf で選び、ID列を返す
-    # 注: パイプ受け取り後に再度コマンド置換 `(fzf ...)` でstdinを参照しても
-    #     fishはパイプのstdinを継承しないため、while readで一旦吸い込んでから渡す
-    function __ftmux_pick_id --argument-names prompt --no-scope-shadowing
-        set -l input
-        while read -l l
-            set -a input $l
-        end
-        set -l line (printf '%s\n' $input \
-            | fzf --prompt="$prompt" --delimiter="$TAB" --with-nth=2 --exit-0)
-        if test -z "$line"
-            return 1
-        end
-        set -l parts (string split $TAB -- $line)
-        echo $parts[1]
-    end
+    # 選択は __ftmux_pick_id（別ファイル）に分けてある。
+    # ここで入れ子に定義すると、呼ぶたびにグローバル名前空間へ登録され ftmux 終了後も残る。
 
     # セッション一覧の awk フォーマッタ（attach前/後で使い回す）
     set -l session_fmt 'BEGIN{FS="\t"; OFS="\t"} {
@@ -48,7 +34,7 @@ function ftmux --description "Fuzzy switch tmux window/session (works outside tm
         set -l name (tmux list-sessions \
             -F "#{session_name}$TAB#{session_windows}$TAB#{?session_attached,attached,}$TAB#{session_created_string}" \
             | awk $session_fmt \
-            | __ftmux_pick_id "tmux attach> ")
+            | __ftmux_pick_id "tmux attach> " "$TAB")
         or return 0
         exec tmux attach -t "$name"
     end
@@ -66,7 +52,7 @@ function ftmux --description "Fuzzy switch tmux window/session (works outside tm
                     if (flags != "") flags=" (" flags ")";
                     printf "%s\t[%s panes] %s — %s%s\n", idx, panes, name, cwd, flags
                   }' \
-                | __ftmux_pick_id "tmux window> ")
+                | __ftmux_pick_id "tmux window> " "$TAB")
             or return 0
             tmux select-window -t "$idx"
 
@@ -74,7 +60,7 @@ function ftmux --description "Fuzzy switch tmux window/session (works outside tm
             set -l name (tmux list-sessions \
                 -F "#{session_name}$TAB#{session_windows}$TAB#{?session_attached,attached,}$TAB#{session_created_string}" \
                 | awk $session_fmt \
-                | __ftmux_pick_id "tmux session> ")
+                | __ftmux_pick_id "tmux session> " "$TAB")
             or return 0
             tmux switch-client -t "$name"
 
