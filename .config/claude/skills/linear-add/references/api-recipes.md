@@ -46,6 +46,29 @@ linear_gql 'query($team: ID!, $q: String!) {
 }' "$(jq -n --arg t "$(linear_config '.team_id')" --arg q "<元URLまたはJiraキー>" '{team: $t, q: $q}')"
 ```
 
+思い出し（`/linear-recall`）で使うときは `includeArchived: true` を足すこと。
+`autoArchivePeriod` が1ヶ月なので、少し前のissueはアーカイブ側に居る。
+付けないと「無い」と誤判定する。
+
+Slackのpermalinkはコピー元によってクエリ（`?thread_ts=` / `&cid=`）が変わるため、
+`/archives/<CID>/p<TS>` の部分だけで照合する。
+
+## キーワードで思い出す（全文検索）
+
+元URLで当たらないとき（起票時にURLを入れそこねた／Jira経由で起票した）に使う。
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+linear_gql 'query($t: String!) {
+  searchIssues(term: $t, first: 10, includeArchived: true) {
+    nodes { identifier title url }
+  }
+}' "$(jq -n --arg t "<キーワード>" '{t: $t}')"
+```
+
+`searchIssues` は候補を返すだけで確定ではない。**URL一致とは別物として扱い、
+人間に確認させること。**
+
 ## 期日を設定する（dueDate）
 
 型は `TimelessDate!`（`YYYY-MM-DD` 文字列）。Jiraの `duedate` をそのまま入れる。
