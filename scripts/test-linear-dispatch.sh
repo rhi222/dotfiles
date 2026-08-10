@@ -264,7 +264,6 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
 check "失敗時はTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 check "失敗ログがコメントされる" grep -q "went wrong" "$CURL_LOG"
 
-# shellcheck disable=SC2015  # KEEP_TMP=1 のときだけ残す。echo は必ず成功するのでC節は誤爆しない
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"

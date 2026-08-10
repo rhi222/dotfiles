@@ -15,3 +15,15 @@ disable=SC2016
 # （scripts/lib/*.sh の linear_* / dispatch_* など）。定義元だけを見ても
 # 呼び出しが見えないため、常に誤検知になる。
 disable=SC2329
+
+# SC2317: Command appears to be unreachable
+#
+# SC2329 と同じ理由。テストの stub 関数（`fake_list() { ... }` を PATH 経由で
+# 呼ばせる類）や、source されて外から呼ばれる関数の本体が到達不能に見える。
+disable=SC2317
+
+# SC2015: Note that A && B || C is not if-then-else
+#
+# `cond && cmd || true` を「失敗しても続行する」意図で使っている箇所がある。
+# C 節が走ってよい（むしろ走ってほしい）ケースなので指摘が当たらない。
+disable=SC2015
