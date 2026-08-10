@@ -82,7 +82,9 @@ sweep_github() {
         echo "skip(bot): $(jq -r '.url' <<<"$pr")"
         continue
       fi
-      # draft仕上げは常に自分の実装作業なので role/em を起票時に確定できる
+      # draft仕上げは常に自分の実装作業なので role/em を起票時に確定できる。
+      # このprefixは「draft PRが実在する」ことを表し、dispatchの継続モードに対応する。
+      # PRがまだ無い工程は /linear-add が `実装:` で起票する（新規モード）
       sweep_item "$(jq -r '.url' <<<"$pr")" "draft仕上げ: $(jq -r '.title' <<<"$pr")" \
         "src:github" "role:player" "em:tech"
     done < <(jq -c '.[]' <<<"$json")
