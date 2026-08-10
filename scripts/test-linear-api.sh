@@ -19,7 +19,7 @@ echo "lin_api_test" > "$tmp/config/linear/api-key"
 cat > "$tmp/config/linear/config.json" <<'EOF'
 {
   "team_id": "team-uuid-1",
-  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Queued": "st-ready", "AI Running": "st-run", "AI Review": "st-judge", "Done": "st-done"},
+  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Queued": "st-ready", "AI Running": "st-run", "My Review": "st-judge", "Waiting": "st-wait", "Done": "st-done"},
   "labels": {"src:github": "lb-gh", "src:jira": "lb-jira"}
 }
 EOF
@@ -77,7 +77,7 @@ check "issues_in_stateが配列を返す" test "$(linear_issues_in_state 'AI Que
 # 6. linear_issue_move / linear_comment が成功する
 echo '{"data": {"issueUpdate": {"success": true}}}' > "$tmp/move.json"
 export CURL_RESPONSE="$tmp/move.json"
-check "issue_moveが成功する" linear_issue_move "i1" "AI Review"
+check "issue_moveが成功する" linear_issue_move "i1" "My Review"
 echo '{"data": {"commentCreate": {"success": true}}}' > "$tmp/comment.json"
 export CURL_RESPONSE="$tmp/comment.json"
 check "commentが成功する" linear_comment "i1" "body"

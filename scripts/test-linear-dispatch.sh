@@ -17,8 +17,8 @@ mkdir -p "$tmp/home/.config/linear" "$tmp/bin" "$tmp/ghq/github.com/example-org/
 echo "lin_api_test" > "$tmp/home/.config/linear/api-key"
 cat > "$tmp/home/.config/linear/config.json" <<'EOF'
 {"team_id": "t1",
- "states": {"Triage": "s1", "Todo": "s2", "AI Queued": "s3", "AI Running": "s4", "AI Review": "s5", "Done": "s6"},
- "labels": {"ai:blocked-human": "l2", "src:jira": "l3", "src:slack": "l4", "src:github": "l5", "src:esa": "l6"}}
+ "states": {"Triage": "s1", "Todo": "s2", "AI Queued": "s3", "AI Running": "s4", "My Review": "s5", "Done": "s6", "In Progress": "s7", "Waiting": "s8"},
+ "labels": {"src:jira": "l3", "src:slack": "l4", "src:github": "l5", "src:mtg": "l6"}}
 EOF
 
 # --- 関数単体テスト（sourceして呼ぶ） ---
@@ -41,7 +41,7 @@ done
 if grep -q 'viewer' <<<"$data"; then
   echo '{"data": {"viewer": {"id": "user-me"}}}'
 elif grep -q '\\"s5\\"' <<<"$data" || grep -q '"s5"' <<<"$data"; then
-  cat "${WIP_RESPONSE:?}"        # AI Review一覧（WIPチェック用）
+  cat "${WIP_RESPONSE:?}"        # My Review一覧（WIPチェック用）
 elif grep -q 'issues(' <<<"$data"; then
   cat "${READY_RESPONSE:?}"      # AI Queued一覧
 elif grep -q 'issueUpdate' <<<"$data"; then
@@ -136,7 +136,7 @@ out2=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-full.json" READY_RESPONSE="$tmp/r
 check "WIP上限超過でスキップする" grep -q "WIP" <<<"$out2"
 check "WIP超過時はclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 
-# 3. 正常系 → claude実行 → スクリプトがpush＋PR作成 → コメント＋AI Reviewへ遷移
+# 3. 正常系 → claude実行 → スクリプトがpush＋PR作成 → コメント＋My Reviewへ遷移
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
@@ -144,7 +144,7 @@ check "claudeが実行される" test -s "$CLAUDE_LOG"
 check "スクリプトがpushする" grep -q "push" "$GIT_LOG"
 check "スクリプトがgh pr create --draftする" bash -c "grep -q 'pr create' '$GH_LOG' && grep -q -- '--draft' '$GH_LOG'"
 check "PR URLがコメントされる" grep -q "pull/99" "$CURL_LOG"
-check "AI Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
+check "My Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
 check "プロンプトにLinear識別子を書かせない" grep -q "identifierを書かない\|NSY-xx" "$CLAUDE_LOG"
 check "agentにpushさせない指示が入る" grep -q "pushしない\|push・PR作成はしない" "$CLAUDE_LOG"
 check "agentのallowedToolsにgh/pushを渡さない" bash -c "! grep -qE 'Bash\\(gh:|git push' '$CLAUDE_LOG'"
@@ -179,7 +179,7 @@ check "継続モードはlinear/NSY-7ブランチを作らない" bash -c "! gre
 check "継続モードもpushする" grep -q "push" "$GIT_LOG"
 check "継続モードは新規PRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
 check "継続モードは既存PR URLをコメントする" grep -q "pull/42" "$CURL_LOG"
-check "継続モードもAI Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
+check "継続モードもMy Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
 
 # 3-8. 継続モード: PRがOPENでなければ実行しない
 : > "$CURL_LOG"; : > "$CLAUDE_LOG"; : > "$GIT_LOG"; : > "$GH_LOG"; echo base > "$HEAD_FILE"

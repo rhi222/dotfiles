@@ -17,7 +17,8 @@
 # 起動条件は state = "AI Queued" の1点。ラベルは見ない（stateと二重に持たない）
 #
 # 安全弁:
-#   - 「AI Review」が LINEAR_WIP_LIMIT（既定10）件以上なら実行しない
+#   - 「My Review」が LINEAR_WIP_LIMIT（既定10）件以上なら実行しない
+#     （他人待ちの「Waiting」は自分の判断負荷ではないので数えない）
 #   - 1晩の実行上限 LINEAR_DISPATCH_MAX（既定3）
 #   - 成果物はdraft PRまで。マージはしない
 #
@@ -217,7 +218,7 @@ $desc
   else
     linear_comment "$id" "夜間dispatch完了（既存PRを更新）: $pr_url"
   fi
-  linear_issue_move "$id" "AI Review"
+  linear_issue_move "$id" "My Review"
   echo "$identifier: OK $pr_url"
 }
 
@@ -240,9 +241,9 @@ main() {
   [[ -f "$HOME/.config/linear-dispatch-enabled" ]] || exit 0
 
   local wip ready count issue
-  wip=$(linear_issues_in_state "AI Review" | jq 'length')
+  wip=$(linear_issues_in_state "My Review" | jq 'length')
   if [[ "$wip" -ge "$LINEAR_WIP_LIMIT" ]]; then
-    echo "$(date): WIP上限（AI Review ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
+    echo "$(date): WIP上限（My Review ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
     exit 0
   fi
 
