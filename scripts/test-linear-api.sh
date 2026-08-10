@@ -102,6 +102,39 @@ check "payloadに指定日時が入る" grep -q '2026-08-06' "$CURL_LOG"
 # （Doneは成果なので残す。Canceled/Duplicateだけを外す）
 check "canceledを除外するフィルタを送る" grep -q 'canceled' "$CURL_LOG"
 
+# 8. linear_cycle_issues: アクティブなCycleのissueを返す
+#
+# 「今日やる3件」の候補と、Cycle内の親子二重計上チェックの両方で使う。
+# 絞り込みは呼び出し側がjqでやるので、ここではCycleの中身をそのまま返す。
+cat > "$tmp/cycle.json" <<'EOF'
+{"data": {"cycles": {"nodes": [
+  {"number": 1, "startsAt": "2026-08-09T00:00:00Z", "endsAt": "2026-08-16T00:00:00Z",
+   "issues": {"nodes": [
+     {"identifier": "NSY-65", "title": "親", "url": "u1", "estimate": 2, "dueDate": null,
+      "state": {"name": "Todo", "type": "unstarted"}, "labels": {"nodes": []},
+      "parent": null, "children": {"nodes": [{"identifier": "NSY-66"}]}},
+     {"identifier": "NSY-66", "title": "子", "url": "u2", "estimate": 1, "dueDate": null,
+      "state": {"name": "Todo", "type": "unstarted"}, "labels": {"nodes": [{"name": "em:tech"}]},
+      "parent": {"identifier": "NSY-65"}, "children": {"nodes": []}}
+   ]}}
+]}}}
+EOF
+export CURL_RESPONSE="$tmp/cycle.json"
+: > "$CURL_LOG"
+check "cycle_issuesが配列を返す" test "$(linear_cycle_issues | jq 'length')" = "2"
+check "cycle_issuesがestimateを含む" test "$(linear_cycle_issues | jq -r '.[0].estimate')" = "2"
+check "cycle_issuesがparentを含む" test "$(linear_cycle_issues | jq -r '.[1].parent.identifier')" = "NSY-65"
+check "cycle_issuesがchildrenを含む" test "$(linear_cycle_issues | jq -r '.[0].children.nodes[0].identifier')" = "NSY-66"
+check "cycle_issuesがstateを含む" test "$(linear_cycle_issues | jq -r '.[0].state.name')" = "Todo"
+# 「今週やると宣言したもの」だけを見たいので、進行中のCycleに限定する
+check "アクティブなCycleに限定するフィルタを送る" grep -q 'isActive' "$CURL_LOG"
+check "team_idで絞る" grep -q 'team-uuid-1' "$CURL_LOG"
+
+# Cycleが1本も無い / 未開始の週は空配列を返す。日報作成やtriageを止めないため
+echo '{"data": {"cycles": {"nodes": []}}}' > "$tmp/cycle-empty.json"
+export CURL_RESPONSE="$tmp/cycle-empty.json"
+check "アクティブなCycleが無ければ空配列" test "$(linear_cycle_issues | jq -c '.')" = "[]"
+
 rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"

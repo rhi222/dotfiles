@@ -98,6 +98,40 @@ linear_activity_since() {
   }' "$(jq -n --arg t "$team" --arg s "$1" '{team: $t, since: $s}')" | jq '.issues.nodes'
 }
 
+# linear_cycle_issues
+#   → 進行中のCycleのissue [{identifier, title, url, estimate, dueDate, state, labels, parent, children}]
+#
+# 「今日やる3件」の候補（`nippo-add`）と、Cycle内の親子二重計上チェック（`linear-triage`）で使う。
+#
+# 候補をTodo全体（42件）ではなくCycle（16件）から取るのは、件数の問題だけではない。
+# Cycleは「今週やると自分で宣言したもの」なので、期日や滞留日数といった機械的な代理指標より
+# 選定の根拠が強い。
+#
+# state での絞り込みはしない。呼び出し側の用途が違うため（候補選びはopenだけ見たいが、
+# 二重計上チェックはCycleの中身を全部見る必要がある）。フィルタはjq側でやる。
+#
+# アクティブなCycleが無い週は空配列を返す。日報作成もtriageも止めない。
+linear_cycle_issues() {
+  local team
+  team=$(linear_config '.team_id') || return 1
+  linear_gql 'query($team: ID!) {
+    cycles(filter: {team: {id: {eq: $team}}, isActive: {eq: true}}, first: 1) {
+      nodes {
+        number startsAt endsAt
+        issues(first: 100) {
+          nodes {
+            identifier title url estimate dueDate
+            state { name type }
+            labels { nodes { name } }
+            parent { identifier }
+            children { nodes { identifier } }
+          }
+        }
+      }
+    }
+  }' "$(jq -n --arg t "$team" '{team: $t}')" | jq '.cycles.nodes[0].issues.nodes // []'
+}
+
 # linear_issue_create <title> <description> <state名> [label名...] → {id, identifier, url}
 #
 # assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
