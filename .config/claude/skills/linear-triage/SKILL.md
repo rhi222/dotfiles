@@ -64,7 +64,22 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 linear_issues_in_state "Todo" | jq -r --arg t "$(date +%F)" \
   '.[] | select(.dueDate != null and .dueDate < $t) | "\(.identifier) due=\(.dueDate)"'
 
-# 6) Projectのオーバービュー（週1回でよい。月曜のCycle計画時が目安）
+# 6) Cycle内の親子二重計上（親と子が両方Cycleに載っている）
+#    Cycleに載せるのは実作業単位。子があれば子だけを入れる（親も入れるとvelocityが二重計上になる）。
+#    加えて「今日やる3件」の候補がCycle起点なので、放置すると親と子が並んで提案される
+linear_cycle_issues | jq -r '
+  map(.identifier) as $ids
+  | .[] | select((.children.nodes|length) > 0)
+  | . as $p | (.children.nodes | map(.identifier) | map(select(. as $c | $ids | index($c)))) as $dup
+  | select(($dup|length) > 0)
+  | "\($p.identifier)（親・est=\($p.estimate // "-")）と子 \($dup|join(",")) が同じCycleにいる"'
+
+# 7) Cycle内のestimate未設定（velocityが読めない。1件も無いうちは無視してよい）
+linear_cycle_issues | jq -r '
+  .[] | select(.estimate == null and (.state.type | IN("completed","canceled") | not))
+  | "\(.identifier) estimate未設定 \(.title[0:40])"'
+
+# 8) Projectのオーバービュー（週1回でよい。月曜のCycle計画時が目安）
 #    projects と issues を1クエリにまとめると "Query too complex" で弾かれるので分ける
 linear_gql '{ projects(first: 50) { nodes { id name state targetDate } } }' > /tmp/pj.json
 linear_gql '{ issues(first: 250) { nodes { project { id } state { type } } } }' > /tmp/iss.json
@@ -85,8 +100,16 @@ Projectで見るのは3点。
 | **target未設定** | 「期限のある塊」というProjectの定義から外れている | 期限を入れるか、期限が決められないなら常設カテゴリ化しているサインなので分割・削除を検討 |
 | **In Progress が4つを超える** | 並行しすぎ | どれかを `Planned` に戻す |
 
+Cycleの2件（6・7）で見るのは次のとおり。
+
+| 症状 | 意味 | 打ち手 |
+| --- | --- | --- |
+| **親子の二重計上** | velocityが二重に数えられ、「今日やる3件」に親と子が並んで出る | 親をCycleから外す（`issueUpdate(cycleId: null)`）。親の期限はProjectのtarget dateで追う |
+| **estimate未設定** | 「今日どれだけ入るか」が計算できない | Cycle計画時に入れる。ただし**velocityが2〜3サイクル溜まるまでポイントを時間に換算しない**（fibonacciは相対見積もりなので、実績が無いうちに換算すると嘘の数字になる） |
+
 見つかったものは**その場で直さず報告する**。親子の取り残しは「子も閉じる」か「親から切り離して
-単独の課題にする」かで判断が分かれるため、人間に聞く。
+単独の課題にする」かで判断が分かれるため、人間に聞く。Cycleの二重計上は打ち手が一意だが、
+「親のほうを残して子を外す」を選びたい場合もあるので同じく確認を取る。
 
 ### 2. Triageを受け入れる（あれば）
 
@@ -130,7 +153,8 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
   | .[] | "\(.identifier)\tdue=\(.eff_due // "-")\t\(if (.eff_due // "9999") < $t then "超過" else "  " end)\t\(.title[0:40])"'
 ```
 
-- **`draft仕上げ:` の子issueは有力候補**。成果物が既にあり、残りが仕上げだけのことが多い
+- **`draft仕上げ:` の子issueは有力候補**。draft PRという成果物が既にあり、残りが仕上げだけのことが多い
+- **`実装:` の子issueはゼロから書かせる**ので、指示が粗いと空振りする。`draft仕上げ:` より慎重に選ぶ
 - **親課題（課題そのもの）は投げない**。成果物を持たないので `repo:` 行が書けない
 - 思考タスク（体制の構想・意見のまとめ・概念整理）は **`ai:blocked-human` を付けて対象外にする**。
   AIに投げても人間の判断が全部残るため、夜間に回す意味がない
@@ -150,9 +174,13 @@ dispatchの起動条件は **state = `AI Queued`** の1点（ラベルは見な�
 | 既存PRのURLがある | 継続 | そのPRのブランチで作業。**新規PRは作らない** |
 | `repo:` 行のみ | 新規 | `linear/<identifier>` ブランチを切って新規draft PRを作る |
 
-`draft仕上げ:` の子issueは `元URL:` に既存PRを持つので**自動的に継続モード**になる。
-`repo:` 行を足す必要はない（足しても継続モードが優先される）。
+**タイトルのprefixとモードは対応している。** `draft仕上げ:` は `元URL:` に既存PRを持つので
+**自動的に継続モード**になる（`repo:` 行を足す必要はない。足しても継続モードが優先される）。
+`実装:` は `repo:` 行だけを持つので新規モードになる。
 継続モードはPRが `OPEN` でなければ差し戻される。
+
+prefixと本文が食い違っている issue（`draft仕上げ:` なのにPR URLが無い等）を見つけたら、
+整形のついでにタイトルを直す。モードの判別ができなくなるため。
 
 本文を以下の形にして、**人間に見せて添削を受けてから** `AI Queued` へ遷移させる。
 
