@@ -239,7 +239,7 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 スイープの実測で27件中22件がレビュー依頼だった）。bot作成PRも除外する
 （`LINEAR_SWEEP_EXCLUDE_AUTHORS`、既定 `*[bot]`）。
 
-**夜間ディスパッチは「AI Review」が `LINEAR_WIP_LIMIT`（既定10）件以上だと止まる。**
+**夜間ディスパッチは「My Review」が `LINEAR_WIP_LIMIT`（既定10）件以上だと止まる。**
 生成速度＞判断速度は仕組みが破綻しているシグナルなので、朝の判断タイムで捌いてから再開する。
 
 - **起動条件は state = `AI Queued` の1点。ラベルは見ない**（パイプライン上の位置はstateで表し、
