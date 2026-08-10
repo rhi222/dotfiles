@@ -13,10 +13,17 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FIX=0
 [ "${1:-}" = "--fix" ] && FIX=1
 
-# 対象は git が追跡している *.sh 全部。find で列挙すると
-# tmux/yazi のプラグインや gh skill が持ち込む第三者のスクリプトまで拾ってしまう
+# 対象は git 基準で「自分が保守する *.sh」全部。find で列挙すると tmux/yazi の
+# プラグインや gh skill が持ち込む第三者のスクリプトまで拾ってしまう
 # （実測で追跡65本に対しディスク上は144本）。ignore 済み＝自分が保守しない、で切れる。
-mapfile -t files < <(git -C "$REPO_ROOT" ls-files -z '*.sh' | xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort)
+#
+# --others も含めるのは、まだ add していない新規スクリプトを検査対象にするため。
+# --cached だけだと、書いたばかりのファイルが commit するまでローカルで検査されず、
+# CI（checkout 後は追跡済み）で初めて落ちることになる。
+mapfile -t files < <(
+  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard '*.sh' |
+    xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+)
 
 if [ "${#files[@]}" -eq 0 ]; then
   echo "検査対象の .sh が無い" >&2

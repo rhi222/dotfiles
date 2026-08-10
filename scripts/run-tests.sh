@@ -56,7 +56,9 @@ for t in "${tests[@]}"; do
       echo "FAIL  $name（exit $rc）"
     fi
     # 失敗したものだけ出力を見せる。全部出すとCIログが読めなくなる
-    sed 's/^/      | /' <<<"$out"
+    while IFS= read -r line; do
+      printf '      | %s\n' "$line"
+    done <<<"$out"
     failed=$((failed + 1))
     failed_names+=("$name")
   fi
