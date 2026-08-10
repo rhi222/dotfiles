@@ -585,6 +585,57 @@ unset WORKTREE_CLEANUP_PR_STATE_CMD
 teardown
 echo ""
 
+# --- 13. サマリの件数表示が実行結果を反映する ---
+# --execute で削除したのに「DELETE 候補: N 件」と出ると、まだ候補が残っているように読める。
+# また N_DELETE は分類結果なので、削除に失敗しても件数が減らず成功したように見えていた。
+# dry-run は「候補」、--execute は「実際に削除できた件数」を出し分けることを検証する。
+echo "[13] サマリの件数表示"
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #99"
+EOF
+chmod +x "$STUB"
+
+git -C "$REPO" worktree add -q "$REPO/.wt/w-merged" -b merged-br
+
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" 2>&1)
+assert_output_contains "DELETE 候補: 1 件" "$output" "dry-run は DELETE 候補として件数を出す"
+assert_output_lacks "削除       :" "$output" "dry-run では削除件数行を出さない"
+assert_output_lacks "DELETED=" "$output" "dry-run の機械可読行に DELETED は出ない"
+
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+assert_output_lacks "DELETE 候補" "$output" "--execute では「候補」と表示しない"
+assert_output_contains "削除       : 1 件" "$output" "--execute は実際に削除できた件数を出す"
+assert_output_lacks "削除失敗" "$output" "失敗がなければ失敗行は出さない"
+assert_output_contains "DELETED=1 DELETE_FAILED=0" "$output" "機械可読行に実削除件数が出る"
+teardown
+
+# 削除に失敗した分は成功件数に数えない（失敗の作り方は [11] と同じ）
+setup
+STUB="$TEST_DIR/pr-stub.sh"
+cat >"$STUB" <<'EOF'
+#!/bin/bash
+echo "MERGED #99"
+EOF
+chmod +x "$STUB"
+
+mkdir -p "$REPO/.wt/a-fail-parent"
+git -C "$REPO" worktree add -q "$REPO/.wt/a-fail-parent/w-fail" -b fail-br
+git -C "$REPO" worktree add -q "$REPO/.wt/z-ok" -b ok-br
+
+chmod a-w "$REPO/.wt/a-fail-parent"
+output=$(WORKTREE_CLEANUP_ROOTS="$TEST_DIR" WORKTREE_CLEANUP_PR_STATE_CMD="$STUB" bash "$CLEANUP" --execute 2>&1)
+chmod u+w "$REPO/.wt/a-fail-parent"
+
+assert_output_contains "削除       : 1 件" "$output" "失敗した分は成功件数に含めない"
+assert_output_contains "削除失敗   : 1 件" "$output" "失敗件数を表示する"
+assert_output_contains "DELETE_CANDIDATES=2" "$output" "分類件数は機械可読行に残る"
+assert_output_contains "DELETED=1 DELETE_FAILED=1" "$output" "機械可読行に成功/失敗の内訳が出る"
+teardown
+echo ""
+
 # =============================================================================
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
