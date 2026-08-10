@@ -83,6 +83,7 @@ delivery = "herdr"
 enabled = false
 
 [session]
-# サーバ再起動後もエージェントの会話セッションを復元
-# tmux の resurrect/continuum（自動保存・復元）の思想に対応
-resume_agents_on_restore = true
+# エージェントの復元は he ラッパー（~/scripts/herdr-restore.sh）に一本化する。
+# tmux の resurrect/continuum（自動保存・復元）に相当する役割はそちらが持つ。
+# herdr 側の resume は起動タイミングを絞れず、再起動直後に負荷が跳ねるため無効にする。
+resume_agents_on_restore = false
