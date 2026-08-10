@@ -121,6 +121,43 @@ git -C "$repo" commit -q -m add-e
 r=$(run_scan --tree)
 check_exit 1 "$(exit_of "$r")" "--tree はコミット済みの機密語を検出する" "$(out_of "$r")"
 
+echo "=== 辞書ファイル自身は検査しない ==="
+# 辞書はパターンの一覧なので必ず自分にマッチする。CI は .example を辞書として使うので実際に踏む
+cp "$tmp/patterns.txt" "$repo/dict.txt"
+git -C "$repo" add dict.txt
+git -C "$repo" commit -q -m add-dict
+r=$(SECRET_PATTERNS="$repo/dict.txt" run_scan --tree)
+check_exit 1 "$(exit_of "$r")" "他ファイルの機密語は検出したまま" "$(out_of "$r")"
+case "$(out_of "$r")" in
+  *dict.txt*) ng "辞書ファイル自身を検査しない" "$(out_of "$r")" ;;
+  *) ok "辞書ファイル自身を検査しない" ;;
+esac
+
+echo "=== バイナリファイルは中身を検査しない ==="
+printf 'secretcorp\000\001\002binary\n' >"$repo/bin.dat"
+git -C "$repo" add bin.dat
+git -C "$repo" commit -q -m add-bin
+r=$(run_scan --tree)
+case "$(out_of "$r")" in
+  *"[内容] bin.dat"*) ng "バイナリの中身を検査しない" "$(out_of "$r")" ;;
+  *) ok "バイナリの中身を検査しない" ;;
+esac
+
+echo "=== symlink はリンク先の文字列を見る ==="
+# 本体が追跡されていれば別途スキャンされるので、実体を二重に報告しない
+ln -sf e.txt "$repo/alias.md"
+git -C "$repo" add alias.md
+git -C "$repo" commit -q -m add-link
+r=$(run_scan --tree)
+case "$(out_of "$r")" in
+  *"[内容] alias.md"*) ng "symlink 経由で実体を二重報告しない" "$(out_of "$r")" ;;
+  *) ok "symlink 経由で実体を二重報告しない" ;;
+esac
+ln -sf secretcorp-target.txt "$repo/bad-link.md"
+git -C "$repo" add bad-link.md
+r=$(run_scan --staged)
+check_exit 1 "$(exit_of "$r")" "リンク先の文字列に機密語があれば検出する" "$(out_of "$r")"
+
 echo "=== 引数 ==="
 r=$(run_scan)
 check_exit 2 "$(exit_of "$r")" "引数なしは exit 2" "$(out_of "$r")"

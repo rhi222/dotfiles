@@ -61,8 +61,17 @@ report() {
   fi
 }
 
+# 辞書ファイル自身の絶対パス。自分を検査対象から外すために使う
+patterns_real=$(realpath "$PATTERNS" 2>/dev/null || echo "$PATTERNS")
+
 for path in "${paths[@]}"; do
   [ -z "$path" ] && continue
+
+  # 辞書は検査しない。パターンの一覧なので必ず自分にマッチする
+  # （CI は scripts/secret-patterns.txt.example を辞書として使うため実際に踏む）
+  if [ "$(realpath "$path" 2>/dev/null || echo "$path")" = "$patterns_real" ]; then
+    continue
+  fi
 
   # パス名そのものの検査。ファイル名に社内システム名が入ることがあり、
   # 中身を置換してもファイル名は残る
@@ -71,16 +80,19 @@ for path in "${paths[@]}"; do
     echo "  [パス名] $path" >&2
   fi
 
-  # 中身の検査。--staged は index の内容を見る（作業ツリーではなく）
-  content=""
+  # 中身の検査。
+  # -I でバイナリを除外する（画像等。-a だと中身がそのまま出力に混ざる）。
+  # symlink は本体ではなくリンク先の文字列を見る。git が保存しているのもそれで、
+  # 本体が追跡されていれば別途スキャンされる（CLAUDE.md -> AGENTS.md など）。
+  hits=""
   if [ "$mode" = "--staged" ]; then
-    content=$(git show ":$path" 2>/dev/null) || continue
-  else
-    [ -f "$path" ] || continue
-    content=$(cat "$path")
+    hits=$(git show ":$path" 2>/dev/null | grep -InE "$re" | head -5)
+  elif [ -L "$path" ]; then
+    hits=$(readlink "$path" | grep -InE "$re" | head -5)
+  elif [ -f "$path" ]; then
+    hits=$(grep -InE "$re" "$path" | head -5)
   fi
 
-  hits=$(printf '%s\n' "$content" | grep -anE "$re" | head -5)
   if [ -n "$hits" ]; then
     report
     echo "  [内容] $path" >&2
