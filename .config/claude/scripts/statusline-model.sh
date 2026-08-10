@@ -5,7 +5,7 @@
 # できない。custom-command は stdin に Claude Code の statusline JSON を受け取り、
 # preserveColors: true なら stdout の ANSI をそのまま通すので、ここで色を出し分ける。
 #
-#   Fable    → ⚡FABLE 5⚡（黄背景・黒文字・太字の反転バッジ）
+#   Fable    → ⚡FABLE 5⚡（オリーブ背景・カーキ文字・太字の反転バッジ）
 #   それ以外 → Model: <名前>（cyan。標準ウィジェットと同じ見た目）
 #
 # Fable の判定は model.id の前方一致と display_name の部分一致の両方で行う。
