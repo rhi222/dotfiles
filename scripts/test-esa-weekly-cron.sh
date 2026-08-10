@@ -31,6 +31,9 @@ touch "$tmp_home2/.config/esa-weekly-enabled"
 out2=$(HOME="$tmp_home2" ESA_WEEKLY_DRY_RUN=1 bash "$SCRIPT" 2>&1)
 check "DRY_RUNで実行内容を表示する" grep -q "DRY_RUN" <<<"$out2"
 check "DRY_RUNでesa-weekly-reportを呼ぶ予定が表示される" grep -q "esa-weekly-report" <<<"$out2"
+# 出力先の既定は $HOME 起点にする。個人のWindowsユーザー名を公開リポジトリの
+# 既定値に焼き込まないため（~/Obsidian が Windows 側への symlink）
+check "出力先の既定は\$HOME起点" grep -q "$tmp_home2/Obsidian" <<<"$out2"
 
 # 3. DRY_RUNでclaude本体が呼ばれていないこと
 out3=$(HOME="$tmp_home2" ESA_WEEKLY_DRY_RUN=1 CLAUDE_BIN=/nonexistent/claude bash "$SCRIPT" 2>&1)

@@ -30,7 +30,7 @@ fi
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # GitHub活動の収集を含むが、対象は当日分だけなので短めでよい
 CLAUDE_TIMEOUT="${NIPPO_DRAFT_TIMEOUT:-900}"
-VAULT="${NIPPO_VAULT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian}"
+VAULT="${NIPPO_VAULT:-$HOME/Obsidian}"
 PROMPT="/nippo-finalize"
 # nippo-finalize の allowed-tools に合わせて許可を最小化する
 ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(command:*),Bash(gh:*),Bash(jq:*),Bash(sort:*),Bash(paste:*)"

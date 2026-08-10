@@ -24,7 +24,7 @@ fi
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # 複数記事のリビジョン差分を集めて要約するので長めに取る
 CLAUDE_TIMEOUT="${ESA_WEEKLY_TIMEOUT:-1800}"
-OUT_DIR="${ESA_WEEKLY_OUT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian/05_Organization/Buchokai}"
+OUT_DIR="${ESA_WEEKLY_OUT:-$HOME/Obsidian/05_Organization/Buchokai}"
 OUT_FILE="$OUT_DIR/weekly-draft-$(date +%Y-%m-%d).md"
 PROMPT="/esa-weekly-report 結果は $OUT_FILE に保存して。投稿はせずファイル出力のみ"
 

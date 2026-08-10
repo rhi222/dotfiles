@@ -31,7 +31,7 @@ fi
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # テンプレートを埋めるだけなので短い。始業時刻までに終わる必要がある
 CLAUDE_TIMEOUT="${NIPPO_CREATE_TIMEOUT:-600}"
-VAULT="${NIPPO_VAULT:-/mnt/c/Users/ryohei_nishiyama/Desktop/Obsidian}"
+VAULT="${NIPPO_VAULT:-$HOME/Obsidian}"
 NIPPO_FILE="$VAULT/02_Daily/nippo.$(date +%Y-%m-%d).md"
 # 引数なしで呼ぶと、ファイルが無い場合は新規作成のみが走る（作業ログの追記は発生しない）
 PROMPT="/nippo-add"

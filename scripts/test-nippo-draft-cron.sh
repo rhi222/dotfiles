@@ -31,6 +31,9 @@ touch "$tmp_home2/.config/nippo-draft-enabled"
 out2=$(HOME="$tmp_home2" NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 bash "$SCRIPT" 2>&1)
 check "DRY_RUNで実行内容を表示する" grep -q "DRY_RUN" <<<"$out2"
 check "DRY_RUNでnippo-finalizeを呼ぶ予定が表示される" grep -q "nippo-finalize" <<<"$out2"
+# Vault の既定は $HOME 起点にする。個人のWindowsユーザー名を公開リポジトリの
+# 既定値に焼き込まないため（~/Obsidian が Windows 側への symlink）
+check "Vaultの既定は\$HOME起点" grep -q "$tmp_home2/Obsidian" <<<"$out2"
 check "allowedToolsにghが含まれる（GitHub活動収集用）" grep -q 'Bash(gh:\*)' <<<"$out2"
 check "allowedToolsにjqが含まれる（GitHub活動収集用）" grep -q 'Bash(jq:\*)' <<<"$out2"
 

@@ -31,6 +31,9 @@ touch "$tmp_home2/.config/nippo-create-enabled"
 out2=$(HOME="$tmp_home2" NIPPO_CREATE_DRY_RUN=1 NIPPO_CREATE_FORCE=1 bash "$SCRIPT" 2>&1)
 check "DRY_RUNで実行内容を表示する" grep -q "DRY_RUN" <<<"$out2"
 check "DRY_RUNでnippo-addを呼ぶ予定が表示される" grep -q "nippo-add" <<<"$out2"
+# Vault の既定は $HOME 起点にする。個人のWindowsユーザー名を公開リポジトリの
+# 既定値に焼き込まないため（~/Obsidian が Windows 側への symlink）
+check "Vaultの既定は\$HOME起点" grep -q "$tmp_home2/Obsidian" <<<"$out2"
 
 # 3. DRY_RUNでclaude本体が呼ばれていないこと（存在しないバイナリを指定しても成功する）
 out3=$(HOME="$tmp_home2" NIPPO_CREATE_DRY_RUN=1 NIPPO_CREATE_FORCE=1 CLAUDE_BIN=/nonexistent/claude bash "$SCRIPT" 2>&1)
