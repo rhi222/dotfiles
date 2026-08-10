@@ -143,6 +143,9 @@ setup_git_hooks() {
 setup_local_configs() {
   local pairs=(
     "$DC/nvim/lua/my/local_config.lua.example|$DC/nvim/lua/my/local_config.lua"
+    # local-context.md の置き場所は ~/.claude/ 直下（リポジトリ外）。
+    # .config/claude/ は ~/.config/claude へリンクされるので、そこに置くとリポジトリ内に現れる
+    "$DC/claude/local-context.md.example|$HOME/.claude/local-context.md"
   )
   local pair src dest
   for pair in "${pairs[@]}"; do
@@ -151,6 +154,7 @@ setup_local_configs() {
     if [ ! -e "$dest" ] && [ -e "$src" ]; then
       cp "$src" "$dest"
       echo "[INFO] $dest を雛形から作成しました" >&2
+      echo "       社内固有の値を埋めてください（この内容はコミットされません）" >&2
     fi
   done
 }
