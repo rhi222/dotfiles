@@ -33,6 +33,8 @@ source "$SCRIPT_DIR/lib/linear-api.sh"
 SEEN="${LINEAR_SWEEP_SEEN:-$HOME/.local/state/linear-sweep/seen.txt}"
 # 当日すでに走ったかの記録。--if-not-today で参照する
 LAST_RUN="${LINEAR_SWEEP_LAST_RUN:-$HOME/.local/state/linear-sweep/last-run}"
+# 多重起動の防止に使う。cron と fish 起動時フックは併存する設計なので実際に重なりうる
+LOCK="${LINEAR_SWEEP_LOCK:-$HOME/.local/state/linear-sweep/sweep.lock}"
 # 1回のスイープで起票する上限。初回の様子見や、想定外の大量起票を防ぐ保険
 LINEAR_SWEEP_MAX="${LINEAR_SWEEP_MAX:-50}"
 swept_count=0
@@ -121,6 +123,16 @@ sweep_jira() {
 
 main() {
   [[ -f "$HOME/.config/linear-sweep-enabled" ]] || exit 0
+
+  # 多重起動を防ぐ。既に走っていれば黙って終わる（待たない）。
+  #
+  # last-run はスイープ完了後にしか書かれないので、--if-not-today だけでは
+  # 同時起動を防げない。cron（平日8:00）と fish の起動時フックは併存する設計で、
+  # 8:00前後にシェルを開くと両方が判定を通過する。seen.txt の更新も起票の後なので、
+  # 重なると同じPRを2回起票しうる。
+  mkdir -p "$(dirname "$LOCK")"
+  exec 9>"$LOCK"
+  flock -n 9 || exit 0
 
   # --if-not-today: 当日すでに実行済みなら静かに抜ける。
   # WSL2のcronはPCが停止していた時刻のジョブをスキップし、anacronも入っていないため

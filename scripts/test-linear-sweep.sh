@@ -144,7 +144,38 @@ check "gh pr commentを呼ばない" bash -c "! grep -q 'pr comment' '$GH_LOG'"
 check "gh pr editを呼ばない" bash -c "! grep -q 'pr edit' '$GH_LOG'"
 check "curlはLinear宛のみ（Jira等へPOSTしない）" bash -c "! grep -E '^ARGS:.*atlassian' '$CURL_LOG'"
 
-rm -rf "$tmp"
+# 6. 多重起動しない。
+# cron（平日8:00）と fish 起動時フックは併存する設計で、last-run は
+# スイープ完了後に書かれる。8:00 前後にシェルを開くと両方が --if-not-today を
+# 通過し、同じPRを2回起票しうる（seen.txt はスイープ後にしか更新されない）
+tmp3=$(mktemp -d)
+mkdir -p "$tmp3/.config/linear" "$tmp3/state"
+cp "$tmp/home/.config/linear/api-key" "$tmp/home/.config/linear/config.json" "$tmp3/.config/linear/"
+touch "$tmp3/.config/linear-sweep-enabled"
+lock="$tmp3/state/sweep.lock"
+
+: >"$CURL_LOG"
+# 別プロセスがロックを保持している状態で起動する
+(
+  exec 9>"$lock"
+  flock 9
+  sleep 3
+) &
+holder=$!
+sleep 0.5
+
+start=$(date +%s)
+out6=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" \
+  LINEAR_SWEEP_LOCK="$lock" LINEAR_SWEEP_SEEN="$tmp3/state/seen.txt" \
+  LINEAR_SWEEP_LAST_RUN="$tmp3/state/last-run" bash "$SCRIPT" 2>&1)
+elapsed=$(($(date +%s) - start))
+wait "$holder" 2>/dev/null
+
+check "ロック中は待たずに抜ける" test "$elapsed" -lt 3
+check "ロック中は起票しない" bash -c "! grep -q issueCreate '$CURL_LOG'"
+check "ロック中は静かに終わる" test -z "$out6"
+
+rm -rf "$tmp" "$tmp3"
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]
