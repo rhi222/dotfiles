@@ -13,9 +13,9 @@ lines=$(herdr workspace list | jq -r '
 [ -n "$lines" ] || exit 0
 
 selected=$(
-  printf '%s\n' "$lines" \
-    | fzf --layout reverse --delimiter '\t' --with-nth 2.. \
-          --prompt 'space> ' --header 'focus workspace'
+  printf '%s\n' "$lines" |
+    fzf --layout reverse --delimiter '\t' --with-nth 2.. \
+      --prompt 'space> ' --header 'focus workspace'
 )
 [ -n "$selected" ] || exit 0
 

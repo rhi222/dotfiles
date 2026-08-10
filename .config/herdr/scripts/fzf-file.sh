@@ -13,16 +13,16 @@ start_dir="${HERDR_ACTIVE_PANE_CWD:-$HOME}"
 pane_id="${HERDR_ACTIVE_PANE_ID:-}"
 
 if [ -z "$pane_id" ]; then
-    echo "HERDR_ACTIVE_PANE_ID が空です。popup 経由で実行してください。" >&2
-    exit 1
+  echo "HERDR_ACTIVE_PANE_ID が空です。popup 経由で実行してください。" >&2
+  exit 1
 fi
 
 cd "$start_dir" || exit 0
 
 if command -v fd >/dev/null 2>&1; then
-    list_cmd=(fd --type f --hidden --exclude .git)
+  list_cmd=(fd --type f --hidden --exclude .git)
 else
-    list_cmd=(find . -type f -not -path '*/.git/*')
+  list_cmd=(find . -type f -not -path '*/.git/*')
 fi
 
 # popup 自体が枠付きなので、fzf は枠内をそのまま使う（tmux の --tmux 指定は不要）

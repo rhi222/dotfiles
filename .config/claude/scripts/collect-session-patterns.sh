@@ -7,11 +7,11 @@
 
 DAYS="${DAYS:-7}"
 if [ "$DAYS" -gt 30 ]; then
-    echo "⚠️ 最大30日です。30日に制限します。"
-    DAYS=30
+  echo "⚠️ 最大30日です。30日に制限します。"
+  DAYS=30
 fi
 
-CUTOFF_MS=$(( ($(date +%s) - DAYS * 86400) * 1000 ))
+CUTOFF_MS=$((($(date +%s) - DAYS * 86400) * 1000))
 START_DATE=$(date -d "$DAYS days ago" +%Y-%m-%d)
 END_DATE=$(date +%Y-%m-%d)
 
@@ -24,10 +24,10 @@ echo ""
 HISTORY_FILE="$HOME/.claude/history.jsonl"
 
 if [ ! -f "$HISTORY_FILE" ]; then
-    echo "⚠️ history.jsonl が見つかりません: $HISTORY_FILE"
-    echo "セッション履歴データなし"
+  echo "⚠️ history.jsonl が見つかりません: $HISTORY_FILE"
+  echo "セッション履歴データなし"
 else
-    python3 << PYEOF
+  python3 <<PYEOF
 import json, os
 from collections import Counter
 
@@ -108,9 +108,9 @@ echo ""
 PROJECTS_DIR="$HOME/.claude/projects"
 
 if [ ! -d "$PROJECTS_DIR" ]; then
-    echo "⚠️ projects ディレクトリが見つかりません"
+  echo "⚠️ projects ディレクトリが見つかりません"
 else
-    python3 << PYEOF
+  python3 <<PYEOF
 import json, os
 from datetime import datetime, timezone, timedelta
 

@@ -34,9 +34,9 @@ lines=$(herdr agent list | jq -r --arg esc "$esc" --argjson ws "$ws" --argjson t
 [ -n "$lines" ] || exit 0
 
 selected=$(
-  printf '%s\n' "$lines" \
-    | fzf --ansi --layout reverse --delimiter '\t' --with-nth 2.. \
-          --prompt 'agent> ' --header 'focus agent'
+  printf '%s\n' "$lines" |
+    fzf --ansi --layout reverse --delimiter '\t' --with-nth 2.. \
+      --prompt 'agent> ' --header 'focus agent'
 )
 [ -n "$selected" ] || exit 0
 
