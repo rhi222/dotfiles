@@ -31,11 +31,17 @@ SNIPPETS := Map(
     ";gm-ms", Map("label", "Prompt: Gemini-schedule",       "rel", "prompts\Gemini-my-schedule.md"),
     ";cp-vi", Map("label", "Prompt: chatGPT-voice-input",   "rel", "prompts\chatGPT-voice-input.md"),
 
-    ";js-fa", Map("label", "JS: attendance承認",              "rel", "js\attendance-approve.js"),
-    ";js-fk", Map("label", "JS: 出社状況登録",              "rel", "js\attendance-kintai.js"),
-
     ";md-sd", Map("label", "Markdown: summary-detail tag",              "rel", "markdown\summary-detail.md")
 )
+
+; ローカル専用スニペット（gitignore 済み）。無ければ無視される。
+; main.ahk の `#Include *i local.ahk` と同じ省略可能 include。
+;
+; local.ahk ではなくここに置くのは、main.ahk が local.ahk を text-snippet.ahk より
+; 前に読むため。その時点では SNIPPETS がまだ定義されていない。
+;
+; 社内システム向けのスニペットなど、dotfiles に入れられない項目をここへ書く。
+#Include *i snippets-local.ahk
 
 ; ============================================================
 ; Utilities

@@ -34,3 +34,9 @@ docs/superpowers/
 # 社内固有値の集約先。実体は ~/.claude/local-context.md（リポジトリ外）だが、
 # .config/claude/ 配下に置いてしまった場合の保険として ignore しておく。
 .config/claude/local-context.md
+
+# 社内システム向けのJSスニペット。ファイル名にシステム名が入るため、
+# ファイル単位で書くとこの .gitignore 自体が漏洩源になる。ディレクトリごと外す。
+.config/AutoHotkey/ahk-snippets/js/
+# 上のスニペットを登録するローカル定義。text-snippet.ahk が任意 include する
+.config/AutoHotkey/scripts/snippets-local.ahk
