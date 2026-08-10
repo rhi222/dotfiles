@@ -150,6 +150,44 @@ jq -r '[.[] | select(.state.type=="completed")] | .[] | "\(.identifier) \(.title
 | Project の集中 | 1つのProjectに偏っていれば、他のIn Progress Projectが止まっている |
 | ラベル無し（`role:?` / `em:?`） | 多いとラベル運用が崩れている。件数を報告する |
 
+### ラベルの週次サンプリング監査
+
+`src:*` は返信先なので事実判定で済むが、`role:*` と `em:*` は判断で付けるため、
+間違って付いていても気づけない。週次で**最大5件だけ**抜き取って再推定し、
+不一致だけを出す。全件は見ない。目的は個別の誤りを潰すことではなく、傾向的なズレに気づくこと。
+
+```bash
+# 直近7日に完了したissueを updatedAt が新しい順に最大5件
+jq -r '[.[] | select(.state.type=="completed")] | sort_by(.updatedAt) | reverse | .[0:5] | .[]
+       | "\(.identifier)\t\(.title)\t\([.labels.nodes[].name|select(startswith("role:"))]|first//"role:?")\t\([.labels.nodes[].name|select(startswith("em:"))]|first//"em:?")"' \
+  /tmp/linear-week.json
+```
+
+抜き取った各issueの本文を引き、**タイトルと本文だけを見て** `role:*` と `em:*` を再推定する。
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+linear_gql 'query($id: String!){ issue(id: $id){ identifier title description } }' \
+  "$(jq -n --arg id "NSY-42" '{id:$id}')"
+```
+
+判定基準は起票規約と同じ2軸。
+
+- `role:player` = 自分が手を動かした / `role:manager` = 人を動かした
+- `em:people` = ヒト（体制・育成・評価） / `em:tech` = 技術 / `em:project` = 案件進行 / `em:product` = プロダクト
+
+現在のラベルと一致していれば何も出さない。**不一致のものだけ**、根拠を1行添えて出す。
+
+```
+NSY-42  em:tech → em:project では？
+        根拠: 本文が日程調整とベンダー折衝の話に終始している
+```
+
+- 完了issueが5件未満の週は全件、0件の週はこのブロックごと省略する
+- 抽出窓が7日なので週ごとにほぼ重複しない。**監査済みマーカーは持たない**
+- **skillはラベルを付け替えない。** 提案だけして、直すか無視するかは人間が決める
+- `src:*` は監査しない
+
 ### 書き方の制約
 
 - **毎週同じ観点を並べない。** 前週と比べて動いた軸だけを書く
