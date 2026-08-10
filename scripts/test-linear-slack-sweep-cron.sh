@@ -41,6 +41,12 @@ check "スレ読み取りを許可する" grep -q "slack_read_thread" <<<"$out2"
 check "スクリプト実行を許可する" grep -q 'Bash(scripts/linear-slack-sweep.sh:\*)' <<<"$out2"
 check "dateを許可する（after:の日付計算用）" grep -q 'Bash(date:\*)' <<<"$out2"
 
+# 3b. timeout が掛かっている（headless実行は誰も見ていないのでハングを残さない）
+check "timeoutを噛ませる" grep -q "timeout " <<<"$out2"
+out2b=$(HOME="$tmp2" LINEAR_SLACK_SWEEP_DRY_RUN=1 LINEAR_SLACK_SWEEP_FORCE=1 \
+  LINEAR_SLACK_SWEEP_TIMEOUT=42 bash "$SCRIPT" 2>&1)
+check "timeoutを環境変数で上書きできる" grep -q "timeout 42" <<<"$out2b"
+
 # 4. Slackへの書き込み系が許可されていない（これが「書き戻さない」の担保）
 for t in slack_send_message slack_send_message_draft slack_schedule_message \
   slack_create_canvas slack_update_canvas; do

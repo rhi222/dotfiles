@@ -92,10 +92,15 @@ bash scripts/linear-bootstrap.sh                   # Linear の team/state/label
 | 機能 | フラグ | cron |
 | --- | --- | --- |
 | 日報リマインド通知 | `~/.config/nippo-notify-enabled` | `0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh` |
+| 日報ファイル自動作成 | `~/.config/nippo-create-enabled` | `0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh` |
 | 日報ドラフト自動仕上げ | `~/.config/nippo-draft-enabled` | `30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh` |
 | esa週次レポート | `~/.config/esa-weekly-enabled` | `0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh` |
 | Linear スイープ | `~/.config/linear-sweep-enabled` | `0 8 * * 1-5 $HOME/scripts/linear-sweep.sh` |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled` | `0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh` |
+
+**headless の Claude を呼ぶものには全て timeout が掛かっている**（`lib/cron-claude.sh`）。
+誰も見ていない時間に走るので、ハングを放置すると次の起動まで残る。上限は仕事の重さで
+変えてあり、`NIPPO_CREATE_TIMEOUT` のような環境変数で上書きできる。
 
 Windowsトースト通知には Windows 側で `Install-Module BurntToast` が別途必要。
 AutoHotkey は `bash .config/AutoHotkey/deploy-ahk-script.sh` で Windows 側へコピーする
@@ -104,9 +109,9 @@ AutoHotkey は `bash .config/AutoHotkey/deploy-ahk-script.sh` で Windows 側へ
 #### 5. 確認する
 
 ```fish
-bash scripts/lint.sh                    # shellcheck + shfmt
-bash scripts/secret-scan.sh --tree      # 機密語スキャン（辞書を埋めた後に）
-for t in scripts/test-*.sh; bash $t; end # 全テスト
+bash scripts/lint.sh                # shellcheck + shfmt（追跡＋未追跡の全 .sh）
+bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた後に）
+bash scripts/run-tests.sh           # 全テスト
 ```
 
 ### メインセットアップスクリプト
@@ -170,6 +175,26 @@ statusline JSON をそのまま渡し、`preserveColors: true` なら stdout の
 ```fish
 echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"current_dir":"."}}' | ccstatusline
 ```
+
+### 日次アップデート（daily-update.sh）
+
+`scripts/daily-update.sh` が各パッケージマネージャとツールの更新をまとめて回す。
+apt / cargo / mise（self-update・upgrade・prune）/ npm global / pip global /
+nvim の Lazy と Mason / gh skill / gh extension の順に実行し、最後に
+worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行う。
+
+- **1ステップの失敗で止めない。** 全部走らせてから、失敗したステップ名をまとめて報告する
+- **「更新」と「情報提供」を区別する。** worktree のチェックは `run_step_soft` で実行し、
+  `gh` 未認証などで失敗しても全体を FAILED にしない。毎日 FAILED 通知が飛ぶと無視されるようになるため
+- 失敗があれば Windowsトースト通知を出す（WSL2以外ではスキップ）
+- ログは `~/.daily-update/` に日次で残り、**30日より古いものは起動時に掃除する**
+- 冒頭で mise の shim を PATH 前方に置き直す。長時間動いている親シェルから継承した
+  バージョン固定の PATH のままだと、`mise upgrade` 後に古い `installs/<tool>/<ver>/` を
+  掴んだままになる（`gh` がこれで `/usr/bin/gh` に落ちて `gh skill` を失った実例がある）
+- 新規追加はここではやらない。skill は `skill-add.sh`、gh 拡張は `gh-extensions.txt` +
+  `setup-gh-extensions.sh` の担当で、ここは既存のものの更新だけを回す
+
+動作確認は `bash scripts/test-daily-update.sh`。
 
 ### aptパッケージ管理
 
@@ -264,6 +289,21 @@ crontab -e
 
 無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh` / `scripts/test-notify-cooldown.sh` / `scripts/test-stop-notification.sh`。
 
+### 日報ファイル自動作成（WSL2専用）
+
+平日8:00に `scripts/nippo-create-cron.sh` が `nippo-add` スキルをヘッドレス実行し、当日の日報ファイルを新規作成する。テンプレート・今日の予定（カレンダー）・前日からの引き継ぎを埋めるので、始業時にはできあがった日報から書き始められる。
+
+**当日ファイルが既にあれば何もしない。** 手動で作った日報を上書きしたり、空の作業ログを追記したりしないため。
+
+```fish
+touch ~/.config/nippo-create-enabled
+env NIPPO_CREATE_DRY_RUN=1 NIPPO_CREATE_FORCE=1 bash scripts/nippo-create-cron.sh  # 実行内容の確認
+crontab -e
+# 0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
+```
+
+無効化は `rm ~/.config/nippo-create-enabled`。動作確認は `bash scripts/test-nippo-create-cron.sh`。
+
 ### 日報ドラフト自動仕上げ（WSL2専用）
 
 平日18:30に `scripts/nippo-draft-cron.sh` が `nippo-finalize` スキルをヘッドレス実行し、日報ドラフトを自動で仕上げる。人間は生成結果をレビューするだけにする。
@@ -288,6 +328,8 @@ crontab -e
 ### esa週次レポート自動生成（WSL2専用）
 
 毎週金曜16:00に `scripts/esa-weekly-cron.sh` が `esa-weekly-report` スキルをヘッドレス実行し、部長会向けドラフトを `~/Obsidian/05_Organization/Buchokai/` に出力する。人間は生成結果をレビューするだけにする。
+
+**`~/Obsidian` は Windows 側の Vault への symlink** で、日報系（`nippo-*`）も含め全スクリプトがこれを既定にしている。新環境ではこの symlink を張る（張らないと出力先が作られてしまい、Obsidian から見えない）。出力先だけ変えたい場合は `ESA_WEEKLY_OUT` で上書きする。
 
 セットアップ:
 
@@ -614,6 +656,37 @@ dry-run では最終行にならない（後ろに案内が出る）ため `grep
 
 WSL2 のディスクイメージは中で削除しても自動では縮まない。実ディスクの空きを取り戻すには
 `bash scripts/wsl-cleanup.sh` の末尾に出る `ext4.vhdx` 圧縮手順を Windows 側で実行する。
+
+### tmux セッションの復元（herdr / `he`）
+
+reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と claude のプロセスまで**復活する。
+tmux の continuum + resurrect（`@resurrect-processes`）に相当する仕組みを herdr 上で作っている。
+
+| 何を | 誰が復元するか |
+| --- | --- |
+| レイアウト / タブ名 / ペイン label / cwd | herdr の `session.json`（native） |
+| nvim / claude のプロセス | `scripts/herdr-restore.sh` |
+| nvim のバッファ | auto-session（**ペイン単位**） |
+
+**herdr は前面プロセスを保存しない。** そのため各プロセスが自分でマーカーを残す方式にしている。
+
+| プロセス | マーカー | 書く場所 |
+| --- | --- | --- |
+| nvim | `~/.local/state/herdr-nvim/<pane_id>` | `.config/nvim/lua/my/settings/autocmd.lua` |
+| claude | `~/.local/state/herdr-claude/<pane_id>` | `.config/claude/hooks/herdr-claude-marker.sh` |
+
+- **一斉起動しない。** 種別ごとに同時投入数と間隔を絞る（nvim は3個ずつ2秒間隔、claude は1個ずつ8秒間隔）。
+  reboot 直後に数十個の nvim と claude が同時に立ち上がると負荷スパイクで固まるため。
+  `HERDR_RESTORE_NVIM_BATCH` 等で調整できる
+- **`he` も `herdr-restore.sh` も flock で多重起動を防ぐ。** 複数端末から同時に `he` を叩いても
+  サーバー起動は1プロセスだけが行う
+- 何がどの順で流れるかは `bash scripts/herdr-restore.sh --dry-run` で確認できる
+- **nvim のセッションはペイン単位で分かれる。** cwd 単位だと、同じリポジトリを2ペインで開いていたときに
+  片方のバッファでもう片方が上書きされる
+
+設計の経緯は `docs/tmux-session-restore-strategy.md`。動作確認は `test-herdr-restore.sh` /
+`test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
+**後ろ2本は CI では走らない**（実 nvim 設定と auto-session の導入済み環境が要るため `# ci-skip:` 宣言済み）。
 
 ### Docker開発
 
