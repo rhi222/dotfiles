@@ -21,8 +21,6 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/herdr-restore.sh
 source "$SCRIPT_DIR/lib/herdr-restore.sh"
-# shellcheck source=lib/notify-windows-toast.sh
-source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
 
 DRY_RUN=0
 SHOW_STATUS=0
@@ -66,9 +64,15 @@ CLAUDE_BATCH="${HERDR_RESTORE_CLAUDE_BATCH:-1}"
 CLAUDE_INTERVAL="${HERDR_RESTORE_CLAUDE_INTERVAL:-8}"
 
 # WSL2 以外（powershell.exe が無い環境）では通知しない。
+#
+# **通知の完了は待たない。** BurntToast の読み込みに実測10秒前後かかり、
+# reboot 直後のように混んでいるとさらに伸びる。通知は復元のついでなので、
+# これで復元キューの頭とお尻が止まるのは割に合わない。
+# 固まったまま残らないよう timeout で頭を抑えたうえで投げっぱなしにする。
 notify() {
   command -v powershell.exe >/dev/null 2>&1 || return 0
-  send_windows_toast "$1" "$2" >/dev/null 2>&1
+  timeout 60 bash -c 'source "$1"; send_windows_toast "$2" "$3"' \
+    _ "$SCRIPT_DIR/lib/notify-windows-toast.sh" "$1" "$2" >/dev/null 2>&1 &
 }
 
 # 状態の表示。復元本体には触らないので、ロックより手前で処理して終わる

@@ -444,6 +444,8 @@ herdr 復元: 中断  nvim 4/10, claude 0/5  開始から 1分23秒 (プロセ�
 - **`state=running` のまま pid が居なければ「中断」。** 復元プロセスが落ちたことに気づけるようにする
 - 開始と完了は Windowsトースト通知でも出す。**復元対象が0件なら状態ファイルも通知も触らない**
   （既にサーバーが動いている状態の `he` でトーストが飛ぶのを避けるため）
+- **通知の完了は待たない。** `Import-Module BurntToast` に実測10秒前後かかり、reboot 直後は
+  さらに伸びる。復元キューの頭とお尻をそれで止めるのは割に合わないので、`timeout` を付けて投げっぱなしにする
 
 設計の経緯は `docs/tmux-session-restore-strategy.md`。動作確認は `test-herdr-restore.sh` /
 `test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
