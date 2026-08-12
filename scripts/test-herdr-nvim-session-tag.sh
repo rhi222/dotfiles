@@ -113,6 +113,19 @@ restored_buffers_with_file_arg() {
   cat "$out" 2>/dev/null
 }
 
+# 実運用の headless 起動（daily-update の `nvim --headless "+Lazy! sync"` など）を
+# 再現する。auto-session はここでも復元しないと判断するが no_restore は発火する。
+# 冒頭で立てているテスト用の解除フラグを外し、素の headless 判定を働かせる。
+restored_buffers_headless() {
+  local pane="$1"
+  local out="$WORK/.headless.$pane"
+  (cd "$WORK" && env -u AUTOSESSION_UNIT_TESTING HERDR_PANE_ID="$pane" nvim --headless \
+    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
+    -c 'qa!') >/dev/null 2>&1
+  cat "$out" 2>/dev/null
+}
+
 echo "test: 同じ cwd でもペインごとに別セッションになる"
 : >"$WORK/a.txt"
 : >"$WORK/b.txt"
@@ -139,6 +152,11 @@ echo "test: ファイル引数付きの起動ではフォールバックしな�
 run_nvim_untagged c.txt
 assert_eq "w9:p4 のタグ付きセッションはまだ無い" "absent" "$(tagged_session_exists w9:p4)"
 assert_eq "指定したファイルだけが開かれる" "d.txt" "$(restored_buffers_with_file_arg w9:p4 d.txt)"
+
+echo "test: headless 起動ではフォールバックしない"
+run_nvim_untagged c.txt
+assert_eq "w9:p5 のタグ付きセッションはまだ無い" "absent" "$(tagged_session_exists w9:p5)"
+assert_eq "バッファは復元されない" "" "$(restored_buffers_headless w9:p5)"
 
 echo ""
 echo "TOTAL=$TOTAL PASS=$PASS FAIL=$FAIL"
