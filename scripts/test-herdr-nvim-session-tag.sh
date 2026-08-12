@@ -99,6 +99,20 @@ restored_buffers_at_vim_enter() {
   cat "$out" 2>/dev/null
 }
 
+# ファイル引数付きの起動を再現する。
+# auto-session はこの場合「復元しない」と判断するが、その判断も no_restore
+# フックを発火させる。ここでフォールバックが走ると、開こうとしたファイルが
+# セッションの内容で上書きされてしまう。
+restored_buffers_with_file_arg() {
+  local pane="$1" file="$2"
+  local out="$WORK/.arg.$pane"
+  (cd "$WORK" && HERDR_PANE_ID="$pane" nvim --headless "$file" \
+    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
+    -c 'qa!') >/dev/null 2>&1
+  cat "$out" 2>/dev/null
+}
+
 echo "test: 同じ cwd でもペインごとに別セッションになる"
 : >"$WORK/a.txt"
 : >"$WORK/b.txt"
@@ -119,6 +133,12 @@ assert_eq "フォールバック後の保存はタグ付きになる" "present" 
 
 echo "test: タグ付きがあればフォールバックしない"
 assert_eq "w9:p1 は自分のセッションを復元する" "a.txt" "$(restored_buffers_at_vim_enter w9:p1)"
+
+echo "test: ファイル引数付きの起動ではフォールバックしない"
+: >"$WORK/d.txt"
+run_nvim_untagged c.txt
+assert_eq "w9:p4 のタグ付きセッションはまだ無い" "absent" "$(tagged_session_exists w9:p4)"
+assert_eq "指定したファイルだけが開かれる" "d.txt" "$(restored_buffers_with_file_arg w9:p4 d.txt)"
 
 echo ""
 echo "TOTAL=$TOTAL PASS=$PASS FAIL=$FAIL"
