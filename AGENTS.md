@@ -417,6 +417,33 @@ tmux の continuum + resurrect（`@resurrect-processes`）に相当する仕組�
 - 何がどの順で流れるかは `bash scripts/herdr-restore.sh --dry-run` で確認できる
 - **nvim のセッションはペイン単位で分かれる。** cwd 単位だと、同じリポジトリを2ペインで開いていたときに
   片方のバッファでもう片方が上書きされる
+- **ペイン単位のセッションが無ければ cwd 単位のセッションへ落ちる。** タグ付けの目的は複数ペインの
+  上書き防止なので、読み込み側まで厳格にする必要はない。落ちた後の保存はペイン単位の名前で行われるため、
+  1回開けば自動で移行する（この後付けが無かったため、タグ導入直後の reboot で全ペインが空で起動した）
+
+#### 復元の進み具合を見る
+
+投入は数分に散るので、走っているのか終わったのかを外から見えるようにしている。
+
+| やりたいこと | コマンド |
+| --- | --- |
+| 進み具合の確認 | `he --status` |
+| 投入順の確認（dry-run） | `bash scripts/herdr-restore.sh --dry-run` |
+
+```
+herdr 復元: 実行中  nvim 4/10, claude 0/5  経過 1分23秒
+herdr 復元: 完了  nvim 10/10, claude 4/5 (1件は使用中でスキップ)  所要 3分18秒
+herdr 復元: 中断  nvim 4/10, claude 0/5  開始から 1分23秒 (プロセス不在)
+```
+
+- 状態は `~/.local/state/herdr-restore.status` に key=value で持つ。書き込みは tmp + `mv` で行い、
+  読み手が書きかけの行を読まないようにする
+- **`--status` はロックより手前で処理する。** 復元中は flock が取れず、黙って終わってしまうため
+- **ペインが使用中で触らなかった分は skipped として数える。** done と total が食い違う理由が
+  表示だけでわかるようにするため
+- **`state=running` のまま pid が居なければ「中断」。** 復元プロセスが落ちたことに気づけるようにする
+- 開始と完了は Windowsトースト通知でも出す。**復元対象が0件なら状態ファイルも通知も触らない**
+  （既にサーバーが動いている状態の `he` でトーストが飛ぶのを避けるため）
 
 設計の経緯は `docs/tmux-session-restore-strategy.md`。動作確認は `test-herdr-restore.sh` /
 `test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
