@@ -25,6 +25,45 @@ require("auto-session").setup({
 		end
 		return nil
 	end,
+	-- タグ付きのセッションが見つからなかったときだけ、cwd 単位（タグ無し）の
+	-- セッションへ落ちる。タグ導入前に保存された古いセッションや、herdr の外で
+	-- 作ったセッションを拾うため。タグ付けの目的は複数ペインの上書き防止なので、
+	-- 読み込み側まで厳格にする必要はない。
+	--
+	-- 復元後の保存は従来どおりタグ付きの名前で行われるため、1回開けば自動で
+	-- タグ付きへ移行する。
+	--
+	-- 同じ cwd を複数ペインで開いている場合、フォールバックが走る初回だけ
+	-- 両ペインが同じ内容で開く。以後はペインごとに分かれる。
+	no_restore_cmds = {
+		function()
+			local pane = vim.env.HERDR_PANE_ID
+			if not pane or pane == "" then
+				-- herdr の外の nvim は元からタグ無しで、落ちる先が同じなので何もしない。
+				return
+			end
+
+			local auto_session = require("auto-session")
+			local lib = require("auto-session.lib")
+			local config = require("auto-session.config")
+
+			-- セッション名の作り方を auto-session 側と揃える。
+			local cwd = vim.fn.getcwd(-1, -1)
+			if config.resolve_symlinks then
+				cwd = lib.remove_trailing_separator(vim.fn.resolve(cwd))
+			end
+
+			local path = auto_session.get_root_dir() .. lib.escape_session_name(cwd) .. ".vim"
+			if vim.fn.filereadable(path) == 0 then
+				return
+			end
+
+			-- restore_session(name) ではなくファイル指定で読む。前者は「手動命名
+			-- セッション」と判定されて manually_named_session が立ち、以後の保存まで
+			-- タグ無しの名前に固定されてしまう。
+			auto_session.restore_session_file(path)
+		end,
+	},
 	-- tmux kill-server等でSIGHUP/SIGTERM受信中のセッション保存をスキップ
 	pre_save_cmds = {
 		function()
