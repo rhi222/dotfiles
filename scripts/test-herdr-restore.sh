@@ -169,7 +169,7 @@ assert_eq "bump で1ずつ増える" "2" "$(herdr_restore_status_get "$STATUS" n
 herdr_restore_status_set "$STATUS" claude_skipped 3
 assert_eq "set で上書きできる" "3" "$(herdr_restore_status_get "$STATUS" claude_skipped)"
 assert_eq "他のキーは壊れない" "10" "$(herdr_restore_status_get "$STATUS" nvim_total)"
-herdr_restore_status_finish "$STATUS" done 1198 ""
+herdr_restore_status_finish "$STATUS" "done" 1198 ""
 assert_eq "finish で state が変わる" "done" "$(herdr_restore_status_get "$STATUS" state)"
 assert_eq "finish で finished_at が入る" "1198" "$(herdr_restore_status_get "$STATUS" finished_at)"
 assert_eq "無いキーは空" "" "$(herdr_restore_status_get "$STATUS" nosuchkey)"
@@ -191,7 +191,7 @@ assert_eq "running のまま pid が死んでいれば中断" \
 herdr_restore_status_set "$STATUS" nvim_done 10
 herdr_restore_status_set "$STATUS" claude_done 4
 herdr_restore_status_set "$STATUS" claude_skipped 1
-herdr_restore_status_finish "$STATUS" done 1198 ""
+herdr_restore_status_finish "$STATUS" "done" 1198 ""
 assert_eq "完了" \
   "herdr 復元: 完了  nvim 10/10, claude 4/5 (1件は使用中でスキップ)  所要 3分18秒" \
   "$(herdr_restore_status_render "$STATUS" 2000 0)"

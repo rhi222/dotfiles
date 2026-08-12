@@ -15,8 +15,17 @@
 #                                              nvim 側のバッファは auto-session がペイン単位で復元する。
 #
 # 復元はバックグラウンドで走らせ、TUI へのアタッチは待たない。
+# 投入は数分に散るため、進み具合は `he --status` で見る（開始と完了は
+# Windows トーストでも通知する）。
 
 function he --description 'herdr 起動: コールドスタート時に nvim / claude を段階的に復元する'
+    # 状態表示だけ。サーバー起動もアタッチもしない。
+    # 表示の組み立ては herdr-restore.sh に寄せ、ここではパースしない。
+    if contains -- --status $argv
+        $HOME/scripts/herdr-restore.sh --status
+        return
+    end
+
     set -l state $XDG_STATE_HOME
     test -n "$state"; or set state $HOME/.local/state
     set -l lock "$state/herdr-restore.boot.lock"

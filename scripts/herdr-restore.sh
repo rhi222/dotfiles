@@ -5,7 +5,11 @@
 # 負荷スパイクを避けるため、種別ごとに同時投入数と間隔を絞る。
 #
 #   --dry-run            何をどの順で流すかだけ出力して終わる
+#   --status             直近の復元がどこまで進んだかを1行で出して終わる
 #   --session NAME       既定セッションではなく名前付きセッションを対象にする
+#
+# 進行状況は状態ファイルに残し、開始と完了で Windows トースト通知を出す。
+# 投入が数分に散るため、走っているのか終わったのかを外から見えるようにする。
 #
 # 調整用の環境変数:
 #   HERDR_RESTORE_NVIM_BATCH      (既定 3)  nvim の同時投入数
@@ -17,8 +21,11 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/herdr-restore.sh
 source "$SCRIPT_DIR/lib/herdr-restore.sh"
+# shellcheck source=lib/notify-windows-toast.sh
+source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
 
 DRY_RUN=0
+SHOW_STATUS=0
 SESSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -27,12 +34,16 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=1
       shift
       ;;
+    --status)
+      SHOW_STATUS=1
+      shift
+      ;;
     --session)
       SESSION="${2:-}"
       shift 2
       ;;
     *)
-      echo "usage: $(basename "$0") [--dry-run] [--session NAME]" >&2
+      echo "usage: $(basename "$0") [--dry-run] [--status] [--session NAME]" >&2
       exit 2
       ;;
   esac
@@ -48,10 +59,29 @@ herdr_cli() {
 
 NVIM_DIR="$(herdr_restore_state_dir herdr-nvim)"
 CLAUDE_DIR="$(herdr_restore_state_dir herdr-claude)"
+STATUS="$(herdr_restore_state_dir herdr-restore.status)"
 NVIM_BATCH="${HERDR_RESTORE_NVIM_BATCH:-3}"
 NVIM_INTERVAL="${HERDR_RESTORE_NVIM_INTERVAL:-2}"
 CLAUDE_BATCH="${HERDR_RESTORE_CLAUDE_BATCH:-1}"
 CLAUDE_INTERVAL="${HERDR_RESTORE_CLAUDE_INTERVAL:-8}"
+
+# WSL2 以外（powershell.exe が無い環境）では通知しない。
+notify() {
+  command -v powershell.exe >/dev/null 2>&1 || return 0
+  send_windows_toast "$1" "$2" >/dev/null 2>&1
+}
+
+# 状態の表示。復元本体には触らないので、ロックより手前で処理して終わる
+# （復元中は下の flock が取れず、黙って終わってしまうため）。
+if [[ "$SHOW_STATUS" -eq 1 ]]; then
+  status_pid=$(herdr_restore_status_get "$STATUS" pid)
+  status_alive=0
+  if [[ -n "$status_pid" ]] && kill -0 "$status_pid" 2>/dev/null; then
+    status_alive=1
+  fi
+  herdr_restore_status_render "$STATUS" "$(date +%s)" "$status_alive"
+  exit 0
+fi
 
 # 多重起動を防ぐ。既に走っていれば黙って終わる。
 LOCK="$(herdr_restore_state_dir herdr-restore.lock)"
@@ -62,9 +92,18 @@ flock -n 9 || exit 0
 ALIVE=$(mktemp)
 trap 'rm -f "$ALIVE"' EXIT
 
+fail() {
+  local reason="$1"
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    herdr_restore_status_finish "$STATUS" failed "$(date +%s)" "$reason"
+    notify "⚠️ herdr 復元に失敗" "$(herdr_restore_reason_text "$reason")"
+  fi
+  exit 1
+}
+
 # ペイン一覧を取れなかった場合は、マーカーを消さずに何もしないで終わる。
-pane_json=$(herdr_cli pane list 2>/dev/null) || exit 1
-printf '%s' "$pane_json" | jq -e '.result.panes | type == "array"' >/dev/null 2>&1 || exit 1
+pane_json=$(herdr_cli pane list 2>/dev/null) || fail pane-list
+printf '%s' "$pane_json" | jq -e '.result.panes | type == "array"' >/dev/null 2>&1 || fail pane-list
 printf '%s' "$pane_json" | jq -r '.result.panes[].pane_id' >"$ALIVE"
 [[ -s "$ALIVE" ]] || exit 0
 
@@ -90,14 +129,45 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   exit 0
 fi
 
+NVIM_TOTAL=0
+CLAUDE_TOTAL=0
+for line in "${PLAN[@]}"; do
+  case "${line%%$'\t'*}" in
+    nvim) NVIM_TOTAL=$((NVIM_TOTAL + 1)) ;;
+    claude) CLAUDE_TOTAL=$((CLAUDE_TOTAL + 1)) ;;
+  esac
+done
+
+# 復元するものが無ければ、前回の記録を残したまま黙って終わる。
+# 既にサーバーが動いている状態の `he` で通知が飛ぶのを避ける。
+((NVIM_TOTAL + CLAUDE_TOTAL > 0)) || exit 0
+
+STARTED_AT=$(date +%s)
+herdr_restore_status_init "$STATUS" "$$" "$STARTED_AT" "$NVIM_TOTAL" "$CLAUDE_TOTAL"
+notify "🔄 herdr 復元開始" "$(herdr_restore_toast_start_body "$NVIM_TOTAL" "$CLAUDE_TOTAL")"
+
 # 投入は数分に散るため、その間にユーザーが手でペインを使い始めうる。
 # 直前に素のシェルかを確認し、何か動いていれば触らない。
+#
+# 触らなかった分は skipped に数える。done と total が食い違う理由が
+# `--status` の表示だけでわかるようにするため。起動コマンド自体が失敗した
+# 場合も、件数の辻褄を合わせるため skipped に入れる。
 launch() {
-  local pane="$1" cmd="$2"
+  local kind="$1" pane="$2" cmd="$3"
   local info
-  info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || return 0
-  herdr_restore_pane_is_idle "$info" || return 0
-  herdr_cli pane run "$pane" "$cmd" >/dev/null 2>&1
+  info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || {
+    herdr_restore_status_bump "$STATUS" "${kind}_skipped"
+    return 0
+  }
+  if ! herdr_restore_pane_is_idle "$info"; then
+    herdr_restore_status_bump "$STATUS" "${kind}_skipped"
+    return 0
+  fi
+  if herdr_cli pane run "$pane" "$cmd" >/dev/null 2>&1; then
+    herdr_restore_status_bump "$STATUS" "${kind}_done"
+  else
+    herdr_restore_status_bump "$STATUS" "${kind}_skipped"
+  fi
 }
 
 run_group() {
@@ -114,7 +184,7 @@ run_group() {
     n=0
     while ((n < batch && i < ${#entries[@]})); do
       IFS=$'\t' read -r _ pane cmd <<<"${entries[i]}"
-      launch "$pane" "$cmd"
+      launch "$kind" "$pane" "$cmd"
       i=$((i + 1))
       n=$((n + 1))
     done
@@ -124,3 +194,14 @@ run_group() {
 
 run_group nvim "$NVIM_BATCH" "$NVIM_INTERVAL"
 run_group claude "$CLAUDE_BATCH" "$CLAUDE_INTERVAL"
+
+FINISHED_AT=$(date +%s)
+herdr_restore_status_finish "$STATUS" "done" "$FINISHED_AT" ""
+notify "✅ herdr 復元完了" "$(herdr_restore_toast_done_body \
+  "$(herdr_restore_status_get "$STATUS" nvim_done)" \
+  "$NVIM_TOTAL" \
+  "$(herdr_restore_status_get "$STATUS" nvim_skipped)" \
+  "$(herdr_restore_status_get "$STATUS" claude_done)" \
+  "$CLAUDE_TOTAL" \
+  "$(herdr_restore_status_get "$STATUS" claude_skipped)" \
+  "$((FINISHED_AT - STARTED_AT))")"
