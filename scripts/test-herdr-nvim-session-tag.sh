@@ -72,6 +72,33 @@ count_sessions() {
   find "$SESSION_DIR" -maxdepth 1 -name "*$(session_key)*" | wc -l | tr -d ' '
 }
 
+# herdr の外で nvim を動かし、タグ無し（cwd 単位）のセッションを作る。
+run_nvim_untagged() {
+  local file="$1"
+  (cd "$WORK" && env -u HERDR_PANE_ID nvim --headless -c "edit $file" -c "wqa") >/dev/null 2>&1
+}
+
+# タグ付きセッションのファイル名は "<cwd>||<pane_id>" をエスケープしたもの。
+# | は %7C、: は %3A になる。
+tagged_session_exists() {
+  local pane_escaped
+  pane_escaped=$(printf '%s' "$1" | sed 's|:|%3A|g')
+  [[ -f "$SESSION_DIR/$(session_key)%7C%7C$pane_escaped.vim" ]] && echo present || echo absent
+}
+
+# フォールバック復元は no_restore フック経由で走る。
+# auto_restore_session() はこのフックを発火しないため、VimEnter 用の
+# 入口を直接呼ぶ。qa! で抜けるので、終了時の保存も併せて確認できる。
+restored_buffers_at_vim_enter() {
+  local pane="$1"
+  local out="$WORK/.enter.$pane"
+  (cd "$WORK" && HERDR_PANE_ID="$pane" nvim --headless \
+    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
+    -c 'qa!') >/dev/null 2>&1
+  cat "$out" 2>/dev/null
+}
+
 echo "test: 同じ cwd でもペインごとに別セッションになる"
 : >"$WORK/a.txt"
 : >"$WORK/b.txt"
@@ -82,6 +109,16 @@ assert_eq "セッションファイルが2つできる" "2" "$(count_sessions)"
 echo "test: 復元したバッファがペインごとに異なる"
 assert_eq "w9:p1 は a.txt を復元する" "a.txt" "$(restored_buffers w9:p1)"
 assert_eq "w9:p2 は b.txt を復元する" "b.txt" "$(restored_buffers w9:p2)"
+
+echo "test: タグ付きが無ければ cwd 単位のセッションへフォールバックする"
+: >"$WORK/c.txt"
+run_nvim_untagged c.txt
+assert_eq "w9:p3 のタグ付きセッションはまだ無い" "absent" "$(tagged_session_exists w9:p3)"
+assert_eq "未知のペインはタグ無しセッションを復元する" "c.txt" "$(restored_buffers_at_vim_enter w9:p3)"
+assert_eq "フォールバック後の保存はタグ付きになる" "present" "$(tagged_session_exists w9:p3)"
+
+echo "test: タグ付きがあればフォールバックしない"
+assert_eq "w9:p1 は自分のセッションを復元する" "a.txt" "$(restored_buffers_at_vim_enter w9:p1)"
 
 echo ""
 echo "TOTAL=$TOTAL PASS=$PASS FAIL=$FAIL"
