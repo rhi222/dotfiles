@@ -423,7 +423,8 @@ tmux の continuum + resurrect（`@resurrect-processes`）に相当する仕組�
 - **フォールバックは引数なしの起動だけで働く。** auto-session の `no_restore` フックは
   「タグ付きが無かった」以外の理由でも発火する。`nvim somefile` は
   `args_allow_files_auto_save = false` により復元対象外だがフックは発火するため、絞らないと
-  指定したファイルがセッションの内容に置き換わる（実際にこれで別ファイルが開く事故が起きた）
+  指定したファイルがセッションの内容に置き換わる（実際にこれで別ファイルが開く事故が起きた）。
+  同じ理由で headless（`nvim --headless "+Lazy! sync"`）と pager モードも除く
 
 #### 復元の進み具合を見る
 
