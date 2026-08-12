@@ -36,6 +36,36 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 - Slack側の担保は許可リスト。`--allowedTools` に読み取り2つしか入れないことで書き込みを塞ぎ、
   `test-linear-slack-sweep-cron.sh` がその文字列を検査する
 
+**stateの軸は「今ボールを誰が持っているか」。** 工程の進行度では切らない。進行度で切ると
+state数が増え、かつ「進んでいるのに誰も動いていない」課題が見えなくなる。
+
+| state | type | 意味 | ボール |
+| --- | --- | --- | --- |
+| `Triage` | triage | まだ見ていない（スイープが入れる） | — |
+| `Todo` | unstarted | 受理済み。Cycleの候補 | 自分 |
+| `In Progress` | started | 自分が手を動かしている。**対応内容の整理もここ** | 自分 |
+| `AI Queued` | unstarted | AI待ち。dispatchの起動条件 | AI |
+| `AI Running` | started | AI実行中 | AI |
+| `My Review` | started | 自分の判断待ち（**AIの成果物**） | 自分 |
+| `Waiting` | started | 他人待ち。チームレビュー・CI・返信待ち | 他人 |
+| `Backlog` | backlog | Cycleを3回繰り越したもの（能動的に使わない） | — |
+
+**`In Progress` と `My Review` の判定は一問。「その成果物をAIが作ったか」で、YESだけが
+`My Review` に入る。** 唯一の入口は `AI Running → My Review`（dispatchがdraft PRを作った）で、
+そこに四択（マージ / チームレビューへ / 修正指示 / 破棄）を掛ける。
+
+- **自分の作業の確認待ちに専用stateを作らない。** 「実装は終わったが自分で見直したい」は
+  `In Progress` のまま持つ。整理フェーズを `In Progress` に吸収したのと同じ理由で、
+  stateを増やすと軸が「ボールの所持者」から「工程の進行度」に滑る。
+  `In Progress` の出口は `AI Queued` / `Waiting` / `Done` の3つ
+- **混ざると実害が出る。** WIP上限は `My Review` の件数を数えるので、非AI案件が入ると
+  AIの生成量と無関係にdispatchが止まる。朝の判断タイムでも自分の作業に四択が当てはまらない。
+  実際に `Todo → My Review` と `Waiting → My Review` の直行が起きた（どちらも許可遷移に無い）
+- 検出は `/linear-triage` の整合チェック4）。**判定材料はPR URLの有無**（本文の `元URL:` か
+  dispatchの完了コメント）。`My Review` は四択を掛ける場所なので、PRが無ければそもそも裁けない
+- 許可遷移表とラベル体系（`role:*` / `em:*` / `src:*`）の全体は Obsidian
+  `01_Inbox/2026-08-10-linear-state-label-design.md`
+
 **Slackからの起票はスタンプ1つで完結する。** `:nishiyama_todo:` を押すと翌朝の
 `linear-slack-sweep` が拾い、Triage に「元URL＋期待アウトカム」の形で積む。
 

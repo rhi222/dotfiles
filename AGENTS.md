@@ -290,7 +290,11 @@ issueは元URL＋期待アウトカム＋判断状態だけを持つ。本体は
 **リンクは Linear → 外部の一方向のみ。GitHub / Jira には一切書き戻さない。**
 どちらもチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。
 
-起票規約（Project名のprefix・親子の粒度・ラベルの2軸）、Cycleの設定と根拠、
+**stateの軸は「今ボールを誰が持っているか」。** `In Progress`（自分が手を動かしている。整理も
+ここ）と `My Review`（AIの成果物の判断待ち）の判定は一問で、**「その成果物をAIが作ったか」が
+YESのときだけ `My Review`**。自分の作業の確認待ちに専用stateは作らず `In Progress` に持つ。
+
+state一覧と混入の検出、起票規約（Project名のprefix・親子の粒度・ラベルの2軸）、Cycleの設定と根拠、
 夜間ディスパッチの2モードと安全弁、Slackスタンプ起票の重複判定は
 [docs/linear-command-layer.md](docs/linear-command-layer.md)。
 
