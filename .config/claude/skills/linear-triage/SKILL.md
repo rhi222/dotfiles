@@ -52,7 +52,20 @@ linear_issues_in_state "Triage" | jq -r '.[] | "\(.identifier)\t\(.title)"'
 linear_issues_in_state "AI Queued" \
 | jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not) | .identifier'
 
-# 4) role / em ラベルの欠落（週次の配分分析が読めなくなる）
+# 4) My Reviewに非AI成果物が混ざっている（WIP上限が誤作動する。実際に起きた）
+#    判定は「PR URLを持っているか」。My Reviewは四択（マージ/チームレビューへ/修正指示/破棄）を
+#    掛ける場所なので、PRが無ければそもそも裁けない。継続モードは本文の 元URL:、
+#    新規モードはdispatchの完了コメントにPR URLが入るので、両方を見る
+linear_gql 'query($team: ID!, $state: ID!) {
+  issues(filter: {team: {id: {eq: $team}}, state: {id: {eq: $state}}}, first: 50) {
+    nodes { identifier title description comments(first: 20) { nodes { body } } } } }' \
+  "$(jq -n --arg t "$(linear_config '.team_id')" --arg s "$(linear_state_id 'My Review')" '{team:$t,state:$s}')" \
+| jq -r '.issues.nodes[]
+         | select(([(.description // "")] + [.comments.nodes[].body] | join("\n")
+                   | test("github\\.com/[^/\\s]+/[^/\\s]+/pull/")) | not)
+         | "\(.identifier) \(.title[0:40]) PR無し"'
+
+# 5) role / em ラベルの欠落（週次の配分分析が読めなくなる）
 linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled","duplicate"]}}}) {
   nodes { identifier title labels { nodes { name } } } } }' \
 | jq -r '.issues.nodes[]
@@ -60,11 +73,11 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
                or ([.labels.nodes[].name|select(startswith("em:"))]|length)==0)
          | "\(.identifier) \(.title[0:40])"'
 
-# 5) 期日超過
+# 6) 期日超過
 linear_issues_in_state "Todo" | jq -r --arg t "$(date +%F)" \
   '.[] | select(.dueDate != null and .dueDate < $t) | "\(.identifier) due=\(.dueDate)"'
 
-# 6) Cycle内の親子二重計上（親と子が両方Cycleに載っている）
+# 7) Cycle内の親子二重計上（親と子が両方Cycleに載っている）
 #    Cycleに載せるのは実作業単位。子があれば子だけを入れる（親も入れるとvelocityが二重計上になる）。
 #    加えて「今日やる3件」の候補がCycle起点なので、放置すると親と子が並んで提案される
 linear_cycle_issues | jq -r '
@@ -74,12 +87,12 @@ linear_cycle_issues | jq -r '
   | select(($dup|length) > 0)
   | "\($p.identifier)（親・est=\($p.estimate // "-")）と子 \($dup|join(",")) が同じCycleにいる"'
 
-# 7) Cycle内のestimate未設定（velocityが読めない。1件も無いうちは無視してよい）
+# 8) Cycle内のestimate未設定（velocityが読めない。1件も無いうちは無視してよい）
 linear_cycle_issues | jq -r '
   .[] | select(.estimate == null and (.state.type | IN("completed","canceled") | not))
   | "\(.identifier) estimate未設定 \(.title[0:40])"'
 
-# 8) Projectのオーバービュー（週1回でよい。月曜のCycle計画時が目安）
+# 9) Projectのオーバービュー（週1回でよい。月曜のCycle計画時が目安）
 #    projects と issues を1クエリにまとめると "Query too complex" で弾かれるので分ける
 linear_gql '{ projects(first: 50) { nodes { id name state targetDate } } }' > /tmp/pj.json
 linear_gql '{ issues(first: 250) { nodes { project { id } state { type } } } }' > /tmp/iss.json
@@ -92,6 +105,16 @@ jq -r --arg t "$(date +%F)" --slurpfile iss /tmp/iss.json '
   | "\(if .state=="started" then "▶" else " " end) \(.name)  \(.state)  open=\(.open)  target=\(.targetDate // "未設定")\(if .targetDate!=null and .targetDate<$t then " ⚠超過" else "" end)\(if .open==0 then " ⚠open0件" else "" end)"' /tmp/pj.json
 ```
 
+4件目（My Reviewの混入）の打ち手は、**行き先を1つ決めて動かす**。`My Review` は
+AIの成果物を四択で裁く場所なので、自分が手を動かしている課題を置くところではない。
+
+| 実態 | 行き先 |
+| --- | --- |
+| まだ自分で作業している（整理・実装・確認） | `In Progress` |
+| 他人・CI・返信を待っている | `Waiting` |
+| 終わっている | `Done` |
+| AIに実装させたい | `AI Queued`（`repo:` 行を足す） |
+
 Projectで見るのは3点。
 
 | 症状 | 意味 | 打ち手 |
@@ -100,7 +123,7 @@ Projectで見るのは3点。
 | **target未設定** | 「期限のある塊」というProjectの定義から外れている | 期限を入れるか、期限が決められないなら常設カテゴリ化しているサインなので分割・削除を検討 |
 | **In Progress が4つを超える** | 並行しすぎ | どれかを `Planned` に戻す |
 
-Cycleの2件（6・7）で見るのは次のとおり。
+Cycleの2件（7・8）で見るのは次のとおり。
 
 | 症状 | 意味 | 打ち手 |
 | --- | --- | --- |
