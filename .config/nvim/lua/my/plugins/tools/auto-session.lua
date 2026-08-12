@@ -1,3 +1,8 @@
+-- 起動時の引数の数。setup() より前に取っておく。
+-- auto-session も同じ理由（NvimTree 等が引数を書き換える前に見る必要がある）で
+-- setup() の中で argv を控えており、ここは同じタイミングになる。
+local launch_argc = #vim.fn.argv()
+
 require("auto-session").setup({
 	enabled = true,
 	auto_save = true,
@@ -37,6 +42,20 @@ require("auto-session").setup({
 	-- 両ペインが同じ内容で開く。以後はペインごとに分かれる。
 	no_restore_cmds = {
 		function()
+			-- no_restore は「タグ付きが無かった」以外の理由でも発火する。
+			-- ここで対象を絞らないと、auto-session が意図して復元を止めた場面まで
+			-- 復元してしまう。
+			--
+			-- とくに `nvim somefile` は args_allow_files_auto_save = false により
+			-- 復元対象外だが no_restore は発火するため、フォールバックが走ると
+			-- 開こうとしたファイルがセッションの内容で置き換わる。
+			-- 引数なしの素の起動（＝復元を期待している起動）だけを対象にする。
+			-- 単一ディレクトリ引数（`nvim .`）は auto-session 自身が cwd 単位の
+			-- セッションを読むので、こちらで拾う必要はない。
+			if launch_argc > 0 then
+				return
+			end
+
 			local pane = vim.env.HERDR_PANE_ID
 			if not pane or pane == "" then
 				-- herdr の外の nvim は元からタグ無しで、落ちる先が同じなので何もしない。
