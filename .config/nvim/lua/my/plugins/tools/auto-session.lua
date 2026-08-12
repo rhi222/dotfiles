@@ -3,6 +3,17 @@
 -- setup() の中で argv を控えており、ここは同じタイミングになる。
 local launch_argc = #vim.fn.argv()
 
+-- auto-session の headless 判定（init.lua の in_headless_mode）に合わせる。
+-- テスト用の解除フラグまで含めて揃えないと、headless で駆動しているテストから
+-- フォールバックの挙動を確認できなくなる。
+-- --embed のクライアントは UI の attach が後になるため headless 扱いしない。
+local function is_headless()
+	if vim.env.AUTOSESSION_UNIT_TESTING then
+		return false
+	end
+	return not vim.tbl_contains(vim.v.argv, "--embed") and not next(vim.api.nvim_list_uis())
+end
+
 require("auto-session").setup({
 	enabled = true,
 	auto_save = true,
@@ -53,6 +64,13 @@ require("auto-session").setup({
 			-- 単一ディレクトリ引数（`nvim .`）は auto-session 自身が cwd 単位の
 			-- セッションを読むので、こちらで拾う必要はない。
 			if launch_argc > 0 then
+				return
+			end
+
+			-- headless（daily-update の Lazy/Mason 更新など）と pager モード
+			-- （`git diff | nvim -`）も auto-session は復元対象外にしている。
+			-- どちらも人が続けて編集する起動ではないので、追随して何もしない。
+			if is_headless() or vim.g.in_pager_mode then
 				return
 			end
 
