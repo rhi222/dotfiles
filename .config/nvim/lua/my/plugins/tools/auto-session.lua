@@ -14,6 +14,50 @@ local function is_headless()
 	return not vim.tbl_contains(vim.v.argv, "--embed") and not next(vim.api.nvim_list_uis())
 end
 
+-- 全プロジェクトで共有するスクラッチパッド（my/commands/temporary-work.lua の
+-- :Inbox と :Temp が開くもの）。プロジェクト固有のセッションに載せない。
+--
+-- 載せると、herdr 復元時に同じ cwd の全ペインが同じスクラッチパッドを画面に出す。
+-- タグ付きセッションが無いペインは cwd 単位セッションへフォールバックするため
+-- （下の no_restore_cmds）、cwd 単位セッションの表示バッファがスクラッチパッドだと
+-- そのコピーが全ペインへ広がり、さらに定期保存で各ペインのセッションに焼き付く。
+local SCRATCHPAD_FILES = {
+	vim.fn.expand("~/.inbox.md"),
+}
+local SCRATCHPAD_DIRS = {
+	vim.fn.expand("~/.nvim_tmp") .. "/",
+}
+
+local function is_scratchpad(name)
+	if name == "" then
+		return false
+	end
+	local path = vim.fn.fnamemodify(name, ":p")
+	for _, file in ipairs(SCRATCHPAD_FILES) do
+		if path == file then
+			return true
+		end
+	end
+	for _, dir in ipairs(SCRATCHPAD_DIRS) do
+		if path:sub(1, #dir) == dir then
+			return true
+		end
+	end
+	return false
+end
+
+-- ウィンドウに出ているかどうかで判定する。バッファ一覧に居るだけなら
+-- 復元しても画面には出ないので放っておく。
+-- nvim_list_wins() は全タブページのウィンドウを返す。
+local function scratchpad_is_visible()
+	for _, win in ipairs(vim.api.nvim_list_wins()) do
+		if is_scratchpad(vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win))) then
+			return true
+		end
+	end
+	return false
+end
+
 require("auto-session").setup({
 	enabled = true,
 	auto_save = true,
@@ -105,6 +149,12 @@ require("auto-session").setup({
 	pre_save_cmds = {
 		function()
 			if vim.v.dying > 0 then
+				return false
+			end
+			-- スクラッチパッドが画面に出ている間は保存を見送り、直前に保存された
+			-- 状態を残す。バッファを消すのではなく保存を止めるのは、定期保存が
+			-- 編集中に何度も走るため。消す実装だと編集中のバッファを閉じてしまう。
+			if scratchpad_is_visible() then
 				return false
 			end
 		end,
