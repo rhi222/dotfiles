@@ -19,16 +19,32 @@ herdr_restore_workspace_of() {
 # マーカーは3行: session_id / cwd / transcript_path
 # transcript が実在するときだけ --resume する。会話が消えていても
 # プロセスは立てたいので、その場合は素の claude を返す。
+#
+# cwd はマーカーから戻す。herdr の session.json が持つペインの cwd は
+# シェルのものなので、claude がセッション中に自分で移した cwd（worktree へ
+# 入った場合など）は復元できない。マーカー側には SessionStart 時点の cwd が
+# 入っているので、そちらを使う。
+#
+# cwd が実在するときだけ前置する。worktree が既に消えている場合に `&&` で
+# 止まって claude が全く立たないのを避ける。
 herdr_restore_claude_command() {
   local marker="$1"
-  local session_id transcript
+  local session_id cwd transcript cmd
   session_id=$(awk 'NR==1' "$marker" 2>/dev/null)
+  cwd=$(awk 'NR==2' "$marker" 2>/dev/null)
   transcript=$(awk 'NR==3' "$marker" 2>/dev/null)
+
   if [[ -n "$session_id" && -n "$transcript" && -f "$transcript" ]]; then
-    printf 'claude --resume %s\n' "$session_id"
+    cmd="claude --resume $session_id"
+  else
+    cmd="claude"
+  fi
+
+  if [[ -n "$cwd" && -d "$cwd" ]]; then
+    printf 'cd %q && %s\n' "$cwd" "$cmd"
     return 0
   fi
-  printf 'claude\n'
+  printf '%s\n' "$cmd"
 }
 
 # 復元プランを実行順に出力する。1行 = "<kind>\t<pane_id>\t<command>"
