@@ -69,3 +69,4 @@ Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Cl
 @rules/refactoring.md
 @rules/review-mode.md
 @rules/investigation-mode.md
+@rules/pull-request.md
