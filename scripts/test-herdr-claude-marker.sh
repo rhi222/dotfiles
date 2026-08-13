@@ -48,6 +48,11 @@ payload() {
   printf '{"session_id":"%s","cwd":"/tmp/proj","transcript_path":"%s","hook_event_name":"SessionStart","source":"startup"}' "$1" "$2"
 }
 
+end_payload() {
+  # $1 session_id
+  printf '{"session_id":"%s","cwd":"/tmp/proj","hook_event_name":"SessionEnd","reason":"other"}' "$1"
+}
+
 echo "test: HERDR_PANE_ID が無いときは何も作らない"
 setup
 unset HERDR_PANE_ID
@@ -77,6 +82,27 @@ setup
 export HERDR_PANE_ID="w5:p29"
 payload sess-1 /tmp/t1.jsonl | "$HOOK" start
 "$HOOK" end </dev/null
+assert_eq "マーカーが削除される" "absent" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
+teardown
+
+# 1ペインで旧セッションが終わって新セッションが始まる流れ（worktree 切り替えで
+# session_id と project dir が変わる）がある。end が後から走ってマーカーごと
+# 消すと、そのペインは復元対象から丸ごと外れる。
+echo "test: end は自分が書いたマーカーだけ消す"
+setup
+export HERDR_PANE_ID="w5:p29"
+payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+payload sess-2 /tmp/t2.jsonl | "$HOOK" start
+end_payload sess-1 | "$HOOK" end
+assert_eq "他セッションのマーカーは残る" "present" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
+assert_eq "中身は新しいセッションのまま" "sess-2" "$(awk 'NR==1' "$MARKER_DIR/w5:p29")"
+teardown
+
+echo "test: end は session_id が一致すれば消す"
+setup
+export HERDR_PANE_ID="w5:p29"
+payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+end_payload sess-1 | "$HOOK" end
 assert_eq "マーカーが削除される" "absent" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
 teardown
 

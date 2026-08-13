@@ -76,7 +76,10 @@ assert_ng() {
 }
 
 nvim_marker() { printf '/tmp/proj\n' >"$NVIM_DIR/$1"; }
-claude_marker() { printf '%s\n/tmp/proj\n%s\n' "$2" "$3" >"$CLAUDE_DIR/$1"; }
+# 既定の cwd は実在しないパスにする。実在すると cd が前置され、cwd を
+# 見ないケースの検証にならない。
+claude_marker() { claude_marker_at "$1" "$2" "$3" "/nonexistent/herdr-test"; }
+claude_marker_at() { printf '%s\n%s\n%s\n' "$2" "$4" "$3" >"$CLAUDE_DIR/$1"; }
 
 echo "test: workspace_of"
 assert_eq "w5:p29 -> w5" "w5" "$(herdr_restore_workspace_of w5:p29)"
@@ -91,6 +94,34 @@ claude_marker "w5:p2" "sess-2" "$TEST_DIR/missing.jsonl"
 assert_eq "transcript が無ければ素の claude" "claude" "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p2")"
 claude_marker "w5:p3" "" ""
 assert_eq "session_id が空なら素の claude" "claude" "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p3")"
+teardown
+
+# claude が自分で移した cwd（worktree など）はシェルに残らないため herdr の
+# session.json では復元できない。marker に記録した cwd を使って戻す。
+echo "test: claude_command は marker の cwd へ戻す"
+setup
+touch "$TEST_DIR/t.jsonl"
+mkdir -p "$TEST_DIR/wt"
+claude_marker_at "w5:p4" "sess-4" "$TEST_DIR/t.jsonl" "$TEST_DIR/wt"
+assert_eq "cwd が実在すれば cd を前置する" \
+  "cd $TEST_DIR/wt && claude --resume sess-4" \
+  "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p4")"
+
+# worktree が消えていても claude 自体は立てたい。&& で止めない。
+claude_marker_at "w5:p5" "sess-5" "$TEST_DIR/t.jsonl" "$TEST_DIR/gone"
+assert_eq "cwd が消えていれば cd しない" \
+  "claude --resume sess-5" \
+  "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p5")"
+
+claude_marker_at "w5:p6" "" "" "$TEST_DIR/wt"
+assert_eq "resume できなくても cd はする" \
+  "cd $TEST_DIR/wt && claude" \
+  "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p6")"
+
+claude_marker_at "w5:p7" "sess-7" "$TEST_DIR/t.jsonl" ""
+assert_eq "cwd が空なら cd しない" \
+  "claude --resume sess-7" \
+  "$(herdr_restore_claude_command "$CLAUDE_DIR/w5:p7")"
 teardown
 
 echo "test: plan の並び順"
