@@ -421,6 +421,11 @@ reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と clau
 - **`he` も `herdr-restore.sh` も flock で多重起動を防ぐ。** 複数端末から同時に `he` を叩いても
   サーバー起動は1プロセスだけが行う
 - 何がどの順で流れるかは `bash scripts/herdr-restore.sh --dry-run` で確認できる
+- **claude の cwd はマーカーから戻す。** herdr の `session.json` が持つペインの cwd はシェルのもので、
+  claude がセッション中に worktree へ移った分は残らない。マーカーの cwd が実在するときだけ
+  `cd <cwd> && claude --resume <id>` に組み立てる（worktree が消えていても claude 自体は立てる）
+- **`SessionEnd` は自分が書いたマーカーだけ消す。** worktree に入ると session_id が変わるので、
+  無条件に消すと新セッションのマーカーを旧セッションの end が持っていき、そのペインが復元されない
 - **nvim のセッションはペイン単位で分かれる。** cwd 単位だと、同じリポジトリを2ペインで開いていたときに
   片方のバッファでもう片方が上書きされる
 - **ペイン単位のセッションが無ければ cwd 単位のセッションへ落ちる。** タグ付けの目的は複数ペインの

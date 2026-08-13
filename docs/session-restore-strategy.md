@@ -39,6 +39,31 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 claude のマーカーが session_id を持つのは、`claude --resume <session_id>` で会話ごと復元するため。
 nvim は cwd さえ合っていれば auto-session がバッファを戻すので、中身はデバッグ用にすぎない。
 
+### claude の cwd はマーカーから戻す
+
+**herdr の `session.json` が持つペインの cwd はシェルのもの。** claude がセッション中に自分で
+cwd を移す（worktree に入る）と、シェルは動かないので herdr には元の cwd が残る。そのまま
+復元すると worktree のセッションが repo root で立ち上がる。
+
+マーカーの2行目には `SessionStart` 時点の cwd が入っているので、復元コマンドに
+`cd <cwd> && claude --resume <id>` として前置する。
+
+- **cwd が実在するときだけ前置する。** worktree が既に消えていると `&&` で止まって claude が
+  全く立たなくなる。プロセスは立てたいので、その場合は cd を諦めてペインの cwd で起動する
+- `--resume` 自体は cwd に依存しない（別ディレクトリからでも session_id で解決できるし、
+  セッションの JSONL は元の project dir に残る）。cd は**起動後の作業ディレクトリを合わせる**ため
+
+### マーカーの削除は session_id で照合する
+
+`SessionEnd` は**自分が書いたマーカーだけ**消す。
+
+1ペインで旧セッションが終わって新セッションが始まることがある。worktree に入ると session_id も
+project dir も変わるので、これは正常な流れ。ここで end が無条件に消すと、新セッションが書いた
+マーカーを旧セッションの end が持っていき、**そのペインは復元対象から丸ごと外れる**。
+
+session_id が読めないときは判定材料が無いので消す。残すと死んだセッションのマーカーが溜まり、
+復元で余計な claude が立つ。
+
 ## 復元フロー
 
 ### 保存時
