@@ -39,7 +39,8 @@ check "linear-slack-sweep skillを呼ぶ" grep -q "/linear-slack-sweep" <<<"$out
 check "Slack検索を許可する" grep -q "slack_search_public_and_private" <<<"$out2"
 check "スレ読み取りを許可する" grep -q "slack_read_thread" <<<"$out2"
 check "スクリプト実行を許可する" grep -q 'Bash(scripts/linear-slack-sweep.sh:\*)' <<<"$out2"
-check "dateを許可する（after:の日付計算用）" grep -q 'Bash(date:\*)' <<<"$out2"
+# 検索が全期間スキャンになり after: の日付計算が消えたので、date は要らなくなった
+check "dateを許可しない" test "$(grep -c 'Bash(date:\*)' <<<"$out2")" -eq 0
 
 # 3b. timeout が掛かっている（headless実行は誰も見ていないのでハングを残さない）
 check "timeoutを噛ませる" grep -q "timeout " <<<"$out2"

@@ -36,7 +36,7 @@ CLAUDE_TIMEOUT="${LINEAR_SLACK_SWEEP_TIMEOUT:-900}"
 PROMPT="/linear-slack-sweep"
 # skill の allowed-tools に合わせて許可を最小化する。
 # Slackは読み取り2つのみ。書き込み系は意図的に入れていない
-ALLOWED_TOOLS="Bash(date:*),Bash(scripts/linear-slack-sweep.sh:*),mcp__claude_ai_Slack__slack_search_public_and_private,mcp__claude_ai_Slack__slack_read_thread"
+ALLOWED_TOOLS="Bash(scripts/linear-slack-sweep.sh:*),mcp__claude_ai_Slack__slack_search_public_and_private,mcp__claude_ai_Slack__slack_read_thread"
 
 if [[ "${LINEAR_SLACK_SWEEP_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $REPO && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""

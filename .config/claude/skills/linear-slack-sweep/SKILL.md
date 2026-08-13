@@ -1,7 +1,7 @@
 ---
 name: linear-slack-sweep
 description: Slackで特定のスタンプ（既定 :nishiyama_todo:）を押したメッセージを拾い、LinearのTriageへ起票する。「Slackのスタンプを拾って」「スタンプ起票」「slack sweep」「Slackから起票して」などで使用。cronからもヘッドレスで呼ばれる。
-allowed-tools: Bash(date:*), Bash(scripts/linear-slack-sweep.sh:*), mcp__claude_ai_Slack__slack_search_public_and_private, mcp__claude_ai_Slack__slack_read_thread
+allowed-tools: Bash(scripts/linear-slack-sweep.sh:*), mcp__claude_ai_Slack__slack_search_public_and_private, mcp__claude_ai_Slack__slack_read_thread
 ---
 
 # Slackのスタンプから Linear へ起票する
@@ -19,31 +19,31 @@ Slackはチームの共有物なので、個人のタスク管理都合のノイ
 | 変数 | 既定値 | 意味 |
 | --- | --- | --- |
 | `LINEAR_SLACK_EMOJI` | `nishiyama_todo` | 起票トリガのスタンプ名 |
-| `LINEAR_SLACK_SWEEP_DAYS` | `14` | 検索の遡り日数 |
 | `LINEAR_SLACK_SWEEP_MAX` | `20` | 1回で処理する上限（`unseen` が担保する） |
 
 ## 手順
 
 ### 1. 候補を検索する
 
-遡り日数から検索の起点を作る。
-
-```bash
-date -d "${LINEAR_SLACK_SWEEP_DAYS:-14} days ago" +%F
-```
-
 `mcp__claude_ai_Slack__slack_search_public_and_private` を呼ぶ。
 
-- `query`: `hasmy::<EMOJI>: after:<上で求めた日付>`
+- `query`: `hasmy::<EMOJI>:`
 - `sort`: `timestamp`
 - `include_context`: `false`
 - `limit`: `20`
 
-結果が20件なら `cursor` で次ページも取る。
+結果が20件なら `cursor` で次ページも取る。**全ページ取り切る。**
 
-**検索窓は固定の遡り日数にしていて「前回実行日」を持たない。** 処理済み記録が
-冪等性を担保するので、同じ期間を何度スキャンしても二重起票にならない。
+**日付で絞らない。** `after:` が絞るのは**メッセージの投稿日**であって、スタンプを押した日ではない。
+遡り日数を置くと、古いスレを掘り返してスタンプを押したものが窓の外に落ちて永久に拾われなくなる。
+過去スレのタスク化はふつうに起きるので、この取りこぼしは許容できない。
+
+**窓を持たない代わりに、処理済み記録が冪等性を担保する。** 何度スキャンしても二重起票にならず、
 cronが落ちた日があっても次回が勝手に拾い直す。
+
+**ヒット数はスタンプを押すたびに単調増加する**（起票してもSlack側のリアクションは残るため）。
+今は全期間で数件なので1ページで収まる。ページングが常時数ページに達するようになったら、
+そのとき窓の再導入を検討する。
 
 ヒット0件ならここで終了し、`起票対象なし` とだけ報告する。
 
