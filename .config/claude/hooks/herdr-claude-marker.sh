@@ -32,7 +32,21 @@ case "$mode" in
     printf '%s\n%s\n%s\n' "$session_id" "$cwd" "$transcript" >"$marker"
     ;;
   end)
-    rm -f "$marker"
+    # 自分が書いたマーカーでなければ消さない。
+    #
+    # 1ペインで旧セッションが終わって新セッションが始まることがある
+    # （worktree に入ると session_id も project dir も変わる）。無条件に消すと、
+    # 新セッションが書いたマーカーを旧セッションの end が持っていき、その
+    # ペインは復元対象から丸ごと外れる。
+    #
+    # session_id が読めないときは判定材料が無いので従来どおり消す。残すと
+    # 死んだセッションのマーカーが溜まり、復元で余計な claude が立つ。
+    payload=$(cat)
+    session_id=$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)
+    current=$(awk 'NR==1' "$marker" 2>/dev/null)
+    if [[ -z "$session_id" || "$session_id" == "$current" ]]; then
+      rm -f "$marker"
+    fi
     ;;
   *)
     echo "usage: $(basename "$0") start|end" >&2
