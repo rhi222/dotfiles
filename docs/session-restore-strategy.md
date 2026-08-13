@@ -1,116 +1,192 @@
-# tmux セッション復元戦略
+# セッション復元戦略
 
-## 概要
+reboot 後に `he` を叩くと、ターミナルのレイアウトだけでなく **nvim と claude のプロセス、
+さらに nvim のバッファまで**復活する。その仕組みと、そう作った理由。
 
-tmux再起動後に**ウィンドウ構成**と**nvimのセッション状態**を自動復元する仕組み。
-2つのレイヤーで役割を明確に分離している。
+運用側の入口（コマンド、環境変数、`--status` の読み方）は AGENTS.md の
+「tmux セッションの復元（herdr / `he`）」にある。ここには**なぜその形なのか**を置く。
 
-## アーキテクチャ
+## 誰が何を復元するか
 
-```
-tmux サーバー起動
-  │
-  ├─ continuum: resurrect restore を自動トリガー
-  │    └─ resurrect: pane/window/layout を復元
-  │         └─ @resurrect-processes: nvim プロセスを再起動
-  │              └─ auto-session: バッファ・カーソル等を復元
-  │
-  ├─ continuum: 15分ごとに resurrect save を自動実行
-  │    └─ post-save hook: fix-resurrect-defunct.sh でセーブファイル修正
-  │
-  └─ 手動操作: Prefix + Ctrl-h で resurrect restore
-```
+3層に分かれていて、層をまたぐ責務は持たせていない。
 
-## 各コンポーネントの役割
+| 何を | 誰が | どこに保存されるか |
+| --- | --- | --- |
+| レイアウト / タブ名 / ペイン label / cwd | herdr 本体 | `~/.config/herdr/session.json` |
+| nvim / claude のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-{nvim,claude}/<pane_id>` |
+| nvim のバッファ・カーソル位置 | auto-session | `~/.local/share/nvim/sessions/` |
 
-### 1. tmux-continuum（自動化レイヤー）
+**herdr は前面プロセスを保存しない。** ここが設計の起点になっている。レイアウトを復元しても
+ペインは素のシェルで開くので、「このペインでは nvim が動いていた」を別のどこかに残す必要がある。
 
-| 設定 | 値 | 役割 |
-|------|-----|------|
-| `@continuum-restore` | `on` | tmux起動時にresurrectを自動実行 |
-| `@continuum-save-interval` | `15` | 15分ごとにセッション自動保存 |
+## マーカー方式
 
-**設定ファイル**: `.tmux.conf:187-188`
+「復元する側がプロセスを検出する」のではなく、**各プロセスが自分で足跡を残す**。
 
-### 2. tmux-resurrect（tmuxレイヤー）
+| プロセス | マーカー | 中身 | 書く場所 |
+| --- | --- | --- | --- |
+| nvim | `~/.local/state/herdr-nvim/<pane_id>` | cwd（デバッグ用） | `.config/nvim/lua/my/settings/autocmd.lua` の `VimEnter` |
+| claude | `~/.local/state/herdr-claude/<pane_id>` | session_id / cwd / transcript_path | `.config/claude/hooks/herdr-claude-marker.sh`（`SessionStart` hook） |
 
-**担当**: pane/window構成 + nvimプロセス再起動
+- **ファイル名がペイン ID、1ペイン=1ファイル。** 一覧を1ファイルに持つと、複数の nvim と claude が
+  同時に書いて壊す。ファイルを分ければ排他がいらない
+- **正常終了ではマーカーを消す。** nvim は `VimLeavePre` で `v:dying == 0` のときだけ、claude は
+  `SessionEnd` hook で削除する
+- **異常終了ではマーカーが残る。** OS shutdown では `VimLeavePre` も `SessionEnd` も走らない。
+  つまり**残っているマーカー = 落ちる直前に動いていたペイン**になり、これがそのまま復元対象の一覧になる
+- `HERDR_PANE_ID` が無い環境（herdr の外で起動した nvim / claude）は何も書かない
 
-| 設定 | 値 | 役割 |
-|------|-----|------|
-| `@resurrect-processes` | `"~nvim->nvim *"` | nvimを緩くマッチし、PATHのnvimで再起動 |
-| `@resurrect-hook-post-save-layout` | `fix-resurrect-defunct.sh` | セーブファイルのdefunct行を修正 |
-| `@resurrect-restore-key` | `C-h` | 手動復元キー（rはreloadで使用中） |
+claude のマーカーが session_id を持つのは、`claude --resume <session_id>` で会話ごと復元するため。
+nvim は cwd さえ合っていれば auto-session がバッファを戻すので、中身はデバッグ用にすぎない。
 
-**設定ファイル**: `.tmux.conf:190-205`
-**セーブファイル**: `~/.tmux/resurrect/` が存在すればそちらを優先、なければ `~/.local/share/tmux/resurrect/`（XDG）を使用
-
-#### `"~nvim->nvim *"` の意味
-
-- `~nvim`: AppImage等のフルパス（`/tmp/.mount_nvimXXX/usr/bin/nvim`）でも緩くマッチ
-- `->nvim`: 復元時はPATHの `nvim` で起動し直す（AppImageの一時パスは再起動後に消えるため）
-- `*`: 元の引数を引き継ぐ（`nvim file.txt` → そのまま `nvim file.txt` で復元）
-
-#### fix-resurrect-defunct.sh
-
-fish shellのzombieプロセス（`[fish] <defunct>`）がps strategyでセーブファイルのTSV形式を壊す問題への対策。
-
-```
-修正前: pane\t...\t:[fish] <defunct>     ← 壊れた行
-        /tmp/.mount_nvimXXX/usr/bin/nvim  ← 孤立した実コマンド
-
-修正後: pane\t...\t:/tmp/.mount_nvimXXX/usr/bin/nvim file.txt
-```
-
-**スクリプト**: `.tmux/scripts/fix-resurrect-defunct.sh`
-
-### 3. auto-session（nvimレイヤー）
-
-**担当**: nvim内部の状態復元（バッファ、カーソル位置、折り畳み、タブ等）
-
-| 設定 | 値 | 役割 |
-|------|-----|------|
-| `auto_save` | `true` | 終了時にセッション自動保存 |
-| `auto_restore` | `true` | 起動時にセッション自動復元 |
-| `args_allow_files_auto_save` | `false` | `nvim file` 起動時はセッション保存しない |
-| `suppressed_dirs` | `~`, `~/Downloads`, `/` | これらのディレクトリではセッション無効 |
-| `purge_after_minutes` | `43200` | 30日超の孤児セッションを自動削除 |
-
-**設定ファイル**: `.config/nvim/lua/my/plugins/tools/auto-session.lua`
-
-#### シグナル対策
-
-```lua
-pre_save_cmds = {
-    function()
-        if vim.v.dying > 0 then return false end
-    end,
-}
-```
-
-`tmux kill-server` 等でSIGHUP/SIGTERM受信中はセッション保存をスキップし、壊れた状態の保存を防ぐ。
-
-## 復元フロー詳細
+## 復元フロー
 
 ### 保存時
 
-1. continuum が15分ごとに resurrect save を実行
-2. resurrect がpane/window構成 + 実行中プロセスをTSVで保存
-3. post-save hook (`fix-resurrect-defunct.sh`) がdefunct行を修正
-4. nvim終了時に auto-session がバッファ等をセッションファイルに保存
+1. nvim / claude が起動した時点でマーカーを書く（以後は触らない）
+2. nvim のバッファは auto-session が**稼働中に定期保存**する（後述）
+3. herdr のレイアウトは herdr 本体が `session.json` に持つ
 
 ### 復元時
 
-1. tmux起動 → continuum が resurrect restore を自動トリガー
-2. resurrect がpane/window/layoutを復元
-3. `@resurrect-processes` により nvim が再起動される
-   - `nvim` のみで起動 → auto-session がディレクトリからセッション復元
-   - `nvim somefile` で起動 → そのファイルが直接開く（セッション復元なし）
-4. auto-session がバッファ・カーソル位置等を復元
+1. `he` が flock を取り、サーバーが動いていなければ `herdr server` を headless で起動する
+2. herdr が `session.json` からレイアウトを復元する
+3. `he` が `herdr-restore.sh` を切り離して起動し、自分は TUI にアタッチする
+4. `herdr-restore.sh` がマーカーを読み、**生存しているペインのぶんだけ**を復元プランにする
+5. プランを種別ごとに間隔をあけて投入する
+6. 各ペインで nvim が起動し、auto-session がバッファを復元する
 
-## 設計判断
+**アタッチは復元完了を待たない。** 投入は数分に散るので、待つと端末が数分沈黙する。
 
-- **resurrectはnvimプロセスの起動のみ**、セッション内容の復元はauto-sessionに一元化
-- **AppImage対応**: フルパスではなくPATHのnvimで起動し直す
-- **引数引き継ぎ**: `*` で元の引数を保持し、ファイル直接開きにも対応
-- **防御的保存**: dying状態・defunct行への対策で壊れた保存を防止
+## 一斉起動を避ける
+
+**種別ごとに同時投入数と間隔を絞る。**
+
+| 種別 | 同時投入数 | 間隔 | 環境変数 |
+| --- | --- | --- | --- |
+| nvim | 3 | 2秒 | `HERDR_RESTORE_NVIM_{BATCH,INTERVAL}` |
+| claude | 1 | 8秒 | `HERDR_RESTORE_CLAUDE_{BATCH,INTERVAL}` |
+
+reboot 直後に数十個の nvim と claude が同時に立ち上がると負荷スパイクで固まる。claude のほうが
+重いので、より強く絞っている。
+
+投入順は **nvim を全部流してから claude**、各種別の中は**フォーカス中の workspace が先**。
+nvim は軽いので先に流しても claude の開始をほとんど遅らせず、そのぶん目に入るペインが先に埋まる。
+同一グループ内はペイン ID の辞書順で、順序を決定的にしてある（`--dry-run` の出力が毎回同じになる）。
+
+**`he` と `herdr-restore.sh` の両方が flock を持つ。** 複数端末から同時に `he` を叩いても、
+サーバー起動と復元キューはそれぞれ1プロセスだけが行う。
+
+## 進み具合を外から見る
+
+投入が数分に散るので、走っているのか終わったのかが分からないと「壊れた」と誤解する。
+状態を `~/.local/state/herdr-restore.status` に key=value で持ち、`he --status` とトースト通知の
+両方がここから文字列を組み立てる。
+
+- **書き込みは tmp + `mv`。** 読み手が書きかけの行を読まないようにする
+- **`--status` はロックより手前で処理する。** 復元中は flock が取れないので、後ろに置くと
+  一番知りたいときに黙って終わる
+- **触らなかったペインは skipped として数える。** 復元前から何か動いていたペインには手を出さない。
+  done と total が食い違う理由が表示だけで分かるようにしている
+- **`state=running` のまま pid が居なければ「中断」。** 復元プロセスが落ちたことに気づけるようにする
+- **復元対象が0件なら状態ファイルも通知も触らない。** 既にサーバーが動いている状態で `he` を叩いた
+  だけでトーストが飛ぶのを避ける
+- **トーストの完了は待たない。** `Import-Module BurntToast` に実測10秒前後かかり、reboot 直後は
+  さらに伸びる。復元キューの頭とお尻をそれで止めるのは割に合わないので `timeout` を付けて投げっぱなしにする
+
+## nvim セッションの粒度
+
+auto-session のセッション名は cwd 由来なので、素のままだと**同じリポジトリを2ペインで開いていると
+1つのセッションファイルを共有し、最後に保存したペインの状態で上書きされる**。
+
+そこで `custom_session_tag` に `HERDR_PANE_ID` を混ぜ、ペインごとに分ける。herdr の外で起動した
+nvim は `nil` を返して従来どおり cwd 単位になる。
+
+### フォールバック
+
+タグ付きセッションが見つからないときだけ、cwd 単位（タグ無し）のセッションへ落ちる。タグ導入前に
+保存された古いセッションや、herdr の外で作ったセッションを拾うため。タグ付けの目的は複数ペインの
+上書き防止なので、読み込み側まで厳格にする必要はない。復元後の保存はタグ付きの名前で行われるので、
+1回開けば自動で移行する。
+
+**フォールバックは引数なしの起動だけで働く。** auto-session の `no_restore` フックは「タグ付きが
+無かった」以外の理由でも発火するため、絞らないと事故る。
+
+| 起動 | auto-session の判断 | `no_restore` | フォールバックさせるか |
+| --- | --- | --- | --- |
+| `nvim` | 復元する | 発火する | **する** |
+| `nvim somefile` | `args_allow_files_auto_save = false` により復元しない | 発火する | しない |
+| `nvim --headless "+Lazy! sync"` | 復元しない | 発火する | しない |
+| `git diff \| nvim -`（pager） | 復元しない | 発火する | しない |
+
+絞らなかったときは実際に事故が起きている。`nvim somefile` で開こうとしたファイルが、セッションの
+内容に置き換わった。
+
+タグ導入直後の reboot でも事故った。**読み込み側にフォールバックが無かったため、ペイン ID の
+タグが付いた名前を探しに行って全部が空振りし、全ペインが空で起動した。** フォールバックはこの
+後付けである。
+
+### 稼働中の定期保存
+
+auto-session の保存契機は `VimLeavePre` だけで、かつ `pre_save_cmds` の `v:dying` ガードにより
+シグナル終了時は保存しない（書き込み途中で切られたセッションファイルの破損を避けるため）。
+herdr のサーバー再起動は各ペインの nvim を SIGTERM/SIGHUP で落とすので、これだけだと
+`he` がペインを復元しても「最後に `:q` で終了したときの状態」までしか戻らない。
+
+そこで `BufEnter` / `BufWritePost` / `WinEnter` / `FocusLost` を契機に、5秒デバウンスで保存する。
+終了処理中ではなく操作が落ち着いたタイミングで書くので、`v:dying` ガードを外す場合と違って
+破損リスクは増えない。SIGKILL や WSL の強制終了もカバーできる。
+
+**名前付きの listed バッファが1つも無い間は保存しない。** 復元前や素の起動直後に、空のセッションで
+既存のセッションを上書きするのを防ぐ。
+
+### スクラッチパッドを載せない
+
+`~/.inbox.md`（`:Inbox`）と `~/.nvim_tmp/` 配下（`:Temp`）は**全プロジェクトで共有する**
+スクラッチパッド。これがプロジェクト固有のセッションの表示バッファとして保存されると、
+次の復元で問題が増幅する。
+
+1. cwd 単位セッションの表示バッファがスクラッチパッドになる
+2. タグ付きセッションを持たないペインがそこへフォールバックする
+3. **同じ cwd の全ペインが同じスクラッチパッドを開く**
+4. 定期保存が、その状態を各ペインのタグ付きセッションへ書き戻す（焼き付く）
+
+対策として、**いずれかのウィンドウがスクラッチパッドを表示している間は保存を見送る**。
+直前に保存された状態がそのまま残る。
+
+- **バッファを消すのではなく保存を止める。** 定期保存は編集中に何度も走るので、消す実装だと
+  編集中のスクラッチパッドを閉じてしまう
+- **判定はウィンドウに出ているかどうかで行う。** バッファ一覧に居るだけなら復元しても画面には
+  出ないので放っておく
+
+## 旧構成（tmux-continuum + tmux-resurrect）
+
+herdr へ移る前は tmux のプラグインでやっていた。
+
+```
+tmux サーバー起動
+  └─ continuum: resurrect restore を自動トリガー
+       └─ resurrect: pane/window/layout を復元
+            └─ @resurrect-processes '"~nvim->nvim *"': nvim プロセスを再起動
+                 └─ auto-session: バッファ・カーソル等を復元
+```
+
+3層に分ける考え方と、プロセスの再起動までしか担当せずバッファは auto-session に一元化する分担は
+今も同じ。**変わったのはプロセスをどう検出するか。**
+
+resurrect は `ps` の出力からプロセスを拾う方式で、そこが弱かった。
+
+- **fish の zombie プロセス（`[fish] <defunct>`）が `ps` strategy の出力を壊す。** セーブファイルの
+  TSV 形式が崩れ、`.tmux/scripts/fix-resurrect-defunct.sh` を post-save hook に噛ませて
+  壊れた行を修正していた
+- **AppImage のフルパスが再起動後に消える。** 実行時に `/tmp/.mount_nvimXXXXXX/` にマウントされる
+  ため、保存されたパスは復元時に存在しない。`"~nvim->nvim *"` の `->` で「PATH の nvim で
+  起動し直す」を明示していた
+- `default-command` を設定すると `fish -c /usr/bin/fish` の2段階起動になり、resurrect が nvim を
+  検出できなくなる。そのためコメントアウトしたままにしていた
+
+herdr にはこの検出機構自体が無いので、代わりに**プロセス側が自分でマーカーを残す**方式にした。
+`ps` の出力に依存しないので、zombie もフルパスも問題にならない。claude のように `ps` からは
+セッション ID を復元しようがないプロセスも同じ枠組みで扱える。
+
+resurrect / continuum の設定は `.config/tmux/tmux.conf` から撤去済み。

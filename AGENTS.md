@@ -13,6 +13,7 @@
 | [docs/bootstrap.md](docs/bootstrap.md) | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md) | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
 | [docs/worktree.md](docs/worktree.md) | worktree の初期化・掃除の判定を変えるとき |
+| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` の復元（herdr / nvim / claude）を触るとき |
 | [docs/docker-clean.md](docs/docker-clean.md) | `dclean` の判定や閾値を変えるとき |
 
 ## セットアップとインストール
@@ -395,10 +396,11 @@ gf 側の background 更新だけでは「clone 直後の `gf` に間に合う�
 初期化のリポジトリ別カスタム、タグ判定の根拠、掃除の判定表と「未追跡ファイルを dirty 扱いしない」
 理由は [docs/worktree.md](docs/worktree.md)。
 
-### tmux セッションの復元（herdr / `he`）
+### セッションの復元（herdr / `he`）
 
 reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と claude のプロセスまで**復活する。
-tmux の continuum + resurrect（`@resurrect-processes`）に相当する仕組みを herdr 上で作っている。
+以前は tmux の continuum + resurrect（`@resurrect-processes`）でやっていたが、herdr へ移行した際に
+撤去し、同等の仕組みを herdr 上に作り直している。
 
 | 何を | 誰が復元するか |
 | --- | --- |
@@ -429,6 +431,10 @@ tmux の continuum + resurrect（`@resurrect-processes`）に相当する仕組�
   `args_allow_files_auto_save = false` により復元対象外だがフックは発火するため、絞らないと
   指定したファイルがセッションの内容に置き換わる（実際にこれで別ファイルが開く事故が起きた）。
   同じ理由で headless（`nvim --headless "+Lazy! sync"`）と pager モードも除く
+- **スクラッチパッドが画面に出ている間はセッションを保存しない。** `~/.inbox.md`（`:Inbox`）と
+  `~/.nvim_tmp/` 配下（`:Temp`）は全プロジェクト共有なので、プロジェクト固有のセッションの
+  表示バッファになるとフォールバック経由で同じ cwd の全ペインへ広がり、定期保存で焼き付く
+  （実際に9本のセッションが `~/.inbox.md` で埋まった）
 
 #### 復元の進み具合を見る
 
@@ -456,7 +462,7 @@ herdr 復元: 中断  nvim 4/10, claude 0/5  開始から 1分23秒 (プロセ�
 - **通知の完了は待たない。** `Import-Module BurntToast` に実測10秒前後かかり、reboot 直後は
   さらに伸びる。復元キューの頭とお尻をそれで止めるのは割に合わないので、`timeout` を付けて投げっぱなしにする
 
-設計の経緯は `docs/tmux-session-restore-strategy.md`。動作確認は `test-herdr-restore.sh` /
+設計の経緯は [docs/session-restore-strategy.md](docs/session-restore-strategy.md)。動作確認は `test-herdr-restore.sh` /
 `test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
 **後ろ2本は CI では走らない**（実 nvim 設定と auto-session の導入済み環境が要るため `# ci-skip:` 宣言済み）。
 

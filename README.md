@@ -56,4 +56,4 @@ bash scripts/secret-scan.sh --tree
 | [docs/worktree.md](docs/worktree.md) | git worktree の初期化・一覧・掃除 |
 | [docs/docker-clean.md](docs/docker-clean.md) | `dclean` の判定と閾値 |
 | [docs/git-worktree-tool.md](docs/git-worktree-tool.md) | `git wt` 自体の使い方 |
-| [docs/tmux-session-restore-strategy.md](docs/tmux-session-restore-strategy.md) | reboot 後のセッション復元の設計経緯 |
+| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | reboot 後のセッション復元の設計経緯 |
