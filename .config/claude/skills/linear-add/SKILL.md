@@ -1,6 +1,6 @@
 ---
 name: linear-add
-description: Linear（linear.app/nsym・team NSY）にタスクを起票する。prefix判定・Project選択・親子構造・Jira番号抽出・ラベル付与を規約どおりに自動適用する。「Linearに起票」「これチケット化して」「タスク積んで」「issue作って」やPR/JiraのURLを渡された文脈で使用。
+description: Linear（linear.app/nsym・team NSY）にタスクを起票する。prefix判定・Project選択・親子構造・Jira番号抽出・ラベル付与を規約どおりに自動適用する。「Linearに起票」「これチケット化して」「タスク積んで」「Todoに入れて」やPR/JiraのURLを渡された文脈で使用。「issueを作って」はGitHub issueを指すので、このskillは使わない。
 argument-hint: "<やること、またはPR/JiraのURL>"
 allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(grep:*), Bash(sed:*), Bash(date:*), mcp__claude_ai_Atlassian__getJiraIssue
 ---
