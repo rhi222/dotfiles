@@ -11,11 +11,17 @@
 #   1. SIGTERM で殺されても直前に開いていたバッファがセッションに保存されている
 #   2. 通常終了(:qa)でも従来どおり保存される（既存挙動の非回帰）
 #   3. ファイル引数付き起動では保存されない（args_allow_files_auto_save=false の維持）
+#   4. 全プロジェクト共有のスクラッチパッドを表示中は保存しない
+#   5. スクラッチパッドを閉じれば保存が再開する（4がやりすぎでないこと）
 #
 # ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
 
 SESSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/sessions"
+
+# 除外対象は auto-session.lua 側にパスで直書きしているため、テストも実物を使う。
+# :edit するだけで書き込まないので中身は変わらない。
+SCRATCHPAD="$HOME/.inbox.md"
 
 PASS=0
 FAIL=0
@@ -196,10 +202,97 @@ test_not_saved_with_file_args() {
   fi
 }
 
+# --- ケース4: スクラッチパッド表示中は保存しない ---
+# ~/.inbox.md は全プロジェクトで共有するスクラッチパッド。プロジェクト固有の
+# セッションに載ると、復元時にどのペインでも同じスクラッチパッドが画面に出る。
+# 直前に保存された alpha.txt の状態が維持されることを確認する。
+test_not_saved_while_scratchpad_visible() {
+  echo "ケース4: スクラッチパッド表示中はセッションを保存しない"
+  local workdir sock pid session
+  workdir=$(make_workdir)
+  sock="$workdir/nvim.sock"
+
+  if ! start_nvim "$workdir" "$sock"; then
+    ng "nvim が起動しなかった"
+    return
+  fi
+  pid=$NVIM_PID
+
+  edit_file "$sock" "$workdir/alpha.txt"
+  # ここで alpha.txt の状態が一度保存される
+  sleep 10
+
+  edit_file "$sock" "$SCRATCHPAD"
+  sleep 10
+
+  kill -TERM "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+  sleep 1
+
+  session=$(find_session_file "$workdir")
+  if [[ -z "$session" ]]; then
+    ng "セッションファイルが保存されていない"
+    return
+  fi
+  SESSION_FILES+=("$session")
+
+  if grep -q '^edit .*\.inbox\.md' "$session"; then
+    ng "スクラッチパッドがセッションの表示バッファとして保存された"
+  else
+    ok "スクラッチパッドはセッションの表示バッファにならない"
+  fi
+
+  if grep -q '^edit .*alpha\.txt' "$session"; then
+    ok "直前に保存された状態が維持される"
+  else
+    ng "セッションの表示バッファが alpha.txt でない"
+  fi
+}
+
+# --- ケース5: スクラッチパッドを閉じれば保存が再開する ---
+# ケース4の抑止が「スクラッチパッドを一度開いたら以後保存しない」に
+# なっていないことを確認する。
+test_saved_after_scratchpad_closed() {
+  echo "ケース5: スクラッチパッドを閉じればセッション保存が再開する"
+  local workdir sock pid session
+  workdir=$(make_workdir)
+  sock="$workdir/nvim.sock"
+
+  if ! start_nvim "$workdir" "$sock"; then
+    ng "nvim が起動しなかった"
+    return
+  fi
+  pid=$NVIM_PID
+
+  edit_file "$sock" "$workdir/alpha.txt"
+  edit_file "$sock" "$SCRATCHPAD"
+  edit_file "$sock" "$workdir/bravo.txt"
+  sleep 10
+
+  kill -TERM "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+  sleep 1
+
+  session=$(find_session_file "$workdir")
+  if [[ -z "$session" ]]; then
+    ng "セッションファイルが保存されていない"
+    return
+  fi
+  SESSION_FILES+=("$session")
+
+  if grep -q '^edit .*bravo\.txt' "$session"; then
+    ok "スクラッチパッドを離れた後の状態が保存される"
+  else
+    ng "セッションの表示バッファが bravo.txt でない"
+  fi
+}
+
 echo "=== nvim セッション自動保存テスト ==="
 test_saved_on_sigterm
 test_saved_on_clean_quit
 test_not_saved_with_file_args
+test_not_saved_while_scratchpad_visible
+test_saved_after_scratchpad_closed
 
 echo
 echo "結果: PASS=$PASS FAIL=$FAIL"
