@@ -296,6 +296,51 @@ assert_output_contains "スキップ" "$output" "スキップの理由を出す"
 rm -rf "$WT_TEST_DIR" "$STUB_BIN" "$FAKE_SCRIPTS"
 
 echo ""
+echo "[6] yazi_pkg_upgrade"
+
+YAZI_TEST_DIR="$(mktemp -d)"
+YAZI_STUB_BIN="$YAZI_TEST_DIR/bin"
+mkdir -p "$YAZI_STUB_BIN"
+cat >"$YAZI_STUB_BIN/ya" <<EOF
+#!/bin/bash
+echo "YA_CALLED args=[\$*]" >>"$YAZI_TEST_DIR/ya.log"
+exit "\${YA_EXIT:-0}"
+EOF
+chmod +x "$YAZI_STUB_BIN/ya"
+
+# package.toml があれば ya pkg upgrade を呼ぶ
+: >"$YAZI_TEST_DIR/ya.log"
+touch "$YAZI_TEST_DIR/package.toml"
+exit_code=0
+output=$(PATH="$YAZI_STUB_BIN:$PATH" \
+  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/package.toml" \
+  yazi_pkg_upgrade 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "宣言があれば成功する"
+assert_output_contains "pkg upgrade" "$(cat "$YAZI_TEST_DIR/ya.log")" "ya pkg upgrade を呼ぶ"
+
+# package.toml が無い端末（yazi 未導入）では呼ばずに成功扱い。
+# 毎日 FAILED 通知が飛ぶのを避けるため。
+: >"$YAZI_TEST_DIR/ya.log"
+exit_code=0
+output=$(PATH="$YAZI_STUB_BIN:$PATH" \
+  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/does-not-exist.toml" \
+  yazi_pkg_upgrade 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "package.toml が無くても成功扱い"
+assert_eq 0 "$(grep -c YA_CALLED "$YAZI_TEST_DIR/ya.log")" "ya を呼ばない"
+assert_output_contains "skipping" "$output" "スキップの理由を出す"
+
+# ya 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
+: >"$YAZI_TEST_DIR/ya.log"
+exit_code=0
+output=$(PATH="$YAZI_STUB_BIN:$PATH" \
+  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/package.toml" \
+  YA_EXIT=1 \
+  yazi_pkg_upgrade 2>&1) || exit_code=$?
+assert_eq 1 "$exit_code" "ya の失敗は隠さない"
+
+rm -rf "$YAZI_TEST_DIR"
+
+echo ""
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
 echo ""

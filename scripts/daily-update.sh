@@ -48,6 +48,24 @@ run_step_soft() {
   echo "" | tee -a "$LOG_FILE"
 }
 
+# yazi のプラグイン更新。パッケージの追加は package.toml + setup-yazi-plugins.sh の
+# 担当で、ここは宣言済みパッケージの更新だけを回す。
+#
+# `ya pkg upgrade` は package.toml の rev/hash を書き換える。この実体はリポジトリ内に
+# あるので作業ツリーに差分が出るが、コミットするかは claude settings pull と同じく人間が判断する。
+#
+# package.toml が無い端末（yazi 未導入）では何もせず成功扱いにする。毎日 FAILED 通知が
+# 飛ぶと無視されるようになるため。テストから差し替えられるようにパスを変数に持つ。
+YAZI_PACKAGE_FILE="${YAZI_PACKAGE_FILE:-$HOME/.config/yazi/package.toml}"
+
+yazi_pkg_upgrade() {
+  if [ ! -f "$YAZI_PACKAGE_FILE" ]; then
+    echo "no package.toml at $YAZI_PACKAGE_FILE, skipping"
+    return 0
+  fi
+  ya pkg upgrade
+}
+
 # 消し忘れ worktree の溜まり込みを検知する。dry-run で候補を数えるだけで、削除はしない。
 # 候補が閾値以上のときだけトースト通知する（毎日通知が飛ぶと無視されるようになるため）。
 WORKTREE_CLEANUP_NOTIFY_THRESHOLD="${WORKTREE_CLEANUP_NOTIFY_THRESHOLD:-5}"
@@ -135,6 +153,8 @@ main() {
   # 同様に、拡張の追加は gh-extensions.txt + setup-gh-extensions.sh。
   # ここは既存拡張の更新だけを回す（--pin 済みの拡張は据え置かれる）。
   run_step "gh extension upgrade" gh extension upgrade --all
+  # yazi プラグインも同様に、宣言済みのものの更新だけを回す。
+  run_step "yazi pkg upgrade" yazi_pkg_upgrade
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check
