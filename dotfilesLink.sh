@@ -120,6 +120,20 @@ setup_codex() {
   safe_link "$DC/codex/config.toml" ~/.codex/config.toml
 }
 
+# yazi のプラグイン実体を配置する。
+# plugins/ は gitignore しているので fresh clone には宣言（package.toml）だけがあり、
+# init.lua が require("git") するため実体が欠けていると yazi が起動そのものに失敗する。
+# gh 拡張や claude skill のように「無ければ機能が欠けるだけ」ではないので、
+# 手動手順ではなくリンク作成と同じ流れで通す。
+#
+# ネットワーク断でリンク作業まで巻き込まないよう、失敗しても続行する。
+setup_yazi_plugins() {
+  if ! bash "$DOTFILES_DIR/scripts/setup-yazi-plugins.sh"; then
+    echo "[WARN] yazi のプラグイン配置に失敗しました（yazi が起動できない状態です）" >&2
+    echo "       復旧: bash scripts/setup-yazi-plugins.sh" >&2
+  fi
+}
+
 # pre-commit hook を有効にする。このリポジトリは public なので、社内固有情報を
 # 含むコミットを commit の手前で止める。詳細は scripts/secret-scan.sh 冒頭。
 #
@@ -211,6 +225,8 @@ main() {
   link_claude_skills
   setup_claude_settings
   setup_codex
+  # link_configs で ~/.config/yazi を張った後に呼ぶ（package.toml がそこにある）
+  setup_yazi_plugins
   setup_git_hooks
   setup_local_configs
   grant_exec_permissions
