@@ -107,7 +107,7 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 
 `scripts/daily-update.sh` が各パッケージマネージャとツールの更新をまとめて回す。
 apt / cargo / mise（self-update・upgrade・prune）/ npm global / pip global /
-nvim の Lazy と Mason / gh skill / gh extension の順に実行し、最後に
+nvim の Lazy と Mason / gh skill / gh extension / yazi プラグインの順に実行し、最後に
 worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行う。
 
 - **1ステップの失敗で止めない。** 全部走らせてから、失敗したステップ名をまとめて報告する
@@ -119,7 +119,10 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
   バージョン固定の PATH のままだと、`mise upgrade` 後に古い `installs/<tool>/<ver>/` を
   掴んだままになる（`gh` がこれで `/usr/bin/gh` に落ちて `gh skill` を失った実例がある）
 - 新規追加はここではやらない。skill は `skill-add.sh`、gh 拡張は `gh-extensions.txt` +
-  `setup-gh-extensions.sh` の担当で、ここは既存のものの更新だけを回す
+  `setup-gh-extensions.sh`、yazi プラグインは `ya pkg add` + `setup-yazi-plugins.sh` の担当で、
+  ここは既存のものの更新だけを回す
+- **yazi プラグインは `package.toml` が無い端末では何もせず成功扱いにする。** yazi を入れていない
+  環境で毎日 FAILED が出ないようにするため（他のステップと違い、宣言ファイルの有無で判定できる）
 
 動作確認は `bash scripts/test-daily-update.sh`。
 
@@ -156,6 +159,34 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 | 削除             | `gh-extensions.txt` の行削除 + `gh extension remove <name>`                       |
 
 `@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash scripts/test-gh-extensions.sh`。
+
+### yaziプラグイン管理
+
+yazi のプラグインは `ya`（yazi 同梱のCLI）で管理し、宣言リストは `.config/yazi/package.toml`。
+実体の `.config/yazi/plugins/` は gitignore していて、upstream のコードはリポジトリに抱えない。
+
+| やりたいこと     | コマンド                                                        |
+| ---------------- | --------------------------------------------------------------- |
+| プラグイン追加   | `ya pkg add <owner/repo>[:<name>]`（package.toml も更新される） |
+| 一括インストール | `bash scripts/setup-yazi-plugins.sh`（実体が揃っていればskip）  |
+| 新環境 bootstrap | `./dotfilesLink.sh` が自動実行                                  |
+| 更新             | `daily-update.sh` が `ya pkg upgrade` を実行                    |
+| 削除             | `ya pkg delete <name>`                                          |
+
+- **これだけは `dotfilesLink.sh` から自動で呼ぶ。** gh 拡張や skill は無ければ機能が欠けるだけだが、
+  yazi は `init.lua` が `require("git")` するので**実体が無いと起動そのものが exit 1 で落ちる**
+  （`Failed to load plugin from .../git.yazi/main.lua`）。リンクを張っただけの新環境で必ず踏む
+- **`ya pkg add` は宣言と実体を同時に作る。** そのため追加した端末では動き、他の端末では壊れる。
+  宣言だけが git に乗るので、実体を配置する経路が別に必要になる
+- **`ya` の終了コードを信じない。** install が成功しても実体が入っていなければ失敗として扱う。
+  「宣言はあるが `plugins/` が空」が起動不能の状態そのもので、そこを検知しないと意味がない
+- **既に揃っているときは `ya pkg install` を呼ばない。** bootstrap のたびに走るので、
+  健全な端末ではネットワークに出ないようにする
+- `package.toml` は `rev` と `hash` を持ち lockfile を兼ねる。`ya pkg install` はこの rev に固定して取る。
+  `ya pkg upgrade` はここを書き換えるので作業ツリーに差分が出るが、コミットするかは人間が判断する
+- 設定ディレクトリは `ya` と同じ順（`YAZI_CONFIG_HOME` → `XDG_CONFIG_HOME/yazi` → `~/.config/yazi`）で解決する
+
+動作確認は `bash scripts/test-yazi-plugins.sh`。
 
 ### Windowsトースト通知（WSL2専用）
 
