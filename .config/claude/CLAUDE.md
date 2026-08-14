@@ -69,6 +69,13 @@ Claude Codeの署名（`🤖 Generated with [Claude Code]`や`Co-Authored-By: Cl
 
 - `docs/superpowers/`（superpowersのspec/planドキュメント）はコミットしない。`.gitignore` で管理対象外にしているため、`git add -A` などで誤って追加しないこと。
 
+## 読み込まないファイル
+
+- **`~/.aws/` 配下は読まない。** `config` / `credentials` / `cli/` / `login/` のいずれも、Readツール・`cat` などのシェル経由・スクリプト経由を問わず中身を開かない
+- 理由は2つ。`credentials` は生のアクセスキーそのもの。`config` はSSOのstart URL・アカウントID・プロファイル名を持ち、dotfilesリポジトリの「社内固有情報を入れない運用」の対象になる。**一度読めば会話コンテキストに乗り、要約・コミットメッセージ・日報生成の下流へ流れうる**
+- AWSの設定値が必要になったら、ファイルを読まずにユーザーに聞く
+- `settings.json` の `permissions.deny` の `Read(~/.aws/**)` でハーネス側でも止めている。**denyはReadツール・Grep/Glob・`cat` 等のシェルコマンドまで塞ぐが、ファイルを自前で開くスクリプトには効かない。** そこだけはこの指示が唯一の防壁になる
+
 ## shellコマンド
 
 - ユーザーへの回答でコマンド例を示す際はfish構文で記述すること（開発者のログインシェルがfishのため）
