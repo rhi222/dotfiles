@@ -83,19 +83,19 @@ echo "=== ファイルパスの組み立て ==="
 load_lib
 export NIPPO_DIR="/tmp/nd"
 
-assert_eq "/tmp/nd/nippo.2026-08-14.md" \
+assert_eq "/tmp/nd/daily/2026/08/nippo.2026-08-14.md" \
   "$(nippo_daily_file "2026-08-14")" "nippo_daily_file"
-assert_eq "/tmp/nd" \
+assert_eq "/tmp/nd/daily/2026/08" \
   "$(nippo_daily_dir "2026-08-14")" "nippo_daily_dir"
-assert_eq "/tmp/nd/nippo.2026-01-05.md" \
+assert_eq "/tmp/nd/daily/2026/01/nippo.2026-01-05.md" \
   "$(nippo_daily_file "2026-01-05")" "nippo_daily_file（月が1桁でもゼロ埋めが落ちない）"
-assert_eq "/tmp/nd" \
+assert_eq "/tmp/nd/daily/2026/01" \
   "$(nippo_daily_dir "2026-01-05")" "nippo_daily_dir（月が1桁）"
-assert_eq "/tmp/nd/nippo-weekly.2026-W33.md" \
+assert_eq "/tmp/nd/weekly/2026/nippo-weekly.2026-W33.md" \
   "$(nippo_weekly_file "2026-W33")" "nippo_weekly_file"
-assert_eq "/tmp/nd" \
+assert_eq "/tmp/nd/weekly/2026" \
   "$(nippo_weekly_dir "2026-W33")" "nippo_weekly_dir"
-assert_eq "/tmp/nd/nippo-goals.md" \
+assert_eq "/tmp/nd/config/nippo-goals.md" \
   "$(nippo_goals_file)" "nippo_goals_file"
 
 unset NIPPO_DIR

@@ -15,12 +15,25 @@ PASS=0
 FAIL=0
 TOTAL=0
 
+# フィクスチャの置き場は nippo-paths.sh に解決させる。
+# ここでレイアウトを直書きすると、ディレクトリ構造を変えるたびに
+# テストが本体と食い違って落ちる（実際にフラット→年/月の移行で踏んだ）。
+# shellcheck source=lib/nippo-paths.sh
+source "$SCRIPT_DIR/lib/nippo-paths.sh"
+
+# 全ケースが同じ日付のフィクスチャを使う
+FIXTURE_DATE="2026-03-09"
+
 # テスト用一時ディレクトリ
 TEST_DIR=""
+# 日報フィクスチャの絶対パス。setup() で毎回決め直す
+FIXTURE=""
 
 setup() {
   TEST_DIR=$(mktemp -d)
   export NIPPO_DIR="$TEST_DIR"
+  FIXTURE="$(nippo_daily_file "$FIXTURE_DATE")"
+  mkdir -p "$(nippo_daily_dir "$FIXTURE_DATE")"
 }
 
 teardown() {
@@ -158,7 +171,7 @@ echo "[4] 未終了タイマー"
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -181,7 +194,7 @@ echo "[4b] 終了済みタイマー（正常ケース）"
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -203,7 +216,7 @@ echo "[5] 陳腐化検知（cronのみ）"
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -213,7 +226,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - [ ] ドキュメント更新
 NIPPO
 # ファイルのmtimeを120分前に設定
-touch -t "202603091200.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091200.00" "$FIXTURE"
 result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -236,7 +249,7 @@ echo "[5b] 90分以上経過だが未完了タスクなし"
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -244,7 +257,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - 11:00 🔴 end: API設計
 - [x] レビュー対応
 NIPPO
-touch -t "202603091200.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091200.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -259,7 +272,7 @@ echo "[6] Finalize忘れ"
 
 setup
 export NIPPO_NOW="2026-03-09 18:30"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -268,7 +281,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - [x] レビュー対応
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定（陳腐化を回避）
-touch -t "202603091820.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091820.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -284,7 +297,7 @@ echo "[6b] Finalize済み"
 
 setup
 export NIPPO_NOW="2026-03-09 18:30"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -296,7 +309,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - 振り返り完了
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定
-touch -t "202603091820.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091820.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -311,7 +324,7 @@ echo "[7] 未完了タスクのみ（cronのみ）"
 
 setup
 export NIPPO_NOW="2026-03-09 15:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -323,7 +336,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - [x] コードレビュー
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定（陳腐化を回避）
-touch -t "202603091450.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -347,7 +360,7 @@ echo "[8] 問題なし（全クリア）"
 
 setup
 export NIPPO_NOW="2026-03-09 15:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -357,7 +370,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - [x] ドキュメント更新
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定
-touch -t "202603091450.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -372,7 +385,7 @@ echo "[9] 優先度テスト: 未終了タイマーが未完了タスクより�
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -381,7 +394,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - [ ] テスト追加
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定
-touch -t "202603091350.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091350.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
@@ -417,13 +430,13 @@ teardown
 
 setup
 export NIPPO_NOW="2026-03-09 14:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
 - 10:00 🟢 start: API設計
 NIPPO
-touch -t "202603091350.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091350.00" "$FIXTURE"
 for ctx in stop cron; do
   result=$(run_check "$ctx")
   output=$(parse_output "$result")
@@ -435,7 +448,7 @@ teardown
 
 setup
 export NIPPO_NOW="2026-03-09 18:30"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -443,7 +456,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - 11:00 🔴 end: API設計
 - [x] レビュー対応
 NIPPO
-touch -t "202603091820.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091820.00" "$FIXTURE"
 for ctx in stop cron; do
   result=$(run_check "$ctx")
   output=$(parse_output "$result")
@@ -460,7 +473,7 @@ echo "[11] 未知のコンテキストは全チェック"
 
 setup
 export NIPPO_NOW="2026-03-09 15:00"
-cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
+cat >"$FIXTURE" <<'NIPPO'
 # 2026-03-09
 
 ## Tasks:
@@ -468,7 +481,7 @@ cat >"$TEST_DIR/nippo.2026-03-09.md" <<'NIPPO'
 - 11:00 🔴 end: API設計
 - [ ] レビュー対応
 NIPPO
-touch -t "202603091450.00" "$TEST_DIR/nippo.2026-03-09.md"
+touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check manual)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")

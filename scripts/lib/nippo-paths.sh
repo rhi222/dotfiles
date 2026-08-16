@@ -34,10 +34,12 @@ nippo_resolve_date() {
   fi
 }
 
-# nippo_daily_dir <YYYY-MM-DD>
-# 引数の日付は現構造では使わない（種別 + 年/月へ移行する際に使う）
+# nippo_daily_dir <YYYY-MM-DD> -> <root>/daily/YYYY/MM
+# 日付文字列から素直に切り出す。date(1) を通さないのは、呼び出し回数が多く、
+# かつ入力が常に YYYY-MM-DD 固定だからプロセス生成に見合わないため。
 nippo_daily_dir() {
-  nippo_root
+  local d="$1"
+  echo "$(nippo_root)/daily/${d:0:4}/${d:5:2}"
 }
 
 # nippo_daily_file <YYYY-MM-DD>
@@ -45,10 +47,11 @@ nippo_daily_file() {
   echo "$(nippo_daily_dir "$1")/nippo.$1.md"
 }
 
-# nippo_weekly_dir <YYYY-Wnn>
-# 引数の週は現構造では使わない（年で畳む際に使う）
+# nippo_weekly_dir <YYYY-Wnn> -> <root>/weekly/YYYY
+# 週は月境界をまたぐので月では畳めない。年32件なので年だけで足りる。
 nippo_weekly_dir() {
-  nippo_root
+  local w="$1"
+  echo "$(nippo_root)/weekly/${w:0:4}"
 }
 
 # nippo_weekly_file <YYYY-Wnn>
@@ -57,5 +60,5 @@ nippo_weekly_file() {
 }
 
 nippo_goals_file() {
-  echo "$(nippo_root)/nippo-goals.md"
+  echo "$(nippo_root)/config/nippo-goals.md"
 }
