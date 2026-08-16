@@ -197,6 +197,9 @@ link_claude_skills() {
   for skill_dir in "$DC/claude/skills"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
+    # skill-creator は skill の隣に <name>-workspace/ を作る。skill ではないので
+    # リンクしない（リンクすると、作業場を消したあと亡霊リンクが残る実例があった）
+    case "$skill_name" in *-workspace) continue ;; esac
     safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
   done
 }

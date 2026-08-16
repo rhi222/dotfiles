@@ -31,6 +31,10 @@ docs/superpowers/
 # ここは symlink になり、ディレクトリ限定パターンでは ignore から外れるため。
 .config/claude/skills/cross-repo-auto-discover
 
+# skill-creator が skill の隣に作る作業ディレクトリ（テスト実行の中間生成物）。
+# dotfilesLink.sh もリンク対象から除外している。
+.config/claude/skills/*-workspace/
+
 # nvim のローカル設定（社内ホスト名など）。雛形は local_config.lua.example
 .config/nvim/lua/my/local_config.lua
 

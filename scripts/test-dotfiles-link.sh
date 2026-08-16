@@ -203,6 +203,10 @@ sk="$tmp/sk"
 mkdir -p "$sk/dc/claude/skills/alive" "$sk/home/.claude/skills"
 echo s >"$sk/dc/claude/skills/alive/SKILL.md"
 
+# skill-creator が skill の隣に作る作業ディレクトリ（skill ではないのでリンクしない）
+mkdir -p "$sk/dc/claude/skills/alive-workspace/iteration-1"
+echo w >"$sk/dc/claude/skills/alive-workspace/iteration-1/notes.md"
+
 # 実体が消えた自作skillのリンク（刈る対象）
 ln -sn "$sk/dc/claude/skills/removed" "$sk/home/.claude/skills/removed"
 # gh skill が入れた外部skillの実ディレクトリ（残す）
@@ -221,6 +225,7 @@ check "リンクした先の中身が読める" test -f "$sk/home/.claude/skills
 check "実体が消えたリンクを刈る" test ! -L "$sk/home/.claude/skills/removed"
 check "外部skillの実ディレクトリは消さない" test -f "$sk/home/.claude/skills/external/SKILL.md"
 check "リポジトリ外を指す生きたリンクは消さない" test -L "$sk/home/.claude/skills/other"
+check "*-workspace はリンクしない" test ! -e "$sk/home/.claude/skills/alive-workspace"
 
 echo "---"
 echo "pass: $pass, fail: $fail"
