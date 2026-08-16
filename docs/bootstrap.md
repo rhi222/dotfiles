@@ -27,12 +27,17 @@ WSL2 固有の作業には本文で明記している。それ以外の環境で
 ghq get rhi222/dotfiles
 cd (ghq root)/github.com/rhi222/dotfiles
 
-bash scripts/apt-setup.sh  # apt パッケージの導入（WSL2 のみ）
-./dotfilesLink.sh          # リンク作成、雛形生成、hook 有効化
+bash scripts/apt-setup.sh                                    # apt パッケージの導入（WSL2 のみ）
+bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
+./dotfilesLink.sh                                            # リンク作成、雛形生成、hook 有効化
 ```
 
-`dotfilesLink.sh` は次の雛形を `.example` ファイルから自動生成する。ただし、生成されるファイルの値は
-空なので、[手順2](#2-ローカル設定と機密ファイルを用意する)で中身を埋める。
+**旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
+`import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
+
+集約ファイルを import していない場合、`dotfilesLink.sh` は次の雛形を `.example` ファイルから
+自動生成する。ただし、生成されるファイルの値は空なので、手順2で中身を埋める。
+import 済みなら実体が既にあるので、雛形生成はスキップされる。
 
 | ファイル                                 | 生成処理              | 埋める内容                                                        |
 | ---------------------------------------- | --------------------- | ----------------------------------------------------------------- |
@@ -42,6 +47,37 @@ bash scripts/apt-setup.sh  # apt パッケージの導入（WSL2 のみ）
 | `.config/codex/config.toml`              | `setup_codex`         | Codex のローカル設定                                              |
 
 ## 2. ローカル設定と機密ファイルを用意する
+
+> [!TIP]
+> **旧環境が生きているなら、この節の手作業はすべて `import` 1回で終わる。**
+> 以下の台帳は「集約ファイルに何が入っているか」の記録として残している。
+> 旧環境が無い立ち上げでのみ、コピーや手書きが必要になる。
+
+### 集約ファイルで運ぶ
+
+旧環境で1度だけ集約し、zip に固めて運ぶ。
+
+```fish
+# 旧環境で
+bash scripts/private-bundle.sh adopt            # dry-run。何が動くか確認する
+bash scripts/private-bundle.sh adopt --execute  # 集約先へ移して symlink 化
+bash scripts/private-bundle.sh export           # ~/dotfiles-private-YYYYMMDD.zip
+
+# 新環境で
+bash scripts/private-bundle.sh import ~/dotfiles-private-YYYYMMDD.zip
+./dotfilesLink.sh
+bash scripts/private-bundle.sh status           # 全項目がリンク済みであること
+```
+
+集約先は `~/.local/share/dotfiles-private/` で、`home/` と `repo/` の2ルートに
+`$HOME`・リポジトリルートからの相対パスをそのまま再現する。**実体は集約先にあり、
+各所へは `dotfilesLink.sh` が symlink を張る。** どこを編集しても集約先が最新になるので、
+`export` はいつ走らせてもよい。
+
+`~/.claude/settings.json` はこの仕組みの対象外。`sync-claude-settings.sh` がマスクしながら
+コピー同期する（[AGENTS.md](../AGENTS.md) 参照）。
+
+### 台帳
 
 次の台帳で **A. 資格情報** と **B. 社内固有情報** をすべて確認する。
 各項目の先頭にある移植方法は次の意味を持つ。
@@ -213,9 +249,10 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 機密語辞書を埋めてから、次の3つをすべて実行する。
 
 ```fish
-bash scripts/lint.sh                # shellcheck + shfmt（追跡・未追跡の全 .sh）
-bash scripts/secret-scan.sh --tree  # 機密語スキャン
-bash scripts/run-tests.sh           # 全テスト
+bash scripts/private-bundle.sh status  # ローカル設定が全てリンク済みか
+bash scripts/lint.sh                   # shellcheck + shfmt（追跡・未追跡の全 .sh）
+bash scripts/secret-scan.sh --tree     # 機密語スキャン
+bash scripts/run-tests.sh              # 全テスト
 ```
 
 最後に、普段使うリポジトリで Git のメールアドレスが正しく切り替わることも確認する。

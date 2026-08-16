@@ -41,6 +41,45 @@ bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた
 bash scripts/run-tests.sh           # 全テスト
 ```
 
+### ローカル設定の集約と移植（private bundle）
+
+gitignore しているローカル設定・機密ファイルは `~/.local/share/dotfiles-private/` に集約する。
+**実体は集約先にあり、各所へは `dotfilesLink.sh` が symlink を張る。** 以前はリポジトリ作業ツリー内・
+ホーム直下・XDG 配下の3箇所に散っていて、新環境で12項目を手で配り直す必要があった。
+
+| やりたいこと        | コマンド                                          |
+| ------------------- | ------------------------------------------------- |
+| 集約（旧環境で1回） | `bash scripts/private-bundle.sh adopt --execute`   |
+| 運搬用に固める      | `bash scripts/private-bundle.sh export`            |
+| 新環境で展開        | `bash scripts/private-bundle.sh import <zip>`      |
+| 状態の確認          | `bash scripts/private-bundle.sh status`            |
+| 動作確認            | `bash scripts/test-private-bundle.sh`              |
+
+- **リンク規則は1つだけ。** リンク先が実ディレクトリなら1階層降り、無ければそこでリンクする。
+  これでファイル単位（`config-local`）とディレクトリ単位（`ahk-snippets/js`）が自動で振り分けられ、
+  マニフェストを持たずに済む。**ローカル設定を足すときは集約先に置くだけでよく、
+  `dotfilesLink.sh` は変わらない**
+- **ファイル単位で張りたいのに親が新環境に無いものは `ensure_dirs` で先に作る。**
+  `~/.config/linear` がそれで、作らないとディレクトリごとリンクされ、`linear-bootstrap.sh` が書く
+  `config.json`（再生成できる）まで zip に混ざる
+- **`export` の `zip -y` は必須。** 集約先の中の `cross-repo-auto-discover/repos.yml` は相対 symlink で、
+  辿って実体化すると `repos.yml` が2つになる。**実体化しても「中身が読める」テストは通ってしまう**ので、
+  symlink であること自体を検査する回帰テストを置いている
+- **`import` はパーミッションを張り直す。** zip の保存内容に頼ると、Windows 側で開いて再圧縮された
+  場合に `api-key` が 644 で復元される
+- **リンク先に実ファイルがあれば退避する。** `ln -snf` は黙って消すので、`import` より先に
+  `config-local` を手書きした端末で内容が失われる
+- **`adopt` の既定は dry-run。** 旧環境で1回だけ走らせる移行コマンドなので、`--execute` を要求する
+- **集約先が無ければ従来どおり `.example` からの雛形生成にフォールバックする。**
+  旧環境が無い立ち上げの挙動は変えていない
+- 対象外: `~/.claude/settings.json`（`sync-claude-settings.sh` の担当）、
+  `.config/codex/config.toml`（雛形生成のまま）
+
+移植対象の一覧は `private-bundle.sh` の `ADOPT_ENTRIES`。**パスに社内名を含むものは既に
+`.gitignore` に書かれている**ため、public リポジトリに一覧を置いても新たな漏洩は起きない。
+`passwords/` だけは `@under` 指定で、直下のうち git が ignore しているものを拾う
+（`README.md` が追跡対象で、子の名前は端末ごとに違いうるため）。
+
 ### メインセットアップスクリプト
 
 `./dotfilesLink.sh` を実行して、すべての設定ファイルのシンボリックリンクを作成：
