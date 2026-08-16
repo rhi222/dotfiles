@@ -8,13 +8,13 @@
 `docs/` に分けてあり、ここには要約と入口だけを残している。**必要になったときに開けばよく、
 先に全部読む必要はない。**
 
-| 文書 | いつ開くか |
-| --- | --- |
-| [docs/bootstrap.md](docs/bootstrap.md) | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
-| [docs/linear-command-layer.md](docs/linear-command-layer.md) | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
-| [docs/worktree.md](docs/worktree.md) | worktree の初期化・掃除の判定を変えるとき |
-| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` の復元（herdr / nvim / claude）を触るとき |
-| [docs/docker-clean.md](docs/docker-clean.md) | `dclean` の判定や閾値を変えるとき |
+| 文書                                                                 | いつ開くか                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------- |
+| [docs/bootstrap.md](docs/bootstrap.md)                               | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
+| [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
+| [docs/worktree.md](docs/worktree.md)                                 | worktree の初期化・掃除の判定を変えるとき            |
+| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` の復元（herdr / nvim / claude）を触るとき       |
+| [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定や閾値を変えるとき                    |
 
 ## セットアップとインストール
 
@@ -309,15 +309,15 @@ crontab -e
 タスクはLinear（team `NSY`）に集約する。**LinearはSoTではなく「ポインタの司令塔」**で、
 issueは元URL＋期待アウトカム＋判断状態だけを持つ。本体はJira / GitHub / Slack / esa 側にある。
 
-| やりたいこと        | コマンド                                                        |
-| ------------------- | --------------------------------------------------------------- |
-| 初期設定（ID解決）  | `bash scripts/linear-bootstrap.sh`                              |
-| 起票                | `/linear-add`（対話skill。規約を自動適用する）                  |
-| draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                |
-| Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日8:10）                         |
-| 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                        |
-| 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
-| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh`       |
+| やりたいこと        | コマンド                                                  |
+| ------------------- | --------------------------------------------------------- |
+| 初期設定（ID解決）  | `bash scripts/linear-bootstrap.sh`                        |
+| 起票                | `/linear-add`（対話skill。規約を自動適用する）            |
+| draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）          |
+| Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日8:10）                   |
+| 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                  |
+| 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00） |
+| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` |
 
 **リンクは Linear → 外部の一方向のみ。GitHub / Jira には一切書き戻さない。**
 どちらもチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。
@@ -433,18 +433,18 @@ reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と clau
 以前は tmux の continuum + resurrect（`@resurrect-processes`）でやっていたが、herdr へ移行した際に
 撤去し、同等の仕組みを herdr 上に作り直している。
 
-| 何を | 誰が復元するか |
-| --- | --- |
+| 何を                                     | 誰が復元するか                    |
+| ---------------------------------------- | --------------------------------- |
 | レイアウト / タブ名 / ペイン label / cwd | herdr の `session.json`（native） |
-| nvim / claude のプロセス | `scripts/herdr-restore.sh` |
-| nvim のバッファ | auto-session（**ペイン単位**） |
+| nvim / claude のプロセス                 | `scripts/herdr-restore.sh`        |
+| nvim のバッファ                          | auto-session（**ペイン単位**）    |
 
 **herdr は前面プロセスを保存しない。** そのため各プロセスが自分でマーカーを残す方式にしている。
 
-| プロセス | マーカー | 書く場所 |
-| --- | --- | --- |
-| nvim | `~/.local/state/herdr-nvim/<pane_id>` | `.config/nvim/lua/my/settings/autocmd.lua` |
-| claude | `~/.local/state/herdr-claude/<pane_id>` | `.config/claude/hooks/herdr-claude-marker.sh` |
+| プロセス | マーカー                                | 書く場所                                      |
+| -------- | --------------------------------------- | --------------------------------------------- |
+| nvim     | `~/.local/state/herdr-nvim/<pane_id>`   | `.config/nvim/lua/my/settings/autocmd.lua`    |
+| claude   | `~/.local/state/herdr-claude/<pane_id>` | `.config/claude/hooks/herdr-claude-marker.sh` |
 
 - **一斉起動しない。** 種別ごとに同時投入数と間隔を絞る（nvim は3個ずつ2秒間隔、claude は1個ずつ8秒間隔）。
   reboot 直後に数十個の nvim と claude が同時に立ち上がると負荷スパイクで固まるため。
@@ -476,9 +476,9 @@ reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と clau
 
 投入は数分に散るので、走っているのか終わったのかを外から見えるようにしている。
 
-| やりたいこと | コマンド |
-| --- | --- |
-| 進み具合の確認 | `he --status` |
+| やりたいこと            | コマンド                                  |
+| ----------------------- | ----------------------------------------- |
+| 進み具合の確認          | `he --status`                             |
 | 投入順の確認（dry-run） | `bash scripts/herdr-restore.sh --dry-run` |
 
 ```

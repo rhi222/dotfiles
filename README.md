@@ -4,14 +4,14 @@ WSL2（Ubuntu）+ Windows で使っている個人用の設定ファイル群。
 
 ## 何が入っているか
 
-| 領域 | 主なもの |
-| --- | --- |
-| シェル | fish（機能別に分割した `conf.d` と自作関数）、tide プロンプト |
-| エディタ | Neovim（lazy.nvim + Mason。`lua/my/` 名前空間で分割） |
-| 端末 | tmux、alacritty、herdr、yazi |
-| Git | `.gitconfig`、コミットテンプレート、lazygit / gitui |
-| AI コーディング | Claude Code（skill / hook / statusline）、Codex |
-| 作業自動化 | 日報・週次レポート・タスク起票を cron から headless で回すスクリプト群 |
+| 領域            | 主なもの                                                               |
+| --------------- | ---------------------------------------------------------------------- |
+| シェル          | fish（機能別に分割した `conf.d` と自作関数）、tide プロンプト          |
+| エディタ        | Neovim（lazy.nvim + Mason。`lua/my/` 名前空間で分割）                  |
+| 端末            | tmux、alacritty、herdr、yazi                                           |
+| Git             | `.gitconfig`、コミットテンプレート、lazygit / gitui                    |
+| AI コーディング | Claude Code（skill / hook / statusline）、Codex                        |
+| 作業自動化      | 日報・週次レポート・タスク起票を cron から headless で回すスクリプト群 |
 
 ## セットアップ
 
@@ -49,11 +49,11 @@ bash scripts/secret-scan.sh --tree
 [AGENTS.md](AGENTS.md) が入口で、各機能の要点と「なぜそうしたか」を持つ（`CLAUDE.md` は同じファイルへの symlink）。
 分量が大きく独立している話題は `docs/` に分けてある。
 
-| 文書 | 中身 |
-| --- | --- |
-| [docs/bootstrap.md](docs/bootstrap.md) | 新環境の立ち上げ手順と、gitignore しているファイルの台帳 |
-| [docs/linear-command-layer.md](docs/linear-command-layer.md) | Linear へのタスク集約とAI夜間ディスパッチ |
-| [docs/worktree.md](docs/worktree.md) | git worktree の初期化・一覧・掃除 |
-| [docs/docker-clean.md](docs/docker-clean.md) | `dclean` の判定と閾値 |
-| [docs/git-worktree-tool.md](docs/git-worktree-tool.md) | `git wt` 自体の使い方 |
-| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | reboot 後のセッション復元の設計経緯 |
+| 文書                                                                 | 中身                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------- |
+| [docs/bootstrap.md](docs/bootstrap.md)                               | 新環境の立ち上げ手順と、gitignore しているファイルの台帳 |
+| [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear へのタスク集約とAI夜間ディスパッチ                |
+| [docs/worktree.md](docs/worktree.md)                                 | git worktree の初期化・一覧・掃除                        |
+| [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定と閾値                                    |
+| [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` 自体の使い方                                    |
+| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | reboot 後のセッション復元の設計経緯                      |
