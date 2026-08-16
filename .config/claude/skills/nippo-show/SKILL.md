@@ -2,14 +2,15 @@
 name: nippo-show
 description: 日報内容を確認する。「日報を見せて」「今日の日報は？」などで使用。
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(stat:*), Bash(head:*)
+allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(stat:*), Bash(head:*), Bash(find:*), Bash(sort:*), Bash(source:*), Bash(ghq:*)
 ---
 
 # 日報内容を確認する
 
 `$ARGUMENTS` が指定されている場合はその日付、未指定の場合は本日の日報を表示します。
 
-日報ファイルパス: `~/Obsidian/02_Daily/nippo.{日付}.md`
+日報ファイルのパスは `scripts/lib/nippo-paths.sh` の `nippo_daily_file <日付>` が解決します。
+**この skill はディレクトリ構造を知りません。**
 
 ## 実行内容:
 
@@ -23,12 +24,13 @@ allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(sta
    - 未記入セクションの警告
 
 3. **過去の日報一覧**
-   - ~/Obsidian/02_Daily/ ディレクトリの過去の日報ファイル一覧（直近5日分）
+   - 日報ルート（`nippo_root`）配下の過去の日報ファイル一覧（更新時刻の新しい順に5件）
 
 ```bash
 # 日付の決定（$ARGUMENTS があればその日付、なければ本日）
-TARGET_DATE="${ARGUMENTS:-$(date +%Y-%m-%d)}"
-NIPPO_FILE="$HOME/Obsidian/02_Daily/nippo.${TARGET_DATE}.md"
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TARGET_DATE="$(nippo_resolve_date "${ARGUMENTS:-}")"
+NIPPO_FILE="$(nippo_daily_file "$TARGET_DATE")"
 
 echo "📋 日報内容確認 - ${TARGET_DATE}"
 echo "================================"
@@ -62,10 +64,11 @@ fi
 echo ""
 echo "📅 過去の日報一覧（直近5日分）:"
 echo "--------------------------------"
-ls -lt ~/Obsidian/02_Daily/nippo.*.md 2>/dev/null | head -5 | while read line; do
-  filename=$(echo "$line" | awk '{print $NF}')
-  date_part=$(basename "$filename" .md | sed 's/nippo\.//')
-  size=$(echo "$line" | awk '{print $5}')
+# 日次ファイルは階層の深さが変わりうるので find で拾う。
+# mtime 降順に並べたいので、更新時刻を前置してソートする。
+find "$(nippo_root)" -type f -name 'nippo.*.md' -printf '%T@ %s %p\n' 2>/dev/null |
+  sort -rn | head -5 | while read -r _mtime size path; do
+  date_part=$(basename "$path" .md | sed 's/nippo\.//')
   echo "  📄 $date_part ($size bytes)"
 done || echo " 過去の日報ファイルはありません"
 ```

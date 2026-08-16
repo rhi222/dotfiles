@@ -3,7 +3,7 @@ name: nippo-insight
 description: ALACTモデルによる深い振り返りを実施する。「深い振り返り」「insight」「インサイト」「ALACT」「深堀り」などで使用。作業ログから最も学習価値の高い行為を選定し、5段階の振り返りを促す。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*)
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(source:*), Bash(ghq:*)
 ---
 
 # ALACTモデル深い振り返り
@@ -24,8 +24,9 @@ ALACTモデル（Action → Looking back → Awareness → Creating alternatives
 ## 実行スクリプト
 
 ```bash
-TARGET_DATE="${ARGUMENTS:-$(date +%Y-%m-%d)}"
-NIPPO_FILE="$HOME/Obsidian/02_Daily/nippo.${TARGET_DATE}.md"
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TARGET_DATE="$(nippo_resolve_date "${ARGUMENTS:-}")"
+NIPPO_FILE="$(nippo_daily_file "$TARGET_DATE")"
 
 echo "🔬 ALACT深い振り返り - ${TARGET_DATE}"
 echo "================================"

@@ -18,9 +18,11 @@ allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), B
 
 | 項目     | パス                                           | 説明                           |
 | -------- | ---------------------------------------------- | ------------------------------ |
-| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`      | 過去7日間の日報ファイル        |
-| **参照** | `~/Obsidian/02_Daily/nippo-goals.md`           | 目標設定ファイル（オプション） |
-| **出力** | `~/Obsidian/02_Daily/nippo-weekly.YYYY-Wnn.md` | 週次振り返りレポート           |
+| **入力** | `nippo_daily_file <日付>`   | 過去7日間の日報ファイル        |
+| **参照** | `nippo_goals_file`          | 目標設定ファイル（オプション） |
+| **出力** | `nippo_weekly_file <週番号>` | 週次振り返りレポート           |
+
+パスは `scripts/lib/nippo-paths.sh` が解決する。**この skill はディレクトリ構造を知らない。**
 
 ## 前提条件
 
@@ -31,13 +33,16 @@ allowed-tools: Read, Write, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), B
 ## 実行スクリプト
 
 ```bash
+# パス解決は共有ライブラリに委ねる。ここで組み立てない。
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
 WEEK_START=$(date -d '6 days ago' +%Y-%m-%d)
 WEEK_END=$(date +%Y-%m-%d)
-WEEKLY_DIR="$HOME/Obsidian/02_Daily"
+# WEEK_NUM は WEEKLY_DIR より先に決める（nippo_weekly_dir が週番号を要求するため）
 WEEK_NUM=$(date +%Y-W%V)
-WEEKLY_FILE="$WEEKLY_DIR/nippo-weekly.$WEEK_NUM.md"
-NIPPO_DIR="$HOME/Obsidian/02_Daily"
-GOALS_FILE="$NIPPO_DIR/nippo-goals.md"
+WEEKLY_DIR="$(nippo_weekly_dir "$WEEK_NUM")"
+WEEKLY_FILE="$(nippo_weekly_file "$WEEK_NUM")"
+NIPPO_DIR="$(nippo_root)"
+GOALS_FILE="$(nippo_goals_file)"
 
 echo "📊 週次振り返り生成"
 echo "週番号: $WEEK_NUM"
@@ -53,7 +58,7 @@ MISSING_COUNT=0
 
 for i in {6..0}; do
     TARGET_DATE=$(date -d "$i days ago" +%Y-%m-%d)
-    NIPPO_FILE="$NIPPO_DIR/nippo.$TARGET_DATE.md"
+    NIPPO_FILE="$(nippo_daily_file "$TARGET_DATE")"
 
     if [ -f "$NIPPO_FILE" ]; then
         FOUND_COUNT=$((FOUND_COUNT + 1))

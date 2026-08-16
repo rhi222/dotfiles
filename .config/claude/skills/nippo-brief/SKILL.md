@@ -3,7 +3,7 @@ name: nippo-brief
 description: 日報の端的なサマリーを表示する。「今日の要約」「brief」「サマリー」「まとめて」などで使用。作業ログから事実のみを箇条書きで要約し、時間サマリと未完了タスク数を表示する。
 disable-model-invocation: false
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(grep:*)
+allowed-tools: Read, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(grep:*), Bash(source:*), Bash(ghq:*)
 ---
 
 # 日報サマリー表示
@@ -18,13 +18,14 @@ nippo-show が日報の全文表示であるのに対し、nippo-brief は要約
 
 | 項目     | パス                                      | 説明         |
 | -------- | ----------------------------------------- | ------------ |
-| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` | 日報ファイル |
+| **入力** | `nippo_daily_file <日付>` | 日報ファイル（パスは `scripts/lib/nippo-paths.sh` が解決する） |
 
 ## 実行スクリプト
 
 ```bash
-TARGET_DATE="${ARGUMENTS:-$(date +%Y-%m-%d)}"
-NIPPO_FILE="$HOME/Obsidian/02_Daily/nippo.${TARGET_DATE}.md"
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TARGET_DATE="$(nippo_resolve_date "${ARGUMENTS:-}")"
+NIPPO_FILE="$(nippo_daily_file "$TARGET_DATE")"
 
 echo "📋 日報サマリー - ${TARGET_DATE}"
 echo "================================"

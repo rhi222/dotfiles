@@ -3,7 +3,7 @@ name: nippo-guide
 description: 日報に対して複数視点からのフィードバックを提供する。「フィードバック」「guide」「ガイド」「アドバイス」「日報を見てもらいたい」「複数視点」などで使用。シニアエンジニア・スタッフエンジニア・ビジネスサイドの3視点でフィードバックする。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*)
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(source:*), Bash(ghq:*)
 ---
 
 # 複数視点フィードバック
@@ -25,9 +25,10 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 ## 実行スクリプト
 
 ```bash
-TARGET_DATE="${ARGUMENTS:-$(date +%Y-%m-%d)}"
-NIPPO_FILE="$HOME/Obsidian/02_Daily/nippo.${TARGET_DATE}.md"
-GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.md"
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TARGET_DATE="$(nippo_resolve_date "${ARGUMENTS:-}")"
+NIPPO_FILE="$(nippo_daily_file "$TARGET_DATE")"
+GOALS_FILE="$(nippo_goals_file)"
 
 echo "🎓 複数視点フィードバック - ${TARGET_DATE}"
 echo "================================"
