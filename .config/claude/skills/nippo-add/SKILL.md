@@ -3,12 +3,23 @@ name: nippo-add
 description: 日報に追記する（作業ログ、タスク開始/終了の時間計測、フォーカス設定）。「日報」「にっぽ」「作業記録」「ログ追加」「start:」「end:」などで使用。新規日報の作成、Linearからの今日のタスク転記、目標逆算タスクの提案も行う。未完了タスクの引き継ぎ転記は行わない（タスク管理はLinearに集約）。
 disable-model-invocation: true
 argument-hint: "<追記内容> (例: start:PRレビュー, end:PRレビュー, フォーカス:横断)"
-allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(ghq:*), mcp__claude_ai_Google_Calendar__list_events
+allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(ghq:*), Bash(mkdir:*), mcp__claude_ai_Google_Calendar__list_events
 ---
 
 # 日報に追記する
 
-現在の日報ファイル（ ~/Obsidian/02_Daily/nippo.$(date +%Y-%m-%d).md）に以下の内容を追記してください。
+日報ファイルのパスは共有ライブラリで解決します。**パスを直接組み立てないでください。**
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TODAY="$(nippo_resolve_date "")"
+NIPPO_FILE="$(nippo_daily_file "$TODAY")"
+GOALS_FILE="$(nippo_goals_file)"
+# 新規作成時は置き場のディレクトリを先に掘る
+mkdir -p "$(nippo_daily_dir "$TODAY")"
+```
+
+この `$NIPPO_FILE` に以下の内容を追記してください。
 
 ## 追記する内容: $ARGUMENTS
 
@@ -52,7 +63,7 @@ Linearにアクセスできない場合（config未生成・オフライン）�
 新規日報ファイルを作成するとき、以下のロジックで「今日のおすすめタスク」を提案してください:
 
 1. **nippo-goals.md を読み込む**
-   - パス: `~/Obsidian/02_Daily/nippo-goals.md`
+   - パス: 冒頭で解決した `$GOALS_FILE`（`nippo_goals_file` の戻り値）
 
 2. **データソース**:
    - **Linearの実タスク**: 候補は日報の転記ではなく**進行中のCycle**から取る

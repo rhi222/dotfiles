@@ -16,11 +16,13 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
 ## 入力・出力
 
-| 項目     | パス                                             | 説明                         |
-| -------- | ------------------------------------------------ | ---------------------------- |
-| **入力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md`        | 日報ドラフトファイル         |
-| **参照** | `~/Obsidian/02_Daily/nippo-goals.md`             | 目標設定ファイル             |
-| **出力** | `~/Obsidian/02_Daily/nippo.YYYY-MM-DD.md` (追記) | 分析結果が追記された完成日報 |
+パスは `scripts/lib/nippo-paths.sh` が解決する。**この skill はディレクトリ構造を知らない。**
+
+| 項目     | 解決関数                        | 説明                         |
+| -------- | ------------------------------- | ---------------------------- |
+| **入力** | `nippo_daily_file <日付>`       | 日報ドラフトファイル         |
+| **参照** | `nippo_goals_file`              | 目標設定ファイル             |
+| **出力** | `nippo_daily_file <日付>`(追記) | 分析結果が追記された完成日報 |
 
 ## 処理フロー
 
@@ -76,8 +78,8 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 ## 前提条件
 
 - `/nippo-add` で日々のタスクが記録されていること
-- `~/Obsidian/02_Daily/nippo-goals.md` で目標が設定されていること（推奨）
-- Obsidianディレクトリ（`~/Obsidian/02_Daily/`）が存在すること
+- `nippo_goals_file` の指す目標設定ファイルが存在すること（推奨）
+- 日報の置き場（`nippo_daily_dir <日付>`）が存在すること
 - Slack情報収集を使う場合: 環境変数 `SLACK_MEMBER_ID` を本人のSlackメンバーIDに設定すること
   (fish: `set -Ux SLACK_MEMBER_ID U0XXXXXXX`)
 - GitHub活動収集を使う場合: `gh` CLI が認証済みであること（`gh auth status` / スコープに `repo` が必要）
@@ -86,13 +88,16 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 ## 実行スクリプト
 
 ```bash
-NIPPO_FILE="$HOME/Obsidian/02_Daily/nippo.$(date +%Y-%m-%d).md"
-GOALS_FILE="$HOME/Obsidian/02_Daily/nippo-goals.md"
+# パス解決は共有ライブラリに委ねる。ここで組み立てない。
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+TODAY="$(nippo_resolve_date "")"
+NIPPO_FILE="$(nippo_daily_file "$TODAY")"
+GOALS_FILE="$(nippo_goals_file)"
 
 # Phase 1: データ準備・検証
-OBSIDIAN_DIR="$(dirname "$NIPPO_FILE")"
-if [ ! -d "$OBSIDIAN_DIR" ]; then
-    echo "❌ Obsidianディレクトリが見つかりません: $OBSIDIAN_DIR"
+NIPPO_PARENT_DIR="$(nippo_daily_dir "$TODAY")"
+if [ ! -d "$NIPPO_PARENT_DIR" ]; then
+    echo "❌ 日報の置き場が見つかりません: $NIPPO_PARENT_DIR"
     exit 1
 fi
 
