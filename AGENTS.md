@@ -286,6 +286,45 @@ crontab -e
 
 無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh` / `scripts/test-notify-cooldown.sh` / `scripts/test-stop-notification.sh`。
 
+### 日報の置き場とパス解決
+
+日報は `~/Obsidian/02_Daily/` に置き、**種別 + 年/月**で構造化している。
+
+| パス                                   | 中身     |
+| -------------------------------------- | -------- |
+| `daily/YYYY/MM/nippo.YYYY-MM-DD.md`    | 日次     |
+| `weekly/YYYY/nippo-weekly.YYYY-Wnn.md` | 週次     |
+| `config/nippo-goals.md`                | 目標設定 |
+
+**パス解決は `scripts/lib/nippo-paths.sh` に集約している。skill もスクリプトも
+パスを直接組み立てない。** 以前は11 skill + 3 script がそれぞれ
+`$HOME/Obsidian/02_Daily/nippo.${DATE}.md` を組み立てており、ディレクトリ構造を
+変えられない原因になっていた。
+
+- 環境変数は `NIPPO_VAULT`（`~/Obsidian`）と `NIPPO_DIR`（`~/Obsidian/02_Daily`）の2系統。
+  どちらも既存のもので、新しい名前は増やしていない。`NIPPO_DIR` が優先される
+- **既定値を変数に焼き込まない。** `~/Obsidian` は Windows 側 Vault への symlink で、
+  テストが `$HOME` を差し替えて追随を検査するため、関数が呼ばれるたびに評価する
+- **cron の `--allowedTools` に `Bash(source:*)` / `Bash(ghq:*)` が要る。**
+  cron は skill の frontmatter とは別に許可リストを自前で持っており、
+  ここを忘れると skill がライブラリを読めず自動実行が権限で落ちる
+- **テストもレイアウトを直書きしない。** `test-nippo-check.sh` はフィクスチャの置き場を
+  直書きしていて、フラット→年/月の移行で本体と食い違って落ちた。いまは
+  `nippo_daily_file` / `nippo_daily_dir` に解決させている
+- **`ls` のグロブでは日報を数えない。** 階層が変わると効かなくなるので `find` を使う
+  （`nippo-show` の過去一覧がこれ）
+- ファイル名は階層に依存しない。`nippo.YYYY-MM-DD.md` だけで一意に特定でき、
+  Obsidian の switcher・全文検索・fzf はそのまま使える
+- 週次は月境界をまたぐので月では畳まない。年32件なので年だけで足りる
+
+skill は6本（`nippo-add` / `nippo-finalize` / `nippo-weekly` / `nippo-reflect` /
+`nippo-show` / `nippo-brief`）。**振り返り系は `nippo-reflect` 1本に統合していて、
+モード引数は持たない。** 以前は reflection / insight / guide の3本に分かれていたが、
+142日分の日報で出力痕跡が計7ファイルしかなかった。`finalize` の直後に「どれを呼ぶか」を
+毎回決めさせられるのが原因なので、分岐を残すと同じ判断コストが戻る。
+
+動作確認は `bash scripts/test-nippo-paths.sh`。
+
 ### 日報ファイル自動作成（WSL2専用）
 
 平日8:00に `scripts/nippo-create-cron.sh` が `nippo-add` スキルをヘッドレス実行し、当日の日報ファイルを新規作成する。テンプレート・今日の予定（カレンダー）・前日からの引き継ぎを埋めるので、始業時にはできあがった日報から書き始められる。

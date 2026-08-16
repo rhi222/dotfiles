@@ -61,13 +61,10 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 │   nippo-add / nippo-show / nippo-brief            │
 ├─────────────────────────────────────────────────┤
 │ 内省層: 問いかけによる振り返り                     │
-│   nippo-reflection                                │
+│   nippo-reflect                                   │
 ├─────────────────────────────────────────────────┤
-│ 参考・学習層: 外部視点                            │
-│   nippo-guide                                     │
-├─────────────────────────────────────────────────┤
-│ 俯瞰層: 長期的な分析・深い振り返り                │
-│   nippo-insight / session-patterns                │
+│ 俯瞰層: 長期的な分析                              │
+│   session-patterns                                │
 ├─────────────────────────────────────────────────┤
 │ 完成化: 日報・週報の仕上げ                        │
 │   nippo-finalize / nippo-weekly                   │
@@ -82,9 +79,7 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 | `/nippo-show`       | 日報全文表示                 | `[日付]`     | 随時     | 標準出力     |
 | `/nippo-brief`      | 日報サマリー表示             | `[日付]`     | 随時     | 標準出力     |
 | `/nippo-finalize`   | 日報完成化（事実整理＋空欄） | `[日付]`     | 毎日     | 日報追記     |
-| `/nippo-reflection` | 内省的問いかけ生成           | `[日付]`     | 毎日     | 日報追記     |
-| `/nippo-guide`      | 複数視点フィードバック       | `[日付]`     | 週1〜2回 | 日報追記     |
-| `/nippo-insight`    | ALACT深い振り返り            | `[日付]`     | 週1〜2回 | 日報追記     |
+| `/nippo-reflect`    | 振り返り（ALACT＋別視点）    | `[日付]`     | 任意     | 日報追記     |
 | `/nippo-weekly`     | 週次振り返りレポート         | `[週番号]`   | 週1回    | 独立ファイル |
 | `/session-patterns` | セッションパターン分析       | `[期間日数]` | 週1回    | 標準出力     |
 
@@ -95,10 +90,8 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 | 朝         | `/nippo-add`             | 日報作成・タスク確認                 |
 | 日中       | `/nippo-add start:/end:` | 作業ログ記録                         |
 | 業務終了前 | `/nippo-finalize`        | 事実の自動整理（内省欄は空白）       |
-| 業務終了時 | `/nippo-reflection`      | 問いに自分で答える（5〜10分）        |
+| 業務終了時 | `/nippo-reflect`         | 問いに自分で答える（5〜10分）        |
 | 必要に応じ | `/nippo-brief`           | 今日のサマリー確認                   |
-| 週1〜2回   | `/nippo-guide`           | 複数視点フィードバック               |
-| 週1〜2回   | `/nippo-insight`         | ALACTによる深い振り返り              |
 | 週次       | `/nippo-weekly`          | 週次レポート（セッション分析含む）   |
 | 週次       | `/session-patterns`      | セッションパターン分析（単独実行時） |
 
@@ -120,21 +113,11 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 
 ### 内省層
 
-#### `/nippo-reflection` - 内省的問いかけ生成
+#### `/nippo-reflect` - 振り返り
 
-コルブの経験学習サイクルとギブスのリフレクティブサイクルに基づき、今日の作業ログから具体的エピソードに基づく内省の問いを5〜7問生成する。5カテゴリ（判断振り返り / 感情記録 / 代替案探索 / 学び言語化 / 明日の意思決定）から出題。**回答はAIが生成せず、ユーザー自身が記入する。**
+作業ログから最も学習価値の高い行為を**1件だけ**選び、ALACTモデル（Action → Looking back → Awareness → Creating alternatives → Trial）の5段階で問いを立てる。あわせて、その行為に対して最も異なる見方をする1〜2視点（シニアエンジニア / スタッフエンジニア / ビジネスサイド）から観点を添える。**回答はAIが生成せず、ユーザー自身が記入する。**
 
-### 参考・学習層
-
-#### `/nippo-guide` - 複数視点フィードバック
-
-3つの視点（シニアエンジニア: 判断の質 / スタッフエンジニア: アーキテクチャ整合性 / ビジネスサイド: 定量化可能性）からフィードバックを提供。断定形は使わず、すべて問いかけの形で提示。最後に学ぶべき概念・参考リソースを1〜2個提示する。
-
-### 俯瞰層
-
-#### `/nippo-insight` - ALACT深い振り返り
-
-ALACTモデル（Action → Looking back → Awareness → Creating alternatives → Trial）の5段階で深い振り返りを実施する。作業ログから最も学習価値の高い行為を1〜2個選定し、各段階の問いと参考情報を提示する。**Trial（次の行動仮説）の最終決定はユーザーが行う。**
+**モード引数を持たない。** 以前は `nippo-reflection` / `nippo-insight` / `nippo-guide` の3つに分かれていたが、142日分の日報で出力痕跡は計7ファイルしかなかった。原因は finalize の直後に「どれを呼ぶか」を毎回決めさせられることにあるため、1本にまとめている。
 
 ### 完成化
 
@@ -151,13 +134,24 @@ ALACTモデル（Action → Looking back → Awareness → Creating alternatives
 ### 前提条件
 
 1. **Obsidianディレクトリ**: `~/Obsidian/02_Daily/` が存在すること
-2. **目標設定ファイル**: `~/Obsidian/02_Daily/nippo-goals.md` を作成すること（推奨）
+2. **目標設定ファイル**: `~/Obsidian/02_Daily/config/nippo-goals.md` を作成すること（推奨）
    - 4軸の重点目標と達成基準を記載
    - テンプレート: `.config/claude/skills/nippo-add/goals-template.txt`
+
+### パス解決
+
+日報のパスは `scripts/lib/nippo-paths.sh` に集約している。**skill からパスを直接組み立てない。**
+
+```bash
+source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
+NIPPO_FILE="$(nippo_daily_file "$(nippo_resolve_date "${ARGUMENTS:-}")")"
+```
+
+構造は `daily/YYYY/MM/` ・ `weekly/YYYY/` ・ `config/`。詳細は `~/Obsidian/02_Daily/README.md`。
 
 ### 使い始める
 
 1. `/nippo-add 最初の作業メモ` で日報を作成
 2. 日中は `/nippo-add start:タスク名` と `/nippo-add end:タスク名` で時間計測
 3. 業務終了時に `/nippo-finalize` で事実を整理
-4. `/nippo-reflection` で問いに答え、内省を深める
+4. `/nippo-reflect` で問いに答え、内省を深める
