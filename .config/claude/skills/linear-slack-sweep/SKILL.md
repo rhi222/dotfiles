@@ -1,7 +1,7 @@
 ---
 name: linear-slack-sweep
 description: Slackで特定のスタンプ（既定 :nishiyama_todo:）を押したメッセージを拾い、LinearのTriageへ起票する。「Slackのスタンプを拾って」「スタンプ起票」「slack sweep」「Slackから起票して」などで使用。cronからもヘッドレスで呼ばれる。
-allowed-tools: Bash(scripts/linear-slack-sweep.sh:*), mcp__claude_ai_Slack__slack_search_public_and_private, mcp__claude_ai_Slack__slack_read_thread
+allowed-tools: Bash(bash:*), mcp__claude_ai_Slack__slack_search_public_and_private, mcp__claude_ai_Slack__slack_read_thread
 ---
 
 # Slackのスタンプから Linear へ起票する
@@ -9,10 +9,12 @@ allowed-tools: Bash(scripts/linear-slack-sweep.sh:*), mcp__claude_ai_Slack__slac
 Slack上で「これタスクだ」と気づいた瞬間にスタンプを押すだけで、Linear の Triage に
 ポインタが積まれるようにする。判断（要約とタイトル生成）だけをここで行い、
 状態変更（重複チェック・起票・処理済み記録）は `scripts/linear-slack-sweep.sh` に任せる。
+スクリプトは `$(ghq root)/github.com/rhi222/dotfiles/scripts/linear-slack-sweep.sh` で解決する
+（どのリポジトリで作業中でも呼べるように、cwd 相対では書かない）。
 
 **Slackへは一切書き込まない。** リンクは Linear → Slack の一方向のみ。
 Slackはチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。
-このskillには読み取りツールしか許可されていない。
+Slackへ書き込めるツールはこのskillに許可されていない（Slack側は読み取り系MCPのみ）。
 
 ## 設定
 
@@ -53,7 +55,8 @@ cronが落ちた日があっても次回が勝手に拾い直す。
 と `Message_ts:` から組む）。まとめてスクリプトに渡し、残ったものだけを次へ進める。
 
 ```bash
-scripts/linear-slack-sweep.sh unseen "C123/1786335015.733309" "C456/1786111487.003049"
+bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/linear-slack-sweep.sh" unseen \
+  "C123/1786335015.733309" "C456/1786111487.003049"
 ```
 
 **スレを読む前にここで絞る。** 読解コストが一番高いので、関門を手前に置く。
@@ -121,7 +124,8 @@ Projectや親子付けと違って**スレを読めば決まる**。
 キーごとに1回呼ぶ。
 
 ```bash
-scripts/linear-slack-sweep.sh create "<key>" "<permalink>" "<タイトル>" "<期待アウトカム>" "<経緯>" \
+bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/linear-slack-sweep.sh" create \
+  "<key>" "<permalink>" "<タイトル>" "<期待アウトカム>" "<経緯>" \
   "role:player" "em:tech"
 ```
 

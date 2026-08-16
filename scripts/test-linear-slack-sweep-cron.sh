@@ -38,7 +38,9 @@ check "linear-slack-sweep skillを呼ぶ" grep -q "/linear-slack-sweep" <<<"$out
 # 3. allowedTools の中身
 check "Slack検索を許可する" grep -q "slack_search_public_and_private" <<<"$out2"
 check "スレ読み取りを許可する" grep -q "slack_read_thread" <<<"$out2"
-check "スクリプト実行を許可する" grep -q 'Bash(scripts/linear-slack-sweep.sh:\*)' <<<"$out2"
+# skill 本文が bash "$(ghq root)/..." でスクリプトを解決するため、bash と ghq を許可する
+check "スクリプト実行を許可する" grep -q 'Bash(bash:\*)' <<<"$out2"
+check "ghqでのパス解決を許可する" grep -q 'Bash(ghq:\*)' <<<"$out2"
 # 検索が全期間スキャンになり after: の日付計算が消えたので、date は要らなくなった
 check "dateを許可しない" test "$(grep -c 'Bash(date:\*)' <<<"$out2")" -eq 0
 

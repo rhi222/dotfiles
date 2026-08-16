@@ -12,7 +12,8 @@ description: esa週次差分URL取得&サマリ。指定したesa投稿の直近
 
 ## 参照スキル
 
-`.config/claude/skills/esa-api/SKILL.md` の esa API ナレッジに従ってAPIを叩くこと。
+`~/.claude/skills/esa-api/SKILL.md` の esa API ナレッジに従ってAPIを叩くこと
+（インストール後の安定パス。リポジトリ相対だと dotfiles 以外の cwd から解決できない）。
 
 ## 手順
 
