@@ -247,6 +247,99 @@ cmd_import() {
   echo "     次に ./dotfilesLink.sh を実行してください"
 }
 
+STATUS_LINKED=()
+STATUS_UNLINKED=()
+STATUS_BROKEN=()
+STATUS_ABSENT=()
+
+# 集約先の直下の名前を1行ずつ返す（ignore 判定を通さない版）
+bundle_children() {
+  local dir="$1"
+  [ -d "$dir" ] || return 0
+  (
+    shopt -s nullglob dotglob
+    local c
+    for c in "$dir"/*; do
+      basename "$c"
+    done
+  )
+}
+
+# リンク切れを最初に見る。実体が消えたうえに dangling symlink が残っている状態は
+# 「集約先に無い」にも当てはまるが、手を打つ必要があるのはリンク切れのほうなので、
+# そちらへ寄せる。
+status_classify() {
+  local kind="$1" rel="$2" base src dst
+  base="$(kind_root "$kind")" || return 1
+  src="$base/$rel"
+  dst="$PRIVATE_DIR/${kind%%@*}/$rel"
+
+  if [ -L "$src" ] && [ ! -e "$src" ]; then
+    STATUS_BROKEN+=("$src")
+  elif [ ! -e "$dst" ] && [ ! -L "$dst" ]; then
+    STATUS_ABSENT+=("${kind%%@*}/$rel")
+  elif [ -L "$src" ]; then
+    STATUS_LINKED+=("$src")
+  else
+    STATUS_UNLINKED+=("$src")
+  fi
+}
+
+status_print_group() {
+  local label="$1" hint="$2"
+  shift 2
+  if [ -n "$hint" ]; then
+    echo "$label ($#)  ← $hint"
+  else
+    echo "$label ($#)"
+  fi
+  local item
+  for item in "$@"; do
+    echo "  $item"
+  done
+  echo ""
+}
+
+# 宣言（ADOPT_ENTRIES）を基準に判定する。集約先の走査だけだと
+# 「集約先に無い＝旧環境からのコピーがまだ」を検出できないため。
+cmd_status() {
+  if [ ! -d "$PRIVATE_DIR" ]; then
+    echo "集約先がありません: $PRIVATE_DIR"
+    echo "  旧環境があるなら: bash scripts/private-bundle.sh import <zip>"
+    echo "  無いなら雛形生成にフォールバックします（./dotfilesLink.sh）"
+    return 0
+  fi
+
+  echo "集約先: $PRIVATE_DIR"
+  echo ""
+
+  local entry kind rel base child
+  for entry in "${ADOPT_ENTRIES[@]}"; do
+    kind="${entry%%:*}"
+    rel="${entry#*:}"
+    if [ "${kind##*@}" = "under" ]; then
+      base="$(kind_root "$kind")" || return 1
+      # 集約先とリポジトリ側の両方から子を集める（片方にしか無い状態も出したい）
+      while IFS= read -r child; do
+        [ -n "$child" ] || continue
+        status_classify "${kind%%@*}" "$rel/$child"
+      done < <(
+        {
+          ignored_children "$base/$rel"
+          bundle_children "$PRIVATE_DIR/${kind%%@*}/$rel"
+        } | sort -u
+      )
+    else
+      status_classify "$kind" "$rel"
+    fi
+  done
+
+  status_print_group "リンク済み" "" "${STATUS_LINKED[@]}"
+  status_print_group "未リンク" "./dotfilesLink.sh を実行してください" "${STATUS_UNLINKED[@]}"
+  status_print_group "リンク切れ" "集約先から実体が消えています" "${STATUS_BROKEN[@]}"
+  status_print_group "集約先に無い" "旧環境からのコピーか手書きが必要" "${STATUS_ABSENT[@]}"
+}
+
 usage() {
   sed -n '2,9p' "${BASH_SOURCE[0]}" >&2
 }
@@ -258,6 +351,7 @@ main() {
     adopt) cmd_adopt "$@" ;;
     export) cmd_export "$@" ;;
     import) cmd_import "$@" ;;
+    status) cmd_status "$@" ;;
     *)
       usage
       return 2

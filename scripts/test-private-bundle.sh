@@ -165,6 +165,56 @@ teardown
 
 unset PRIVATE_BUNDLE_ZIP_PASSWORD
 
+# --- status ---
+# status は「見出し (件数)」に続けて項目を字下げで並べ、空行で区切る。
+# どのセクションに入ったかを検証したいので、見出しで切り出す。
+section() {
+  local label="$1" text="$2"
+  awk -v lbl="$label" '
+    index($0, lbl) == 1 { inside = 1; next }
+    /^$/ { inside = 0 }
+    inside { print }
+  ' <<<"$text"
+}
+
+setup
+run adopt --execute >/dev/null 2>&1
+out=$(run status 2>&1)
+
+check "集約先のパスを出す" grep -q "$DOTFILES_PRIVATE_DIR" <<<"$out"
+check "リンク済みに config-local が入る" \
+  grep -q "config-local" <<<"$(section "リンク済み" "$out")"
+check "リンク済みに api-key が入る" \
+  grep -q "api-key" <<<"$(section "リンク済み" "$out")"
+# config-work はフィクスチャに作っていないので集約先に無いへ落ちる
+check "未作成のエントリは集約先に無いへ入る" \
+  grep -q "config-work" <<<"$(section "集約先に無い" "$out")"
+check "未リンクは空" test -z "$(section "未リンク" "$out")"
+check "リンク切れは空" test -z "$(section "リンク切れ" "$out")"
+
+# 未リンク: 集約先に実体はあるが、リンク先が symlink でない
+rm "$DOTFILES_DIR/.config/git/config-local"
+out=$(run status 2>&1)
+check "未リンクを検出する" grep -q "config-local" <<<"$(section "未リンク" "$out")"
+check "未リンクはリンク済みに入らない" \
+  bash -c '! grep -q "config-local$" <<<"$(section "リンク済み" "'"$out"'")"'
+
+# リンク切れ: symlink はあるが集約先から実体が消えている
+ln -sn "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local" \
+  "$DOTFILES_DIR/.config/git/config-local"
+rm "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
+out=$(run status 2>&1)
+check "リンク切れを検出する" grep -q "config-local" <<<"$(section "リンク切れ" "$out")"
+teardown
+
+# 集約先そのものが無い場合は import を案内する
+setup
+rm -rf "$DOTFILES_PRIVATE_DIR"
+out=$(run status 2>&1)
+check "集約先が無ければ成功する" test $? -eq 0
+check "集約先が無ければ import を案内する" grep -q "import" <<<"$out"
+teardown
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]
