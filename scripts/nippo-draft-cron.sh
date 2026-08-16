@@ -33,7 +33,11 @@ CLAUDE_TIMEOUT="${NIPPO_DRAFT_TIMEOUT:-900}"
 VAULT="${NIPPO_VAULT:-$HOME/Obsidian}"
 PROMPT="/nippo-finalize"
 # nippo-finalize の allowed-tools に合わせて許可を最小化する
-ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(command:*),Bash(gh:*),Bash(jq:*),Bash(sort:*),Bash(paste:*)"
+# Bash(source:*) と Bash(ghq:*) は skill が nippo-paths.sh を読むために要る。
+# Bash(mkdir:*) は年/月ディレクトリを掘るために要る。
+# cron は skill の frontmatter とは別に許可リストを持つので、ここを忘れると
+# 平日18:30の自動実行が権限で落ちる。
+ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(command:*),Bash(gh:*),Bash(jq:*),Bash(sort:*),Bash(paste:*),Bash(source:*),Bash(ghq:*),Bash(mkdir:*)"
 
 if [[ "${NIPPO_DRAFT_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $VAULT && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""

@@ -31,12 +31,19 @@ fi
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # テンプレートを埋めるだけなので短い。始業時刻までに終わる必要がある
 CLAUDE_TIMEOUT="${NIPPO_CREATE_TIMEOUT:-600}"
-VAULT="${NIPPO_VAULT:-$HOME/Obsidian}"
-NIPPO_FILE="$VAULT/02_Daily/nippo.$(date +%Y-%m-%d).md"
+# パス解決は共有ライブラリに委ねる。ここで組み立てない。
+# shellcheck source=lib/nippo-paths.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/nippo-paths.sh"
+VAULT="$(nippo_vault)"
+NIPPO_FILE="$(nippo_daily_file "$(date +%Y-%m-%d)")"
 # 引数なしで呼ぶと、ファイルが無い場合は新規作成のみが走る（作業ログの追記は発生しない）
 PROMPT="/nippo-add"
 # nippo-add の allowed-tools に合わせて許可を最小化する
-ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),mcp__claude_ai_Google_Calendar__list_events"
+# Bash(source:*) と Bash(ghq:*) は skill が nippo-paths.sh を読むために要る。
+# Bash(mkdir:*) は年/月ディレクトリを掘るために要る。
+# cron は skill の frontmatter とは別に許可リストを持つので、ここを忘れると
+# 平日8:00の自動実行が権限で落ちる。
+ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(source:*),Bash(ghq:*),Bash(mkdir:*),mcp__claude_ai_Google_Calendar__list_events"
 
 if [[ "${NIPPO_CREATE_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $VAULT && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""

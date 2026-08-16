@@ -12,7 +12,13 @@ set -euo pipefail
 
 # 呼び出し元コンテキスト。stop は Claude Code の Stop フック、cron は定時実行。
 CONTEXT="${1:-stop}"
-NIPPO_DIR="${NIPPO_DIR:-$HOME/Obsidian/02_Daily}"
+
+# パス解決は共有ライブラリに委ねる。ここで組み立てない。
+# ghq ではなく自身の位置から相対で引くのは、このスクリプトが cron や Stop フックから
+# 直接実行され、ghq が PATH に無い状態を踏みうるため。
+# shellcheck source=lib/nippo-paths.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/nippo-paths.sh"
+NIPPO_DIR="$(nippo_root)"
 
 # stop は応答が終わるたびに走るため、一日中真になり続ける低優先度チェック
 # （陳腐化検知・未完了タスク件数）は cron 側だけで報告する。
@@ -37,7 +43,7 @@ TODAY=$(echo "$NOW" | cut -d' ' -f1)
 HOUR=$((10#$(echo "$NOW" | cut -d' ' -f2 | cut -d: -f1)))
 DOW=$(date -d "$TODAY" +%u) # 1=月 ... 7=日
 
-NIPPO_FILE="$NIPPO_DIR/nippo.${TODAY}.md"
+NIPPO_FILE="$(nippo_daily_file "$TODAY")"
 
 # --- チェック1: 平日判定 ---
 if [[ "$DOW" -ge 6 ]]; then
