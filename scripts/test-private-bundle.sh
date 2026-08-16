@@ -215,6 +215,41 @@ check "集約先が無ければ成功する" test $? -eq 0
 check "集約先が無ければ import を案内する" grep -q "import" <<<"$out"
 teardown
 
+# --- .gitignore の回帰テスト（本物のリポジトリを read-only で検査する） ---
+# adopt すると repo 側は symlink になる。末尾 / のパターンはディレクトリ限定なので
+# symlink にマッチせず ignore から外れ、未追跡ファイルとして現れる。
+# 実際に js/ と cross-repo-auto-discover/ で起きた。
+#
+# 「現在 ignore されているか」だけだと fresh clone（まだ実ディレクトリ）では
+# 素通りしてしまうので、パターンが末尾 / になっていないことも直接見る。
+REAL_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+mapfile -t real_entries < <(
+  # shellcheck source=/dev/null  # 宣言（ADOPT_ENTRIES）だけを取り出す
+  source "$BUNDLE"
+  printf '%s\n' "${ADOPT_ENTRIES[@]}"
+)
+
+check "ADOPT_ENTRIES を読み出せる" test "${#real_entries[@]}" -gt 0
+
+for entry in "${real_entries[@]}"; do
+  kind="${entry%%:*}"
+  rel="${entry#*:}"
+  case "$kind" in
+    repo)
+      check "ignore される: $rel" git -C "$REAL_REPO" check-ignore -q "$rel"
+      # 末尾 / のパターンだとディレクトリ限定になり、symlink 化で外れる
+      check "ディレクトリ限定パターンでない: $rel" \
+        bash -c '! grep -qxF "'"$rel"'/" "'"$REAL_REPO"'/.gitignore"'
+      ;;
+    repo@under)
+      # 親は追跡ファイルを持つので ignore されない。直下の任意の子が ignore されること
+      check "直下の子が ignore される: $rel/*" \
+        git -C "$REAL_REPO" check-ignore -q "$rel/__probe__"
+      ;;
+  esac
+done
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

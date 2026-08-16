@@ -26,7 +26,10 @@ docs/superpowers/
 
 # 社内システム名を検知して発動するスキル。description の発動キーワードが
 # 社内システム名そのものなので、汎用化すると機能しなくなる。
-.config/claude/skills/cross-repo-auto-discover/
+#
+# 末尾に / を付けない。private bundle（scripts/private-bundle.sh）へ集約すると
+# ここは symlink になり、ディレクトリ限定パターンでは ignore から外れるため。
+.config/claude/skills/cross-repo-auto-discover
 
 # nvim のローカル設定（社内ホスト名など）。雛形は local_config.lua.example
 .config/nvim/lua/my/local_config.lua
@@ -37,6 +40,7 @@ docs/superpowers/
 
 # 社内システム向けのJSスニペット。ファイル名にシステム名が入るため、
 # ファイル単位で書くとこの .gitignore 自体が漏洩源になる。ディレクトリごと外す。
-.config/AutoHotkey/ahk-snippets/js/
+# 末尾に / を付けない理由は cross-repo-auto-discover と同じ（symlink になるため）。
+.config/AutoHotkey/ahk-snippets/js
 # 上のスニペットを登録するローカル定義。text-snippet.ahk が任意 include する
 .config/AutoHotkey/scripts/snippets-local.ahk
