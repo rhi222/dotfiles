@@ -1,6 +1,6 @@
 ---
 name: nippo-finalize
-description: 日報の事実情報を整理して仕上げる（4軸評価レポートを自動生成、内省欄は空白で残す）。「日報を仕上げて」「finalize」「今日のまとめ」「日報を完成」「事実整理」など業務終了時の整理で使用。内省的な問いの生成は nippo-reflection を使う。
+description: 日報の事実情報を整理して仕上げる（4軸評価レポートを自動生成、内省欄は空白で残す）。「日報を仕上げて」「finalize」「今日のまとめ」「日報を完成」「事実整理」など業務終了時の整理で使用。内省的な問いの生成は nippo-reflect を使う。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
 allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(command:*), Bash(gh:*), Bash(jq:*), Bash(sort:*), Bash(paste:*), Bash(bash:*), Bash(source:*), Bash(ghq:*), mcp__claude_ai_Slack__slack_search_public_and_private
