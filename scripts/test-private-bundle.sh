@@ -1,0 +1,115 @@
+#!/bin/bash
+# private-bundle.sh のユニットテスト。
+# 偽の $HOME と偽のリポジトリを mktemp -d に作り、実環境には一切触らない。
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUNDLE="$SCRIPT_DIR/private-bundle.sh"
+
+if [[ ! -f "$BUNDLE" ]]; then
+  echo "ERROR: $BUNDLE が存在しません"
+  exit 1
+fi
+
+pass=0
+fail=0
+
+check() {
+  local desc="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    echo "ok: $desc"
+    pass=$((pass + 1))
+  else
+    echo "NG: $desc"
+    fail=$((fail + 1))
+  fi
+}
+
+ORIG_HOME="$HOME"
+FIX=""
+
+run() { bash "$BUNDLE" "$@"; }
+
+# 偽の環境を作る。ADOPT_ENTRIES に並ぶ実パスのうち、テストに必要な分だけを用意する。
+# passwords/ は README.md を追跡させ、中身だけが ignore される本番と同じ形にする。
+setup() {
+  FIX=$(mktemp -d)
+  export HOME="$FIX/home"
+  export DOTFILES_DIR="$FIX/repo"
+  export DOTFILES_PRIVATE_DIR="$FIX/private"
+
+  mkdir -p "$HOME/.claude" "$HOME/.config/linear" "$HOME/.config/dotfiles"
+  echo ctx >"$HOME/.claude/local-context.md"
+  echo key >"$HOME/.config/linear/api-key"
+  echo pat >"$HOME/.config/dotfiles/secret-patterns.txt"
+
+  mkdir -p "$DOTFILES_DIR/.config/git"
+  mkdir -p "$DOTFILES_DIR/.config/fish/my/conf.d"
+  mkdir -p "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking"
+  echo local >"$DOTFILES_DIR/.config/git/config-local"
+  echo fish >"$DOTFILES_DIR/.config/fish/my/conf.d/99-local.fish"
+  : >"$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/README.md"
+  echo aws >"$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking/aws.md"
+
+  cat >"$DOTFILES_DIR/.gitignore" <<'IGNORE'
+.config/git/config-local
+.config/fish/my/conf.d/99-local.fish
+.config/AutoHotkey/ahk-snippets/passwords/*
+!.config/AutoHotkey/ahk-snippets/passwords/README.md
+IGNORE
+
+  git -C "$DOTFILES_DIR" init -q >/dev/null 2>&1
+  git -C "$DOTFILES_DIR" add .gitignore \
+    .config/AutoHotkey/ahk-snippets/passwords/README.md >/dev/null 2>&1
+}
+
+teardown() {
+  [ -n "$FIX" ] && rm -rf "$FIX"
+  export HOME="$ORIG_HOME"
+}
+
+# --- adopt: 既定は dry-run ---
+setup
+out=$(run adopt 2>&1)
+check "dry-run では実体を動かさない" test -f "$DOTFILES_DIR/.config/git/config-local"
+check "dry-run では集約先を作らない" test ! -d "$DOTFILES_PRIVATE_DIR"
+check "dry-run と分かる出力を出す" grep -q "DRY-RUN" <<<"$out"
+teardown
+
+# --- adopt --execute ---
+setup
+run adopt --execute >/dev/null 2>&1
+check "ホーム側を集約先へ移す" test -f "$DOTFILES_PRIVATE_DIR/home/.claude/local-context.md"
+check "リポジトリ側を集約先へ移す" test -f "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
+check "元の位置は symlink になる" test -L "$DOTFILES_DIR/.config/git/config-local"
+check "symlink 経由で中身が読める" grep -q local "$DOTFILES_DIR/.config/git/config-local"
+check "ホーム側も symlink になる" test -L "$HOME/.claude/local-context.md"
+
+# @under: 追跡ファイルは残し、ignore された子だけを拾う
+check "ignore された子を集約先へ移す" \
+  test -f "$DOTFILES_PRIVATE_DIR/repo/.config/AutoHotkey/ahk-snippets/passwords/booking/aws.md"
+check "ignore された子は symlink になる" \
+  test -L "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking"
+check "追跡ファイルは動かさない" \
+  test -f "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/README.md"
+check "追跡ファイルは集約先に入らない" \
+  test ! -e "$DOTFILES_PRIVATE_DIR/repo/.config/AutoHotkey/ahk-snippets/passwords/README.md"
+
+# 冪等性: 2回目で壊れない
+run adopt --execute >/dev/null 2>&1
+check "2回目でも symlink のまま" test -L "$DOTFILES_DIR/.config/git/config-local"
+check "2回目でも中身が残る" grep -q local "$DOTFILES_DIR/.config/git/config-local"
+teardown
+
+# --- 存在しないエントリ ---
+setup
+rm "$DOTFILES_DIR/.config/git/config-local"
+out=$(run adopt --execute 2>&1)
+check "存在しないエントリで失敗しない" test $? -eq 0
+check "存在しないエントリを報告する" grep -q "MISS" <<<"$out"
+teardown
+
+echo "---"
+echo "pass: $pass, fail: $fail"
+[[ "$fail" -eq 0 ]]
