@@ -145,6 +145,53 @@ check "通常ファイルはリンクする" test -L "$fr/.config/real.conf"
 check ".DS_Store はリンクしない" test ! -e "$fr/.config/.DS_Store"
 check "エディタのバックアップはリンクしない" test ! -e "$fr/.config/real.conf~"
 
+# --- link_private_files ---
+# 集約先が無い端末では何もせず成功する。旧環境が無い立ち上げでも
+# 従来どおり .example からの雛形生成にフォールバックできるようにするため。
+out=$(PRIVATE_DIR="$tmp/does-not-exist" link_private_files 2>&1)
+check "集約先が無ければ成功する" test $? -eq 0
+check "フォールバックすることを伝える" grep -q "フォールバック" <<<"$out"
+
+# home/ と repo/ の両方を配ること
+priv="$tmp/pf/private"
+fh="$tmp/pf/home"
+fr="$tmp/pf/repo"
+mkdir -p "$priv/home/.claude" "$priv/repo/.config/git" "$fh/.claude" "$fr/.config/git"
+echo ctx >"$priv/home/.claude/local-context.md"
+echo cfg >"$priv/repo/.config/git/config-local"
+
+PRIVATE_DIR="$priv" HOME="$fh" DOTFILES_DIR="$fr" link_private_files >/dev/null 2>&1
+
+check "home/ を \$HOME へ配る" test -L "$fh/.claude/local-context.md"
+check "repo/ をリポジトリへ配る" test -L "$fr/.config/git/config-local"
+
+# 片方しか無くても失敗しないこと（repo/ だけの集約先を作った端末など）
+priv="$tmp/pf2/private"
+fr="$tmp/pf2/repo"
+mkdir -p "$priv/repo/.config/git" "$fr/.config/git"
+echo cfg >"$priv/repo/.config/git/config-local"
+PRIVATE_DIR="$priv" HOME="$tmp/pf2/home" DOTFILES_DIR="$fr" link_private_files >/dev/null 2>&1
+check "home/ が無くても失敗しない" test $? -eq 0
+
+# --- ensure_dirs ---
+# ~/.config/linear と ~/.config/dotfiles を先に実ディレクトリにしておく。
+# これが無いと link_private_tree の規則でディレクトリごとリンクされ、
+# linear-bootstrap.sh が書く config.json（再生成できる）まで集約先に入り込む。
+fakehome="$tmp/ed/home"
+mkdir -p "$fakehome"
+HOME="$fakehome" ensure_dirs
+check "ensure_dirs が ~/.config/linear を作る" test -d "$fakehome/.config/linear"
+check "ensure_dirs が ~/.config/dotfiles を作る" test -d "$fakehome/.config/dotfiles"
+
+# 親が実ディレクトリなので api-key だけがファイル単位でリンクされること
+priv="$tmp/ed/private"
+mkdir -p "$priv/home/.config/linear"
+echo key >"$priv/home/.config/linear/api-key"
+PRIVATE_DIR="$priv" HOME="$fakehome" DOTFILES_DIR="$tmp/ed/repo" \
+  link_private_files >/dev/null 2>&1
+check "api-key はファイル単位でリンクされる" test -L "$fakehome/.config/linear/api-key"
+check "親の .config/linear はリンクに置き換わらない" test ! -L "$fakehome/.config/linear"
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

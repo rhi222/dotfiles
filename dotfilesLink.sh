@@ -27,6 +27,10 @@ safe_link() {
   fi
 }
 
+# ローカル設定の集約先。実体はここにあり、各所へは symlink を張る。
+# 中身の作成と運搬は scripts/private-bundle.sh の担当。
+PRIVATE_DIR="${DOTFILES_PRIVATE_DIR:-$HOME/.local/share/dotfiles-private}"
+
 # 集約先に紛れ込んでも配りたくないもの
 private_is_excluded() {
   case "$1" in
@@ -96,9 +100,32 @@ link_private_tree() {
   return 0
 }
 
+# 集約先のローカル設定を各所へ配る。
+# 集約先が無い端末（旧環境からの移植をしていない立ち上げ）では何もしない。
+# setup_local_configs / setup_git_hooks が .example から雛形を作る従来の経路に落ちる。
+link_private_files() {
+  if [ ! -d "$PRIVATE_DIR" ]; then
+    echo "[INFO] $PRIVATE_DIR がありません。ローカル設定は雛形生成にフォールバックします" >&2
+    return 0
+  fi
+  if [ -d "$PRIVATE_DIR/home" ]; then
+    link_private_tree "$PRIVATE_DIR/home" "$HOME"
+  fi
+  if [ -d "$PRIVATE_DIR/repo" ]; then
+    link_private_tree "$PRIVATE_DIR/repo" "$DOTFILES_DIR"
+  fi
+  return 0
+}
+
 # リンク先ディレクトリを事前に用意する（fresh 環境では ~/.config 自体が存在しない）
+#
+# ~/.config/dotfiles と ~/.config/linear は、集約先から「ファイル単位で」リンクを
+# 張るために先に実ディレクトリにしておく。無いままだと link_private_tree の規則で
+# ディレクトリごとリンクされ、linear-bootstrap.sh が書く config.json（再生成できる）まで
+# 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
-  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex
+  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex \
+    ~/.config/dotfiles ~/.config/linear
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
@@ -290,6 +317,10 @@ print_next_steps() {
 
 main() {
   ensure_dirs
+  # link_configs より先に張る。cross-repo-auto-discover は
+  # 「集約先 → リポジトリ内 → ~/.claude/skills」の二段リンクになるため、
+  # link_claude_skills が走る時点で一段目が済んでいる必要がある
+  link_private_files
   link_configs
   link_claude_skills
   setup_claude_settings
