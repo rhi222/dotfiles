@@ -96,6 +96,14 @@ check "追跡ファイルは動かさない" \
 check "追跡ファイルは集約先に入らない" \
   test ! -e "$DOTFILES_PRIVATE_DIR/repo/.config/AutoHotkey/ahk-snippets/passwords/README.md"
 
+# 集約先は資格情報を1箇所に集めたディレクトリなので、adopt でもハードニングする
+# （import 側だけだと、集約した端末で 755 のまま残る）
+check "集約先のルートが 700" test "$(stat -c %a "$DOTFILES_PRIVATE_DIR")" = 700
+check "移した秘密ファイルが 600" \
+  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.config/linear/api-key")" = 600
+check "中間ディレクトリも 700" \
+  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/repo/.config/git")" = 700
+
 # 冪等性: 2回目で壊れない
 run adopt --execute >/dev/null 2>&1
 check "2回目でも symlink のまま" test -L "$DOTFILES_DIR/.config/git/config-local"

@@ -136,6 +136,9 @@ cmd_adopt() {
   if [ "$execute" -eq 0 ]; then
     echo "dry-run です。実行するには --execute を付けてください"
   else
+    # 集約先は資格情報を1箇所に集めたディレクトリなので、作った直後に締める。
+    # import 側だけでハードニングすると、集約した端末では 755 のまま残る。
+    [ -d "$PRIVATE_DIR" ] && harden_permissions
     echo "移動: $ADOPT_MOVED 件 / 既に symlink: $ADOPT_SKIPPED 件 / 不在: $ADOPT_MISSING 件"
   fi
   return "$rc"
