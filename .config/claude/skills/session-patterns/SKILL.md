@@ -50,4 +50,3 @@ DAYS="$DAYS" source "$COLLECT_SCRIPT"
 ## 関連コマンド
 
 - `/nippo-weekly` - 週次振り返りレポート（セッションパターン分析セクションを含む）
-- `/nippo-trend` - 長期トレンド分析
