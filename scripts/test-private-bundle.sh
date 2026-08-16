@@ -110,6 +110,61 @@ check "存在しないエントリで失敗しない" test $? -eq 0
 check "存在しないエントリを報告する" grep -q "MISS" <<<"$out"
 teardown
 
+# --- export / import ---
+# 対話プロンプトを避けるためテストでは PRIVATE_BUNDLE_ZIP_PASSWORD を使う
+# （zip -e の代わりに -P。平文が ps に乗るので実運用では使わない）
+export PRIVATE_BUNDLE_ZIP_PASSWORD=test-pass
+
+setup
+run adopt --execute >/dev/null 2>&1
+
+# 集約先の中の相対 symlink。実体を2つ持たないための作りなので、
+# zip -y で symlink のまま保存されなければならない
+mkdir -p "$DOTFILES_PRIVATE_DIR/repo/.config/skills/inv" \
+  "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto"
+echo yml >"$DOTFILES_PRIVATE_DIR/repo/.config/skills/inv/repos.yml"
+ln -sn ../inv/repos.yml "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
+
+zipfile="$FIX/bundle.zip"
+run export --out "$zipfile" >/dev/null 2>&1
+check "zip が作られる" test -f "$zipfile"
+check "zip のパーミッションが 600" test "$(stat -c %a "$zipfile")" = 600
+
+# 別の集約先へ展開して往復を確認する
+export DOTFILES_PRIVATE_DIR="$FIX/restored"
+run import "$zipfile" >/dev/null 2>&1
+check "import で集約先が作られる" test -d "$DOTFILES_PRIVATE_DIR"
+check "ホーム側の中身が復元される" \
+  grep -q ctx "$DOTFILES_PRIVATE_DIR/home/.claude/local-context.md"
+check "リポジトリ側の中身が復元される" \
+  grep -q local "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
+check "symlink は symlink のまま復元される" \
+  test -L "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
+check "復元した symlink が辿れる" \
+  grep -q yml "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
+check "ファイルは 600 になる" \
+  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.config/linear/api-key")" = 600
+check "ディレクトリは 700 になる" \
+  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.claude")" = 700
+
+# 既存の集約先は既定で上書きしない
+out=$(run import "$zipfile" 2>&1)
+check "集約先があれば既定で拒否する" test $? -ne 0
+check "--force の案内を出す" grep -q -- "--force" <<<"$out"
+run import "$zipfile" --force >/dev/null 2>&1
+check "--force なら上書きする" test $? -eq 0
+teardown
+
+# 集約先が無ければ export は失敗する
+setup
+rm -rf "$DOTFILES_PRIVATE_DIR"
+out=$(run export --out "$FIX/none.zip" 2>&1)
+check "集約先が無ければ export は失敗する" test $? -ne 0
+check "zip は作られない" test ! -f "$FIX/none.zip"
+teardown
+
+unset PRIVATE_BUNDLE_ZIP_PASSWORD
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

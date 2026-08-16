@@ -141,6 +141,112 @@ cmd_adopt() {
   return "$rc"
 }
 
+# 相対パスのままだと cd 後に別の場所を指すので絶対パスへ直す
+abspath() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$PWD/$1" ;;
+  esac
+}
+
+# zip の暗号化引数。テストからは PRIVATE_BUNDLE_ZIP_PASSWORD で対話プロンプトを
+# 迂回する（-P は平文が ps に乗るので実運用では使わない）
+zip_crypt_args() {
+  if [ -n "${PRIVATE_BUNDLE_ZIP_PASSWORD:-}" ]; then
+    printf '%s\n%s\n' "-P" "$PRIVATE_BUNDLE_ZIP_PASSWORD"
+  else
+    printf '%s\n' "-e"
+  fi
+}
+
+cmd_export() {
+  local out=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --out)
+        out="${2:-}"
+        shift 2 || return 2
+        ;;
+      *)
+        echo "[FAIL] 不明な引数: $1" >&2
+        return 2
+        ;;
+    esac
+  done
+
+  if [ ! -d "$PRIVATE_DIR" ]; then
+    echo "[FAIL] 集約先がありません: $PRIVATE_DIR" >&2
+    echo "       先に adopt --execute を実行してください" >&2
+    return 1
+  fi
+
+  out="$(abspath "${out:-$HOME/dotfiles-private-$(date +%Y%m%d).zip}")"
+  if [ -e "$out" ]; then
+    echo "[FAIL] 既に存在します: $out" >&2
+    return 1
+  fi
+
+  local crypt=()
+  mapfile -t crypt < <(zip_crypt_args)
+
+  # -y は必須。無いと集約先の symlink を辿って実体化し、repos.yml が2つになる
+  if ! (cd "$PRIVATE_DIR" && zip -r -y -q "${crypt[@]}" "$out" . \
+    -x '*.DS_Store' '*~' '*.swp'); then
+    echo "[FAIL] zip の作成に失敗しました" >&2
+    rm -f "$out"
+    return 1
+  fi
+  chmod 600 "$out"
+  echo "[OK] $out"
+  echo "     新環境で: bash scripts/private-bundle.sh import <このzip>"
+}
+
+# パーミッションは zip の保存内容に頼らず張り直す。Windows 側で開いて
+# 再圧縮すると Unix 属性が落ち、api-key が 644 で復元されるため。
+# -type f/d は symlink を辿らないので symlink 自体は触らない。
+harden_permissions() {
+  chmod 700 "$PRIVATE_DIR"
+  find "$PRIVATE_DIR" -type d -exec chmod 700 {} +
+  find "$PRIVATE_DIR" -type f -exec chmod 600 {} +
+}
+
+cmd_import() {
+  local zipfile="${1:-}" force=0
+  shift || true
+  case "${1:-}" in
+    --force) force=1 ;;
+    "") ;;
+    *)
+      echo "[FAIL] 不明な引数: $1" >&2
+      return 2
+      ;;
+  esac
+
+  if [ ! -f "$zipfile" ]; then
+    echo "[FAIL] zip がありません: $zipfile" >&2
+    return 1
+  fi
+  if [ -e "$PRIVATE_DIR" ] && [ "$force" -eq 0 ]; then
+    echo "[FAIL] 集約先が既に存在します: $PRIVATE_DIR" >&2
+    echo "       上書きしてよければ --force を付けてください" >&2
+    return 1
+  fi
+
+  local crypt=()
+  mapfile -t crypt < <(zip_crypt_args)
+  # unzip の暗号化オプションは -P だけ。-e は zip 側の対話指定なので落とす
+  [ "${crypt[0]}" = "-e" ] && crypt=()
+
+  mkdir -p "$PRIVATE_DIR"
+  if ! unzip -q -o "${crypt[@]}" "$zipfile" -d "$PRIVATE_DIR"; then
+    echo "[FAIL] 展開に失敗しました（パスワードを確認してください）" >&2
+    return 1
+  fi
+  harden_permissions
+  echo "[OK] $PRIVATE_DIR に展開しました"
+  echo "     次に ./dotfilesLink.sh を実行してください"
+}
+
 usage() {
   sed -n '2,9p' "${BASH_SOURCE[0]}" >&2
 }
@@ -150,6 +256,8 @@ main() {
   shift || true
   case "$sub" in
     adopt) cmd_adopt "$@" ;;
+    export) cmd_export "$@" ;;
+    import) cmd_import "$@" ;;
     *)
       usage
       return 2
