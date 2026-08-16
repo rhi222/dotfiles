@@ -4,15 +4,21 @@
 
 ```
 .config/claude/skills/   → 自作スキル（git管理対象）
-.claude/skills/          → 外部スキル（npx skill add でインストール、gitignore）
+~/.claude/skills/        → 読み込み口。自作スキルへの symlink と、外部スキルの実体が同居する
 ```
 
-`dotfilesLink.sh` が `.config/claude/skills/*/` の各スキルを `~/.claude/skills/` にシンボリックリンクするため、自作・外部ともに `~/.claude/skills/` から統一的に読み込まれる。
+- 自作スキルは `dotfilesLink.sh` が `.config/claude/skills/*/` を `~/.claude/skills/` へ
+  シンボリックリンクする。`<name>-workspace/`（skill-creator の作業ディレクトリ）は
+  スキルではないのでリンク対象外・gitignore 対象
+- 外部スキルは `gh skill` で `~/.claude/skills/` に直接インストールする。
+  宣言リストは `scripts/claude-skills.txt`（管理コマンドは CLAUDE.md の
+  「Claude Code skill管理」を参照）
 
 ### 自作スキル一覧
 
 | スキル                 | 説明                                          |
 | ---------------------- | --------------------------------------------- |
+| accessibility-reviewer | フロントエンドコードのa11yレビュー（WCAG 2.1/2.2 AA基準） |
 | backport-pr            | 既存PRを別ベースブランチ向けPRへ移植          |
 | ci-debug               | GitHub Actionsエラー分析                      |
 | cross-repo-investigate | 複数リポジトリ横断調査                        |
@@ -21,17 +27,26 @@
 | esa-diff-weekly        | esa週次差分URL取得&サマリ                     |
 | esa-weekly-report      | esa週次エグゼクティブレポート生成             |
 | git-commit             | Conventional Commit形式のコミット作成         |
+| gitlab-url             | GitLab URLの先のリソース読み書き（glab経由）  |
 | humanize               | AI文章の自然化                                |
+| linear-add             | Linear起票（規約の自動適用）                  |
+| linear-recall          | 起票済みLinear issueの検索・想起              |
+| linear-slack-sweep     | Slackスタンプ→Linear Triage起票               |
+| linear-triage          | 夕方triage支援（夜間dispatchの仕込み）        |
 | pr-auto-update         | PRの自動更新（タイトル/説明文の再生成）       |
 | pr-feedback            | PRレビューコメント分類と対応順序の決定        |
 | pr-generate            | PR本文生成（commit履歴からタイトル/説明文を作成） |
 | pr-review              | PR内容のセルフレビュー                        |
+| pr-watch               | PRの定期監視（レビュー対応・CI修正の自動化）  |
 | puml-from-drawio       | draw.io→PlantUML変換                          |
 | nippo-\*               | 日報システム（後述）                          |
 | session-patterns       | セッション履歴から繰り返しパターンを抽出      |
 | tech-writing           | 日本語技術文書の文章規範（推敲やリライト）    |
 | tmux-sender            | tmux別ペインへコマンド送信                    |
 | wt-pr                  | worktree作成→実装→コミット分割→push→PR作成    |
+
+このほか、社内システム名で発動する `cross-repo-auto-discover` がある（ディレクトリごと
+gitignore。CLAUDE.md「社内固有情報を入れない運用」を参照）。
 
 ---
 
@@ -101,7 +116,7 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 
 #### `/nippo-add` - 日報作成・追記
 
-日報ファイルの作成と追記を行う。新規作成時は前営業日の未完了タスクを引き継ぎ、nippo-goals.mdから目標逆算タスクを提案する。`start:`/`end:` で作業時間を計測できる。
+日報ファイルの作成と追記を行う。新規作成時はLinearから今日のタスクを転記し、nippo-goals.mdから目標逆算タスクを提案する（前営業日からの未完了タスク引き継ぎは行わない。タスク管理はLinearに集約しているため）。`start:`/`end:` で作業時間を計測できる。
 
 #### `/nippo-show` - 日報全文表示
 
