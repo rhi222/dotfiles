@@ -192,6 +192,36 @@ PRIVATE_DIR="$priv" HOME="$fakehome" DOTFILES_DIR="$tmp/ed/repo" \
 check "api-key はファイル単位でリンクされる" test -L "$fakehome/.config/linear/api-key"
 check "親の .config/linear はリンクに置き換わらない" test ! -L "$fakehome/.config/linear"
 
+# --- link_claude_skills ---
+# ~/.claude/skills には2種類が同居する。自作skillへの symlink（リポジトリを指す）と、
+# gh skill が入れた外部skillの実ディレクトリ。掃除の対象はリンク切れの symlink だけで、
+# 実ディレクトリと生きたリンクには触れてはいけない。
+#
+# リポジトリから skill を消しても ~/.claude/skills のリンクは残る。Claude Code から
+# 読めない亡霊が溜まり続けるので、リンクを張る側で刈る。
+sk="$tmp/sk"
+mkdir -p "$sk/dc/claude/skills/alive" "$sk/home/.claude/skills"
+echo s >"$sk/dc/claude/skills/alive/SKILL.md"
+
+# 実体が消えた自作skillのリンク（刈る対象）
+ln -sn "$sk/dc/claude/skills/removed" "$sk/home/.claude/skills/removed"
+# gh skill が入れた外部skillの実ディレクトリ（残す）
+mkdir -p "$sk/home/.claude/skills/external"
+echo e >"$sk/home/.claude/skills/external/SKILL.md"
+# リポジトリ外を指す生きたリンク（残す）
+mkdir -p "$sk/elsewhere/other"
+ln -sn "$sk/elsewhere/other" "$sk/home/.claude/skills/other"
+
+DC="$sk/dc" HOME="$sk/home" link_claude_skills >/dev/null 2>&1
+
+check "実体のある自作skillをリンクする" test -L "$sk/home/.claude/skills/alive"
+check "リンクした先の中身が読める" test -f "$sk/home/.claude/skills/alive/SKILL.md"
+# -e はリンク切れの symlink でも偽になるため「刈れた」の証拠にならない
+# （エントリが残っていても通ってしまう）。-L で symlink そのものの不在を見る
+check "実体が消えたリンクを刈る" test ! -L "$sk/home/.claude/skills/removed"
+check "外部skillの実ディレクトリは消さない" test -f "$sk/home/.claude/skills/external/SKILL.md"
+check "リポジトリ外を指す生きたリンクは消さない" test -L "$sk/home/.claude/skills/other"
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

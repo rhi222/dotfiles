@@ -178,8 +178,22 @@ link_configs() {
 }
 
 # Skills: ディレクトリごと個別にリンクする（skills 全体をリンクすると入れ子になるため）
+#
+# 張る前にリンク切れを刈る。リポジトリから skill を消してもリンクは残るため、
+# Claude Code から読めない亡霊が溜まり続ける（trend/review/report を畳んだときに
+# 実際に5本残った）。
+#
+# **刈る対象はリンク切れの symlink だけ。** ~/.claude/skills には gh skill が入れた
+# 外部skillの実ディレクトリが同居しているので、実体や生きたリンクに触れてはいけない。
 link_claude_skills() {
-  local skill_dir skill_name
+  local skill_dir skill_name link
+  for link in ~/.claude/skills/*; do
+    # -L かつ -e が偽 == リンク切れ。実ディレクトリは -L で落ちる
+    if [ -L "$link" ] && [ ! -e "$link" ]; then
+      rm -f "$link"
+      echo "[PRUNE] $link （リンク切れ）"
+    fi
+  done
   for skill_dir in "$DC/claude/skills"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
