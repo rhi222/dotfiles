@@ -13,6 +13,7 @@
 
 | スキル                 | 説明                                          |
 | ---------------------- | --------------------------------------------- |
+| backport-pr            | 既存PRを別ベースブランチ向けPRへ移植          |
 | ci-debug               | GitHub Actionsエラー分析                      |
 | cross-repo-investigate | 複数リポジトリ横断調査                        |
 | difit                  | ステージ差分のブラウザレビュー                |
@@ -30,6 +31,7 @@
 | session-patterns       | セッション履歴から繰り返しパターンを抽出      |
 | tech-writing           | 日本語技術文書の文章規範（推敲やリライト）    |
 | tmux-sender            | tmux別ペインへコマンド送信                    |
+| wt-pr                  | worktree作成→実装→コミット分割→push→PR作成    |
 
 ---
 
