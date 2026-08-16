@@ -62,6 +62,89 @@ out=$(DC="$tmp/dc" warn_missing_local_git 2>&1)
 check "config-local があれば警告しない" test -z "$out"
 refute_contains "config-work が無くても警告しない" "config-work" "$out"
 
+# --- link_private_tree ---
+# 規則は1つだけ: リンク先が実ディレクトリならその中へ1階層降り、
+# 無ければそこで symlink を張る。これでファイル単位とディレクトリ単位が
+# 自動で振り分けられる（マニフェストを持たずに済む）。
+
+# ケース1: 親が実在するのでファイル単位、無ければディレクトリごと
+priv="$tmp/c1/private"
+fh="$tmp/c1/home"
+fr="$tmp/c1/repo"
+mkdir -p "$priv/home/.claude" "$priv/repo/.config/git" "$priv/repo/.config/ahk/js"
+mkdir -p "$fh/.claude" "$fr/.config/git" "$fr/.config/ahk"
+echo ctx >"$priv/home/.claude/local-context.md"
+echo cfg >"$priv/repo/.config/git/config-local"
+echo js >"$priv/repo/.config/ahk/js/a.js"
+
+link_private_tree "$priv/home" "$fh"
+link_private_tree "$priv/repo" "$fr"
+
+check "親が実在すればファイル単位でリンクする" test -L "$fh/.claude/local-context.md"
+check "リンク先が無ければディレクトリごとリンクする" test -L "$fr/.config/ahk/js"
+check "ディレクトリごとリンクした先の中身が読める" test -f "$fr/.config/ahk/js/a.js"
+check "リポジトリ側もファイル単位でリンクする" test -L "$fr/.config/git/config-local"
+check "ルート自体はリンクに置き換えない" test ! -L "$fr"
+
+# ケース2: passwords/ 相当。README.md が追跡対象なので親はリポジトリに実在する。
+# 親をリンクで潰さず、ignore されている子（booking/）だけを張ること。
+priv="$tmp/c2/private"
+fr="$tmp/c2/repo"
+mkdir -p "$priv/repo/.config/ahk/passwords/booking" "$fr/.config/ahk/passwords"
+echo pw >"$priv/repo/.config/ahk/passwords/booking/aws.md"
+: >"$fr/.config/ahk/passwords/README.md"
+
+link_private_tree "$priv/repo" "$fr"
+
+check "親が実在する場合は子だけをリンクする" test -L "$fr/.config/ahk/passwords/booking"
+check "親はリンクに置き換わらない" test ! -L "$fr/.config/ahk/passwords"
+check "追跡ファイルはそのまま残る" test -f "$fr/.config/ahk/passwords/README.md"
+
+# ケース3: 集約先の中に相対 symlink があっても辿れること
+# （cross-repo-auto-discover/repos.yml は ../cross-repo-investigate/repos.yml への
+#   symlink で、集約先の中でも同じ相対関係が成り立つ。実体を2つ持たないための作り）
+priv="$tmp/c3/private"
+fr="$tmp/c3/repo"
+mkdir -p "$priv/repo/.config/skills/inv" "$priv/repo/.config/skills/auto" "$fr/.config/skills"
+echo yml >"$priv/repo/.config/skills/inv/repos.yml"
+ln -sn ../inv/repos.yml "$priv/repo/.config/skills/auto/repos.yml"
+
+link_private_tree "$priv/repo" "$fr"
+
+check "集約先内の相対 symlink が辿れる" test -f "$fr/.config/skills/auto/repos.yml"
+check "実体は1つのまま" test -L "$priv/repo/.config/skills/auto/repos.yml"
+
+# ケース4: リンク先に手書きの実ファイルがあれば退避してからリンクする。
+# ln -snf は黙って消すので、import より先に config-local を手書きした端末で
+# 内容が失われる。setup_codex と同じくタイムスタンプ付きで退避する。
+priv="$tmp/c4/private"
+fr="$tmp/c4/repo"
+mkdir -p "$priv/repo/.config/git" "$fr/.config/git"
+echo frombundle >"$priv/repo/.config/git/config-local"
+echo handwritten >"$fr/.config/git/config-local"
+
+link_private_tree "$priv/repo" "$fr"
+
+check "実ファイルはリンクに置き換わる" test -L "$fr/.config/git/config-local"
+check "退避ファイルが作られる" \
+  bash -c 'compgen -G "'"$fr"'/.config/git/config-local.bak.*" >/dev/null'
+check "退避した内容が失われない" \
+  bash -c 'grep -q handwritten "'"$fr"'"/.config/git/config-local.bak.*'
+
+# ケース5: 除外パターンはリンクしない
+priv="$tmp/c5/private"
+fr="$tmp/c5/repo"
+mkdir -p "$priv/repo/.config" "$fr/.config"
+echo keep >"$priv/repo/.config/real.conf"
+echo junk >"$priv/repo/.config/.DS_Store"
+echo junk >"$priv/repo/.config/real.conf~"
+
+link_private_tree "$priv/repo" "$fr"
+
+check "通常ファイルはリンクする" test -L "$fr/.config/real.conf"
+check ".DS_Store はリンクしない" test ! -e "$fr/.config/.DS_Store"
+check "エディタのバックアップはリンクしない" test ! -e "$fr/.config/real.conf~"
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

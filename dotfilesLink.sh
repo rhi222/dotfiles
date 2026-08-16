@@ -27,6 +27,75 @@ safe_link() {
   fi
 }
 
+# 集約先に紛れ込んでも配りたくないもの
+private_is_excluded() {
+  case "$1" in
+    .git | .DS_Store | *~ | *.swp) return 0 ;;
+  esac
+  return 1
+}
+
+# 1階層降りるかどうか。両方が「実」ディレクトリのときだけ降りる。
+# src 側の -L を見るのは、集約先に置いた symlink（cross-repo-auto-discover/repos.yml）を
+# 辿って中身を配ってしまわないため。
+private_should_descend() {
+  local src="$1" dest="$2"
+  [ -d "$src" ] && [ ! -L "$src" ] && [ -d "$dest" ] && [ ! -L "$dest" ]
+}
+
+# リンク先が実ファイルなら退避する。ln -snf は黙って消すので、
+# import より先に config-local を手書きした端末で内容が失われる。
+backup_real_file() {
+  local dest="$1" bak
+  if [ -e "$dest" ] && [ ! -L "$dest" ] && [ ! -d "$dest" ]; then
+    bak="$dest.bak.$(date +%Y%m%d%H%M%S)"
+    echo "[INFO] 既存の $dest を $bak に退避します" >&2
+    mv "$dest" "$bak"
+  fi
+}
+
+# ディレクトリ直下の名前を1行ずつ返す。dotglob / nullglob はサブシェルに閉じ込める
+# （再帰の途中で shopt を戻すと呼び出し元の状態が壊れるため）
+private_children() {
+  (
+    shopt -s nullglob dotglob
+    local c
+    for c in "$1"/*; do
+      basename "$c"
+    done
+  )
+}
+
+# 集約先のツリーを走査して symlink を張る。
+#
+# 規則は1つだけ: リンク先が実ディレクトリとして既に存在すれば1階層降り、
+# 存在しなければそこでリンクする。これでファイル単位（.config/git/config-local）と
+# ディレクトリ単位（ahk-snippets/js）が自動で振り分けられ、マニフェストが要らない。
+# ローカル設定を足すときは集約先に置くだけでよく、このスクリプトは変わらない。
+#
+# ファイル単位で張りたいのに親が新環境に無い場合（~/.config/linear など）は、
+# ensure_dirs で先に実ディレクトリを作っておく。制御点をそこに集約している。
+link_private_tree() {
+  local src_root="$1" dest_root="$2" rel="${3:-}"
+  local src="$src_root${rel:+/$rel}"
+  local dest="$dest_root${rel:+/$rel}"
+  local name
+
+  # rel が空＝ルート。$HOME やリポジトリルートをリンクで置き換えないよう必ず降りる
+  if [ -n "$rel" ] && ! private_should_descend "$src" "$dest"; then
+    backup_real_file "$dest"
+    safe_link "$src" "$dest"
+    return 0
+  fi
+
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    private_is_excluded "$name" && continue
+    link_private_tree "$src_root" "$dest_root" "${rel:+$rel/}$name"
+  done < <(private_children "$src")
+  return 0
+}
+
 # リンク先ディレクトリを事前に用意する（fresh 環境では ~/.config 自体が存在しない）
 ensure_dirs() {
   mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex
