@@ -23,9 +23,11 @@
 | ci-debug               | GitHub Actionsエラー分析                      |
 | cross-repo-investigate | 複数リポジトリ横断調査                        |
 | difit                  | ステージ差分のブラウザレビュー                |
+| doc-refine             | 文書の論理批評→AIくささ修正パイプライン（humanizeを内部参照） |
 | esa-api                | esa.io API共通ナレッジ (他esa-*から内部参照)  |
 | esa-diff-weekly        | esa週次差分URL取得&サマリ                     |
 | esa-weekly-report      | esa週次エグゼクティブレポート生成             |
+| executive-report       | 部長会用の役員報告リライト                    |
 | git-commit             | Conventional Commit形式のコミット作成         |
 | gitlab-url             | GitLab URLの先のリソース読み書き（glab経由）  |
 | humanize               | AI文章の自然化                                |
