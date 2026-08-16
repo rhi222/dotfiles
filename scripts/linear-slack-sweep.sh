@@ -8,7 +8,7 @@
 #
 # 使い方:
 #   linear-slack-sweep.sh unseen <key>...
-#   linear-slack-sweep.sh create <key> <permalink> <title> <outcome> <summary>
+#   linear-slack-sweep.sh create <key> <permalink> <title> <outcome> <summary> [label...]
 #
 # key の形式は <channel_id>/<message_ts>。permalink はスレ内メッセージだと
 # ?thread_ts= や &cid= が付いて文字列が揺れるため、重複判定のキーには使わない。
@@ -68,8 +68,40 @@ linear_find_by_url() {
   }' "$(jq -n --arg t "$team" --arg q "$1" '{team: $t, q: $q}')" | jq '.issues.nodes[0] // {}'
 }
 
+# 起票時に受け付ける推定ラベル。skillがスレを読んで判断した role/em だけを通す。
+#
+# 許可リストで弾くのは、agentがラベル名を1文字間違えたときに起票ごと落とさないため。
+# linear_label_id は未知キーで非0を返すので、そのまま渡すと issueCreate が失敗し、
+# seen にも入らないまま毎回同じ失敗を繰り返して永久に起票されない。
+# 推定は付加価値であって起票の前提ではないので、壊れたラベルは捨てて起票を通す。
+#
+# src:* は含めない。流入元は事実判定なのでスクリプトが固定で付ける
+ALLOWED_LABELS=(
+  "role:player" "role:manager"
+  "em:people" "em:tech" "em:project" "em:product"
+)
+
+label_allowed() {
+  local l
+  for l in "${ALLOWED_LABELS[@]}"; do
+    [[ "$l" == "$1" ]] && return 0
+  done
+  return 1
+}
+
 cmd_create() {
   local key="$1" permalink="$2" title="$3" outcome="$4" summary="$5"
+  shift 5
+  local labels=("src:slack") l
+  for l in "$@"; do
+    [[ -n "$l" ]] || continue
+    if label_allowed "$l"; then
+      labels+=("$l")
+    else
+      echo "linear-slack-sweep: 未知のラベルを無視する: $l" >&2
+    fi
+  done
+
   # seen判定→起票→seen追記 を排他にする。skill は create をキーごとに
   # 別プロセスで呼ぶので、cron（8:10）と手動起動が重なると両方が
   # seen判定を通過して同じスレを2回起票しうる。
@@ -92,14 +124,16 @@ cmd_create() {
   if [[ -n "$issue_id" ]]; then
     ident=$(jq -r '.identifier' <<<"$hit")
     # 同じスレが再燃したときにissueを増やさない。
-    # ポインタの司令塔なので、issueとスレは1:1に保つ
+    # ポインタの司令塔なので、issueとスレは1:1に保つ。
+    # ラベルも触らない。既にtriageを通って人間が付け直しているかもしれない分類を、
+    # スレを読み直しただけの機械が上書きしない
     linear_comment "$issue_id" "$(printf 'Slackで再言及: %s\n\n%s\n' "$permalink" "$summary")" || return 1
     seen_add "$key"
     echo "commented $ident"
     return 0
   fi
   body=$(printf '元URL: %s\n\n期待アウトカム: %s\n\n## 経緯\n%s\n' "$permalink" "$outcome" "$summary")
-  created=$(linear_issue_create "$title" "$body" "Triage" "src:slack") || return 1
+  created=$(linear_issue_create "$title" "$body" "Triage" "${labels[@]}") || return 1
   ident=$(jq -r '.identifier' <<<"$created")
   seen_add "$key"
   echo "created $ident"
@@ -109,7 +143,10 @@ usage() {
   cat >&2 <<'EOF'
 usage:
   linear-slack-sweep.sh unseen <key>...
-  linear-slack-sweep.sh create <key> <permalink> <title> <outcome> <summary>
+  linear-slack-sweep.sh create <key> <permalink> <title> <outcome> <summary> [label...]
+
+label は role:player / role:manager / em:people / em:tech / em:project / em:product のみ。
+それ以外は無視して起票を続ける。src:slack はスクリプトが固定で付ける
 EOF
   return 2
 }
@@ -120,7 +157,7 @@ main() {
   case "$sub" in
     unseen) cmd_unseen "$@" ;;
     create)
-      [[ "$#" -eq 5 ]] || usage
+      [[ "$#" -ge 5 ]] || usage
       cmd_create "$@"
       ;;
     *) usage ;;
