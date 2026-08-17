@@ -208,6 +208,26 @@ env STRICT=1 bash scripts/setup-gh-extensions.sh  # gh 拡張
 bash scripts/linear-bootstrap.sh                  # Linear の team/state/label ID を解決
 ```
 
+### Windows 側の設定を反映する（WSL2）
+
+`.wslconfig` と Windows Terminal の `settings.json` は `/mnt/c` にあり symlink できないので、
+`dotfilesLink.sh` の対象外になっている。**内容を確認してから手で押し出す。**
+
+```fish
+bash scripts/sync-windows-settings.sh status          # 実ファイルとの差分
+bash scripts/sync-windows-settings.sh push --force    # リポジトリ -> 実ファイル
+wsl.exe --shutdown                                    # .wslconfig の反映（Windows 側から）
+```
+
+- **`.wslconfig` は値をそのまま使わない。** `memory=12GB` は「物理32GB・Windows 側の
+  commit 約21GB」という**この端末の実測から出した値**で、スペックが違えば適切な値も変わる。
+  ファイル内のコメントに導出過程を残してあるので、それを読んで新しい端末の数字で決め直す
+- Windows Terminal 側はフォントに `HackGen Console NF` と `Consolas NF` を指定している。
+  **Windows にこの2つを入れておかないと豆腐になる**（Nerd Font 版が必要）
+- プロファイルの GUID は distro 名から決定的に生成されるので、同じ `Ubuntu` を使う限り
+  そのまま通る。別名の distro を入れた端末では Terminal 側が新しい行を足すので、
+  その後 `pull` してリポジトリを追随させる
+
 ## 4. 自動化を有効にする（任意・WSL2）
 
 使う機能だけ有効にする。各機能は、対応するフラグファイルを作らない限り動作しない。

@@ -1,0 +1,14 @@
+[wsl2]
+# ホスト物理32GB。Windows側(chrome/Slack/Claude Desktop/vmmem)のcommitが約21GBあり、
+# WSLが実際に使える物理RAMの余地は約11.5GBしかない。
+# 20GB上限だとWSLが余地を超えて伸び、Windowsがvmmemwsl丸ごとページアウト=VM全体ストールになる。
+# 12GBでハードキャップし、溢れた分はゲスト内swap(VHD)へ逃がして緩やかに劣化させる。
+# memory=24GB
+# memory=20GB
+memory=12GB
+swap=8GB
+processors=6
+
+[experimental]
+# アイドル時にページキャッシュを徐々に解放し、Windows側のvmmem肥大を抑える
+autoMemoryReclaim=gradual
