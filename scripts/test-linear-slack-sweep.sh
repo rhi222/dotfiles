@@ -81,7 +81,10 @@ export CURL_LOG="$tmp/curl.log"
 # --- create（重複なし） ---
 : >"$LINEAR_SLACK_SWEEP_SEEN"
 : >"$CURL_LOG"
-PERMALINK="https://example.slack.com/archives/C0EXAMPLE/p1786335015733309?thread_ts=1784699205.854559&cid=C0EXAMPLE"
+# ホストは slack.example.com にする。<名前>.slack.com の形だと、架空名でも機密語辞書の
+# `[a-z0-9-]+\.slack\.com` に当たって CI が落ちる。
+# permalink_core は /archives/ より手前を捨てるので、ホスト名は判定に影響しない
+PERMALINK="https://slack.example.com/archives/C0EXAMPLE/p1786335015733309?thread_ts=1784699205.854559&cid=C0EXAMPLE"
 out6=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" \
   "PMS疎通試験の結果をまとめる" "試験結果を共有し、次の判断材料にする" "スレで疎通試験の話が出た" \
   "role:player" "em:tech" 2>&1)
