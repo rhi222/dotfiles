@@ -848,9 +848,21 @@ cat >"$XDG_DIR/docker-clean/stats.json" <<JSON
   "running": []
 }
 JSON
-out="$(XDG_STATE_HOME="$XDG_DIR" fish -i -c exit 2>&1)"
-assert_contains "docker:" "$out" "実際の対話シェルで通知が出る"
-assert_not_contains "command not found" "$out" "autoload に失敗していない"
+# この2件だけは「dotfilesLink.sh 実行済みの端末」を要求する。--no-config を付けず
+# 実際のユーザ設定を読ませる検査で、config.fish が ~/.config/fish/my/... を直接
+# 参照するため、リンクの無い環境（CI・新規端末）では config.fish 自体が存在せず
+# hook が load されない。ファイル単位の `# ci-skip:` を使うと残り182件も
+# CI から消えるので、ここだけをスキップする。
+#
+# assert_not_contains 側は、何も動いていない環境でも通ってしまう（"command not
+# found" が出ないだけ）。空振りの合格になるので、同じ条件でまとめて外す。
+if [ -e "$HOME/.config/fish/config.fish" ]; then
+  out="$(XDG_STATE_HOME="$XDG_DIR" fish -i -c exit 2>&1)"
+  assert_contains "docker:" "$out" "実際の対話シェルで通知が出る"
+  assert_not_contains "command not found" "$out" "autoload に失敗していない"
+else
+  echo "  SKIP: 実際の対話シェルの検査（~/.config/fish が未リンク）"
+fi
 
 teardown
 echo ""
