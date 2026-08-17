@@ -23,6 +23,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# shellcheck source=scripts/lib/settings-sync.sh
+source "$SCRIPT_DIR/lib/settings-sync.sh"
+
 LIVE="${CLAUDE_SETTINGS_LIVE:-$HOME/.claude/settings.json}"
 REPO="${CLAUDE_SETTINGS_REPO:-$REPO_ROOT/.config/claude/settings.json}"
 
@@ -95,17 +98,6 @@ merge_secrets() {
   '
 }
 
-# $1 の正規化結果を $2 に書く。既に同一内容なら書かない（0=書いた, 1=変更なし）
-write_if_changed() {
-  local content="$1" dest="$2"
-  if [[ -f "$dest" ]] && printf '%s\n' "$content" | diff -q - "$dest" >/dev/null 2>&1; then
-    return 1
-  fi
-  mkdir -p "$(dirname "$dest")"
-  printf '%s\n' "$content" >"$dest"
-  return 0
-}
-
 cmd_pull() {
   local dry_run=0
   [[ "${1:-}" == "--dry-run" ]] && dry_run=1
@@ -115,19 +107,10 @@ cmd_pull() {
   # 社内固有のプラグイン設定はリポジトリに入れない（public のため）
   content=$(printf '%s\n' "$content" | mask_secrets)
 
-  if [[ -f "$REPO" ]] && printf '%s\n' "$content" | diff -q - "$REPO" >/dev/null 2>&1; then
-    echo "変更なし: リポジトリは実ファイルと一致しています"
-    return 0
-  fi
-
-  if [[ "$dry_run" -eq 1 ]]; then
-    echo "更新あり（--dry-run のため書き込みません）: $REPO"
-    [[ -f "$REPO" ]] && diff <(cat "$REPO") <(printf '%s\n' "$content") || true
-    return 0
-  fi
-
-  write_if_changed "$content" "$REPO"
-  echo "更新: $REPO に実ファイルの内容を取り込みました"
+  settings_sync_reconcile_pull "$content" "$REPO" "$dry_run" \
+    "変更なし: リポジトリは実ファイルと一致しています" \
+    "更新あり（--dry-run のため書き込みません）: $REPO" \
+    "更新: $REPO に実ファイルの内容を取り込みました"
 }
 
 cmd_push() {
@@ -138,7 +121,7 @@ cmd_push() {
   content=$(read_normalized "$REPO" "リポジトリ版") || return 1
 
   if [[ ! -f "$LIVE" ]]; then
-    write_if_changed "$content" "$LIVE"
+    settings_sync_write_if_changed "$content" "$LIVE"
     echo "作成: $LIVE をリポジトリ版から作成しました"
     return 0
   fi
@@ -147,7 +130,7 @@ cmd_push() {
   live_content=$(read_normalized "$LIVE" "実ファイル") || {
     # 実ファイルが壊れている場合は --force でのみ復旧させる
     if [[ "$force" -eq 1 ]]; then
-      write_if_changed "$content" "$LIVE"
+      settings_sync_write_if_changed "$content" "$LIVE"
       echo "上書き: 壊れた $LIVE をリポジトリ版で復旧しました"
       return 0
     fi
@@ -158,13 +141,14 @@ cmd_push() {
   # そうしないと機密の有無だけで常に「差分あり」になり、push が拒否され続ける。
   local live_masked
   live_masked=$(printf '%s\n' "$live_content" | mask_secrets)
-  if [[ "$content" == "$live_masked" ]]; then
-    echo "変更なし: 実ファイルはリポジトリと一致しています"
-    return 0
-  fi
 
-  if [[ "$force" -eq 0 ]]; then
-    cat >&2 <<EOF
+  # 実ファイル側にしかない社内設定を消さないよう、書き戻す前にマージする
+  local merged
+  merged=$(merge_secrets "$content" "$live_content")
+
+  local reject_header
+  reject_header=$(
+    cat <<EOF
 ERROR: 実ファイルとリポジトリに差分があるため push しません。
   実ファイル: $LIVE
   リポジトリ: $REPO
@@ -173,15 +157,12 @@ ERROR: 実ファイルとリポジトリに差分があるため push しませ�
 リポジトリ側で上書きしてよいなら push --force を実行してください。
 差分:
 EOF
-    diff <(printf '%s\n' "$content") <(printf '%s\n' "$live_masked") >&2 || true
-    return 1
-  fi
+  )
 
-  # 実ファイル側にしかない社内設定を消さないよう、書き戻す前にマージする
-  local merged
-  merged=$(merge_secrets "$content" "$live_content")
-  write_if_changed "$merged" "$LIVE"
-  echo "上書き: $LIVE をリポジトリ版で上書きしました（社内設定は保持）"
+  settings_sync_reconcile_push "$content" "$live_masked" "$force" "$merged" "$LIVE" \
+    "$reject_header" \
+    "変更なし: 実ファイルはリポジトリと一致しています" \
+    "上書き: $LIVE をリポジトリ版で上書きしました（社内設定は保持）"
 }
 
 cmd_status() {
@@ -191,13 +172,10 @@ cmd_status() {
 
   # push と同じく、機密エントリの有無は差分として扱わない
   live_content=$(printf '%s\n' "$live_content" | mask_secrets)
-  if [[ "$live_content" == "$repo_content" ]]; then
-    echo "一致: 実ファイルとリポジトリは同じ内容です"
-    return 0
-  fi
 
-  echo "差分あり（左: リポジトリ / 右: 実ファイル）"
-  diff <(printf '%s\n' "$repo_content") <(printf '%s\n' "$live_content") || true
+  settings_sync_reconcile_status "$repo_content" "$live_content" \
+    "一致: 実ファイルとリポジトリは同じ内容です" \
+    "差分あり（左: リポジトリ / 右: 実ファイル）"
 }
 
 case "${1:-}" in

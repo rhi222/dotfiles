@@ -30,6 +30,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# shellcheck source=scripts/lib/settings-sync.sh
+source "$SCRIPT_DIR/lib/settings-sync.sh"
+
 usage() {
   cat >&2 <<'USAGE'
 使い方: sync-windows-settings.sh <pull|push|status> [target] [オプション]
@@ -128,17 +131,6 @@ read_normalized() {
   fi
 }
 
-# $1 の内容を $2 に書く。既に同一なら書かない（0=書いた, 1=変更なし）
-write_if_changed() {
-  local content="$1" dest="$2"
-  if [[ -f "$dest" ]] && printf '%s\n' "$content" | diff -q - "$dest" >/dev/null 2>&1; then
-    return 1
-  fi
-  mkdir -p "$(dirname "$dest")"
-  printf '%s\n' "$content" >"$dest"
-  return 0
-}
-
 one_pull() {
   local target="$1" dry_run="$2" live repo content
   live=$(target_live "$target")
@@ -146,19 +138,10 @@ one_pull() {
 
   content=$(read_normalized "$target" "$live" "実ファイル") || return 1
 
-  if [[ -f "$repo" ]] && printf '%s\n' "$content" | diff -q - "$repo" >/dev/null 2>&1; then
-    echo "変更なし [$target]: リポジトリは実ファイルと一致しています"
-    return 0
-  fi
-
-  if [[ "$dry_run" -eq 1 ]]; then
-    echo "更新あり [$target]（--dry-run のため書き込みません）: $repo"
-    [[ -f "$repo" ]] && diff <(cat "$repo") <(printf '%s\n' "$content") || true
-    return 0
-  fi
-
-  write_if_changed "$content" "$repo"
-  echo "更新 [$target]: $repo に実ファイルの内容を取り込みました"
+  settings_sync_reconcile_pull "$content" "$repo" "$dry_run" \
+    "変更なし [$target]: リポジトリは実ファイルと一致しています" \
+    "更新あり [$target]（--dry-run のため書き込みません）: $repo" \
+    "更新 [$target]: $repo に実ファイルの内容を取り込みました"
 }
 
 one_push() {
@@ -174,7 +157,7 @@ one_push() {
   fi
 
   if [[ ! -f "$live" ]]; then
-    write_if_changed "$content" "$live"
+    settings_sync_write_if_changed "$content" "$live"
     echo "作成 [$target]: $live をリポジトリ版から作成しました。$(target_note "$target")"
     return 0
   fi
@@ -182,20 +165,16 @@ one_push() {
   live_content=$(read_normalized "$target" "$live" "実ファイル") || {
     # 実ファイルが壊れている場合は --force でのみ復旧させる
     if [[ "$force" -eq 1 ]]; then
-      write_if_changed "$content" "$live"
+      settings_sync_write_if_changed "$content" "$live"
       echo "上書き [$target]: 壊れた $live をリポジトリ版で復旧しました。$(target_note "$target")"
       return 0
     fi
     return 1
   }
 
-  if [[ "$content" == "$live_content" ]]; then
-    echo "変更なし [$target]: 実ファイルはリポジトリと一致しています"
-    return 0
-  fi
-
-  if [[ "$force" -eq 0 ]]; then
-    cat >&2 <<EOF
+  local reject_header
+  reject_header=$(
+    cat <<EOF
 ERROR: 実ファイルとリポジトリに差分があるため push しません（$target）。
   実ファイル: $live
   リポジトリ: $repo
@@ -204,12 +183,12 @@ ERROR: 実ファイルとリポジトリに差分があるため push しませ�
 リポジトリ側で上書きしてよいなら push --force を実行してください。
 差分（左: リポジトリ / 右: 実ファイル）:
 EOF
-    diff <(printf '%s\n' "$content") <(printf '%s\n' "$live_content") >&2 || true
-    return 1
-  fi
+  )
 
-  write_if_changed "$content" "$live"
-  echo "上書き [$target]: $live をリポジトリ版で上書きしました。$(target_note "$target")"
+  settings_sync_reconcile_push "$content" "$live_content" "$force" "$content" "$live" \
+    "$reject_header" \
+    "変更なし [$target]: 実ファイルはリポジトリと一致しています" \
+    "上書き [$target]: $live をリポジトリ版で上書きしました。$(target_note "$target")"
 }
 
 one_status() {
@@ -220,14 +199,9 @@ one_status() {
   live_content=$(read_normalized "$target" "$live" "実ファイル") || return 1
   repo_content=$(read_normalized "$target" "$repo" "リポジトリ版") || return 1
 
-  if [[ "$live_content" == "$repo_content" ]]; then
-    echo "一致 [$target]: 実ファイルとリポジトリは同じ内容です"
-    return 0
-  fi
-
-  echo "差分あり [$target]（左: リポジトリ / 右: 実ファイル）"
-  diff <(printf '%s\n' "$repo_content") <(printf '%s\n' "$live_content") || true
-  return 0
+  settings_sync_reconcile_status "$repo_content" "$live_content" \
+    "一致 [$target]: 実ファイルとリポジトリは同じ内容です" \
+    "差分あり [$target]（左: リポジトリ / 右: 実ファイル）"
 }
 
 main() {
