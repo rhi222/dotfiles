@@ -8,6 +8,16 @@
 #   npm_select_targets / pip_select_targets … 更新対象の選定（純粋関数）
 #   read_package_list / report_pkg_diff / pkg_install_with_diff … 共通部品
 
+# lib 内で mktemp した一時ファイルの台帳。正常系は各関数が明示 rm するが、
+# 中断（Ctrl-C / timeout）では到達しないため、EXIT trap を保険として張る。
+# source 元（daily-update.sh）は EXIT trap を持たない前提。持つようになったら
+# この trap と統合すること。
+_PKG_UPDATE_TMP_FILES=()
+_pkg_update_cleanup_tmp() {
+  rm -f "${_PKG_UPDATE_TMP_FILES[@]:-}"
+}
+trap _pkg_update_cleanup_tmp EXIT
+
 # パッケージ宣言ファイルを読み、コメント行・行内コメント・空白・空行を
 # 除去して1行1エントリで出力する。
 # Args: <file>
@@ -63,6 +73,7 @@ pkg_install_with_diff() {
   local before_file after_file rc=0
   before_file=$(mktemp)
   after_file=$(mktemp)
+  _PKG_UPDATE_TMP_FILES+=("$before_file" "$after_file")
 
   "$list_fn" >"$before_file"
   if "$install_fn" "$@" >/dev/null; then rc=0; else rc=$?; fi

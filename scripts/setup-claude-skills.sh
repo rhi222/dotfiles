@@ -23,6 +23,11 @@ STRICT="${STRICT:-0}"
 SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 REQUIRED_GH_VERSION="2.90.0"
 
+# gh skill install のログ置き場。中断（Ctrl-C / timeout）でも一時ファイルが
+# 残らないよう、ディレクトリごと EXIT で刈る
+INSTALL_LOG_DIR="$(mktemp -d -t claude-skills-install.XXXXXX)"
+trap 'rm -rf "$INSTALL_LOG_DIR"' EXIT
+
 # Maps a gh `--agent` value to its user-scope install directory.
 # Used for the "already installed" check; gh itself resolves the path
 # from the --agent/--scope combination.
@@ -96,16 +101,13 @@ run_install_for_agents() {
     local -a cmd=("${cmd_prefix[@]}" --agent "$agent" --scope user)
     [ "$MIGRATE" = "1" ] && cmd+=(--force)
     echo "  -> ${cmd[*]}"
-    local log
-    log="$(mktemp -t claude-skills-install.XXXXXX.log)"
+    local log="$INSTALL_LOG_DIR/install.log"
     if "${cmd[@]}" </dev/null 2>"$log"; then
       cat "$log"
-      rm -f "$log"
       all_skipped=0
     else
       local rc=$?
       cat "$log" >&2
-      rm -f "$log"
       echo "  -> ERROR: gh skill install exited $rc (agent=$agent)" >&2
       any_failed=1
       all_skipped=0
