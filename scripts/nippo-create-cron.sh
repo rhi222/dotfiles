@@ -37,7 +37,10 @@ PROMPT="/nippo-add"
 # Bash(mkdir:*) は年/月ディレクトリを掘るために要る。
 # cron は skill の frontmatter とは別に許可リストを持つので、ここを忘れると
 # 平日8:00の自動実行が権限で落ちる。
-ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(source:*),Bash(ghq:*),Bash(mkdir:*),mcp__claude_ai_Google_Calendar__list_events"
+# Bash(bash:*) は面談準備の起票（linear-interview-prep.sh）に要る。
+# cron は skill の frontmatter とは別に許可リストを自前で持っているので、
+# ここを忘れると手動の /nippo-add では動くのに 8:00 の自動実行だけ権限で落ちる
+ALLOWED_TOOLS="Read,Write,Edit,Bash(date:*),Bash(ls:*),Bash(cat:*),Bash(wc:*),Bash(source:*),Bash(ghq:*),Bash(mkdir:*),Bash(bash:*),mcp__claude_ai_Google_Calendar__list_events"
 
 if [[ "${NIPPO_CREATE_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $VAULT && timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"$PROMPT\" --allowedTools \"$ALLOWED_TOOLS\""

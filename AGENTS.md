@@ -385,6 +385,34 @@ crontab -e
 
 無効化は `rm ~/.config/nippo-create-enabled`。動作確認は `bash scripts/test-nippo-create-cron.sh`。
 
+### 面談準備の自動起票
+
+日報の新規作成時に、**当日と翌営業日**の予定から面談・面接を拾い、準備タスクを Linear の
+`Todo` へ自動起票する。日報側にも `## 面談準備` セクションが入る。
+判断（どれが面談か・準備に何が要るか）は `nippo-add` skill の `interview-prep.md`、
+状態変更は `scripts/linear-interview-prep.sh` が持つ（`linear-slack-sweep` と同じ役割分担）。
+
+- **重複防止が設計の中心。** 当日分と翌日分で**同じ予定を必ず2回拾う**ので、防げないと
+  毎朝二重に起票される。キーは Google Calendar の event id（日時やタイトルと違って不変）で、
+  ①`~/.local/state/linear-interview-prep/seen.txt` ②Linear を event id で全文検索、の2層で防ぐ。
+  ②があるのは seen を消した端末・新環境のため
+- **既存が見つかってもコメントしない。** `linear-slack-sweep` はスレの「再燃」を拾うので
+  追記に意味があるが、こちらは同じ予定を2回見ているだけで新しい事実が無い。
+  付けると毎朝コメントが増えて issue が読めなくなる
+- **`Triage` ではなく `Todo` に入れる。** Triage は「やるべきか判断する」箱だが、面談は
+  カレンダーで確定済みで判断の余地が無い。ここだけスイープ起票の規約から外している
+- **判定キーワードは `面談` / `面接` の2語だけ。** 実データではカジュアル面談・オファー面談・
+  採用チャネル経由・業務委託・社内の配属面談が全てこのどちらかを含む。チャネル名や社名で
+  条件を足すと名前が変わるたびに漏れるうえ、public リポジトリに社内固有の語を置けない
+- **`1on1` は対象外。** 定例で毎週あり、毎週積まれると Linear が汚れる
+- **`nippo-create-cron.sh` の `ALLOWED_TOOLS` に `Bash(bash:*)` が要る。** cron は skill の
+  frontmatter とは別に許可リストを自前で持つので、忘れると手動では動くのに 8:00 の
+  自動実行だけ権限で落ちる
+- 候補者の実名・メール・スキルシートURLは**日報（ローカル）と Linear にだけ**入る。
+  リポジトリ側の skill 本文とテストには架空名しか置かない
+
+動作確認は `bash scripts/test-linear-interview-prep.sh`。
+
 ### 日報ドラフト自動仕上げ（WSL2専用）
 
 平日18:30に `scripts/nippo-draft-cron.sh` が `nippo-finalize` スキルをヘッドレス実行し、日報ドラフトを自動で仕上げる。人間は生成結果をレビューするだけにする。
