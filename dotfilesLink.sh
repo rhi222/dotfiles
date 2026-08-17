@@ -124,13 +124,14 @@ link_private_files() {
 # ディレクトリごとリンクされ、linear-bootstrap.sh が書く config.json（再生成できる）まで
 # 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
-  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex \
+  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.agents/skills \
     ~/.config/dotfiles ~/.config/linear
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
 # "リポジトリ内のパス|リンク先" のペアで定義し、まとめてリンクする。
-# 特殊処理が必要な Claude skills / codex は個別関数（link_claude_skills / setup_codex）で扱う。
+# 特殊処理が必要な Claude skills / Codex は個別関数
+# （link_claude_skills / setup_codex）で扱う。
 link_configs() {
   local links=(
     # Root configuration files
@@ -204,6 +205,25 @@ link_claude_skills() {
   done
 }
 
+# Codex のユーザー共通 skill は公式の探索先 ~/.agents/skills に個別リンクする。
+# ディレクトリ全体をリンクしないのは、外部から導入した skill と同居できるようにするため。
+# Claude skills と同じく、実ディレクトリと生きた外部リンクには触れず、リンク切れだけを刈る。
+link_codex_skills() {
+  local skill_dir skill_name link
+  for link in ~/.agents/skills/*; do
+    if [ -L "$link" ] && [ ! -e "$link" ]; then
+      rm -f "$link"
+      echo "[PRUNE] $link （リンク切れ）"
+    fi
+  done
+  for skill_dir in "$DC/codex/skills"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    case "$skill_name" in *-workspace) continue ;; esac
+    safe_link "$skill_dir" ~/.agents/skills/"$skill_name"
+  done
+}
+
 # Claude Code の settings.json はコピーで同期する。
 # Claude Code が /config の操作などで実行時に書き戻す際、一時ファイル + rename で
 # 置き換えるため symlink にしても必ず実ファイル化してしまう（書き込まれない
@@ -231,6 +251,7 @@ setup_codex() {
     mv ~/.codex/config.toml "$codex_backup"
   fi
   safe_link "$DC/codex/config.toml" ~/.codex/config.toml
+  link_codex_skills
 }
 
 # yazi のプラグイン実体を配置する。

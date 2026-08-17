@@ -185,6 +185,19 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 
 詳細は `scripts/setup-claude-skills.sh` と `scripts/skill-add.sh` 冒頭コメントを参照。
 
+### Codex自作skill管理
+
+Codex専用の自作skillは `.config/codex/skills/` に置く。`dotfilesLink.sh` が、Codexの
+ユーザー共通探索先 `~/.agents/skills/` へskill単位でsymlinkを張る。リポジトリ内の
+`.agents/skills/` に直接置くとこのdotfilesリポジトリでしか有効にならず、PR作業など他の
+リポジトリで使うskillを共有できないため、実体と探索先を分けている。
+
+- 外部skillと同居できるよう、`~/.agents/skills` 全体はリンクしない
+- セットアップ時に刈るのはリンク切れのsymlinkだけで、外部skillの実ディレクトリには触れない
+- skill追加後は `./dotfilesLink.sh` を実行する。Codexが変更を検出しない場合は再起動する
+- PR説明文の整理には `refine-pr-description` を使う。本文案の提示が既定で、明示依頼なしに
+  PR本文を更新しない
+
 ### gh CLI拡張管理
 
 `gh` の拡張は宣言リスト `scripts/gh-extensions.txt` で管理する。skill が拡張コマンドを前提にしている場合（例: `gh-stack` skill → `gh stack`）、skill だけ入れても新環境で動かないため、拡張側もここに並べて宣言する。

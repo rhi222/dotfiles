@@ -182,6 +182,7 @@ mkdir -p "$fakehome"
 HOME="$fakehome" ensure_dirs
 check "ensure_dirs が ~/.config/linear を作る" test -d "$fakehome/.config/linear"
 check "ensure_dirs が ~/.config/dotfiles を作る" test -d "$fakehome/.config/dotfiles"
+check "ensure_dirs が ~/.agents/skills を作る" test -d "$fakehome/.agents/skills"
 
 # 親が実ディレクトリなので api-key だけがファイル単位でリンクされること
 priv="$tmp/ed/private"
@@ -226,6 +227,26 @@ check "実体が消えたリンクを刈る" test ! -L "$sk/home/.claude/skills/
 check "外部skillの実ディレクトリは消さない" test -f "$sk/home/.claude/skills/external/SKILL.md"
 check "リポジトリ外を指す生きたリンクは消さない" test -L "$sk/home/.claude/skills/other"
 check "*-workspace はリンクしない" test ! -e "$sk/home/.claude/skills/alive-workspace"
+
+# --- link_codex_skills ---
+# Codex の自作 skill はユーザー共通の探索先 ~/.agents/skills へ配置する。
+ck="$tmp/ck"
+mkdir -p "$ck/dc/codex/skills/refine-pr-description" "$ck/home/.agents/skills"
+echo s >"$ck/dc/codex/skills/refine-pr-description/SKILL.md"
+
+ln -sn "$ck/dc/codex/skills/removed" "$ck/home/.agents/skills/removed"
+mkdir -p "$ck/home/.agents/skills/external"
+echo e >"$ck/home/.agents/skills/external/SKILL.md"
+
+DC="$ck/dc" HOME="$ck/home" link_codex_skills >/dev/null 2>&1
+
+check "Codex skillをユーザー共通の探索先へリンクする" \
+  test -L "$ck/home/.agents/skills/refine-pr-description"
+check "Codex skillのリンク先が読める" \
+  test -f "$ck/home/.agents/skills/refine-pr-description/SKILL.md"
+check "Codex skillのリンク切れを刈る" test ! -L "$ck/home/.agents/skills/removed"
+check "外部のCodex skill実ディレクトリは消さない" \
+  test -f "$ck/home/.agents/skills/external/SKILL.md"
 
 echo "---"
 echo "pass: $pass, fail: $fail"

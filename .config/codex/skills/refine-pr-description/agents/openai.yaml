@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR説明文を整理"
+  short_description: "PR説明文をレビュアー向けに読みやすく正確に再構成する"
+  default_prompt: "$refine-pr-description を使って、このPRの説明文を読みやすく整理してください。"

@@ -3,10 +3,14 @@
 Codex は **`~/.codex/config.toml`** を単一の設定ファイルとして読み込みます。
 CLI と IDE 拡張は同じ `config.toml` を共有し、CLI フラグやプロファイルが優先されます。
 
-このリポジトリでは、公式の前提に合わせて **テンプレートのみ** を管理します。
+このリポジトリでは、公式の前提に合わせて設定テンプレートと自作 skill を管理します。
 
 - `config.example.toml`: 共有テンプレート（コミット対象）
 - `~/.codex/config.toml`: ローカルの実体（コミットしない）
+- `skills/`: 自作 skill の実体（`dotfilesLink.sh` が `~/.agents/skills/` へ個別リンク）
+
+skill はディレクトリ全体ではなく1件ずつリンクする。`~/.agents/skills/` には外部から導入した
+skill も同居するためで、セットアップ時に削除するのはリンク切れの symlink だけとする。
 
 ## 運用フロー（最小・安全）
 
