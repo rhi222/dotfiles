@@ -46,6 +46,18 @@
         "matcher": "EnterWorktree"
       }
     ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "$HOME/.config/claude/hooks/pr-base-guard.sh",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
     "SessionEnd": [
       {
         "hooks": [

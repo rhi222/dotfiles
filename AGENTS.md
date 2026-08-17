@@ -472,6 +472,31 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 - `.config/git/commit-conventions.txt` でテンプレート利用可能
 - 最近のブランチ用 `gbr` 略語でブランチ管理
 
+### PR base のガード（Claude Code hook）
+
+`.config/claude/hooks/pr-base-guard.sh` が `PreToolUse`（matcher `Bash`）で走り、
+`gh pr create --base <既定ブランチ以外>` を検出したら `permissionDecision: ask` で割り込む。
+
+**散文の規約が守られなかったので機械化した。** stacked PR は `gh-stack` を使うという規約は
+`rules/pull-request.md` の「ツール」節と `wt-pr/SKILL.md` の両方に書いてあるが、どちらも
+**宣言文であって手が動く瞬間のチェックではない**。規約を読む時点と `gh pr create` を打つ時点の
+間に実装・コミット分割・push が挟まるため、この距離があるかぎり確率的に取りこぼす（実際に
+`git switch -c` → `gh pr create --base <下のブランチ>` を手作業で組んだ事故が起きている）。
+stacked かどうかが確定する唯一の瞬間が base の指定なので、そこにゲートを置く。
+
+- **`deny` ではなく `ask`。** `backport-pr` skill は正当に非デフォルト base の PR を作るので
+  deny だと詰まる。ask なら理由文が人間とモデルの両方に見え、判断を人間に戻せる
+- **既定ブランチはローカルだけで解決する。** `refs/remotes/origin/HEAD` →
+  `init.defaultBranch` → `main` の順。PR 作成のたびに走るのでネットワークに出ない
+- **全面的に素通しへ倒す。** jq 不在・壊れた JSON・git リポジトリ外・`--base` 無しは黙って通す。
+  hook が PR 作成を壊すほうが、規約の取りこぼしより害が大きい
+- **`gh stack` 自身は引っかからない。** 一致条件を `gh pr create` に絞ってあり、`gh pr list --base`
+  や `git rebase --base` も対象外
+- `git switch -c` は見ない。ブランチを切る時点では stacked かどうか決まっておらず誤検知しか生まない
+- 登録先は `settings.json` なので、変更後は `sync-claude-settings.sh` で同期し、Claude Code を再起動する
+
+動作確認は `bash scripts/test-pr-base-guard.sh`。
+
 ### ghq リポジトリへの移動（gf）
 
 `gf` は `ghq list` の結果を `~/.cache/ghq-list` にキャッシュして fzf に流す。パス解決は
