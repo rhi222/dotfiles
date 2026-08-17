@@ -86,6 +86,39 @@ dispatch_can_create_pr() {
   esac
 }
 
+# dispatch_remove_worktree <repo_path> <wt>
+# worktreeディレクトリを掃除する（成功時・再実行前の残骸掃除で使う）。
+# 消せなくても呼び出し元を止めない
+dispatch_remove_worktree() {
+  git -C "$1" worktree remove --force "$2" >/dev/null 2>&1 || true
+}
+
+# dispatch_delete_branch_if_unused <repo_path> <branch>
+# ブランチが存在し、かつどのworktreeにもcheckoutされていなければ削除する。
+# checkout中のブランチは消さない（消せないし消すべきでない）
+dispatch_delete_branch_if_unused() {
+  local repo_path="$1" branch="$2"
+  git -C "$repo_path" show-ref --verify --quiet "refs/heads/$branch" || return 0
+  if git -C "$repo_path" worktree list --porcelain 2>/dev/null |
+    grep -qxF "branch refs/heads/$branch"; then
+    return 0
+  fi
+  git -C "$repo_path" branch -D "$branch" >/dev/null 2>&1 || true
+}
+
+# dispatch_cleanup_stale <repo_path> <wt> <branch>
+# newモードの着手前に前回の残骸（worktree / linear/<id> ブランチ）を掃除する。
+# 失敗経路（dispatch_finish_failed）は調査用に意図的に残すため、ここで掃除しないと
+# 再実行時に `worktree add -b` がブランチ既存で失敗し、恒久的に BOUNCED になる
+dispatch_cleanup_stale() {
+  local repo_path="$1" wt="$2" branch="$3"
+  if git -C "$repo_path" worktree list --porcelain 2>/dev/null |
+    grep -qxF "worktree $wt"; then
+    dispatch_remove_worktree "$repo_path" "$wt"
+  fi
+  dispatch_delete_branch_if_unused "$repo_path" "$branch"
+}
+
 # dispatch_one <issue-json>
 dispatch_one() {
   local issue="$1"
@@ -151,6 +184,9 @@ dispatch_one() {
     fi
   else
     branch="linear/$identifier"
+    # 前回失敗分の残骸を掃除してから作る。残っていると worktree add が
+    # ブランチ既存で失敗し、再実行が恒久的に BOUNCED になる
+    dispatch_cleanup_stale "$repo_path" "$wt" "$branch"
     if ! git -C "$repo_path" worktree add "$wt" -b "$branch" >/dev/null 2>&1; then
       dispatch_bounce "$id" "dispatch失敗: worktree作成に失敗（\`$branch\` が既存の可能性。前回分を整理してほしい）"
       echo "$identifier: BOUNCED (worktree)"
@@ -232,11 +268,18 @@ $desc
   # ここまで来ればPRは出来ている。state遷移に失敗しても成果は残るので止めない
   linear_issue_move "$id" "My Review" ||
     echo "警告: My Reviewへ遷移できなかった（$identifier）。手で移してほしい" >&2
+  # PR作成/更新まで済んだのでローカルworktreeを掃除する。pushでリモートに
+  # 上がっているので残す意味が薄い。newモードのブランチはリモート追跡が
+  # あるので削除してよいが、continueモードのブランチは既存PRのものなので残す
+  dispatch_remove_worktree "$repo_path" "$wt"
+  [[ "$mode" == "new" ]] && dispatch_delete_branch_if_unused "$repo_path" "$branch"
   echo "$identifier: OK $pr_url"
 }
 
 # dispatch_finish_failed <issueId> <identifier> <claudeログ> <理由>
-# 理由とログ末尾をコメントしてTodoへ差し戻す（黙って消えないようにする）
+# 理由とログ末尾をコメントしてTodoへ差し戻す（黙って消えないようにする）。
+# worktree と linear/<id> ブランチは調査用に意図的に残す。newモードの
+# 冒頭で dispatch_cleanup_stale が掃除するので、残しても再実行は詰まらない
 dispatch_finish_failed() {
   local id="$1" identifier="$2" log="$3" reason="$4"
   linear_comment "$id" "夜間dispatch失敗: ${reason}

@@ -132,7 +132,12 @@ state数が増え、かつ「進んでいるのに誰も動いていない」課
 `draft仕上げ:` は `linear-sweep.sh` の自動起票と `/linear-add` の手動起票の両方で使うが、
 **どちらもPRが実在するものにしか付けない**（付けるとタイトルからモードを判別できなくなる）
 
-- worktreeは `<repo>/.wt/linear-<identifier>` に作られ、掃除は `worktree-cleanup.sh` が拾う
+- worktreeは `<repo>/.wt/linear-<identifier>` に作られる。**成功時（push/PR完了後）は
+  dispatch自身がworktreeを掃除する**（newモードはブランチも `git branch -D`。continueモードの
+  ブランチは既存PRのものなので残す）。pushでリモートに上がっているのでローカルに残す意味が薄い
+- **失敗時（Todoへ差し戻す経路）はworktreeとブランチを調査用に意図的に残す。**
+  newモードは着手前に前回の残骸を掃除する（残っていると `worktree add -b` がブランチ既存で失敗し、
+  再実行が恒久的に BOUNCED になる）。残りきったものは `worktree-cleanup.sh` も拾う
 - 成果物はdraft PRまで。マージは必ず人間
 
 **push と PR作成はagentではなくスクリプトが行う。** Claude Code は `git push` を許可リストで

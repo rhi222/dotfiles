@@ -91,21 +91,85 @@ cat >"$tmp/bin/ghq" <<'EOF'
 #!/bin/bash
 [[ "$1" == "root" ]] && echo "${GHQ_ROOT:?}"
 EOF
+# git stub は worktree / branch の登録簿（GIT_WT_REG / GIT_BR_REG）を持ち、
+# 実際の git のように「新規ブランチが既存なら worktree add が失敗する」
+# 「worktree list / show-ref / branch -D が登録簿を反映する」を模す。
+# これで掃除ロジック（残骸掃除・成功時掃除）を実挙動で検証できる
 cat >"$tmp/bin/git" <<'EOF'
 #!/bin/bash
 echo "$*" >> "${GIT_LOG:?}"
-# worktree add のときは実際にディレクトリを作る。
-# 作らないと dispatch_one の `cd "$wt"` が失敗し、claude まで到達しない
+BR_REG="${GIT_BR_REG:?}"
+WT_REG="${GIT_WT_REG:?}"
+touch "$BR_REG" "$WT_REG"
+argv=("$@")
+
 if [[ "$*" == *"worktree add"* ]]; then
-  for a in "$@"; do
-    case "$a" in */.wt/*) mkdir -p "$a" ;; esac
+  wt=""; br=""; newbranch=0
+  for ((i = 0; i < ${#argv[@]}; i++)); do
+    case "${argv[i]}" in
+      */.wt/*) wt="${argv[i]}" ;;
+      -b) newbranch=1; br="${argv[i + 1]}" ;;
+    esac
   done
+  if [[ $newbranch -eq 1 ]]; then
+    # 新規ブランチ: 既に存在すれば git 同様に失敗する（掃除しないと詰まる経路）
+    if grep -qxF "$br" "$BR_REG"; then
+      echo "fatal: a branch named '$br' already exists" >&2
+      exit 128
+    fi
+    echo "$br" >>"$BR_REG"
+  else
+    # 継続モード: パス直後の位置引数が既存ブランチ
+    for ((i = 0; i < ${#argv[@]}; i++)); do
+      [[ "${argv[i]}" == "$wt" ]] && br="${argv[i + 1]}"
+    done
+  fi
+  # dispatch_one の `cd "$wt"` が通るよう実際にディレクトリを作る
+  mkdir -p "$wt"
+  echo "$wt $br" >>"$WT_REG"
+  exit 0
 fi
+
+if [[ "$*" == *"worktree remove"* ]]; then
+  wt=""
+  for a in "$@"; do case "$a" in */.wt/*) wt="$a" ;; esac; done
+  grep -vF "$wt " "$WT_REG" >"$WT_REG.tmp" 2>/dev/null || true
+  mv "$WT_REG.tmp" "$WT_REG"
+  rm -rf "$wt"
+  exit 0
+fi
+
+if [[ "$*" == *"worktree list"* ]]; then
+  while read -r wt br; do
+    [[ -n "$wt" ]] || continue
+    echo "worktree $wt"
+    [[ -n "$br" ]] && echo "branch refs/heads/$br"
+    echo ""
+  done <"$WT_REG"
+  exit 0
+fi
+
+# show-ref --verify refs/heads/<branch> でブランチ存在を判定
+if [[ "$*" == *"show-ref"* ]]; then
+  br=""
+  for a in "$@"; do case "$a" in refs/heads/*) br="${a#refs/heads/}" ;; esac; done
+  grep -qxF "$br" "$BR_REG" && exit 0 || exit 1
+fi
+
+if [[ "$*" == *"branch -D"* ]]; then
+  br="${argv[-1]}"
+  grep -vxF "$br" "$BR_REG" >"$BR_REG.tmp" 2>/dev/null || true
+  mv "$BR_REG.tmp" "$BR_REG"
+  exit 0
+fi
+
 # コミット有無は rev-parse HEAD の前後比較で判定される。
 # claude stub が HEAD_FILE を書き換えることで「コミットが積まれた」を模す
 if [[ "$*" == *"rev-parse HEAD"* ]]; then
   cat "${HEAD_FILE:?}" 2>/dev/null || echo "base"
+  exit 0
 fi
+
 [[ "$*" == *"push"* && "${GIT_PUSH_FAIL:-0}" == "1" ]] && exit 1
 exit 0
 EOF
@@ -137,6 +201,11 @@ export HEAD_FILE="$tmp/head"
 echo "base" >"$HEAD_FILE"
 export GH_LOG="$tmp/gh.log"
 export GHQ_ROOT="$tmp/ghq"
+# git stub の worktree / branch 登録簿
+export GIT_BR_REG="$tmp/git-branches"
+export GIT_WT_REG="$tmp/git-worktrees"
+: >"$GIT_BR_REG"
+: >"$GIT_WT_REG"
 # CLAUDE_BINの既定は $HOME/.local/bin/claude。テストではPATH上のstubを使う
 export CLAUDE_BIN="claude"
 : >"$CURL_LOG"
@@ -285,6 +354,54 @@ out39=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp
 check "1件目のAPI失敗で2件目も処理される" grep -q '"ib"' "$CURL_LOG"
 check "1件目は着手せずスキップする" grep -q "NSY-11: SKIPPED" <<<"$out39"
 check "2件目はclaudeまで到達する" grep -q "夜間dispatch完了" "$CURL_LOG"
+
+# 3-10. 成功時: push/PR後にworktreeとブランチを掃除する。
+# pushでリモートに上がっているのでローカルworktreeを残す意味が薄い
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+: >"$GIT_LOG"
+: >"$GH_LOG"
+: >"$GIT_BR_REG"
+: >"$GIT_WT_REG"
+echo base >"$HEAD_FILE"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "成功時にworktreeを掃除する" grep -q "worktree remove" "$GIT_LOG"
+check "成功時(new)にブランチを削除する" grep -q "branch -D linear/NSY-5" "$GIT_LOG"
+
+# 3-11. 失敗後の残骸（worktree + linear/<id>ブランチ）があっても、再実行で
+# BOUNCED にならず掃除して着手できる（恒久BOUNCEDの回帰防止）。
+# 掃除が無いと worktree add がブランチ既存で失敗し、永遠に BOUNCED になる
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+: >"$GIT_LOG"
+: >"$GH_LOG"
+: >"$GIT_BR_REG"
+: >"$GIT_WT_REG"
+stale_wt="$tmp/ghq/github.com/example-org/repo1/.wt/linear-NSY-5"
+mkdir -p "$stale_wt"
+echo "linear/NSY-5" >"$GIT_BR_REG"
+echo "$stale_wt linear/NSY-5" >"$GIT_WT_REG"
+echo base >"$HEAD_FILE"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >"$tmp/out311.txt" 2>&1
+check "残骸があっても再実行でBOUNCEDにならない" bash -c "! grep -q 'BOUNCED' '$tmp/out311.txt'"
+check "残骸掃除後に正常完了する（OK）" grep -q "NSY-5: OK" "$tmp/out311.txt"
+check "残骸を掃除してclaudeまで到達する" test -s "$CLAUDE_LOG"
+check "残骸のブランチを削除してからworktreeを作り直す" grep -q "branch -D linear/NSY-5" "$GIT_LOG"
+
+# 3-12. 継続モードの成功時: worktreeは掃除するが既存PRブランチは消さない
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+: >"$GIT_LOG"
+: >"$GH_LOG"
+: >"$GIT_BR_REG"
+: >"$GIT_WT_REG"
+echo base >"$HEAD_FILE"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "継続モードの成功時もworktreeを掃除する" grep -q "worktree remove" "$GIT_LOG"
+check "継続モードの成功時は既存PRブランチを削除しない" bash -c "! grep -q 'branch -D' '$GIT_LOG'"
 
 # 4. repo行が無い → claudeを実行せずTodoへ差し戻し
 : >"$CURL_LOG"
