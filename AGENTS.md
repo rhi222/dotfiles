@@ -114,6 +114,37 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
 
 動作確認は `bash scripts/test-sync-claude-settings.sh`。
 
+### Windows 側設定の同期（.wslconfig / Windows Terminal）
+
+`/mnt/c` にあって symlink できない設定を `scripts/sync-windows-settings.sh` でコピー同期する。
+`sync-claude-settings.sh` と同じく**実ファイルを正とし、リポジトリが追いかける**。
+
+| リポジトリ                              | 実ファイル                                    |
+| --------------------------------------- | --------------------------------------------- |
+| `.config/wsl/.wslconfig`                | `%USERPROFILE%\.wslconfig`                    |
+| `.config/windows-terminal/settings.json` | Windows Terminal の `LocalState/settings.json` |
+
+| やりたいこと            | コマンド                                                       |
+| ----------------------- | -------------------------------------------------------------- |
+| 差分の確認              | `bash scripts/sync-windows-settings.sh status`                 |
+| 実ファイル → リポジトリ | `bash scripts/sync-windows-settings.sh pull`                   |
+| リポジトリ → 実ファイル | `bash scripts/sync-windows-settings.sh push --force`           |
+| 片方だけ                | 末尾に `wslconfig` / `terminal` を付ける                       |
+
+- **symlink にできない理由が2つある。** ①実体が NTFS 上にあり、WSL から張った symlink を
+  Windows 側が解釈しない ②Windows Terminal は distro を検出するとプロファイルを
+  `settings.json` へ自動追記する（`~/.claude/settings.json` と同じ書き戻し問題）
+- **`dotfilesLink.sh` からは呼ばない。** `.wslconfig` の `memory` は「その端末の物理RAMと
+  Windows 側の使用量」から出した実測値で、別スペックの端末へ自動で配ると不適切になる。
+  新環境では [docs/bootstrap.md](docs/bootstrap.md) の手順として人間が判断して押し出す
+- **正規化は Terminal 側だけ `jq -S`。** `.wslconfig` は INI なので素通しする。
+  JSON バリデータに掛けると通らないうえ、**値の導出過程を書いたコメントが消える**
+- **壊れた内容は反対側へ伝播させない。** Windows Terminal の `settings.json` は JSONC を
+  許容するので、コメントを書くと `jq` が失敗して同期が止まる（現物はコメント無し）
+- プロファイルの GUID は distro 名から決定的に生成されるため、同じ distro 名なら別端末でも一致する
+
+動作確認は `bash scripts/test-sync-windows-settings.sh`。
+
 ### statusline（ccstatusline）
 
 statusline は `ccstatusline`（`settings.json` の `statusLine.command`）で描画し、レイアウトは
