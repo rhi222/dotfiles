@@ -433,6 +433,55 @@ teardown
 unset SECRET_PATTERNS
 
 # =============================================================================
+# アトミック書き込み: 一時ファイル + rename で書く。中断時に書きかけを残さず、
+# 既存ファイルのパーミッションを引き継ぐ。
+# =============================================================================
+echo ""
+echo "=== アトミック書き込み: 中間ファイルを残さない ==="
+setup
+echo "$UNSORTED" >"$LIVE"
+echo '{"theme":"light"}' >"$REPO"
+run_sync pull >/dev/null
+leftover=$(find "$TEST_DIR/repo" -name '.settings-sync.*' 2>/dev/null)
+if [[ -z "$leftover" ]]; then
+  ok "pull 後に一時ファイル(.settings-sync.*)が残らない"
+else
+  ng "pull 後に一時ファイル(.settings-sync.*)が残らない" "$leftover"
+fi
+teardown
+
+echo ""
+echo "=== アトミック書き込み: 既存ファイルのパーミッションを引き継ぐ ==="
+setup
+echo '{"theme":"dark"}' >"$REPO"
+echo '{"theme":"light"}' >"$LIVE"
+chmod 600 "$LIVE"
+run_sync push --force >/dev/null
+mode=$(stat -c %a "$LIVE")
+if [[ "$mode" == "600" ]]; then
+  ok "push --force の上書きで実ファイルの 600 を保つ"
+else
+  ng "push --force の上書きで実ファイルの 600 を保つ" "mode=$mode"
+fi
+teardown
+
+echo ""
+echo "=== アトミック書き込み: 新規作成は umask に従う（リダイレクトと同じ） ==="
+setup
+echo "$UNSORTED" >"$REPO"
+NEW="$TEST_DIR/newhome/.claude/settings.json"
+export CLAUDE_SETTINGS_LIVE="$NEW"
+expected_mode=$(printf '%03o' "$((0666 & ~0$(umask)))")
+run_sync push >/dev/null
+mode=$(stat -c %a "$NEW")
+if [[ "$mode" == "${expected_mode#0}" || "$mode" == "$expected_mode" ]]; then
+  ok "新規作成のパーミッションが umask 由来（$expected_mode）"
+else
+  ng "新規作成のパーミッションが umask 由来（$expected_mode）" "mode=$mode"
+fi
+teardown
+
+# =============================================================================
 echo ""
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"

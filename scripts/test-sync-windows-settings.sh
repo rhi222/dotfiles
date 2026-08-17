@@ -208,6 +208,24 @@ out=$(run pull wslconfig)
 rc=$?
 assert_rc "wslconfig は JSON でなくても通る" 0 "$rc"
 
+echo "== アトミック書き込み =="
+reset_fixtures
+run pull wslconfig >/dev/null
+leftover=$(find "$TMPROOT/repo/wsl" -name '.settings-sync.*' 2>/dev/null)
+if [[ -z "$leftover" ]]; then
+  ok "書き込み後に一時ファイル(.settings-sync.*)が残らない"
+else
+  ng "書き込み後に一時ファイル(.settings-sync.*)が残らない" "$leftover"
+fi
+
+reset_fixtures
+run pull wslconfig >/dev/null
+chmod 600 "$WSLCONFIG_REPO"
+printf 'memory=16GB\n' >"$WSLCONFIG_LIVE"
+run pull wslconfig >/dev/null
+mode=$(stat -c %a "$WSLCONFIG_REPO")
+assert_eq "上書きで既存ファイルの 600 を保つ" "600" "$mode"
+
 echo "---"
 echo "pass: $PASS 件 / fail: $FAIL 件 / total: $TOTAL 件"
 [[ $FAIL -eq 0 ]] || exit 1

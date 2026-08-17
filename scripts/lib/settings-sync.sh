@@ -16,13 +16,41 @@
 # test-sync-windows-settings.sh が兼ねる。
 
 # $1 の内容を $2 に書く。既に同一内容なら書かない（0=書いた, 1=変更なし）。
+#
+# 書き込みは同ディレクトリの一時ファイル + rename でアトミックに行う。途中で
+# 中断されても書きかけの settings.json が残らないようにするため。既存ファイルの
+# パーミッションは引き継ぐ（~/.claude/settings.json の 600 を崩さない）。新規作成時は
+# リダイレクト（`> file`）と同じく umask に従う。
 settings_sync_write_if_changed() {
   local content="$1" dest="$2"
   if [[ -f "$dest" ]] && printf '%s\n' "$content" | diff -q - "$dest" >/dev/null 2>&1; then
     return 1
   fi
-  mkdir -p "$(dirname "$dest")"
-  printf '%s\n' "$content" >"$dest"
+
+  local dir
+  dir=$(dirname "$dest")
+  mkdir -p "$dir"
+
+  local tmp
+  tmp=$(mktemp "$dir/.settings-sync.XXXXXX") || return 1
+
+  if ! printf '%s\n' "$content" >"$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+
+  # mktemp は 600 で作るので、リダイレクト時の見え方に合わせて権限を整える。
+  if [[ -f "$dest" ]]; then
+    chmod --reference="$dest" "$tmp" 2>/dev/null || true
+  else
+    chmod "$(printf '%03o' "$((0666 & ~0$(umask)))")" "$tmp" 2>/dev/null || true
+  fi
+
+  if ! mv -f "$tmp" "$dest"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  return 0
 }
 
 # pull（実ファイル -> リポジトリ）の共通末尾。正規化・マスク済みの $content を $dest に
