@@ -5,7 +5,7 @@ function fkill
         --multi \
         --preview 'echo {}' \
         --preview-window=down:40%:wrap \
-        | awk '{print $2}')
+        | __fkill_extract_pids)
 
     if test -z "$pids"
         return 0
