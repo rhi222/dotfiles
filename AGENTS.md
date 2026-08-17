@@ -13,6 +13,7 @@
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
 | [docs/worktree.md](docs/worktree.md)                                 | worktree の初期化・掃除の判定を変えるとき            |
+| [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` サブコマンド自体の使い方を調べるとき        |
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` の復元（herdr / nvim / claude）を触るとき       |
 | [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定や閾値を変えるとき                    |
 
@@ -481,7 +482,10 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
     ├── 08-prompt-override.fish # カスタムプロンプト（tide拡張）
     ├── 09-git-wt.fish          # Git worktree
     ├── 10-fzf.fish             # fzf設定
-    └── 11-yazi.fish            # yazi連携（cdキーバインド等）
+    ├── 11-yazi.fish            # yazi連携（cdキーバインド等）
+    ├── 12-herdr.fish           # herdr起動ラッパー（he）
+    ├── 13-docker-clean.fish    # docker掃除のリマインド
+    └── 14-linear-sweep.fish    # Linearスイープの取りこぼし補完
 ```
 
 - **エイリアス（06-aliases.fish）**: Gitショートカット、開発ツールエイリアス (tmux, nvim, etc.)
