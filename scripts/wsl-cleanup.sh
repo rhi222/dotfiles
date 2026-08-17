@@ -19,20 +19,23 @@ set -uo pipefail
 
 # ---- 引数パース --------------------------------------------------------------
 EXECUTE=0
-for arg in "$@"; do
-  case "$arg" in
-    --execute) EXECUTE=1 ;;
-    -h | --help)
-      grep '^#' "$0" | sed 's/^#//; s/^ //' | head -n 20
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $arg" >&2
-      echo "Usage: bash $0 [--execute]" >&2
-      exit 1
-      ;;
-  esac
-done
+
+parse_args() {
+  for arg in "$@"; do
+    case "$arg" in
+      --execute) EXECUTE=1 ;;
+      -h | --help)
+        grep '^#' "$0" | sed 's/^#//; s/^ //' | head -n 20
+        exit 0
+        ;;
+      *)
+        echo "Unknown option: $arg" >&2
+        echo "Usage: bash $0 [--execute]" >&2
+        exit 1
+        ;;
+    esac
+  done
+}
 
 # ---- 表示ヘルパー ------------------------------------------------------------
 if [ -t 1 ]; then
@@ -47,12 +50,6 @@ else
   C_YELLOW=""
   C_CYAN=""
   C_RESET=""
-fi
-
-if [ "$EXECUTE" -eq 1 ]; then
-  MODE="${C_GREEN}EXECUTE（実削除）${C_RESET}"
-else
-  MODE="${C_YELLOW}DRY-RUN（試走／削除しません）${C_RESET}"
 fi
 
 freed_total_human=()
@@ -124,76 +121,90 @@ clean_cmd() {
   fi
 }
 
-# ---- 開始 -------------------------------------------------------------------
-echo "${C_BOLD}WSL2 cleanup${C_RESET}  mode: $MODE"
-echo "実行前の全体サイズ:"
-echo "  ~        : $(du -sh "$HOME" 2>/dev/null | cut -f1)"
-echo "  ~/.cache : $(path_size "$HOME/.cache")"
+# パス比較を堅牢にするための正規化（末尾スラッシュ除去 + realpath 解決）。
+# 現行 pnpm store と各 store/v* を突き合わせて、現行を絶対に消さないために使う。
+norm() {
+  local p="$1"
+  p="${p%/}"
+  realpath -m -- "$p" 2>/dev/null || echo "$p"
+}
 
-# ---- パッケージマネージャ系キャッシュ ---------------------------------------
-section "パッケージマネージャ キャッシュ"
-clean_cmd "npm cache" npm "$HOME/.npm" -- npm cache clean --force
-clean_cmd "uv cache" uv "$HOME/.cache/uv" -- uv cache clean
-clean_cmd "pip cache" pip "$HOME/.cache/pip" -- pip cache purge
+# ---- メイン処理 -------------------------------------------------------------
+main() {
+  parse_args "$@"
 
-# ---- ブラウザ自動化 / ビルド系キャッシュ ------------------------------------
-section "ブラウザ自動化・ビルドキャッシュ"
-clean_path "puppeteer cache" "$HOME/.cache/puppeteer"
-clean_path "playwright cache" "$HOME/.cache/ms-playwright"
-clean_path "node-gyp cache" "$HOME/.cache/node-gyp"
-clean_path "pnpm cache" "$HOME/.cache/pnpm"
+  local MODE
+  if [ "$EXECUTE" -eq 1 ]; then
+    MODE="${C_GREEN}EXECUTE（実削除）${C_RESET}"
+  else
+    MODE="${C_YELLOW}DRY-RUN（試走／削除しません）${C_RESET}"
+  fi
 
-# ---- 未使用 pnpm store --------------------------------------------------------
-# `pnpm store path` が指す現行 store 以外の store/v* を削除する。
-# 現行 store は中身が使われているため絶対に消さない。
-section "未使用 pnpm store (store/v*)"
-PNPM_STORE_ROOT="$HOME/.local/share/pnpm/store"
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo "  [skip] pnpm コマンドが無いためスキップ"
-elif [ ! -d "$PNPM_STORE_ROOT" ]; then
-  echo "  [skip] store ディレクトリが見つかりません ($PNPM_STORE_ROOT)"
-else
-  # 現行 store のパスを取得。store path は <root>/v3 のような末尾を持つ。
-  CURRENT_STORE="$(pnpm store path 2>/dev/null)"
-  echo "  現行 store: ${C_GREEN}${CURRENT_STORE:-取得失敗}${C_RESET}"
-  # 比較を堅牢にするため正規化（末尾スラッシュ除去 + realpath 解決）。
-  norm() {
-    local p="$1"
-    p="${p%/}"
-    realpath -m -- "$p" 2>/dev/null || echo "$p"
-  }
-  CURRENT_NORM="$(norm "$CURRENT_STORE")"
+  # ---- 開始 -----------------------------------------------------------------
+  echo "${C_BOLD}WSL2 cleanup${C_RESET}  mode: $MODE"
+  echo "実行前の全体サイズ:"
+  echo "  ~        : $(du -sh "$HOME" 2>/dev/null | cut -f1)"
+  echo "  ~/.cache : $(path_size "$HOME/.cache")"
 
-  shopt -s nullglob
-  for store in "$PNPM_STORE_ROOT"/v*; do
-    [ -d "$store" ] || continue
-    if [ "$(norm "$store")" = "$CURRENT_NORM" ]; then
-      echo "  [keep] $(basename "$store"): 現行 store のため保持  ($(path_size "$store"))"
-    else
-      clean_path "未使用 store $(basename "$store")" "$store"
-    fi
-  done
-  shopt -u nullglob
-fi
+  # ---- パッケージマネージャ系キャッシュ -------------------------------------
+  section "パッケージマネージャ キャッシュ"
+  clean_cmd "npm cache" npm "$HOME/.npm" -- npm cache clean --force
+  clean_cmd "uv cache" uv "$HOME/.cache/uv" -- uv cache clean
+  clean_cmd "pip cache" pip "$HOME/.cache/pip" -- pip cache purge
 
-# ---- 実行後サマリ -----------------------------------------------------------
-section "実行後のサイズ"
-echo "  du -sh ~                      → $(du -sh "$HOME" 2>/dev/null | cut -f1)"
-echo "  du -sh ~/.cache               → $(path_size "$HOME/.cache" || echo "-")"
-echo "  du -sh ~/.local/share/pnpm    → $(path_size "$HOME/.local/share/pnpm" || echo "-")"
-echo "  df -h /:"
-df -h / | sed 's/^/    /'
+  # ---- ブラウザ自動化 / ビルド系キャッシュ ----------------------------------
+  section "ブラウザ自動化・ビルドキャッシュ"
+  clean_path "puppeteer cache" "$HOME/.cache/puppeteer"
+  clean_path "playwright cache" "$HOME/.cache/ms-playwright"
+  clean_path "node-gyp cache" "$HOME/.cache/node-gyp"
+  clean_path "pnpm cache" "$HOME/.cache/pnpm"
 
-if [ "$EXECUTE" -eq 1 ] && [ "${#freed_total_human[@]}" -gt 0 ]; then
-  section "削除した項目"
-  for item in "${freed_total_human[@]}"; do
-    echo "  - $item"
-  done
-fi
+  # ---- 未使用 pnpm store ----------------------------------------------------
+  # `pnpm store path` が指す現行 store 以外の store/v* を削除する。
+  # 現行 store は中身が使われているため絶対に消さない。
+  section "未使用 pnpm store (store/v*)"
+  local PNPM_STORE_ROOT="$HOME/.local/share/pnpm/store"
+  if ! command -v pnpm >/dev/null 2>&1; then
+    echo "  [skip] pnpm コマンドが無いためスキップ"
+  elif [ ! -d "$PNPM_STORE_ROOT" ]; then
+    echo "  [skip] store ディレクトリが見つかりません ($PNPM_STORE_ROOT)"
+  else
+    # 現行 store のパスを取得。store path は <root>/v3 のような末尾を持つ。
+    local CURRENT_STORE CURRENT_NORM store
+    CURRENT_STORE="$(pnpm store path 2>/dev/null)"
+    echo "  現行 store: ${C_GREEN}${CURRENT_STORE:-取得失敗}${C_RESET}"
+    CURRENT_NORM="$(norm "$CURRENT_STORE")"
 
-# ---- VHDX 圧縮の案内 --------------------------------------------------------
-section "次のステップ: ext4.vhdx の圧縮（Windows 側で手動）"
-cat <<'EOS'
+    shopt -s nullglob
+    for store in "$PNPM_STORE_ROOT"/v*; do
+      [ -d "$store" ] || continue
+      if [ "$(norm "$store")" = "$CURRENT_NORM" ]; then
+        echo "  [keep] $(basename "$store"): 現行 store のため保持  ($(path_size "$store"))"
+      else
+        clean_path "未使用 store $(basename "$store")" "$store"
+      fi
+    done
+    shopt -u nullglob
+  fi
+
+  # ---- 実行後サマリ ---------------------------------------------------------
+  section "実行後のサイズ"
+  echo "  du -sh ~                      → $(du -sh "$HOME" 2>/dev/null | cut -f1)"
+  echo "  du -sh ~/.cache               → $(path_size "$HOME/.cache" || echo "-")"
+  echo "  du -sh ~/.local/share/pnpm    → $(path_size "$HOME/.local/share/pnpm" || echo "-")"
+  echo "  df -h /:"
+  df -h / | sed 's/^/    /'
+
+  if [ "$EXECUTE" -eq 1 ] && [ "${#freed_total_human[@]}" -gt 0 ]; then
+    section "削除した項目"
+    for item in "${freed_total_human[@]}"; do
+      echo "  - $item"
+    done
+  fi
+
+  # ---- VHDX 圧縮の案内 --------------------------------------------------------
+  section "次のステップ: ext4.vhdx の圧縮（Windows 側で手動）"
+  cat <<'EOS'
   WSL2 のディスクイメージ (ext4.vhdx) は、中で削除しても自動では縮みません。
   実ディスクの空きを取り戻すには Windows 側で圧縮します。
 
@@ -212,7 +223,14 @@ cat <<'EOS'
        (Get-ChildItem -Path $env:LOCALAPPDATA\Packages -Recurse -Filter ext4.vhdx -ErrorAction SilentlyContinue).FullName
 EOS
 
-if [ "$EXECUTE" -ne 1 ]; then
-  echo
-  echo "${C_YELLOW}これは dry-run です。実際に削除するには --execute を付けて再実行してください。${C_RESET}"
+  if [ "$EXECUTE" -ne 1 ]; then
+    echo
+    echo "${C_YELLOW}これは dry-run です。実際に削除するには --execute を付けて再実行してください。${C_RESET}"
+  fi
+}
+
+# 直接実行のときだけ処理を走らせる。source（test-wsl-cleanup.sh から）では
+# 関数定義とデフォルト値の読み込みだけを行う。
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+  main "$@"
 fi
