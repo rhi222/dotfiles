@@ -14,22 +14,17 @@
 # その担保になっている。test-linear-slack-sweep-cron.sh がこれを検証する。
 set -euo pipefail
 
-FLAG="$HOME/.config/linear-slack-sweep-enabled"
-if [[ ! -f "$FLAG" ]]; then
-  exit 0
-fi
-
-# 平日のみ（LINEAR_SLACK_SWEEP_FORCE=1 でスキップ可能。テスト・手動実行用）
-DOW=$(date +%u)
-if [[ "$DOW" -ge 6 && "${LINEAR_SLACK_SWEEP_FORCE:-0}" != "1" ]]; then
-  exit 0
-fi
-
-CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # ~/scripts は dotfiles/scripts へのsymlinkなので readlink -f で実体を解決する。
 # 解決しないと repo root が $HOME になり、skillもスクリプトも見つからない
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 source "$SCRIPT_DIR/lib/cron-claude.sh"
+
+cron_require_flag "$HOME/.config/linear-slack-sweep-enabled"
+
+# 平日のみ（LINEAR_SLACK_SWEEP_FORCE=1 でスキップ可能。テスト・手動実行用）
+cron_weekday_only "${LINEAR_SLACK_SWEEP_FORCE:-0}"
+
+CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 REPO="${LINEAR_SLACK_SWEEP_REPO:-$(dirname "$SCRIPT_DIR")}"
 # スレを読んで要約する仕事なので、日報ドラフト（900秒）と同じ桁で足りる
 CLAUDE_TIMEOUT="${LINEAR_SLACK_SWEEP_TIMEOUT:-900}"

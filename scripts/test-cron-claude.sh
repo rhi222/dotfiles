@@ -90,6 +90,80 @@ check "タイムアウトとは区別する" grep -q "失敗" <<<"$out"
 outonly=$(cron_run_claude "週次レポート" 10 "$tmp/claude-ng" 2>/dev/null)
 check "診断メッセージは stdout に出さない" test -z "$outonly"
 
+# --- cron_require_flag ---
+# exit を伴うのでサブシェルで隔離し、終了コードと出力を観察する
+touch "$tmp/flag-present"
+
+out=$( (
+  cron_require_flag "$tmp/flag-present"
+  echo "続行"
+) 2>&1)
+check "フラグがあれば続行する（exit しない）" grep -q "続行" <<<"$out"
+
+out=$( (
+  cron_require_flag "$tmp/flag-absent"
+  echo "続行"
+) 2>&1)
+rc=$?
+check "フラグが無ければ exit 0 する" test "$rc" -eq 0
+refute_contains "フラグが無ければ後続を実行しない" "続行" "$out"
+refute_contains "フラグが無ければ何も出さない" "." "$out"
+
+# --- cron_weekday_only ---
+# date をスタブして曜日を固定する（PATH 先頭に置いて実 date を隠す）
+stubdate() {
+  local dow="$1"
+  cat >"$tmp/date" <<EOF
+#!/bin/bash
+if [[ "\$1" == "+%u" ]]; then echo "$dow"; else command date "\$@"; fi
+EOF
+  chmod +x "$tmp/date"
+}
+
+# 平日（月=1）は force に関わらず続行する
+stubdate 1
+out=$( (
+  PATH="$tmp:$PATH" cron_weekday_only 0
+  echo "続行"
+) 2>&1)
+check "平日は続行する" grep -q "続行" <<<"$out"
+
+# 土曜（=6）は force でなければ exit 0 する
+stubdate 6
+out=$( (
+  PATH="$tmp:$PATH" cron_weekday_only 0
+  echo "続行"
+) 2>&1)
+rc=$?
+check "土曜は exit 0 する" test "$rc" -eq 0
+refute_contains "土曜は後続を実行しない" "続行" "$out"
+
+# 日曜（=7）も同様に exit 0 する
+stubdate 7
+out=$( (
+  PATH="$tmp:$PATH" cron_weekday_only 0
+  echo "続行"
+) 2>&1)
+refute_contains "日曜も後続を実行しない" "続行" "$out"
+
+# 土日でも force=1 なら続行する（テスト・手動実行の抜け道）
+stubdate 6
+out=$( (
+  PATH="$tmp:$PATH" cron_weekday_only 1
+  echo "続行"
+) 2>&1)
+check "force=1 なら土日でも続行する" grep -q "続行" <<<"$out"
+
+# force 未指定（空引数）は既定 0 扱いで、土日はガードする
+stubdate 7
+out=$( (
+  PATH="$tmp:$PATH" cron_weekday_only
+  echo "続行"
+) 2>&1)
+refute_contains "force 未指定なら土日はガードする" "続行" "$out"
+
+rm -f "$tmp/date"
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

@@ -16,16 +16,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/cron-claude.sh"
 
 # フラグファイルで有効化チェック
-FLAG="$HOME/.config/nippo-draft-enabled"
-if [[ ! -f "$FLAG" ]]; then
-  exit 0
-fi
+cron_require_flag "$HOME/.config/nippo-draft-enabled"
 
 # 平日のみ（NIPPO_DRAFT_FORCE=1 でスキップ可能。テスト・手動実行用）
-DOW=$(date +%u)
-if [[ "$DOW" -ge 6 && "${NIPPO_DRAFT_FORCE:-0}" != "1" ]]; then
-  exit 0
-fi
+cron_weekday_only "${NIPPO_DRAFT_FORCE:-0}"
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # GitHub活動の収集を含むが、対象は当日分だけなので短めでよい

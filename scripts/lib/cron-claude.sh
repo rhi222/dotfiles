@@ -10,6 +10,29 @@
 #
 # set は宣言しない。source 元の設定を尊重する（他の lib と同じ方針）。
 
+# cron_require_flag <フラグファイルのパス>
+# 有効化フラグが無ければスクリプトごと静かに exit 0 する。
+# cron ラッパーの「無効なら何も出さずに終わる」定型ガード。
+# 条件に当たったら呼び出し元へ返さず終了させるので、呼び出しは1行で済む。
+cron_require_flag() {
+  local flag="$1"
+  if [[ ! -f "$flag" ]]; then
+    exit 0
+  fi
+}
+
+# cron_weekday_only <force値>
+# 土日（date +%u が 6,7）かつ force が "1" でなければ、スクリプトごと静かに exit 0 する。
+# force に FORCE 環境変数の値を渡すと、テスト・手動実行で週末ガードを抜けられる。
+cron_weekday_only() {
+  local force="${1:-0}"
+  local dow
+  dow=$(date +%u)
+  if [[ "$dow" -ge 6 && "$force" != "1" ]]; then
+    exit 0
+  fi
+}
+
 # cron_run_claude <ラベル> <制限秒> <claudeのパス> [claudeへの引数...]
 # 戻り値: claude の終了コード。タイムアウトは 124
 # 診断メッセージは stderr に出す（stdout は成果物のために空けておく）
