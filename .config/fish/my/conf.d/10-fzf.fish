@@ -1,20 +1,22 @@
 # fzf settings
 #
-# キーバインドの所有者に注意。Ctrl+R / Ctrl+T / Alt+C は fzf 標準のシェル統合が握っている。
-# ~/.config/fish/functions/fish_user_key_bindings.fish の `fzf --fish | source` が
-# conf.d より後に走り、fzf.fish プラグインの bind を上書きするため。
-# プラグイン側で生き残るのは Alt+Ctrl+L / Alt+Ctrl+S / Alt+Ctrl+P / Ctrl+V。
+# キーバインドは fzf.fish プラグインが持つ。fzf 標準のシェル統合（`fzf --fish | source`）は
+# 有効化していないので、`FZF_CTRL_R_OPTS` などの標準側の環境変数は効かない。
+# プラグイン側の設定変数（`fzf_history_opts` など）を使うこと。
 fzf_configure_bindings --directory=\ct
 
-# Ctrl+R の履歴一覧をコマンドだけにする。
+# Ctrl+R（_fzf_search_history）の一覧をコマンドだけにする。
 #
-# fzf 0.74 のヒストリウィジェットはタブ区切りで3列を作る。
-#   1列目 = 人が読める日時（%F %a %T）/ 2列目 = エポック秒（%s）/ 3列目以降 = コマンド
-# 既定が --with-nth=2.. なので、放っておくと 2列目のエポック秒から表示される。
+# 行の形は "MM-DD HH:MM:SS │ <command>"。
 #
-# **--nth も揃えるのが要点。** 表示から消しても検索対象に残っていると、
-# コマンドに含まれる数字を打ったときにエポックの数字列へ誤ヒットする。
-# 確定時に挿入される値は --accept-nth=3.. で常にコマンドだけなので、ここは表示と検索の話。
+# **`fzf_history_time_format` を空にしても消えない。** _fzf_search_history が
+# `--show-time="$fzf_history_time_format │ "` と組み立てるため、空にすると
+# 先頭に " │ " だけが残る。そこで時刻の生成ではなく fzf の表示側で落とす。
 #
-# 日時を一時的に見たいときは fzf 側の Alt+T で 1,3.. → 3.. → 2.. と切り替わる。
-set -gx FZF_CTRL_R_OPTS '--with-nth=3.. --nth=3..'
+# **--nth は付けない。** --nth は --with-nth を適用した後の文字列に対して効くので、
+# 重ねると2列目が存在しなくなり、コマンド名でさえ検索に引っかからなくなる。
+# --with-nth だけで表示と検索対象の両方が絞られる（"18" が "08-18 ..." に
+# 誤ヒットしないことを確認済み）。
+#
+# 確定時に挿入される値と preview は、プラグイン側が `^.*? │ ` を剥がすので影響しない。
+set -g fzf_history_opts --delimiter=' │ ' --with-nth='2..'
