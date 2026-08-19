@@ -10,6 +10,10 @@ graphviz
 imagemagick
 jq
 plantuml
+# mise/aqua に tig が無い。GitHub リリースがソース tarball しか配っておらず
+# ubi でも取れない（`tig-completion.bash has unknown extension` で落ちる）ため、
+# CLI ツールの中でここだけ apt に寄せる
+tig
 unzip
 wslu
 zip
