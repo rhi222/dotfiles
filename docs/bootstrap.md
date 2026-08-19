@@ -35,7 +35,7 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 > [!WARNING]
 > **この時点で `mise` は裸のコマンド名では通らない。** インストーラは `~/.local/bin/mise` に置くが、
 > そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
-> 手順1を終えるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
+> 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
 - **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
   手順1で重ねて入っても害は無い。宣言を残してあるのは、後から「何で入れたか」を追えるようにするため
@@ -58,21 +58,34 @@ cd /data/git-repos/github.com/rhi222/dotfiles
 bash scripts/apt-setup.sh                                    # apt パッケージの導入（WSL2 のみ）
 bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
 ./dotfilesLink.sh                                            # リンク作成、雛形生成、hook 有効化
-~/.local/bin/mise install                                    # config.toml のツールを一括導入
-exec fish                                                    # リンクした設定を読み直す
+exec fish                                                    # リンクした設定を読み込む
+mise install                                                 # config.toml のツールを一括導入
 ```
 
-**`mise install` は `dotfilesLink.sh` の後に置く。** `~/.config/mise/config.toml` はリンクで
-配置されるので、順序を逆にすると mise が宣言を見つけられない。`dotfilesLink.sh` 自体は
-リンクを張るだけで `mise install` は呼ばないため、ここで明示的に実行する。
+**この3つの順序には理由があり、入れ替えると静かに壊れる。**
 
-**最後の `exec fish` で、リンクされた `my/conf.d/*.fish` が初めて読まれる。**
-ここを抜けると `mise` は裸で通るようになり、以降の手順でフルパスは要らない。
+1. **`dotfilesLink.sh` が先。** `~/.config/mise/config.toml` はリンクで配置されるので、
+   先に `mise install` すると宣言そのものが見つからない。`dotfilesLink.sh` 自体は
+   リンクを張るだけで `mise install` は呼ばないため、ここで明示的に実行する
+2. **`exec fish` が次。** リンクされた `my/conf.d/*.fish` がここで初めて読まれ、
+   `00-paths.fish` が `~/.local/bin` を PATH に入れ、`01-mise.fish` が
+   `MISE_*_DEFAULT_PACKAGES_FILE` を設定する
+3. **`mise install` が最後。** **2 より前に走らせると、ランタイムは入るが
+   `.default-python-packages` / `.default-npm-packages` の中身が入らない。**
+   場所を教えているのが 2 で設定される環境変数だけだからで、mise は黙って成功する。
+   `pynvim` が落ちて nvim の `:checkhealth` が Python provider を ERROR にする、
+   といった形で後から気づくことになる
 
 `mise --version` が返らない場合は、`~/.local/bin` が `$fish_user_paths` に入っているかを
 `echo $fish_user_paths` で確認する。PATH を足す `00-paths.fish` は `01-mise.fish` より
 前に読ませる必要があり（番号がそのまま依存順になる）、逆順だと `type -q mise` が偽になって
 mise が activate されない。
+
+既に default packages 抜きで入れてしまった場合は、環境変数が入った状態で入れ直す。
+
+```fish
+mise install --force python node
+```
 
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
