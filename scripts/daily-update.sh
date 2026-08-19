@@ -66,6 +66,25 @@ yazi_pkg_upgrade() {
   ya pkg upgrade
 }
 
+# cargo でインストールしたバイナリの更新。`cargo install-update` は cargo 本体では
+# なく cargo-update crate が提供するサブコマンドで、リポジトリのどこにも宣言が無い。
+#
+# 提供コマンドが無ければ何もせず成功扱いにする。`cargo install` 由来のバイナリが
+# 1つも無い端末では更新対象も更新手段も無く、毎日 FAILED 通知が飛ぶだけになるため
+# （yazi の package.toml と同じ扱い）。あとから `cargo install cargo-update` すれば
+# このステップは自動で効き始める。
+#
+# 検出は `command -v` で行う。cargo は cargo-<sub> という名前のバイナリを
+# PATH と $CARGO_HOME/bin から引くので、`~/.cargo/bin` が PATH にあることが前提。
+# 外れていた場合は「更新をスキップする」側に倒れるので、壊れる方向には転ばない。
+cargo_install_update() {
+  if ! command -v cargo-install-update >/dev/null 2>&1; then
+    echo "cargo-update not installed, skipping"
+    return 0
+  fi
+  cargo install-update -a
+}
+
 # 消し忘れ worktree の溜まり込みを検知する。dry-run で候補を数えるだけで、削除はしない。
 # 候補が閾値以上のときだけトースト通知する（毎日通知が飛ぶと無視されるようになるため）。
 WORKTREE_CLEANUP_NOTIFY_THRESHOLD="${WORKTREE_CLEANUP_NOTIFY_THRESHOLD:-5}"
@@ -137,7 +156,7 @@ notify_failures() {
 main() {
   run_step "apt update" sudo apt-get update -qq
   run_step "apt upgrade" sudo apt-get upgrade -y -qq
-  run_step "cargo install-update" cargo install-update -a
+  run_step "cargo install-update" cargo_install_update
   run_step "mise self-update" mise self-update -y
   run_step "mise upgrade" mise upgrade
   # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
