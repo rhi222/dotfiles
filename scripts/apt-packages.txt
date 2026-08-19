@@ -1,4 +1,7 @@
 bubblewrap
+# ログインシェル。apt-setup.sh より前に手で入れる必要があるが、
+# 宣言が無いと新環境で「何で入れたか」が追えなくなるのでここにも並べる
+fish
 graphviz
 imagemagick
 jq
