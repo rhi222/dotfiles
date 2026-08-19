@@ -54,9 +54,9 @@ my/
     │   ├── nvim-treesitter.lua
     │   └── comment.lua
     └── tools/              その他ツール
-        ├── init.lua          specs (auto-session, rest, sidekick, etc.)
+        ├── init.lua          specs (auto-session, kulala, etc.)
         ├── auto-session.lua
-        └── rest-nvim.lua
+        └── kulala.lua
 ```
 
 ## plugins/ の設計方針
