@@ -500,10 +500,10 @@ Neovim設定は `.config/nvim/lua/my/` 下でモジュラー構造に従って�
 .config/fish/
 ├── config.fish                 # メイン設定
 └── my/conf.d/
+    ├── 00-paths.fish           # PATH設定（mise より前に読ませる）
     ├── 01-mise.fish            # mise（ランタイム管理）
     ├── 02-history.fish         # 履歴設定
     ├── 03-environment.fish     # 環境変数
-    ├── 04-paths.fish           # PATH設定
     ├── 05-tide-settings.fish   # tideプロンプト設定
     ├── 06-aliases.fish         # エイリアス
     ├── 07-abbr.fish            # 略語

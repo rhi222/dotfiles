@@ -34,7 +34,7 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 
 > [!WARNING]
 > **この時点で `mise` は裸のコマンド名では通らない。** インストーラは `~/.local/bin/mise` に置くが、
-> そこを PATH に足しているのは `04-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
+> そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
 > 手順1を終えるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
 - **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
@@ -59,23 +59,20 @@ bash scripts/apt-setup.sh                                    # apt パッケー�
 bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
 ./dotfilesLink.sh                                            # リンク作成、雛形生成、hook 有効化
 ~/.local/bin/mise install                                    # config.toml のツールを一括導入
-exec fish                                                    # 1回目: fish_user_paths が保存される
-exec fish                                                    # 2回目: ここで mise が activate される
+exec fish                                                    # リンクした設定を読み直す
 ```
 
 **`mise install` は `dotfilesLink.sh` の後に置く。** `~/.config/mise/config.toml` はリンクで
 配置されるので、順序を逆にすると mise が宣言を見つけられない。`dotfilesLink.sh` 自体は
 リンクを張るだけで `mise install` は呼ばないため、ここで明示的に実行する。
 
-**`exec fish` が2回要るのは、conf.d の読み込み順に対して PATH の設定が後ろにあるため。**
-`config.fish` は `my/conf.d/*.fish` をグロブ順に source するので、`01-mise.fish` の
-`type -q mise` は `04-paths.fish` が `fish_add_path $HOME/.local/bin` を実行するより先に
-評価される。`fish_add_path` は universal 変数を書くので効くのは次回起動からで、
-結果として**1回目の起動では mise が activate されない**。
+**最後の `exec fish` で、リンクされた `my/conf.d/*.fish` が初めて読まれる。**
+ここを抜けると `mise` は裸で通るようになり、以降の手順でフルパスは要らない。
 
-- ここを抜けると `mise` は裸で通るようになる。以降の手順でフルパスは要らない
-- 2回目の起動で `mise --version` が返らない場合は、`~/.local/bin` が
-  `$fish_user_paths` に入っているかを `echo $fish_user_paths` で確認する
+`mise --version` が返らない場合は、`~/.local/bin` が `$fish_user_paths` に入っているかを
+`echo $fish_user_paths` で確認する。PATH を足す `00-paths.fish` は `01-mise.fish` より
+前に読ませる必要があり（番号がそのまま依存順になる）、逆順だと `type -q mise` が偽になって
+mise が activate されない。
 
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。

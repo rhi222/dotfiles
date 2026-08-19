@@ -1,6 +1,12 @@
 # PATH settings
 # path設定はfish_add_pathを利用
 # https://zenn.dev/estra/articles/zenn-fish-add-path-final-answer
+#
+# **このファイルは 01-mise.fish より前に読ませる。** config.fish は my/conf.d/*.fish を
+# グロブ順に source するので、番号がそのまま依存順になる。mise は ~/.local/bin に入るため、
+# ここが後ろにあると 01-mise.fish の `type -q mise` が偽になり activate されない。
+# fish_add_path が書く $fish_user_paths は universal 変数で、効くのは次回起動から。
+# そのため新環境では「fish を2回起動しないと mise が使えない」という症状になっていた。
 
 # go install でインストールしたバイナリ用（Go自体はmiseで管理）
 fish_add_path $HOME/go/bin

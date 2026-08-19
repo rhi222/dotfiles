@@ -12,10 +12,10 @@
 ├── functions/           # プラグイン由来の関数（空/プラグイン専用）
 └── my/                  # 個人設定専用ディレクトリ
     ├── conf.d/          # 機能別設定ファイル（番号順で読み込み）
+    │   ├── 00-paths.fish             # PATH設定（mise より前に読ませる）
     │   ├── 01-mise.fish              # ランタイム管理（mise）
     │   ├── 02-history.fish           # 履歴設定
     │   ├── 03-environment.fish       # 環境変数・ツール統合
-    │   ├── 04-paths.fish             # PATH設定
     │   ├── 05-tide-settings.fish     # tideプロンプト設定変数
     │   ├── 06-aliases.fish           # エイリアス
     │   ├── 07-abbr.fish              # 略語
@@ -62,10 +62,11 @@
 
 個人設定を機能ごとに分割して管理性を向上：
 
+- **00-paths.fish**: 各種ツールのPATH設定。**mise は `~/.local/bin` に入るため、
+  `01-mise.fish` より前に読ませる**（番号がそのまま依存順になる）
 - **01-mise.fish**: ランタイム管理とデフォルトパッケージ
 - **02-history.fish**: 履歴共有設定
 - **03-environment.fish**: エディタ・zoxide・tabtab統合
-- **04-paths.fish**: 各種ツールのPATH設定
 - **05-tide-settings.fish**: tideプロンプト設定変数
 - **06-aliases.fish**: エイリアス（Git、ツール、SSH関連）
 - **07-abbr.fish**: 略語（Git、Docker、開発ツール関連）
