@@ -11,6 +11,7 @@ gitignore している機密ファイルの移植台帳も兼ねる。
 
 上から順に進める。
 
+0. 前提ツールを入れる
 1. リポジトリを取得し、基本セットアップを実行する
 2. ローカル設定と機密ファイルを用意する
 3. 外部ツールをインストールする
@@ -19,18 +20,45 @@ gitignore している機密ファイルの移植台帳も兼ねる。
 
 WSL2 固有の作業には本文で明記している。それ以外の環境では該当箇所を飛ばす。
 
+## 0. 前提ツールを入れる
+
+**この3つだけはリポジトリの自動化では入らない。** どれも[手順1](#1-基本セットアップを実行する)の
+中で使うものなので、先に手で入れる。この時点ではまだ fish がログインシェルではないので、
+以下は bash で実行する。
+
+```bash
+sudo apt update && sudo apt install -y fish git curl
+curl https://mise.run | sh
+chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
+```
+
+- **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
+  手順1で重ねて入っても害は無い。宣言を残してあるのは、後から「何で入れたか」を追えるようにするため
+- **`mise` が CLI ツールのほぼ全部を持ってくる。** gh・fzf・ripgrep・fd・tmux・neovim・yazi・
+  ghq・git-wt・herdr・lazygit・shellcheck などは `.config/mise/config.toml` の宣言から入る。
+  **apt で個別に入れない**（二重管理になり、`daily-update.sh` の更新対象からも外れる）
+- **`ghq` もこの時点では無い。** 手順1の `ghq get` が使えるのは `mise install`（手順1の最後）の後なので、
+  最初の1回だけは `git clone` でリポジトリを取る
+
 ## 1. 基本セットアップを実行する
 
 パスが `SNIPPET_ROOT` などに埋め込まれているため、このリポジトリは ghq 配下に置く。
+`ghq` はまだ入っていないので、初回は `ghq root` と同じ場所へ手で clone する。
 
 ```fish
-ghq get rhi222/dotfiles
-cd (ghq root)/github.com/rhi222/dotfiles
+mkdir -p /data/git-repos/github.com/rhi222
+git clone https://github.com/rhi222/dotfiles /data/git-repos/github.com/rhi222/dotfiles
+cd /data/git-repos/github.com/rhi222/dotfiles
 
 bash scripts/apt-setup.sh                                    # apt パッケージの導入（WSL2 のみ）
 bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
 ./dotfilesLink.sh                                            # リンク作成、雛形生成、hook 有効化
+mise install                                                 # config.toml のツールを一括導入
 ```
+
+**`mise install` は `dotfilesLink.sh` の後に置く。** `~/.config/mise/config.toml` はリンクで
+配置されるので、順序を逆にすると mise が宣言を見つけられない。`dotfilesLink.sh` 自体は
+リンクを張るだけで `mise install` は呼ばないため、ここで明示的に実行する。
 
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
