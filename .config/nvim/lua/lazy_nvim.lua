@@ -20,6 +20,9 @@ local opts = {
 	defaults = {
 		lazy = true,
 	},
+	-- rocks を要求するプラグインが無い（rest.nvim を最後に消えた）。
+	-- 有効なままだと hererocks の実体が無い分だけ :checkhealth lazy が ❌ を出す
+	rocks = { enabled = false },
 }
 
 require("lazy").setup(plugins, opts)
