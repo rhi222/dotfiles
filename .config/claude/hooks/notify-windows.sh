@@ -30,10 +30,6 @@
 #
 # =============================================================================
 
-# アイコンパスを取得（スクリプトと同じディレクトリ）
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ICON_PATH="$SCRIPT_DIR/claude-icon.png"
-
 # Windows BurntToast 通知の共通関数 (send_windows_toast)
 # shellcheck source=../../../scripts/lib/notify-windows-toast.sh
 source "$HOME/scripts/lib/notify-windows-toast.sh"
@@ -63,7 +59,7 @@ case "$EVENT" in
     ;;
 esac
 
-send_windows_toast "$TITLE" "$MESSAGE" "$ICON_PATH"
+send_windows_toast "$TITLE" "$MESSAGE"
 
 # Stop時に日報チェックをバックグラウンド実行（フラグファイルで有効化）
 #
@@ -86,7 +82,7 @@ if [[ "$EVENT" == "Stop" && -f "$NIPPO_NOTIFY_FLAG" ]]; then
       status=$?
       if [[ $status -ne 0 && -n "$nippo_msg" ]] &&
         notify_cooldown_should_send "$NIPPO_CACHE_DIR/last-notify" "$nippo_msg"; then
-        send_windows_toast "日報チェック" "$nippo_msg" "$ICON_PATH"
+        send_windows_toast "日報チェック" "$nippo_msg"
       fi
     ) &
     disown

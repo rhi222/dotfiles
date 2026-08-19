@@ -45,8 +45,7 @@ nippo_msg=$(timeout 5 "$NIPPO_CHECK" cron 2>/dev/null) || check_exit=$?
 source "$SCRIPT_DIR/lib/notify-windows-toast.sh"
 
 if [[ "$check_exit" -ne 0 && -n "$nippo_msg" ]]; then
-  ICON_PATH="$HOME/.config/claude/hooks/claude-icon.png"
-  send_windows_toast "日報リマインド（定期）" "$nippo_msg" "$ICON_PATH"
+  send_windows_toast "日報リマインド（定期）" "$nippo_msg"
   echo "$(date): 通知送信: $nippo_msg"
 else
   echo "$(date): 問題なし"
