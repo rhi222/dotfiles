@@ -1,4 +1,8 @@
 bubblewrap
+# nvim の hererocks が Lua 5.1 と luarocks を野良ビルドするのに要る。
+# 無いと rest.nvim の rocks が入らず :checkhealth が luarocks を ERROR で返す
+build-essential
+libreadline-dev
 # ログインシェル。apt-setup.sh より前に手で入れる必要があるが、
 # 宣言が無いと新環境で「何で入れたか」が追えなくなるのでここにも並べる
 fish
