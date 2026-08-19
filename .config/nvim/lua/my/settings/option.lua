@@ -57,12 +57,3 @@ vim.opt.fixendofline = false
 vim.o.foldenable = false
 -- auto-session: ensure multiple buffers are persisted
 vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
-
--- html filetype に formatprg を設定（rest-nvim の checkhealth 警告回避）
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "html",
-	callback = function()
-		vim.bo.formatprg = "prettier --parser html"
-	end,
-})
-

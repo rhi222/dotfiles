@@ -135,15 +135,6 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- rest.nvimのformat
--- https://github.com/rest-nvim/rest.nvim/issues/414#issuecomment-2308721227
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "json",
-	callback = function(ev)
-		vim.bo[ev.buf].formatprg = "jq"
-	end,
-})
-
 -- herdr: nvim が動いているペインを自動記録する。
 -- reboot 後に fish の `he` ラッパーがこのマーカーを読んで、該当ペインで nvim を復元起動する
 -- （tmux-resurrect の @resurrect-processes 相当。手動ラベル付けは不要）。
