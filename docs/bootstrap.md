@@ -169,7 +169,8 @@ Git 設定の具体例と注意点は[Git の user 設定](#git-の-user-設定)
 次のものは移植しなくてよい。
 
 - `plans/`、`docs/superpowers/`、`.superpowers/` — 作業用スクラッチ
-- `.config/tmux/plugins/`、`.config/yazi/plugins/` — プラグインマネージャが再取得する
+- `.config/tmux/plugins/`、`.config/yazi/plugins/` — プラグインマネージャが再取得する。
+  ただし **tpm 自身はこの中に入っている**ので、tmux 側だけ[手順3](#宣言が無く手で入れるもの)で手動 clone する
 - `.claude/skills/` — `setup-claude-skills.sh` が再取得する
 - `.config/codex/config.toml` — 雛形から生成する
 - `.config/nvim/pack`、`.netrwhist` — Neovim が生成する
@@ -227,6 +228,8 @@ git status --short .gitconfig .config/git/                # 出力が無いこ�
 
 ## 3. 外部ツールをインストールする
 
+### 宣言から入るもの
+
 ローカル設定を用意したら、リポジトリに宣言されている外部ツールを導入する。
 `STRICT=1` を付けた処理は、一部のインストールに失敗した場合も成功扱いにせず終了する。
 
@@ -235,6 +238,42 @@ env STRICT=1 bash scripts/setup-claude-skills.sh  # 外部 agent skill
 env STRICT=1 bash scripts/setup-gh-extensions.sh  # gh 拡張
 bash scripts/linear-bootstrap.sh                  # Linear の team/state/label ID を解決
 ```
+
+### 宣言が無く、手で入れるもの
+
+**次のものはリポジトリのどこにも宣言が無い。** 設定だけがリンクされて中身が伴わない状態になり、
+しかも起動はするので気づきにくい。使う分を手で入れる。
+
+- **fisher + fish プラグイン** — プロンプト（tide）と Ctrl+R（fzf.fish）の実体。
+  入れないと `05-tide-settings.fish` や `10-fzf.fish` が読まれても何も起きない
+- **tmux tpm** — `tmux.conf` の `@plugin` 宣言が全て無効になる。tmux を使う場合のみ
+- **Claude Code** — `.config/claude/` 配下の hook と skill、[手順4](#4-自動化を有効にする任意wsl2)の
+  cron 自動化がすべてこれに乗っている
+- **Codex CLI** — `npm i -g @openai/codex`。`.config/codex/` と `~/.agents/skills/` の自作 skill 用
+- **Docker** — Docker Desktop の WSL2 統合を有効にする（統合を使わない場合は docker apt repo）。
+  `dclean`・`dc` 系の略語・`lazydocker` が依存する
+
+**`~/.config/fish/fish_plugins` は追跡していない**ので、プラグインは名指しで入れ直す。
+
+```fish
+curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+fisher install jorgebucaran/fisher ilancosman/tide@v6 patrickf1/fzf.fish
+tide configure
+```
+
+`~/.config/tmux/plugins/` も追跡していない。tpm だけ手で clone し、残りは tmux 内から取る。
+
+```fish
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+# tmux を起動して prefix + I（大文字）で tmux.conf の @plugin を一括取得
+```
+
+- **セッション復元は herdr が持っており、tmux-resurrect / tmux-continuum は使わない。**
+  `tmux.conf` の宣言からは外してある。ただし **tpm は宣言から消しても実体を消さない**ので、
+  旧環境の `plugins/` を持ち込んだ場合は `prefix + alt+u` で刈る
+- Claude Code のインストーラは `~/.local/bin/claude` に置く。**mise の管理外**なので、
+  更新も `daily-update.sh` ではなく Claude Code 自身が行う
+- Neovim のプラグインと LSP は初回起動時に lazy.nvim と Mason が入れるため、明示的な操作は要らない
 
 ### Windows 側の設定を反映する（WSL2）
 
