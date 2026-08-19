@@ -105,7 +105,7 @@ M.editing = {
 }
 
 M.tools = {
-	rest_run = { "<C-e>", desc = "Rest run" },
+	kulala_run = { "<C-e>", desc = "Kulala run" },
 }
 
 M.builtin = {

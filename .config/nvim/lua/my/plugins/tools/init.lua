@@ -8,21 +8,20 @@ return {
 		end,
 	},
 	-- http client
+	-- nvim-treesitter への依存は持たない。kulala は自前の kulala_http パーサを
+	-- tree-sitter CLI で生成し、ft http を language.register で奪うため。
 	{
-		"rest-nvim/rest.nvim",
+		"mistweaverco/kulala.nvim",
 		ft = "http",
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter",
-			opts = function(_, opts)
-				opts.ensure_installed = opts.ensure_installed or {}
-				table.insert(opts.ensure_installed, "http")
-			end,
-		},
 		config = function()
-			require("my/plugins/tools/rest-nvim")
+			require("my/plugins/tools/kulala")
 		end,
 		keys = {
-			km.lazy_key("tools", "rest_run", "<cmd>Rest run<CR>"),
+			-- ft を付けてバッファローカルにする。rest.nvim 時代はグローバル束縛だったため
+			-- 全バッファで <C-e>（既定のスクロール）が潰れていた
+			km.lazy_key("tools", "kulala_run", function()
+				require("kulala").run()
+			end, { ft = "http" }),
 		},
 	},
 	-- markdown preview
