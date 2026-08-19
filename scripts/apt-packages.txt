@@ -9,6 +9,10 @@ fish
 graphviz
 imagemagick
 jq
+# OpenSSL に link する cargo crate のビルドに要る（cargo-update など）。
+# 無いと openssl-sys の configure が openssl.pc を見つけられず `cargo install` が落ちる
+libssl-dev
+pkg-config
 plantuml
 # mise/aqua に tig が無い。GitHub リリースがソース tarball しか配っておらず
 # ubi でも取れない（`tig-completion.bash has unknown extension` で落ちる）ため、
