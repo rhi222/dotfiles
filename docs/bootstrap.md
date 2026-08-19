@@ -288,6 +288,15 @@ fisher install jorgebucaran/fisher ilancosman/tide@v6 patrickf1/fzf.fish
 tide configure
 ```
 
+Claude Code は公式インストーラで入れる。**npm でも mise でもない**ので、宣言リストには載らない。
+
+```fish
+curl -fsSL https://claude.ai/install.sh | bash
+exec fish        # ~/.local/bin が PATH に入っていること
+claude --version
+claude           # 初回はログインが要る
+```
+
 `~/.config/tmux/plugins/` も追跡していない。tpm だけ手で clone し、残りは tmux 内から取る。
 
 ```fish
@@ -298,8 +307,11 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 - **セッション復元は herdr が持っており、tmux-resurrect / tmux-continuum は使わない。**
   `tmux.conf` の宣言からは外してある。ただし **tpm は宣言から消しても実体を消さない**ので、
   旧環境の `plugins/` を持ち込んだ場合は `prefix + alt+u` で刈る
-- Claude Code のインストーラは `~/.local/bin/claude` に置く。**mise の管理外**なので、
+- Claude Code のインストーラは `~/.local/bin/claude` を
+  `~/.local/share/claude/versions/<ver>` への symlink として置く。**mise の管理外**なので、
   更新も `daily-update.sh` ではなく Claude Code 自身が行う
+- **Claude Code を入れないと[手順4](#4-自動化を有効にする任意wsl2)の cron が全滅する。**
+  日報・Linear・esa 週次はすべてヘッドレスの `claude` を呼んでいる
 - Neovim のプラグインと LSP は初回起動時に lazy.nvim と Mason が入れるため、明示的な操作は要らない
 
 ### Windows 側の設定を反映する（WSL2）
