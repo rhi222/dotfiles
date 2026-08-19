@@ -4,8 +4,8 @@
 #
 # 使い方:
 #   source "$HOME/scripts/lib/notify-windows-toast.sh"
-#   send_windows_toast "タイトル" "メッセージ"                       # icon なし
-#   send_windows_toast "タイトル" "メッセージ" "/path/to/icon.png"  # icon あり
+#   send_windows_toast "タイトル" "メッセージ"                       # 既定の Claude アイコン
+#   send_windows_toast "タイトル" "メッセージ" "/path/to/icon.png"  # icon を明示
 #
 # BurntToast が入っていない端末では、通知を出さずに黙って成功する。
 # 以前は `Import-Module BurntToast -ErrorAction SilentlyContinue` だけを付けていたが、
@@ -20,6 +20,11 @@
 # 不在の通知に Write-Error は使わない。エラーレコードとして整形され、
 # CategoryInfo / FullyQualifiedErrorId 付きの複数行ブロックになるので、
 # 消したいノイズを別のノイズに置き換えるだけになる。stderr へ素の1行を書く。
+
+# 通知アイコンの既定値。全経路で Claude アイコンを出すため、呼び出し元が
+# 第3引数を省略してもここが使われる（daily-update と herdr-restore が省略側）。
+# パスの定義をこの1箇所に寄せている。テストから差し替えられるよう変数に持つ。
+WINDOWS_TOAST_ICON="${WINDOWS_TOAST_ICON:-$HOME/.config/claude/hooks/claude-icon.png}"
 
 # 通知本体を組み立てて実行する。BurntToast が無ければ理由を1行出して何もしない。
 # 呼び出し元は powershell.exe が無い場合（WSL2 以外）と同じ扱いにできる。
@@ -38,7 +43,7 @@ __burnt_toast_invoke() {
 send_windows_toast() {
   local title="$1"
   local message="$2"
-  local icon_path="${3:-}"
+  local icon_path="${3:-$WINDOWS_TOAST_ICON}"
 
   # シングルクォートを PowerShell の literal '...' 用に '' へエスケープ
   title="${title//\'/\'\'}"

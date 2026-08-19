@@ -74,6 +74,9 @@ chmod +x "$STUB_BIN/powershell.exe"
 echo "[1] cmdlet をガードしてから呼ぶ"
 PS_LOG="$TEST_DIR/ps.log"
 export PS_LOG
+# 実機の ~/.config/claude/hooks/claude-icon.png を拾わないよう既定を無効化する。
+# [1]〜[4] はアイコン以外の契約を見るため。
+export WINDOWS_TOAST_ICON="$TEST_DIR/none.png"
 : >"$PS_LOG"
 exit_code=0
 PATH="$STUB_BIN:$PATH" send_windows_toast "タイトル" "本文" >/dev/null 2>&1 || exit_code=$?
@@ -130,6 +133,52 @@ else
   FAIL=$((FAIL + 1))
   echo "  FAIL: AppLogo を渡さない"
 fi
+
+echo ""
+echo "[5] 既定アイコン（第3引数の省略時）"
+default_icon="$TEST_DIR/default-icon.png"
+touch "$default_icon"
+
+# 省略時は既定アイコンを AppLogo に渡す。daily-update と herdr-restore は
+# 第3引数を渡していないので、既定が無いとこの2経路だけアイコン無しになる。
+: >"$PS_LOG"
+PATH="$STUB_BIN:$PATH" WINDOWS_TOAST_ICON="$default_icon" \
+  send_windows_toast "T" "M" >/dev/null 2>&1
+cmd="$(cat "$PS_LOG")"
+assert_contains "-AppLogo" "$cmd" "省略時も AppLogo を渡す"
+assert_contains "default-icon.png" "$cmd" "既定アイコンを使う"
+
+# 明示指定は既定より優先する
+: >"$PS_LOG"
+explicit_icon="$TEST_DIR/explicit-icon.png"
+touch "$explicit_icon"
+PATH="$STUB_BIN:$PATH" WINDOWS_TOAST_ICON="$default_icon" \
+  send_windows_toast "T" "M" "$explicit_icon" >/dev/null 2>&1
+cmd="$(cat "$PS_LOG")"
+assert_contains "explicit-icon.png" "$cmd" "明示指定が既定より優先される"
+TOTAL=$((TOTAL + 1))
+if ! echo "$cmd" | grep -qF -- "default-icon.png"; then
+  PASS=$((PASS + 1))
+  echo "  PASS: 既定アイコンは使われない"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: 既定アイコンは使われない"
+fi
+
+# 既定アイコンの実体が無ければ AppLogo を渡さない（アイコン未配置の端末）
+: >"$PS_LOG"
+PATH="$STUB_BIN:$PATH" WINDOWS_TOAST_ICON="$TEST_DIR/no-such-icon.png" \
+  send_windows_toast "T" "M" >/dev/null 2>&1
+cmd="$(cat "$PS_LOG")"
+TOTAL=$((TOTAL + 1))
+if ! echo "$cmd" | grep -qF -- "AppLogo"; then
+  PASS=$((PASS + 1))
+  echo "  PASS: 既定アイコンが無ければ AppLogo を渡さない"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: 既定アイコンが無ければ AppLogo を渡さない"
+fi
+assert_contains "New-BurntToastNotification" "$cmd" "アイコン無しでも通知は出す"
 
 rm -rf "$TEST_DIR"
 
