@@ -341,6 +341,57 @@ assert_eq 1 "$exit_code" "ya の失敗は隠さない"
 rm -rf "$YAZI_TEST_DIR"
 
 echo ""
+echo "[7] cargo_install_update"
+
+CARGO_TEST_DIR="$(mktemp -d)"
+CARGO_STUB_BIN="$CARGO_TEST_DIR/bin"
+mkdir -p "$CARGO_STUB_BIN"
+cat >"$CARGO_STUB_BIN/cargo" <<EOF
+#!/bin/bash
+echo "CARGO_CALLED args=[\$*]" >>"$CARGO_TEST_DIR/cargo.log"
+exit "\${CARGO_EXIT:-0}"
+EOF
+chmod +x "$CARGO_STUB_BIN/cargo"
+# サブコマンドの提供元。cargo は cargo-<sub> という名前のバイナリを PATH から引く
+cat >"$CARGO_STUB_BIN/cargo-install-update" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+chmod +x "$CARGO_STUB_BIN/cargo-install-update"
+
+# cargo-update が入っていれば cargo install-update -a を呼ぶ
+: >"$CARGO_TEST_DIR/cargo.log"
+exit_code=0
+output=$(PATH="$CARGO_STUB_BIN:$PATH" \
+  cargo_install_update 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "cargo-update があれば成功する"
+assert_output_contains "install-update -a" "$(cat "$CARGO_TEST_DIR/cargo.log")" "cargo install-update -a を呼ぶ"
+
+# cargo-update が無い端末では呼ばずに成功扱い。
+# 更新対象も更新手段も無い状態で毎日 FAILED 通知が飛ぶのを避けるため。
+: >"$CARGO_TEST_DIR/cargo.log"
+CARGO_ONLY_BIN="$CARGO_TEST_DIR/bin-nocrate"
+mkdir -p "$CARGO_ONLY_BIN"
+cp "$CARGO_STUB_BIN/cargo" "$CARGO_ONLY_BIN/cargo"
+exit_code=0
+# PATH をスタブだけに絞る。実機の ~/.cargo/bin を拾って結果が変わるのを防ぐ
+output=$(PATH="$CARGO_ONLY_BIN:/usr/bin:/bin" \
+  cargo_install_update 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "cargo-update が無くても成功扱い"
+assert_eq 0 "$(grep -c CARGO_CALLED "$CARGO_TEST_DIR/cargo.log")" "cargo を呼ばない"
+assert_output_contains "skipping" "$output" "スキップの理由を出す"
+
+# cargo 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
+: >"$CARGO_TEST_DIR/cargo.log"
+exit_code=0
+output=$(PATH="$CARGO_STUB_BIN:$PATH" \
+  CARGO_EXIT=1 \
+  cargo_install_update 2>&1) || exit_code=$?
+assert_eq 1 "$exit_code" "cargo の失敗は隠さない"
+
+rm -rf "$CARGO_TEST_DIR"
+
+echo ""
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
 echo ""
