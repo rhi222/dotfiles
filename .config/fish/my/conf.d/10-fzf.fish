@@ -3,7 +3,13 @@
 # キーバインドは fzf.fish プラグインが持つ。fzf 標準のシェル統合（`fzf --fish | source`）は
 # 有効化していないので、`FZF_CTRL_R_OPTS` などの標準側の環境変数は効かない。
 # プラグイン側の設定変数（`fzf_history_opts` など）を使うこと。
-fzf_configure_bindings --directory=\ct
+#
+# **プラグインの有無を見てから呼ぶ。** fzf.fish は fisher 管理で、その宣言（fish_plugins）は
+# 追跡していない。新環境ではリンクだけ先に張られるので、素で呼ぶと毎回の起動で
+# command not found が出る。
+if type -q fzf_configure_bindings
+    fzf_configure_bindings --directory=\ct
+end
 
 # Ctrl+R（_fzf_search_history）の一覧をコマンドだけにする。
 #

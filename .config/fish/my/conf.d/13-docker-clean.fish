@@ -18,10 +18,14 @@ function __docker_clean_greeting --description 'docker の溜まり具合をキ�
     # キャッシュが古ければ裏で更新する。今回の表示には反映されない。
     if __docker_clean_stats --stale
         __docker_clean_stats --update >/dev/null 2>&1 &
-        disown
+        # 更新が即座に終わると disown 時点でジョブが消えており
+        # 「There are no suitable jobs」を出す。切り離せていれば目的は足りるので捨てる。
+        disown 2>/dev/null
     end
 end
 
-if status is-interactive
+# **docker の有無を見てから呼ぶ。** 未導入の端末では docker info が
+# command not found ハンドラを起こし、起動のたびに snap の導入案内が出る。
+if status is-interactive; and type -q docker
     __docker_clean_greeting
 end
