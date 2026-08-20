@@ -225,10 +225,10 @@ main() {
   run_step "yazi pkg upgrade" yazi_pkg_upgrade
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
+  run_step_soft "worktree cleanup check" worktree_cleanup_check
   # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
   # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
   run_step_soft "vendored skill 更新チェック" vendored_skill_check
-  run_step_soft "worktree cleanup check" worktree_cleanup_check
   # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
   # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
   run_step "claude settings pull" bash "$SCRIPT_DIR/sync-claude-settings.sh" pull
