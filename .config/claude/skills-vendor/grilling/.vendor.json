@@ -1,0 +1,13 @@
+{
+  "origin": "https://github.com/mattpocock/skills.git",
+  "sub_path": "skills/productivity/grilling",
+  "commit": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+  "vendored_at": "2026-08-20",
+  "reviewed_commit": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+  "audit": {
+    "high": 0,
+    "med": 0,
+    "low": 0
+  },
+  "license": "MIT"
+}

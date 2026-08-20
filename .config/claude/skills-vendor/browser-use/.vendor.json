@@ -1,0 +1,13 @@
+{
+  "origin": "https://github.com/browser-use/browser-use.git",
+  "sub_path": "skills/browser-use",
+  "commit": "85ddbfedf609166b2d2c76c3d80506649fee82a9",
+  "vendored_at": "2026-08-20",
+  "reviewed_commit": "85ddbfedf609166b2d2c76c3d80506649fee82a9",
+  "audit": {
+    "high": 0,
+    "med": 0,
+    "low": 3
+  },
+  "license": "MIT"
+}

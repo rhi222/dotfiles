@@ -1,0 +1,13 @@
+{
+  "origin": "https://github.com/sanyuan0704/code-review-expert.git",
+  "sub_path": "skills/code-review-expert",
+  "commit": "08b6572ef108f22d4e8a3ecf9182a4bbef097744",
+  "vendored_at": "2026-08-20",
+  "reviewed_commit": "08b6572ef108f22d4e8a3ecf9182a4bbef097744",
+  "audit": {
+    "high": 0,
+    "med": 0,
+    "low": 0
+  },
+  "license": "MIT"
+}

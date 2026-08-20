@@ -10,11 +10,7 @@
 
 anthropics/skills frontend-design
 anthropics/skills skill-creator
-browser-use/browser-use browser-use
-sanyuan0704/code-review-expert code-review-expert
 vercel-labs/agent-browser agent-browser
 # ogulcancelik/pi-extensions の herdr は skill ではなく Pi 拡張（packages/pi-herdr、
 # SKILL.md を持たない）なので宣言を撤去した。skill としては存在しない。
-mattpocock/skills grilling
-mattpocock/skills grill-me  # /grill-me → grilling を呼ぶだけのラッパー
 github/gh-stack gh-stack
