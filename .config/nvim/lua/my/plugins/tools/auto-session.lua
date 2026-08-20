@@ -172,7 +172,10 @@ require("auto-session").setup({
 -- 書き込み中断によるセッションファイル破損のリスクは増えない。SIGKILL や WSL の強制終了も
 -- カバーできる。
 local save_timer = vim.uv.new_timer()
-local SAVE_DEBOUNCE_MS = 5000
+-- テストから短縮できるようにする。テスト側はこのデバウンスが切れるのを待つしかなく、
+-- 既定の 5000ms のままだと固定 sleep が積み上がってスイート全体が50秒伸びる。
+-- 本番の既定値は 5000 のまま（test-nvim-session-autosave.sh が既定値を固定している）。
+local SAVE_DEBOUNCE_MS = tonumber(vim.env.MY_AUTOSESSION_SAVE_DEBOUNCE_MS) or 5000
 
 local function schedule_auto_save()
 	save_timer:stop()

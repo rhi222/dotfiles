@@ -19,6 +19,16 @@ set -uo pipefail
 
 SESSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/sessions"
 
+# 定期保存のデバウンス。テスト中だけ短縮する（auto-session.lua が
+# MY_AUTOSESSION_SAVE_DEBOUNCE_MS で上書きを受け付ける）。
+# 本番の 5000ms のまま固定 sleep で待つと、このテスト1本でスイート全体が
+# 50秒伸び、run-tests.sh が止まって見える。
+SAVE_DEBOUNCE_MS="${SAVE_DEBOUNCE_MS:-300}"
+
+# 本番の既定値。短縮の副作用で本番値が下がっていないことを固定する。
+AUTOSESSION_CONFIG="$(cd "$(dirname "$0")/.." && pwd)/.config/nvim/lua/my/plugins/tools/auto-session.lua"
+EXPECTED_DEFAULT_DEBOUNCE_MS=5000
+
 # 除外対象は auto-session.lua 側にパスで直書きしているため、テストも実物を使う。
 # :edit するだけで書き込まないので中身は変わらない。
 SCRATCHPAD="$HOME/.inbox.md"
@@ -85,7 +95,9 @@ start_nvim() {
   # AUTOSESSION_UNIT_TESTING はそのためのプラグイン公式のテスト用エスケープハッチで、
   # headless 判定だけを外す。args_allow_files_auto_save などの判定は残るため、
   # ケース3の非回帰検証は有効なまま。
-  (cd "$workdir" && exec env AUTOSESSION_UNIT_TESTING=1 nvim --headless --listen "$sock" "$@") >/dev/null 2>&1 &
+  (cd "$workdir" && exec env AUTOSESSION_UNIT_TESTING=1 \
+    MY_AUTOSESSION_SAVE_DEBOUNCE_MS="$SAVE_DEBOUNCE_MS" \
+    nvim --headless --listen "$sock" "$@") >/dev/null 2>&1 &
   NVIM_PID=$!
   for _ in $(seq 1 60); do
     if nvim --server "$sock" --remote-expr '1' >/dev/null 2>&1; then
@@ -100,6 +112,27 @@ edit_file() {
   local sock="$1"
   local path="$2"
   nvim --server "$sock" --remote-expr "execute('edit $path')" >/dev/null 2>&1
+}
+
+# セッションが書かれるのを待つ（正の待ち）。固定 sleep ではなく条件で待つ。
+# デバウンスが切れて保存が走ればすぐ返るので、待ち時間が実測に張り付く。
+wait_for_session_file() {
+  local workdir="$1"
+  local deadline=$((SECONDS + 15))
+  while ((SECONDS < deadline)); do
+    if [[ -n "$(find_session_file "$workdir")" ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
+# 「保存されないこと」を確かめるための待ち（負の待ち）。待つ対象が無いので
+# 条件 poll にできず、デバウンスを確実に越える固定待ちが要る。
+# デバウンスの5倍を待つ（短縮しているので実時間は短い）。
+settle_debounce() {
+  sleep "$(awk -v ms="$SAVE_DEBOUNCE_MS" 'BEGIN { printf "%.2f", ms * 5 / 1000 }')"
 }
 
 # --- ケース1: SIGTERM で殺されても直前の状態が保存されている ---
@@ -118,8 +151,8 @@ test_saved_on_sigterm() {
   edit_file "$sock" "$workdir/alpha.txt"
   edit_file "$sock" "$workdir/bravo.txt"
 
-  # 定期保存のデバウンスが切れるのを待つ
-  sleep 10
+  # 定期保存が走るまで待つ
+  wait_for_session_file "$workdir"
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
@@ -187,7 +220,8 @@ test_not_saved_with_file_args() {
   fi
   pid=$NVIM_PID
 
-  sleep 10
+  # 保存されないことを見るので、デバウンスを越えて待つ
+  settle_debounce
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
@@ -220,10 +254,11 @@ test_not_saved_while_scratchpad_visible() {
 
   edit_file "$sock" "$workdir/alpha.txt"
   # ここで alpha.txt の状態が一度保存される
-  sleep 10
+  wait_for_session_file "$workdir"
 
   edit_file "$sock" "$SCRATCHPAD"
-  sleep 10
+  # スクラッチパッドで上書きされないことを見るので、デバウンスを越えて待つ
+  settle_debounce
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
@@ -267,7 +302,7 @@ test_saved_after_scratchpad_closed() {
   edit_file "$sock" "$workdir/alpha.txt"
   edit_file "$sock" "$SCRATCHPAD"
   edit_file "$sock" "$workdir/bravo.txt"
-  sleep 10
+  wait_for_session_file "$workdir"
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
@@ -287,7 +322,23 @@ test_saved_after_scratchpad_closed() {
   fi
 }
 
+# --- ケース0: 本番のデバウンス既定値が下がっていない ---
+# テストは短縮した値で走るので、本番値の退行をここで止める。
+test_production_debounce_default() {
+  echo "ケース0: 本番のデバウンス既定値が ${EXPECTED_DEFAULT_DEBOUNCE_MS}ms のまま"
+  if [[ ! -f "$AUTOSESSION_CONFIG" ]]; then
+    ng "auto-session.lua が見つからない: $AUTOSESSION_CONFIG"
+    return
+  fi
+  if grep -qE "or ${EXPECTED_DEFAULT_DEBOUNCE_MS}\b" "$AUTOSESSION_CONFIG"; then
+    ok "既定値が ${EXPECTED_DEFAULT_DEBOUNCE_MS}ms"
+  else
+    ng "既定値が ${EXPECTED_DEFAULT_DEBOUNCE_MS}ms でない（auto-session.lua を確認）"
+  fi
+}
+
 echo "=== nvim セッション自動保存テスト ==="
+test_production_debounce_default
 test_saved_on_sigterm
 test_saved_on_clean_quit
 test_not_saved_with_file_args
