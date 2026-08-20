@@ -260,13 +260,38 @@ vim.defer_fn(prewarm_decision_async, 200)
 --------------------------------------------------------------------------------
 -- Conform.nvim 設定（元ファイルをベースに最小変更：検出関数を差し替え）
 --------------------------------------------------------------------------------
+-- 保存をブロックせず非同期で整形する filetype
+-- markdown: prettier が大きめのノートで 0.5s ほどかかり、同期整形だと :w が固まる
+local ASYNC_FORMAT_FT = {
+	markdown = true,
+}
+
+local FORMAT_OPTS = { timeout_ms = 5000, lsp_format = "fallback" }
+
+-- Disable with a global or buffer-local variable
+local function autoformat_disabled(bufnr)
+	return vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat
+end
+
 require("conform").setup({
 	format_on_save = function(bufnr)
-		-- Disable with a global or buffer-local variable
-		if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+		if autoformat_disabled(bufnr) then
 			return
 		end
-		return { timeout_ms = 5000, lsp_format = "fallback" }
+		if ASYNC_FORMAT_FT[vim.bo[bufnr].filetype] then
+			return -- format_after_save 側で非同期に整形する
+		end
+		return FORMAT_OPTS
+	end,
+
+	format_after_save = function(bufnr)
+		if autoformat_disabled(bufnr) then
+			return
+		end
+		if not ASYNC_FORMAT_FT[vim.bo[bufnr].filetype] then
+			return
+		end
+		return FORMAT_OPTS
 	end,
 
 	formatters_by_ft = {
