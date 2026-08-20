@@ -403,23 +403,39 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 | esa 週次レポート        | `~/.config/esa-weekly-enabled`         | 金曜 16:00                   |
 | Linear スイープ         | `~/.config/linear-sweep-enabled`       | 平日 8:00                    |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled`    | 火〜土曜 1:00                |
-| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 8:10                    |
+| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 10:10                   |
 
 ### cron を登録する
 
-実際に登録する cron エントリ：
+**フラグを作った機能の行だけ**登録する（全行を入れる必要はない）。
+逆に、**フラグと cron は必ずセットで揃える。** フラグだけ作って cron を忘れると
+機能が黙って止まる（linear-dispatch で実際に起きた。フラグは何も実行しない）。
 
 ```cron
-0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh
-0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh
-30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh
-0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh
-0 8 * * 1-5 $HOME/scripts/linear-sweep.sh
-0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh
-10 8 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh
+0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
+30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
+0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/linear-sweep.sh >> $HOME/.linear-sweep.log 2>&1
+0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
+10 10 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 ```
 
 フラグ作成前に、各機能の説明と手動確認方法を [AGENTS.md](../AGENTS.md) で確認する。
+
+### 旧環境の crontab を運ぶ
+
+crontab には dotfiles 管理外のエントリ（社内向けの集計ジョブ等）も入っているため、
+上の表だけでは復元できない。旧環境で全文を private 集約先に退避し、新環境で読み戻す。
+
+```fish
+# 旧環境で。集約先ルート直下は export の zip に入るが、home/ 配下ではないので
+# dotfilesLink.sh のリンク対象にはならない
+crontab -l > ~/.local/share/dotfiles-private/crontab.txt
+
+# 新環境で（import 後、中身を確認してから）
+crontab ~/.local/share/dotfiles-private/crontab.txt
+```
 
 ### 補足
 
