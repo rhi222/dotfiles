@@ -681,6 +681,50 @@ herdr 復元: 中断  nvim 4/10, claude 0/5  開始から 1分23秒 (プロセ�
 `test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
 **後ろ2本は CI では走らない**（実 nvim 設定と auto-session の導入済み環境が要るため `# ci-skip:` 宣言済み）。
 
+### herdr タブ行のステータス（時計 / CPU / メモリ / LA）
+
+herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-right 相当を出す。
+中身は `.config/herdr/scripts/status.sh` が1行で吐く。
+
+```
+8/20 Thu 12:09:33 · CPU 30% · MEM 6.1/11.7G · LA 2.12
+```
+
+| やりたいこと     | コマンド                                                             |
+| ---------------- | -------------------------------------------------------------------- |
+| 出力の確認       | `bash .config/herdr/scripts/status.sh`                               |
+| 設定の検証       | `herdr config check`                                                 |
+| 反映             | `herdr server reload-config`                                         |
+| 別設定で試す     | `env HERDR_CONFIG_PATH=<試作.toml> herdr config check`               |
+| 動作確認         | `bash scripts/test-herdr-status.sh`                                  |
+
+- **native の `datetime` エントリを使わず command 1本に寄せている。** `datetime` は更新間隔を
+  持たないので秒を出せない。`command` は `interval_seconds` を取れて最小が 1 秒
+- **statusline だけを着色する経路が無い。** 0.8.2 では次の2つが同時に効く。
+  ①`tab_bar_right` に色の指定フィールドが無い ②タブ行は受け取った文字列の
+  **ESC バイトだけを落として残りを可視文字として描く**ので、スクリプトが `\033[38;5;208m` を
+  出すと `[38;5;208m` が表示されてしまう。そのため `status.sh` の着色は既定 `never`。
+  閾値による色分けの実装は残してあるが、これはターミナルで直接叩いたときのためのもの
+- **色は theme の `overlay1` トークン頼みで、しかも statusline 専用ではない。**
+  `overlay1` を検証色に振って画面全体を `pane read --format ansi` で数えたところ、
+  **非活性タブのラベル / タブ行の `+` ボタン / statusline / オンボーディング本文**が同じ値を共有していた
+  （活性タブは背景バッジ + 暗い文字で `overlay1` に依らない。非活性 workspace 名は `overlay0`）。
+  **statusline を明るくすると非活性タブのラベルも一緒に変わる**ため、上書きせず素の
+  `#697196` のままにしている。目立たせたくなったら、この副作用とセットで判断する
+- **`status.sh` は外部コマンドを1つも呼ばない。** date / awk / grep / cut を素直に使った初版は
+  実測 53ms/回で、1秒間隔だと1コアの5%を常時食う。bash 組み込みだけに寄せて 2.6ms にした。
+  ここが唯一の速度要件で、可読性より優先する
+- **曜日は `%a` ではなく `%w`（番号）から自前で当てる。** `%a` はロケール次第で表記が変わり、
+  `LANG` を変えた端末で幅と見た目が動く。月日はゼロ埋めしない（`%-m/%-d`）が、
+  時刻は桁を揃える（幅が毎秒動くのを避ける）
+- **CPU% は `/proc/stat` の差分。** 前回値を `~/.cache/herdr-status/cpu` に持つ。sleep で2点取る
+  方式は毎回待つので1秒間隔と噛み合わない。前回値が無い初回だけ「起動からの平均」で埋める
+  （空欄にすると herdr 起動直後だけ欄が欠けて幅が動く）
+- **読めない項目は欄ごと落として exit 0。** 1項目のためにステータス全体が消えるほうが害が大きい
+- `datetime` エントリを使う場合、format は strftime だが `%z` / `%s` は拒否される
+  （サーバーのローカル壁時計なのでオフセットとエポックの情報が無い）
+- エントリは最大16個。超過分は `ignoring extras` で捨てられる
+
 ### Docker開発
 
 - `find_docker_compose` 関数でcomposeファイルを自動検出
