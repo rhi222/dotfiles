@@ -11,6 +11,7 @@
 | 文書                                                                 | いつ開くか                                           |
 | -------------------------------------------------------------------- | ---------------------------------------------------- |
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
+| [docs/migration.md](docs/migration.md)                               | PC 移行でリポジトリ群と作業状態を運ぶとき            |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
 | [docs/worktree.md](docs/worktree.md)                                 | worktree の初期化・掃除の判定を変えるとき            |
 | [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` サブコマンド自体の使い方を調べるとき        |
