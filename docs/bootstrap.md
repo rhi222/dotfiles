@@ -39,6 +39,22 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 > そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
 > 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
+### WSL2 では linger を有効にする
+
+```bash
+sudo loginctl enable-linger "$USER"
+```
+
+**WSL2 は `/run/user/1000` を作らない。** `systemd=true` にしていても、WSL のシェル起動は
+PAM ログインを経由しないため `pam_systemd` が走らず、systemd-logind が runtime dir を
+作らないまま `XDG_RUNTIME_DIR=/run/user/1000` という環境変数だけが取り残される。
+この状態だと `XDG_RUNTIME_DIR` にソケットを作るツールが全部壊れる
+（実例: nvim の fzf-lua が `serverstart(): Failed to start server` で落ちた）。
+
+- root には `/run/user/0` があるので「systemd が動いていない」わけではない点が紛らわしい
+- 設定は `/var/lib/systemd/linger/` に永続化され、再起動後も boot 時に自動作成される
+- 確認は `loginctl show-user $USER --property=Linger`（`Linger=yes` になっていること）
+
 ### 管理方法と例外
 
 - **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
