@@ -227,6 +227,9 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 
 - **allowlist は default-deny。** allowlist 外の owner を `skill-add.sh` /
   `setup-claude-skills.sh` に渡すと**エラーで止まり** vendor 導線が案内される。
+  `claude-skills.txt` に書いた行も同じで、bootstrap（`setup-claude-skills.sh`）は
+  信頼済みの行を入れ切ってから非0で終わる。**bootstrap の失敗ではなく行が1本間違って
+  いる**ので、その行を `skill-vendor.sh add` に移すのが直し方になる。
   散文の規約では取りこぼすので、判定が確定する唯一の瞬間（owner を渡すところ）に
   ゲートを置いた。ゲートは**両方**に要る。片方だけだと bootstrap 経路から素通りする
 - **allowlist に入れることは「人のレビューなしで毎日自動更新される」ことと同義。**
