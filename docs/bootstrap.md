@@ -157,13 +157,25 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 - **手書き** — 雛形が無いため、新環境でファイルを作成して値を記入する
 - **雛形** — `dotfilesLink.sh` が作った空のファイルに値を記入する
 - **自動** — セットアップ処理が配置する。内容だけ確認すればよい
+- **再ログイン** — コピー不要。新環境で各ツールにログインし直せば復旧する
 
 #### A. 資格情報
 
 漏れるとすぐに悪用される可能性がある情報。値そのものはこの文書に記録しない。
 
+- **コピー** `~/.ssh/`
+  — GitHub（個人・業務）・GitLab・Backlog の鍵、AWS の `.pem`、`config`。
+  ディレクトリごと運び、秘密鍵のパーミッションが 600 であることを確認する
+- **コピー** `~/.aws/`
+  — AWS CLI / SSO の設定と認証情報。**中身は開かずディレクトリごとコピーする**
+  （AI に読ませない領域。この台帳にも値やプロファイル名を書かない）
+- **コピー** `~/.claude/settings.local.json`
+  — esa MCP サーバー定義（API トークンを平文で含む）。`sync-claude-settings.sh` が
+  同期するのは `settings.json` だけで、このファイルは対象外
 - **コピー** `.config/AutoHotkey/ahk-snippets/passwords/` 配下5件
   — AWS・オペレータ・RDP の ID とパスワード。`README.md` と `.gitkeep` だけが追跡対象
+- **再ログイン** Claude Code（初回起動時にログイン）・Codex CLI（`codex login`。
+  `~/.codex/auth.json` のコピーでも可）・gh（`gh auth login`）
 - **手書き** `.config/fish/my/conf.d/99-local.fish`
   — esa の API トークンと `docker_clean_ignore_patterns`
 - **手書き** `~/.config/linear/api-key`
