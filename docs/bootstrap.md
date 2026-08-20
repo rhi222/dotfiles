@@ -22,6 +22,8 @@ WSL2 固有の作業には本文で明記している。それ以外の環境で
 
 ## 0. 前提ツールを入れる
 
+### インストール
+
 **この3つだけはリポジトリの自動化では入らない。** どれも[手順1](#1-基本セットアップを実行する)の
 中で使うものなので、先に手で入れる。この時点ではまだ fish がログインシェルではないので、
 以下は bash で実行する。
@@ -37,6 +39,8 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 > そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
 > 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
+### 管理方法と例外
+
 - **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
   手順1で重ねて入っても害は無い。宣言を残してあるのは、後から「何で入れたか」を追えるようにするため
 - **`mise` が CLI ツールのほぼ全部を持ってくる。** gh・fzf・ripgrep・fd・tmux・neovim・yazi・
@@ -50,6 +54,8 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
   最初の1回だけは `git clone` でリポジトリを取る
 
 ## 1. 基本セットアップを実行する
+
+### セットアップ手順
 
 パスが `SNIPPET_ROOT` などに埋め込まれているため、このリポジトリは ghq 配下に置く。
 `ghq` はまだ入っていないので、初回は `ghq root` と同じ場所へ手で clone する。
@@ -66,6 +72,8 @@ exec fish                                                    # リンクした�
 mise install                                                 # config.toml のツールを一括導入
 ```
 
+### 実行順序
+
 **この3つの順序には理由があり、入れ替えると静かに壊れる。**
 
 1. **`dotfilesLink.sh` が先。** `~/.config/mise/config.toml` はリンクで配置されるので、
@@ -80,6 +88,8 @@ mise install                                                 # config.toml の�
    `pynvim` が落ちて nvim の `:checkhealth` が Python provider を ERROR にする、
    といった形で後から気づくことになる
 
+### mise の確認と復旧
+
 `mise --version` が返らない場合は、`~/.local/bin` が `$fish_user_paths` に入っているかを
 `echo $fish_user_paths` で確認する。PATH を足す `00-paths.fish` は `01-mise.fish` より
 前に読ませる必要があり（番号がそのまま依存順になる）、逆順だと `type -q mise` が偽になって
@@ -90,6 +100,8 @@ mise が activate されない。
 ```fish
 mise install --force python node
 ```
+
+### private bundle と雛形
 
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
@@ -112,7 +124,7 @@ import 済みなら実体が既にあるので、雛形生成はスキップさ�
 > 以下の台帳は「集約ファイルに何が入っているか」の記録として残している。
 > 旧環境が無い立ち上げでのみ、コピーや手書きが必要になる。
 
-### 集約ファイルで運ぶ
+### 旧環境がある場合：集約ファイルで運ぶ
 
 旧環境で1度だけ集約し、zip に固めて運ぶ。
 
@@ -136,7 +148,7 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 `~/.claude/settings.json` はこの仕組みの対象外。`sync-claude-settings.sh` がマスクしながら
 コピー同期する（[AGENTS.md](../AGENTS.md) 参照）。
 
-### 台帳
+### 旧環境がない場合：台帳から用意する
 
 次の台帳で **A. 資格情報** と **B. 社内固有情報** をすべて確認する。
 各項目の先頭にある移植方法は次の意味を持つ。
@@ -146,7 +158,7 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 - **雛形** — `dotfilesLink.sh` が作った空のファイルに値を記入する
 - **自動** — セットアップ処理が配置する。内容だけ確認すればよい
 
-### A. 資格情報
+#### A. 資格情報
 
 漏れるとすぐに悪用される可能性がある情報。値そのものはこの文書に記録しない。
 
@@ -160,7 +172,7 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
   — 社内 marketplace の定義を含む。`dotfilesLink.sh` が `sync-claude-settings.sh push` で配置し、
   同期時には機密値をマスクする
 
-### B. 社内固有情報
+#### B. 社内固有情報
 
 社内のシステム構成や案件情報が分かる情報。これらも値そのものはこの文書に記録しない。
 
@@ -193,9 +205,9 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 - `.config/git/config-work`
   — 業務用の Git `user.*`。個人用と分ける場合だけ作成する
 
-Git 設定の具体例と注意点は[Git の user 設定](#git-の-user-設定)を参照。
+Git 設定の具体例と注意点は[Git の user 設定](#git-の-user-設定を分ける)を参照。
 
-### C. 機密を含まない ignore 対象
+#### C. 機密を含まない ignore 対象
 
 次のものは移植しなくてよい。
 
@@ -206,7 +218,7 @@ Git 設定の具体例と注意点は[Git の user 設定](#git-の-user-設定)
 - `.config/codex/config.toml` — 雛形から生成する
 - `.config/nvim/pack`、`.netrwhist` — Neovim が生成する
 
-### Git の user 設定
+### Git の user 設定を分ける
 
 `user.*` は端末ごとに変わるため追跡しない。`.gitconfig` が常に読み込むのは `config-local` だけで、
 業務用の設定は `config-local` の `includeIf` から `config-work` を読み込む二段構成にする。
@@ -238,7 +250,7 @@ Git 設定の具体例と注意点は[Git の user 設定](#git-の-user-設定)
 	email = <業務用メール>
 ```
 
-注意点：
+#### 注意点
 
 - `gitdir:` の値には末尾のスラッシュを付ける。これにより、そのディレクトリ配下すべてにマッチする
 - `/data/git-repos` は `.gitconfig` の `ghq.root`。`ghq get` したリポジトリはホスト名ごとに分かれる
@@ -259,7 +271,7 @@ git status --short .gitconfig .config/git/                # 出力が無いこ�
 
 ## 3. 外部ツールをインストールする
 
-### 宣言から入るもの
+### リポジトリの宣言から入れる
 
 ローカル設定を用意したら、リポジトリに宣言されている外部ツールを導入する。
 `STRICT=1` を付けた処理は、一部のインストールに失敗した場合も成功扱いにせず終了する。
@@ -283,6 +295,8 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 - **Codex CLI** — `npm i -g @openai/codex`。`.config/codex/` と `~/.agents/skills/` の自作 skill 用
 - **Docker** — Docker Desktop の WSL2 統合を有効にする（統合を使わない場合は docker apt repo）。
   `dclean`・`dc` 系の略語・`lazydocker` が依存する
+
+#### fisher と fish プラグイン
 
 **`~/.config/fish/fish_plugins` は追跡していない**ので、プラグインは名指しで入れ直す。
 
@@ -311,6 +325,8 @@ exec fish
 **空行 + 情報行 + `❯` の3行プロンプト**になる。ここが1行になっていない端末は、この手順を
 踏んでいない端末。
 
+#### Claude Code
+
 Claude Code は公式インストーラで入れる。**npm でも mise でもない**ので、宣言リストには載らない。
 
 ```fish
@@ -320,12 +336,16 @@ claude --version
 claude           # 初回はログインが要る
 ```
 
+#### tmux tpm
+
 `~/.config/tmux/plugins/` も追跡していない。tpm だけ手で clone し、残りは tmux 内から取る。
 
 ```fish
 git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 # tmux を起動して prefix + I（大文字）で tmux.conf の @plugin を一括取得
 ```
+
+#### 手動インストール後の補足
 
 - **セッション復元は herdr が持っており、tmux-resurrect / tmux-continuum は使わない。**
   `tmux.conf` の宣言からは外してある。ただし **tpm は宣言から消しても実体を消さない**ので、
@@ -359,6 +379,8 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 
 ## 4. 自動化を有効にする（任意・WSL2）
 
+### 有効化する機能を選ぶ
+
 使う機能だけ有効にする。各機能は、対応するフラグファイルを作らない限り動作しない。
 
 | 機能                    | 有効化フラグ                           | cron の時刻                  |
@@ -370,6 +392,8 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 | Linear スイープ         | `~/.config/linear-sweep-enabled`       | 平日 8:00                    |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled`    | 火〜土曜 1:00                |
 | Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 8:10                    |
+
+### cron を登録する
 
 実際に登録する cron エントリ：
 
@@ -385,7 +409,7 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 
 フラグ作成前に、各機能の説明と手動確認方法を [AGENTS.md](../AGENTS.md) で確認する。
 
-補足：
+### 補足
 
 - headless の Claude を呼ぶ処理には、`lib/cron-claude.sh` で timeout を設定している。
   上限は `NIPPO_CREATE_TIMEOUT` など、機能ごとの環境変数で変更できる
