@@ -289,8 +289,27 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 ```fish
 curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
 fisher install jorgebucaran/fisher ilancosman/tide@v6 patrickf1/fzf.fish
-tide configure
+tide configure --auto \
+    --style=Lean \
+    --prompt_colors='True color' \
+    --show_time='24-hour format' \
+    --lean_prompt_height='One line' \
+    --prompt_spacing=Compact \
+    --icons='Few icons' \
+    --transient=No
+exec fish
 ```
+
+**対話の `tide configure` は使わない。** tide の見た目は156個の universal 変数で決まるが、
+`fish_variables` は追跡していないので、リポジトリ側にあるのは `05-tide-settings.fish` が
+`set -g` する2つ（`tide_prompt_min_cols` / `tide_right_prompt_items`）だけ。
+残り154個はウィザードの回答そのもので、**答えを間違えるか質問を飛ばすと別の見た目になる**。
+`--auto` は同じ回答を引数で渡すので、何度流しても同じ154個が確定する。
+
+飛ばした場合に出るのは lean プリセットの既定（`tide_left_prompt_items` が
+`pwd git newline character`、`tide_prompt_add_newline_before` が `true`）で、
+**空行 + 情報行 + `❯` の3行プロンプト**になる。ここが1行になっていない端末は、この手順を
+踏んでいない端末。
 
 Claude Code は公式インストーラで入れる。**npm でも mise でもない**ので、宣言リストには載らない。
 
