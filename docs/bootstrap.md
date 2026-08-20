@@ -164,6 +164,27 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 `~/.claude/settings.json` はこの仕組みの対象外。`sync-claude-settings.sh` がマスクしながら
 コピー同期する（[AGENTS.md](../AGENTS.md) 参照）。
 
+### Claude Code のメモリと履歴を運ぶ
+
+private bundle の対象外だが、旧環境からコピーしないと消えるものが `~/.claude` にある。
+
+- `~/.claude/projects/<パスslug>/memory/` — プロジェクト別の永続メモリ。
+  **slug はプロジェクトの絶対パス由来**なので、新環境でもユーザー名とリポジトリの配置
+  （`/data/git-repos` 配下）を旧環境と揃えないと読まれなくなる
+- `~/.claude/history.jsonl` — プロンプト入力履歴
+
+```fish
+# 旧環境で（memory と履歴だけなら数MBに収まる）
+cd ~
+tar czf claude-memory.tar.gz .claude/history.jsonl .claude/projects/*/memory
+
+# 新環境で
+tar xzf claude-memory.tar.gz -C ~
+```
+
+セッショントランスクリプト（`projects/**/*.jsonl`、数百MB）は含めていない。
+旧環境のセッションを `--resume` で開き直したい場合だけ追加する。
+
 ### 旧環境がない場合：台帳から用意する
 
 次の台帳で **A. 資格情報** と **B. 社内固有情報** をすべて確認する。
