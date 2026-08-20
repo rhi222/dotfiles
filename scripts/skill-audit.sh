@@ -12,9 +12,13 @@
 # GNU grep 3.11 と ugrep 7.8.4 で結果が食い違う（ugrep が3件中1件しか拾わない）。
 # -P + \x{...} は両実装で一致することを実測で確認している。
 #
-# バイナリ判定は grep -Iq で行う。file --mime はコードブロックの多い .md を
-# application/javascript と判定するため使えない。
+# テキスト/非テキストの判定は lib/text-file.sh に集約している（skill-vendor.sh と
+# 判定を一致させるため）。
 set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/text-file.sh
+source "$SCRIPT_DIR/lib/text-file.sh"
 
 QUIET=0
 if [ "${1:-}" = "--quiet" ]; then
@@ -95,7 +99,7 @@ all_files() {
 text_files() {
   local f
   while IFS= read -r f; do
-    grep -Iq . "$f" 2>/dev/null && printf '%s\n' "$f"
+    is_text_file "$f" && printf '%s\n' "$f"
   done < <(all_files)
 }
 
@@ -183,9 +187,7 @@ scan_hosts() {
 scan_binary() {
   local f
   while IFS= read -r f; do
-    [ -s "$f" ] || continue
-    grep -Iq . "$f" 2>/dev/null && continue
-    report HIGH "$(rel "$f")" 0 "非テキストファイル（レビューできない）" ""
+    is_binary_file "$f" && report HIGH "$(rel "$f")" 0 "非テキストファイル（レビューできない）" ""
   done < <(all_files)
 }
 
