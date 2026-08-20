@@ -26,6 +26,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 AUDIT="$SCRIPT_DIR/skill-audit.sh"
 
+# shellcheck source=lib/text-file.sh
+source "$SCRIPT_DIR/lib/text-file.sh"
+
 VENDOR_DIR="${SKILL_VENDOR_DIR:-$REPO_ROOT/.config/claude/skills-vendor}"
 CACHE_DIR="${SKILL_VENDOR_CACHE:-$HOME/.cache/claude-skills-vendor}"
 SELF_SKILLS="${SKILL_VENDOR_SELF_SKILLS:-$REPO_ROOT/.config/claude/skills}"
@@ -119,12 +122,10 @@ MSG
   done
 
   # 非テキストファイルは読んでレビューできないので入れない。
-  # 判定は grep -Iq。file --mime はコードブロックの多い .md を誤判定する
+  # 判定は lib/text-file.sh に集約している（skill-audit.sh と一致させるため）
   bin=""
   while IFS= read -r f; do
-    [ -s "$f" ] || continue
-    grep -Iq . "$f" 2>/dev/null && continue
-    bin="$bin  ${f#"$src/"}"$'\n'
+    is_binary_file "$f" && bin="$bin  ${f#"$src/"}"$'\n'
   done < <(find "$src" -type f ! -path '*/.git/*' -print | sort)
   if [ -n "$bin" ]; then
     echo "Error: 非テキストファイルが含まれています（レビューできないため取り込みません）" >&2
