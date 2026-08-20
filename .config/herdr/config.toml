@@ -73,6 +73,22 @@ copy_on_select = true
 
 show_agent_labels_on_pane_borders = true
 agent_panel_sort = "spaces"
+
+# タブ行の右端に tmux の status-right 相当を出す。
+#
+# 日時・CPU・メモリ・LA を native の datetime エントリではなく command 1本に寄せている。
+# 理由は2つ。①native の datetime は更新間隔を持たないので秒を出せない。
+# ②タブ行の文字色は theme の overlay1 で一括なので、項目を分けても色分けはできない。
+# 逆に1本にまとめると fork も1回で済む（実測 2.6ms/回）。
+#
+# command はサーバー側で実行されるので、herdr --remote でもペインが実際に動いている
+# ホストの値が出る。interval_seconds の最小は 1。
+tab_bar_right = [
+  { type = "zoom" },
+  { type = "command", command = "$HOME/.config/herdr/scripts/status.sh", interval_seconds = 1, timeout_seconds = 2 },
+]
+tab_bar_right_separator = " · "
+
 [ui.toast]
 # WSL2 では OS 通知(system)に追加設定が要るため、まずアプリ内トーストで安全側に
 # 慣れたら "system" / "terminal" へ変更可
