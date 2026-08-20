@@ -203,19 +203,72 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 
 一括インストールは `bash scripts/apt-setup.sh` を使う。内部で `apt update` を実行したうえでコメント/空行を除外して `apt install -y` する。
 
-### Claude Code skill管理
+### Claude Code skill管理（信頼境界と vendoring）
 
-外部 agent skill は `gh skill` (GitHub CLI v2.90.0+) で管理。宣言リストは `scripts/claude-skills.txt`。デフォルトで Claude Code (`~/.claude/skills/`) と Codex (`~/.codex/skills/`) の両方にインストールする（`SKILL_AGENTS` 環境変数で対象agentを変更可能）。
+外部 skill は**提供元で2つの導線に分ける**。`skill` は指示なので、更新は
+「依存パッケージの更新」ではなく「エージェントへの指示の更新」にあたる。
 
-| やりたいこと         | コマンド                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| skill 追加           | `bash scripts/skill-add.sh <owner/repo> <skill>`                                                                   |
-| index 未登録リポ追加 | `claude-skills.txt` に `local: <git-url> <sub-path> <skill-name>` を手書き → `bash scripts/setup-claude-skills.sh` |
-| 新環境 bootstrap     | `env STRICT=1 bash scripts/setup-claude-skills.sh`                                                                 |
-| 更新                 | `daily-update.sh` が自動実行                                                                                       |
-| 削除                 | `claude-skills.txt` の行削除 + `rm -rf ~/.claude/skills/<name> ~/.codex/skills/<name>`                             |
+| 導線     | 対象                                | 実体                                                            | 更新                                          |
+| -------- | ----------------------------------- | --------------------------------------------------------------- | --------------------------------------------- |
+| trusted  | `trusted-skill-owners.txt` の owner | `~/.claude/skills/<name>`（gh が入れた実ディレクトリ）          | `daily-update.sh` の `gh skill update --all`  |
+| vendored | それ以外すべて                      | `.config/claude/skills-vendor/<name>/`（コミット済み）→ symlink | 検知のみ自動。取込は手動 + audit + `git diff` |
+| 自作     | 自分                                | `.config/claude/skills/<name>/`                                 | 該当なし                                      |
 
-詳細は `scripts/setup-claude-skills.sh` と `scripts/skill-add.sh` 冒頭コメントを参照。
+| やりたいこと           | コマンド                                                                |
+| ---------------------- | ----------------------------------------------------------------------- |
+| trusted な skill 追加  | `bash scripts/skill-add.sh <owner/repo> <skill>`                        |
+| vendored な skill 追加 | `bash scripts/skill-vendor.sh add <owner/repo> <sub-path> [name]`       |
+| vendored の更新        | `bash scripts/skill-vendor.sh update <name>`                            |
+| vendored の点検        | `bash scripts/skill-vendor.sh status` / `list`                          |
+| 単体で内容を検査       | `bash scripts/skill-audit.sh <skill-dir>`                               |
+| 新環境 bootstrap       | `env STRICT=1 bash scripts/setup-claude-skills.sh` + `./dotfilesLink.sh` |
+| 削除（vendored）       | `rm -rf .config/claude/skills-vendor/<name>` + `./dotfilesLink.sh`      |
+
+- **allowlist は default-deny。** allowlist 外の owner を `skill-add.sh` /
+  `setup-claude-skills.sh` に渡すと**エラーで止まり** vendor 導線が案内される。
+  散文の規約では取りこぼすので、判定が確定する唯一の瞬間（owner を渡すところ）に
+  ゲートを置いた。ゲートは**両方**に要る。片方だけだと bootstrap 経路から素通りする
+- **allowlist に入れることは「人のレビューなしで毎日自動更新される」ことと同義。**
+  初期値は `anthropics` / `github` / `vercel-labs` の3つだけ。個人アカウントは入れない
+- **allowlist ファイルが無ければ拒否する（fail-closed）。** `secret-scan.sh` の辞書とは
+  逆に倒している。辞書不在で commit できないのは困るが、allowlist 不在で skill が
+  入らないのは機能が欠けるだけで害がない
+- **vendored はリポジトリにコミットする。** 更新のレビュー面を `git diff` に一本化する
+  ため。リポジトリ外に置くと差分を見せる仕組みを取込スクリプトが自前で持つことになり、
+  その仕組みを飛ばした更新経路が必ず生まれる
+- **中央の一覧ファイルは持たない。** `.vendor.json` が唯一の正で、`ls skills-vendor/` が
+  一覧そのもの。`claude-skills.txt` / `gh-extensions.txt` / `package.toml` が必要だったのは
+  どれも実体をリポジトリに持たないからで、vendored は前提が違う
+- **`reviewed_commit` を `commit` と別に持つ。** 一致しなければ「取り込んだがレビューして
+  いない」状態で、`status` と CI（`test-skill-vendor.sh`）が落とす。ファイルを手で
+  書き換えて `commit` だけ進めても検知される
+- **audit が 0 件でも人の承認を要求する。** 平文で書かれた指示型の injection
+  （「以前の指示を無視して…」）は grep では拾い切れないので、機械判定を最終判断にしない
+- **未検証の skill を Claude に読ませない。** レビューの主体は人に置く。読ませた時点で
+  ペイロードが会話コンテキストに入る。`skill-audit.sh` はプロンプトを一切生成しない
+- **不可視文字の検出はバイト列で書かない。** `grep -P` + `\x{...}` を使う。バイト列だと
+  GNU grep 3.11 と ugrep 7.8.4 で結果が食い違う（ugrep が3件中1件しか拾わない）
+- **バイナリ判定は `grep -Iq`。`file --mime` は使わない。** コードブロックの多い `.md` が
+  `application/javascript` と判定され、`vercel-react-best-practices` の正当な
+  `rules/*.md` 27件が誤って弾かれる
+- **`lint.sh` は `skills-vendor/` を除外する。** `lint.sh` は
+  「ignore 済み＝自分が保守しない」で第三者コードを切る前提に立っているが、vendored は
+  **追跡していながら自分は保守しない**ので、この前提の唯一の例外になる
+- **`secret-scan.sh` は除外しない。** vendored に社内ホスト名や実在の値が混ざっていたら
+  止めたい。誤検知はレアな手動操作なので、起きたときに対処する
+- **`daily-update.sh` は検知だけ。** vendored な実体は symlink で `~/.claude/skills` へ生で
+  繋がるので、作業ツリーを書き換えた瞬間に有効になる。未レビューのコードが有効になる
+  瞬間を作らない
+- **`local:` 行は廃止した。** shallow clone の HEAD を毎回取り直して入れるため pin も
+  レビュー面も無く、3導線のうち最も無制御だった。vendoring が上位互換
+- **sub-path は取込時に実物で確かめる。** upstream のディレクトリ構成は変わる。
+  `.vendor.json` の `sub_path` が唯一の記録なので、`SKILL.md` の所在を見てから渡す
+- vendored も `~/.claude/skills` と `~/.agents/skills` の両方へ張る。外部 skill は
+  `SKILL_AGENTS` の既定で claude-code と codex の両方に入っているので、移行で見えるものを
+  減らさない
+
+動作確認は `bash scripts/test-skill-audit.sh` / `test-skill-vendor.sh` /
+`test-claude-skills-allowlist.sh`。
 
 ### Codex自作skill管理
 
