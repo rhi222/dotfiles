@@ -392,6 +392,91 @@ assert_eq 1 "$exit_code" "cargo の失敗は隠さない"
 rm -rf "$CARGO_TEST_DIR"
 
 echo ""
+# =============================================================================
+echo "=== vendored_skill_check ==="
+# vendored skill の更新は検知するだけで、ファイルは触らない。
+# 実体は symlink で ~/.claude/skills へ生で繋がるので、作業ツリーを書き換えた
+# 瞬間に有効になる。未レビューのコードが有効になる瞬間を作らないため
+
+vsc="$(mktemp -d)"
+mkdir -p "$vsc/skills-vendor/one"
+git init --bare --quiet "$vsc/origin.git"
+git init --quiet "$vsc/work"
+git -C "$vsc/work" config user.email test@example.com
+git -C "$vsc/work" config user.name test
+echo x >"$vsc/work/f"
+git -C "$vsc/work" add -A
+git -C "$vsc/work" commit --quiet -m init
+git -C "$vsc/work" remote add origin "$vsc/origin.git"
+git -C "$vsc/work" push --quiet origin HEAD:refs/heads/main
+vsc_head1="$(git -C "$vsc/work" rev-parse HEAD)"
+
+jq -n --arg o "$vsc/origin.git" --arg c "$vsc_head1" \
+  '{origin:$o, sub_path:".", commit:$c, vendored_at:"2026-08-19",
+    reviewed_commit:$c, audit:{high:0,med:0,low:0}, license:"MIT"}' \
+  >"$vsc/skills-vendor/one/.vendor.json"
+
+out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" "最新なら終了コードは 0"
+TOTAL=$((TOTAL + 1))
+if echo "$out" | grep -qF "更新あり"; then
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: 最新時に更新ありと言わない"
+else
+  PASS=$((PASS + 1))
+  echo "  PASS: 最新時に更新ありと言わない"
+fi
+
+# upstream を進める
+echo y >>"$vsc/work/f"
+git -C "$vsc/work" add -A
+git -C "$vsc/work" commit --quiet -m next
+git -C "$vsc/work" push --quiet origin HEAD:refs/heads/main
+
+out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" "更新があっても終了コードは 0"
+assert_output_contains "更新あり" "$out" "更新ありと報告する"
+assert_output_contains "skill-vendor.sh update one" "$out" "取込コマンドを案内する"
+assert_output_contains "$vsc_head1" "$(cat "$vsc/skills-vendor/one/.vendor.json")" \
+  ".vendor.json は書き換えない"
+
+# 到達できない origin でも落ちない（ネットワーク断・private リポジトリ・新環境）
+jq '.origin = "/nonexistent/repo.git"' "$vsc/skills-vendor/one/.vendor.json" >"$vsc/j" &&
+  mv "$vsc/j" "$vsc/skills-vendor/one/.vendor.json"
+out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" "origin に到達できなくても終了コードは 0"
+assert_output_contains "確認できません" "$out" "確認できなかったことを報告する"
+
+# .vendor.json が無いディレクトリがあっても落ちない
+mkdir -p "$vsc/skills-vendor/broken"
+out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" ".vendor.json が無くても終了コードは 0"
+assert_output_contains ".vendor.json が無い" "$out" "欠落を報告する"
+
+# vendored skill が0件でも落ちない
+mkdir -p "$vsc/empty"
+out="$(SKILL_VENDOR_DIR="$vsc/empty" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" "0件でも終了コードは 0"
+assert_output_contains "ありません" "$out" "0件であることを報告する"
+
+# 存在しないディレクトリでも落ちない
+out="$(SKILL_VENDOR_DIR="$vsc/no-such-dir" vendored_skill_check 2>&1)"
+assert_eq 0 "$?" "ディレクトリ不在でも終了コードは 0"
+
+# main が run_step_soft で呼んでいること。
+# ネットワーク断で毎日 FAILED 通知が飛ぶと無視されるようになるため
+TOTAL=$((TOTAL + 1))
+if grep -qF 'run_step_soft "vendored skill 更新チェック" vendored_skill_check' "$DAILY_UPDATE"; then
+  PASS=$((PASS + 1))
+  echo "  PASS: run_step_soft で呼んでいる"
+else
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: run_step_soft で呼んでいる"
+fi
+
+rm -rf "$vsc"
+echo ""
+
 echo "=== 結果 ==="
 echo "TOTAL: $TOTAL  PASS: $PASS  FAIL: $FAIL"
 echo ""

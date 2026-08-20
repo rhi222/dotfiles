@@ -144,6 +144,55 @@ gh_skill_update() {
   gh skill update --all "${names[@]}" </dev/null
 }
 
+# vendored skill の upstream に更新が来ていないかを見る。**ファイルは触らない。**
+#
+# 実体は symlink で ~/.claude/skills へ生で繋がるので、作業ツリーを書き換えた
+# 瞬間に有効になる。だからここは検知だけにして、取込は人が
+# `skill-vendor.sh update <name>` を叩く。未レビューのコードが有効になる瞬間を
+# 作らないため。
+#
+# 比較するのは upstream リポジトリの HEAD なので、その skill と無関係な commit でも
+# 「更新あり」になる。skill-vendor.sh update 側が実ファイルの diff を取り、
+# 変更が無ければ「変更なし」と言って commit だけ進めるので、ここは粗い信号でよい。
+vendored_skill_check() {
+  local vendor_dir="${SKILL_VENDOR_DIR:-$SCRIPT_DIR/../.config/claude/skills-vendor}"
+  if [ ! -d "$vendor_dir" ]; then
+    echo "vendored skill はありません"
+    return 0
+  fi
+
+  local found=0 behind=0 d name json origin commit remote
+  for d in "$vendor_dir"/*/; do
+    [ -d "$d" ] || continue
+    found=1
+    name="$(basename "$d")"
+    json="$d/.vendor.json"
+    if [ ! -f "$json" ]; then
+      echo "  $name: .vendor.json が無い"
+      continue
+    fi
+    origin="$(jq -r .origin "$json")"
+    commit="$(jq -r .commit "$json")"
+    remote="$(git ls-remote "$origin" HEAD 2>/dev/null | awk '{print $1}')"
+    if [ -z "$remote" ]; then
+      echo "  $name: upstream を確認できません（$origin）"
+      continue
+    fi
+    if [ "$remote" != "$commit" ]; then
+      behind=$((behind + 1))
+      echo "  $name: upstream に更新あり（${commit:0:7} -> ${remote:0:7}）"
+      echo "    取込: bash scripts/skill-vendor.sh update $name"
+    fi
+  done
+
+  if [ "$found" -eq 0 ]; then
+    echo "vendored skill はありません"
+  elif [ "$behind" -eq 0 ]; then
+    echo "全 vendored skill が upstream と同じ commit です"
+  fi
+  return 0
+}
+
 # 失敗があればWindowsトースト通知を出す。WSL2以外（powershell.exeが無い環境）
 # ではスキップ。通知自体の失敗で全体を落とさない。
 notify_failures() {
@@ -176,6 +225,9 @@ main() {
   run_step "yazi pkg upgrade" yazi_pkg_upgrade
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
+  # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
+  # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
+  run_step_soft "vendored skill 更新チェック" vendored_skill_check
   run_step_soft "worktree cleanup check" worktree_cleanup_check
   # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
   # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
