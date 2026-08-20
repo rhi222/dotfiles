@@ -109,7 +109,7 @@ preflight() {
   fi
 
   local live
-  for live in "$HOME/.claude/skills/$name" "$HOME/.agents/skills/$name"; do
+  for live in "$HOME/.claude/skills/$name" "$HOME/.codex/skills/$name" "$HOME/.agents/skills/$name"; do
     if [ -d "$live" ] && [ ! -L "$live" ]; then
       cat >&2 <<MSG
 Error: $live が実ディレクトリとして存在します
