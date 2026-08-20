@@ -20,8 +20,13 @@ FIX=0
 # --others も含めるのは、まだ add していない新規スクリプトを検査対象にするため。
 # --cached だけだと、書いたばかりのファイルが commit するまでローカルで検査されず、
 # CI（checkout 後は追跡済み）で初めて落ちることになる。
+#
+# skills-vendor/ は除外する。**vendored な外部 skill は追跡しているが自分は保守しない。**
+# 上の「ignore 済み＝自分が保守しない」という前提の唯一の例外で、除外しないと
+# 第三者の .sh が shellcheck / shfmt に掛かって lint.yml が落ちる。
 mapfile -t files < <(
-  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard '*.sh' |
+  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
+    '*.sh' ':!:.config/claude/skills-vendor/**' |
     xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
 )
 

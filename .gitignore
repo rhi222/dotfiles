@@ -48,3 +48,9 @@ docs/superpowers/
 .config/AutoHotkey/ahk-snippets/js
 # 上のスニペットを登録するローカル定義。text-snippet.ahk が任意 include する
 .config/AutoHotkey/scripts/snippets-local.ahk
+
+# vendored な外部 skill に upstream の git メタデータを持ち込まない
+# （skill-vendor.sh は tar --exclude=.git で除いているが、手作業の取り違え対策）
+.config/claude/skills-vendor/**/.git
+.config/claude/skills-vendor/**/.gitmodules
+.config/claude/skills-vendor/**/node_modules
