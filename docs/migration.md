@@ -39,21 +39,15 @@ upstream の無い main、価値のある未追跡ファイルの commit がこ�
 ### 判定コマンド
 
 ```fish
-# 未push・stash・dirty・worktree が残るリポジトリを洗い出す（①候補）
-for r in (ghq list -p)
-    set -l unpushed (git -C $r log --branches --not --remotes --oneline 2>/dev/null | count)
-    set -l stash (git -C $r stash list 2>/dev/null | count)
-    set -l dirty (git -C $r status --porcelain 2>/dev/null | count)
-    set -l wt (git -C $r worktree list 2>/dev/null | tail -n +2 | count)
-    if test $unpushed -gt 0 -o $stash -gt 0 -o $dirty -gt 0 -o $wt -gt 0
-        echo "$r unpushed:$unpushed stash:$stash dirty:$dirty worktree:$wt"
-    end
-end
-
-# remote を持たないリポジトリ（push できず、コピーしないと消える）と
-# ghq 管理外の野良リポジトリも忘れずに見る
-find ~ -maxdepth 2 -name .git -not -path "$HOME/.*/*"
+bash scripts/migration-check.sh
 ```
+
+remote無し・未push・stash・dirty・worktree の5項目を全リポジトリ分報告する。
+対象は ghq の全リポジトリに加え、**ホーム直下の野良リポジトリも拾う**
+（remote の無い使い捨てリポジトリはここにいることが実際にあった）。
+全リポジトリがきれいなら終了コード 0 を返すので、移行直前の最終確認ゲートとしても使える。
+
+動作確認は `bash scripts/test-migration-check.sh`。
 
 ## ① tar で運ぶ
 
