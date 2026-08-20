@@ -58,7 +58,19 @@ command = "$HOME/.config/herdr/scripts/agent-switch.sh"
 width = "80%"
 height = "50%"
 
+# fzf で tab を選んでフォーカス移動（prefix+t）。tab の絞り込み検索は native に無い
+# （prefix+g の navigate mode は h/j/k/l の空間移動、prefix+1..9 は番号直打ち）。
+# tab の label は既定が番号なので複数 workspace で "1" が並ぶ。space 名を併記して区別する。
+# prefix+shift+t が rename_tab なので、単独の prefix+t を picker に充てて並びを揃えている。
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "$HOME/.config/herdr/scripts/tab-switch.sh"
+width = "80%"
+height = "50%"
+
 # fzf で workspace(spaces) を選んでフォーカス移動（prefix+shift+s）
+# native の workspace_picker(prefix+w) と併存させている。絞り込みで飛びたいときはこちら
 [[keys.command]]
 key = "prefix+shift+s"
 type = "popup"
