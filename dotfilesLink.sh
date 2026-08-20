@@ -178,6 +178,31 @@ link_configs() {
   done
 }
 
+# vendored な外部 skill を張る。自作 skill と同じディレクトリ単位のリンクで、
+# 張り先を引数で受ける（~/.claude/skills と ~/.agents/skills の両方に張るため）。
+#
+# 外部 skill は SKILL_AGENTS の既定で claude-code と codex の両方に入っているので、
+# vendored に移しても見えるものを減らさない。codex 側を ~/.codex/skills ではなく
+# ~/.agents/skills にするのは、後者が Codex のユーザー共通探索先で、自作 codex skill が
+# 既にそこへ張られているため。
+#
+# gh が入れた実ディレクトリを潰さないガードは safe_link 側にあるのでここには要らない。
+link_vendor_skills_into() {
+  local target_base="$1" skill_dir skill_name
+  [ -d "$DC/claude/skills-vendor" ] || return 0
+  for skill_dir in "$DC/claude/skills-vendor"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    # 自作と同名だと、後から張った方で上書きされてどちらが有効か分からなくなる
+    if [ -d "$DC/claude/skills/$skill_name" ]; then
+      echo "[SKIP] $skill_name は自作 skill と名前が衝突しています" >&2
+      SKIPPED+=("$target_base/$skill_name")
+      continue
+    fi
+    safe_link "$skill_dir" "$target_base/$skill_name"
+  done
+}
+
 # Skills: ディレクトリごと個別にリンクする（skills 全体をリンクすると入れ子になるため）
 #
 # 張る前にリンク切れを刈る。リポジトリから skill を消してもリンクは残るため、
@@ -203,6 +228,7 @@ link_claude_skills() {
     case "$skill_name" in *-workspace) continue ;; esac
     safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
   done
+  link_vendor_skills_into ~/.claude/skills
 }
 
 # Codex のユーザー共通 skill は公式の探索先 ~/.agents/skills に個別リンクする。
@@ -222,6 +248,7 @@ link_codex_skills() {
     case "$skill_name" in *-workspace) continue ;; esac
     safe_link "$skill_dir" ~/.agents/skills/"$skill_name"
   done
+  link_vendor_skills_into ~/.agents/skills
 }
 
 # Claude Code の settings.json はコピーで同期する。

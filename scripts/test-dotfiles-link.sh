@@ -248,6 +248,62 @@ check "Codex skillのリンク切れを刈る" test ! -L "$ck/home/.agents/skill
 check "外部のCodex skill実ディレクトリは消さない" \
   test -f "$ck/home/.agents/skills/external/SKILL.md"
 
+# --- link_vendor_skills_into ---
+# vendored な外部 skill も自作と同じディレクトリ単位でリンクする。
+# 実体をリポジトリに持つので、更新は git 差分に出る
+vs="$tmp/vs"
+mkdir -p "$vs/dc/claude/skills-vendor/vendored-one" "$vs/dc/claude/skills" \
+  "$vs/home/.claude/skills" "$vs/home/.agents/skills"
+: >"$vs/dc/claude/skills-vendor/vendored-one/SKILL.md"
+
+SKIPPED=()
+DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" >/dev/null 2>&1
+check "vendored skill を ~/.claude/skills へリンクする" \
+  test -L "$vs/home/.claude/skills/vendored-one"
+
+SKIPPED=()
+DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.agents/skills" >/dev/null 2>&1
+check "vendored skill を ~/.agents/skills へもリンクする" \
+  test -L "$vs/home/.agents/skills/vendored-one"
+
+# gh が入れた実ディレクトリは潰さない。safe_link のガードがそのまま効く
+mkdir -p "$vs/home/.claude/skills/gh-installed" \
+  "$vs/dc/claude/skills-vendor/gh-installed"
+: >"$vs/dc/claude/skills-vendor/gh-installed/SKILL.md"
+: >"$vs/home/.claude/skills/gh-installed/marker"
+SKIPPED=()
+out=$(DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" 2>&1)
+check "gh が入れた実ディレクトリは symlink で潰さない" \
+  test -f "$vs/home/.claude/skills/gh-installed/marker"
+check "潰さなかったことを報告する" grep -q "実ディレクトリ" <<<"$out"
+
+# 自作 skill と名前が衝突したらリンクしない。
+# 両方リンクしようとすると後から張った方で上書きされ、どちらが有効か分からなくなる
+mkdir -p "$vs/dc/claude/skills/dup" "$vs/dc/claude/skills-vendor/dup"
+: >"$vs/dc/claude/skills-vendor/dup/SKILL.md"
+SKIPPED=()
+out=$(DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" 2>&1)
+check "自作 skill と衝突したらリンクしない" \
+  test '!' -e "$vs/home/.claude/skills/dup"
+check "衝突を報告する" grep -q "衝突" <<<"$out"
+
+# skills-vendor/ が無い環境でも落ちない（vendored skill が0件の状態）
+mkdir -p "$tmp/vs2/dc/claude/skills" "$tmp/vs2/home/.claude/skills"
+# SKIPPED は source した dotfilesLink.sh の関数が読み書きする global。テスト側からは
+# 参照が無いため shellcheck が SC2034 を出すが、ケースごとのリセットは意味があるので無効化する
+# shellcheck disable=SC2034
+SKIPPED=()
+check "skills-vendor が無くても成功する" \
+  env DC="$tmp/vs2/dc" HOME="$tmp/vs2/home" \
+  bash -c 'source "$0"; SKIPPED=(); link_vendor_skills_into "$HOME/.claude/skills"' "$SETUP"
+
+# --- lint.sh が skills-vendor を除外する ---
+# lint.sh は git ls-files で対象を集めており、「ignore 済み＝自分が保守しない」で
+# 第三者コードを切る前提に立っている。vendoring はこの前提を壊すので、
+# 除外を入れないと vendored な .sh で lint.yml が落ちる
+check "lint.sh が skills-vendor を pathspec で除外している" \
+  grep -q "skills-vendor" "$SCRIPT_DIR/lint.sh"
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]
