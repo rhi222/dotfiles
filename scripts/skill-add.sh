@@ -4,13 +4,12 @@
 # Usage:  bash scripts/skill-add.sh <owner/repo> <skill>[@<version>]
 #
 # Installs the skill for each agent in $SKILL_AGENTS (default
-# "claude-code codex"). For agentskills.io-unindexed repos, hand-edit
-# claude-skills.txt with a `local: <git-url> <sub-path> <skill-name>`
-# line and run setup-claude-skills.sh.
+# "claude-code codex"). The owner must be listed in
+# trusted-skill-owners.txt; untrusted owners go through skill-vendor.sh.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS_FILE="$SCRIPT_DIR/claude-skills.txt"
+SKILLS_FILE="${CLAUDE_SKILLS_FILE:-$SCRIPT_DIR/claude-skills.txt}"
 SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 
 usage() {
@@ -32,6 +31,11 @@ if [[ "$repo" != */* ]]; then
   echo "Error: first argument must be <owner/repo>, got: $repo" >&2
   usage
 fi
+
+# owner allowlist の default-deny。gh を呼ぶ前・claude-skills.txt に追記する前に落とす
+# shellcheck source=lib/trusted-skill-owners.sh
+source "$SCRIPT_DIR/lib/trusted-skill-owners.sh"
+require_trusted_owner "$repo" || exit 1
 
 if ! command -v gh &>/dev/null; then
   echo "Error: gh CLI not found" >&2

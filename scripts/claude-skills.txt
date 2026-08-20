@@ -2,23 +2,17 @@
 # Requires: gh CLI >= v2.90.0 with `gh auth login` completed
 # Lines starting with # are ignored; inline `# ...` comments allowed.
 #
-# Two line formats:
+# Line format:
 #   <OWNER/REPO> <skill-name>[@<version>]
-#     Installs via `gh skill install` (remote). Needs the repo to be
-#     registered in the agentskills.io index.
-#
-#   local: <git-url> <sub-path> <skill-name>
-#     Falls back to git clone + `gh skill install --from-local` for repos
-#     that are not yet indexed. <skill-name> is the SKILL.md `name:` value,
-#     used for installed-directory dedup.
+#     Installs via `gh skill install`. The repo must be registered in the
+#     agentskills.io index, and OWNER must be listed in
+#     trusted-skill-owners.txt (untrusted owners go through skill-vendor.sh).
 
 anthropics/skills frontend-design
 anthropics/skills skill-creator
 browser-use/browser-use browser-use
 sanyuan0704/code-review-expert code-review-expert
 vercel-labs/agent-browser agent-browser
-local: https://github.com/vercel-labs/agent-skills.git skills/react-best-practices vercel-react-best-practices
-local: https://github.com/vercel-labs/agent-skills.git skills/composition-patterns vercel-composition-patterns
 # ogulcancelik/pi-extensions の herdr は skill ではなく Pi 拡張（packages/pi-herdr、
 # SKILL.md を持たない）なので宣言を撤去した。skill としては存在しない。
 mattpocock/skills grilling

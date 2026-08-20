@@ -1,12 +1,16 @@
 #!/bin/bash
 # Install all Claude Code skills declared in claude-skills.txt.
-# Use `skill-add.sh` for day-to-day additions; this script is for
-# bootstrap on a new machine and for `local:` entries (not in the
-# agentskills.io index).
+# Use `skill-add.sh` for day-to-day additions; this script is for bootstrap
+# on a new machine.
 #
-# claude-skills.txt line formats:
-#   <OWNER/REPO> <skill>[@<version>]             # remote (gh skill install)
-#   local: <git-url> <sub-path> <skill-name>     # git clone + --from-local
+# claude-skills.txt line format（1形式のみ）:
+#   <OWNER/REPO> <skill>[@<version>]
+#
+# owner は trusted-skill-owners.txt に無ければ拒否する。信頼済みでない skill は
+# `skill-vendor.sh add` で vendoring して取り込む（実体をリポジトリにコミットし、
+# 更新は git 差分でレビューする）。以前の `local:` 行はこれに吸収して廃止した。
+# `local:` は shallow clone の HEAD を毎回取り直して入れるため、pin もレビュー面も
+# 無く、3導線のうち最も無制御だった。
 #
 # Env flags:
 #   STRICT=1       : fail hard on missing prereqs (bootstrap)
@@ -16,12 +20,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS_FILE="$SCRIPT_DIR/claude-skills.txt"
-LOCAL_CACHE_DIR="${CLAUDE_SKILLS_CACHE:-$HOME/.cache/claude-skills-local}"
+SKILLS_FILE="${CLAUDE_SKILLS_FILE:-$SCRIPT_DIR/claude-skills.txt}"
 MIGRATE="${MIGRATE:-0}"
 STRICT="${STRICT:-0}"
 SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 REQUIRED_GH_VERSION="2.90.0"
+
+# shellcheck source=lib/trusted-skill-owners.sh
+source "$SCRIPT_DIR/lib/trusted-skill-owners.sh"
 
 # gh skill install のログ置き場。中断（Ctrl-C / timeout）でも一時ファイルが
 # 残らないよう、ディレクトリごと EXIT で刈る
@@ -128,44 +134,6 @@ install_remote() {
   run_install_for_agents "$skill_name" gh skill install "$repo" "$skill_spec"
 }
 
-install_local() {
-  local git_url="$1" sub_path="$2" skill_name="$3"
-
-  mkdir -p "$LOCAL_CACHE_DIR"
-  local repo_slug
-  repo_slug="$(echo "$git_url" | sed -e 's|^https\?://||' -e 's|^git@||' -e 's|:|/|' -e 's|github\.com/||' -e 's|\.git$||' -e 's|/|__|g')"
-  local clone_dir="$LOCAL_CACHE_DIR/$repo_slug"
-
-  if [ -d "$clone_dir/.git" ]; then
-    echo "  -> git fetch $clone_dir"
-    if ! git -C "$clone_dir" fetch --quiet --depth 1 origin HEAD; then
-      echo "  -> ERROR: git fetch failed for $git_url" >&2
-      return 1
-    fi
-    if ! git -C "$clone_dir" reset --quiet --hard FETCH_HEAD; then
-      echo "  -> ERROR: git reset --hard FETCH_HEAD failed for $clone_dir" >&2
-      return 1
-    fi
-  else
-    echo "  -> git clone $git_url -> $clone_dir"
-    if ! git clone --quiet --depth 1 "$git_url" "$clone_dir"; then
-      echo "  -> ERROR: git clone failed for $git_url" >&2
-      return 1
-    fi
-  fi
-
-  # sub_path is only used for a pre-flight SKILL.md existence check.
-  # `gh skill install --from-local` resolves skills by SKILL.md `name:` field,
-  # not by path, so the install command below can only take the skill_name.
-  local skill_src="$clone_dir/$sub_path"
-  if [ ! -f "$skill_src/SKILL.md" ]; then
-    echo "  -> ERROR: $skill_src/SKILL.md not found" >&2
-    return 1
-  fi
-
-  run_install_for_agents "$skill_name" gh skill install "$clone_dir" "$skill_name" --from-local
-}
-
 failures=()
 attempted=0
 succeeded=0
@@ -184,31 +152,22 @@ while IFS= read -r raw_line || [ -n "${raw_line:-}" ]; do
   [[ -z "$line" ]] && continue
 
   rc=0
-  if [[ "$line" == local:* ]]; then
-    body="${line#local:}"
-    body="${body#"${body%%[![:space:]]*}"}"
-    read -r git_url sub_path skill_name extra <<<"$body"
-    if [ -z "${git_url:-}" ] || [ -z "${sub_path:-}" ] || [ -z "${skill_name:-}" ] || [ -n "${extra:-}" ]; then
-      echo "  -> skip (malformed local: line $line_no): $line"
-      failures+=("line $line_no: malformed local entry: $line")
-      attempted=$((attempted + 1))
-      continue
-    fi
-    # `|| rc=$?` は必須: set -e 下では素の関数呼び出しが非0(skip=100等)を返した
-    # 時点でスクリプトが終了してしまう。
-    install_local "$git_url" "$sub_path" "$skill_name" || rc=$?
-  else
-    read -r repo skill_spec extra <<<"$line"
-    if [ -z "${repo:-}" ] || [ -z "${skill_spec:-}" ] || [ -n "${extra:-}" ]; then
-      echo "  -> skip (malformed line $line_no): $line"
-      failures+=("line $line_no: malformed: $line")
-      attempted=$((attempted + 1))
-      continue
-    fi
-    skill_path="${skill_spec%@*}"
-    skill_name="${skill_path##*/}"
-    install_remote "$repo" "$skill_spec" "$skill_name" || rc=$?
+  read -r repo skill_spec extra <<<"$line"
+  if [ -z "${repo:-}" ] || [ -z "${skill_spec:-}" ] || [ -n "${extra:-}" ]; then
+    echo "  -> skip (malformed line $line_no): $line"
+    failures+=("line $line_no: malformed: $line")
+    attempted=$((attempted + 1))
+    continue
   fi
+  if ! require_trusted_owner "$repo"; then
+    echo "  -> skip (untrusted owner, line $line_no): $line"
+    failures+=("line $line_no: untrusted owner: $repo")
+    attempted=$((attempted + 1))
+    continue
+  fi
+  skill_path="${skill_spec%@*}"
+  skill_name="${skill_path##*/}"
+  install_remote "$repo" "$skill_spec" "$skill_name" || rc=$?
 
   case "$rc" in
     0)
