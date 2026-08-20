@@ -725,6 +725,43 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
   （サーバーのローカル壁時計なのでオフセットとエポックの情報が無い）
 - エントリは最大16個。超過分は `ignoring extras` で捨てられる
 
+### herdr の keybinding
+
+`config.toml` の `[keys]` は **`prefix = "ctrl+b"` だけを上書きしている**（tmux の指の記憶をそのまま
+活かすため）。native アクションは全部デフォルトのままで、足しているのは `[[keys.command]]` の5件だけ。
+デフォルト全体は `herdr --default-config` で確認できる。
+
+| キー             | 何をするか                          | 出自   |
+| ---------------- | ----------------------------------- | ------ |
+| `prefix+a`       | agent を fzf で選んで focus         | 自作   |
+| `prefix+t`       | tab を fzf で選んで focus           | 自作   |
+| `prefix+shift+s` | workspace を fzf で選んで focus     | 自作   |
+| `prefix+f`       | ファイルを fzf で選んでパスを挿入   | 自作   |
+| `prefix+alt+g`   | lazygit を popup 起動               | 自作   |
+| `prefix+w`       | workspace picker                    | native |
+| `prefix+g`       | navigate mode（h/j/k/l の空間移動） | native |
+| `prefix+b`       | sidebar のトグル                    | native |
+
+- **fzf popup に寄せているのは alt 併用キーが効かない環境のため。** `previous_/next_agent` や
+  `focus_agent`（`prefix+alt+1..9`）が使えないので、単一 chord から popup を開く方式にしている
+- **tab の絞り込み検索は native に無い。** `prefix+g` の navigate mode は h/j/k/l の空間移動、
+  `prefix+1..9` は番号直打ちで、どちらも名前で絞れない。そのため `tab-switch.sh` を足している
+- **tab picker には space 名を必ず併記する。** tab の label は既定が番号なので、複数 workspace で
+  `1` が並んで一覧から区別できない（実機で3つの workspace が全て label `1` になっていた）
+- **`prefix+t` を picker に充てた。** 単独文字で空いていたのは `d` `i` `m` `t` `u` `y` だけで、
+  隣の `prefix+shift+t` が `rename_tab` なので並びが揃う
+- **`prefix+shift+s` が非対称なのは `prefix+s` が native の `settings` だから。** picker 3種を
+  `a` / `t` / `w` に揃えるには `workspace_picker = ""` で native を潰す必要があり、
+  そこまではしていない（native picker を残す判断）
+- **fzf の終了ステータスは飲む。** `set -e` 下では ESC の 130 で代入ごと失敗するため、
+  popup が「キャンセルしたのにエラー終了」になる
+- 一覧の1列目は id の隠しフィールドで、`--delimiter '\t' --with-nth 2..` で表示から外す。
+  選択後に `cut -f1` で取り出して `herdr <kind> focus` に渡す
+
+動作確認は `bash scripts/test-herdr-tab-switch.sh`。実 herdr を立てずに検証するため、
+`herdr` と `fzf` を PATH 前方のスタブに差し替えている。反映は `herdr server reload-config`
+（`prefix+shift+r`）、検証は `herdr config check`。
+
 ### Docker開発
 
 - `find_docker_compose` 関数でcomposeファイルを自動検出
