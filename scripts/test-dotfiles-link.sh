@@ -45,8 +45,20 @@ set +eo pipefail # スクリプト側の set -euo pipefail をテストシェル
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-# source しただけで main が走っていないこと（走ると実際にリンクが張られてしまう）
-check "関数だけが読み込まれ main は走らない" test "$(type -t warn_missing_local_git)" = function
+# source で関数が読み込まれること。ここでは main は走らない（$0 はこのテスト
+# スクリプトなので dotfilesLink.sh 末尾のガードが false になる）
+check "関数が読み込まれる" test "$(type -t warn_missing_local_git)" = function
+
+# 再発防止。`bash -c 'source "$0"; ...' "$SETUP"` の形は $0 と BASH_SOURCE[0] が
+# 一致して dotfilesLink.sh 末尾のガードを通り、main が丸ごと走る。
+# 書き方そのものをこのファイル内で禁止する
+no_source_dollar_zero() {
+  # 自分自身を検査するので、禁止したい文字列がこのファイルに literal で現れないよう
+  # 分割して組む（素直に書くと grep の引数自身にヒットして常に失敗する）
+  local needle="bash -c ""."'"'"sou""rce"
+  ! grep -q "$needle" "$0"
+}
+check "テスト内で main を走らせる呼び出し方をしていない" no_source_dollar_zero
 
 # --- warn_missing_local_git ---
 # .gitconfig が無条件 include するのは config-local だけ。config-work は
@@ -288,14 +300,30 @@ check "自作 skill と衝突したらリンクしない" \
 check "衝突を報告する" grep -q "衝突" <<<"$out"
 
 # skills-vendor/ が無い環境でも落ちない（vendored skill が0件の状態）
+#
+# **`bash -c 'source "$0"; ...' "$SETUP"` では呼ばない。** その形だと $0 と
+# BASH_SOURCE[0] が一致して dotfilesLink.sh 末尾のガードを通り、main が丸ごと走る
+# （偽の HOME に対して実際にリンク・skill 配置・雛形生成まで実行されてしまう）。
+# 冒頭で source 済みなので、環境だけ差し替えたサブシェルで関数を呼ぶ。
 mkdir -p "$tmp/vs2/dc/claude/skills" "$tmp/vs2/home/.claude/skills"
 # SKIPPED は source した dotfilesLink.sh の関数が読み書きする global。テスト側からは
 # 参照が無いため shellcheck が SC2034 を出すが、ケースごとのリセットは意味があるので無効化する
 # shellcheck disable=SC2034
 SKIPPED=()
-check "skills-vendor が無くても成功する" \
-  env DC="$tmp/vs2/dc" HOME="$tmp/vs2/home" \
-  bash -c 'source "$0"; SKIPPED=(); link_vendor_skills_into "$HOME/.claude/skills"' "$SETUP"
+run_link_vendor_no_dir() {
+  (
+    # shellcheck disable=SC2034
+    DC="$tmp/vs2/dc"
+    HOME="$tmp/vs2/home"
+    export HOME
+    # shellcheck disable=SC2034
+    SKIPPED=()
+    link_vendor_skills_into "$HOME/.claude/skills"
+  ) >/dev/null 2>&1
+}
+check "skills-vendor が無くても成功する" run_link_vendor_no_dir
+check "main が走っていない（偽 HOME にリンクが作られない）" \
+  test '!' -e "$tmp/vs2/home/.config/fish/config.fish"
 
 # --- lint.sh が skills-vendor を除外する ---
 # lint.sh は git ls-files で対象を集めており、「ignore 済み＝自分が保守しない」で
