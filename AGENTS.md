@@ -186,12 +186,46 @@ statusline JSON をそのまま渡し、`preserveColors: true` なら stdout の
 echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"current_dir":"."}}' | ccstatusline
 ```
 
+### 環境の残骸チェック（env-residue.sh）
+
+**宣言のどこにも属さないのに環境に居座っているもの**を洗い出す。
+`daily-update.sh` が `run_step_soft` で毎日呼ぶ（情報提供なので FAILED にしない）。
+
+```fish
+bash scripts/env-residue.sh
+```
+
+| 何を見るか                                  | なぜ                                                       |
+| ------------------------------------------- | ---------------------------------------------------------- |
+| `~/.fzf/` と `~/.fzf.bash`                  | mise 管理と二重。PATH 順で古い版を掴む端末が出る           |
+| `~/.config/fish/functions/` の追跡外ファイル | Ctrl+R の担当が端末ごとに割れる原因になる                  |
+| `~/.claude` `~/.codex` `~/.agents` の skill | 宣言に無いもの、vendored なのに実ディレクトリになったもの   |
+
+- **既存のどのチェックにも掛からない種類の drift を埋めるためのもの。**
+  `migration-check.sh` は「リポジトリの作業状態」専用で環境は見ない。
+  実際にこの3種類を全部踏んだ（追跡外の `fish_user_key_bindings.fish` で Ctrl+R の
+  修正が端末をまたぐたび戻り、vendored skill 6本が古い gh 版に隠されていた）
+- **fisher の判定は名前の規約ではなく fisher 自身が持つ一覧で行う。** fisher は
+  プラグインごとに universal 変数 `_fisher_<plugin>_files` へインストールした
+  ファイルを記録している。「`_` 始まりはプラグイン」で切った初版は tide の
+  `fish_prompt` / `fish_mode_prompt` / `tide`、`fisher` 本体、fzf.fish の
+  `fzf_configure_bindings` を**誤検知した（実環境で5件）**。公開関数は普通の名前を持つ
+- **skill の宣言が読めないときは skill の判定を丸ごと諦める。** 読めないまま
+  「宣言に無い」と言うと、正しく入っているものまで残骸に見える
+- **見つかっても exit 0。** 残骸があること自体は壊れている状態ではなく、放置すると
+  事故になりうる状態。毎日 FAILED が飛ぶと無視されるようになる
+- 件数は機械可読サマリ行（`env-residue: FOUND=N`）から取る。表示の体裁を変えても
+  呼び出し側が壊れないようにするため（`worktree-cleanup.sh` と同じ作り）
+
+動作確認は `bash scripts/test-env-residue.sh`。
+
 ### 日次アップデート（daily-update.sh）
 
 `scripts/daily-update.sh` が各パッケージマネージャとツールの更新をまとめて回す。
 apt / cargo / mise（self-update・upgrade・prune）/ npm global / pip global /
-nvim の Lazy と Mason / gh skill / gh extension / yazi プラグインの順に実行し、最後に
-worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行う。
+nvim の Lazy と Mason / gh skill / gh extension / yazi プラグイン / fisher の順に実行し、
+最後に worktree の溜まり込み・vendored skill の更新・環境の残骸のチェックと
+`sync-claude-settings.sh pull` を行う。
 
 - **1ステップの失敗で止めない。** 全部走らせてから、失敗したステップ名をまとめて報告する
 - **「更新」と「情報提供」を区別する。** worktree のチェックは `run_step_soft` で実行し、
