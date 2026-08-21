@@ -82,7 +82,7 @@
 
 | スクリプト             | 行数 | 引数                            | 呼び出し元         |
 | ---------------------- | ---- | ------------------------------- | ------------------ |
-| `worktree-init.sh`     | 147  | `<worktree-path>`               | doc skill hook link|
+| `worktree-init.sh`     | 27   | `[--dry-run] [<path>]`          | doc skill hook link|
 | `worktree-cleanup.sh`  | 28   | `[--size] [--execute] [--force]`| doc skill          |
 
 ### 掃除

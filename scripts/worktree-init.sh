@@ -1,147 +1,27 @@
 #!/usr/bin/env bash
-# worktree-init.sh — git worktree作成後の初期化
+# worktree-init.sh — dotctl worktree init への互換 wrapper。
 #
-# 1. メインworktreeから gitignore対象の .env* ファイルを相対パスを保ってコピー
-#    （既存ファイルは上書きしない。node_modules / .wt 配下は対象外）
-# 2. lockファイルを判定して依存をインストール（pnpm / npm / yarn）
+# 実装は Go 側（internal/worktree）にある。**この入口を残しているのは、
+# git-wt の wt.hook・dotfilesLink.sh・docs がこのパスで呼んでいるため。**
+# 引数・終了コード・標準出力はそのまま転送する。
 #
 # 使い方: worktree-init.sh [--dry-run] [worktree-path]
 #   worktree-path 省略時はカレントディレクトリ。
-#   git-wt の wt.hook からは新worktreeがカレントの状態で引数なしで呼ばれる。
-set -euo pipefail
+#   git-wt の wt.hook からは新 worktree がカレントの状態で引数なしで呼ばれる。
+#
+# リポジトリ固有の初期化の差し込み方は docs/worktree.md。
+#
+# **dotctl の解決規則はここにベタ書きする。** 共通ライブラリに置くと wrapper が
+# source に依存し、hook の最小 PATH で「ライブラリが読めない」という新しい
+# 失敗点が増える。
+set -uo pipefail
 
-DRY_RUN=0
-TARGET=""
+DOTCTL="$HOME/.local/bin/dotctl"
+[ -x "$DOTCTL" ] || DOTCTL="$(command -v dotctl 2>/dev/null || true)"
 
-usage() {
-  echo "usage: worktree-init.sh [--dry-run] [worktree-path]"
-}
-
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --dry-run) DRY_RUN=1 ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    -*)
-      echo "error: 不明なオプション: $1" >&2
-      usage >&2
-      exit 1
-      ;;
-    *) TARGET="$1" ;;
-  esac
-  shift
-done
-
-TARGET="${TARGET:-$PWD}"
-
-# worktree-init.d のベースディレクトリ（テストで上書き可能）
-WORKTREE_INIT_D="${WORKTREE_INIT_D:-$(cd "$(dirname "$0")" && pwd)/worktree-init.d}"
-
-if ! git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "error: gitリポジトリ内ではありません: $TARGET" >&2
+if [ -z "$DOTCTL" ]; then
+  echo "worktree-init: dotctl が見つからない。ビルドする: bash scripts/setup-dotctl.sh" >&2
   exit 1
 fi
 
-git_dir=$(git -C "$TARGET" rev-parse --path-format=absolute --git-dir)
-common_dir=$(git -C "$TARGET" rev-parse --path-format=absolute --git-common-dir)
-
-if [ "$git_dir" = "$common_dir" ]; then
-  echo "error: メインworktreeです。linked worktree内で実行してください: $TARGET" >&2
-  exit 1
-fi
-
-# common_dir は <メインworktree>/.git を指す
-main_worktree=$(dirname "$common_dir")
-if [ ! -e "$main_worktree/.git" ]; then
-  echo "error: メインworktreeを特定できません（bare repository?）" >&2
-  exit 1
-fi
-
-# メインworktree内の gitignore対象 .env* をコピーする
-copy_env_files() {
-  local rel
-  while IFS= read -r rel; do
-    rel="${rel#./}"
-    # trackedファイル（.env.example 等）は check-ignore に該当せず除外される
-    git -C "$main_worktree" check-ignore -q "$rel" || continue
-    if [ -e "$TARGET/$rel" ]; then
-      echo "skip (既存): $rel"
-    elif [ "$DRY_RUN" = 1 ]; then
-      echo "[dry-run] copy: $rel"
-    else
-      mkdir -p "$TARGET/$(dirname "$rel")"
-      cp -p "$main_worktree/$rel" "$TARGET/$rel"
-      echo "copy: $rel"
-    fi
-  done < <(cd "$main_worktree" && find . \( -name node_modules -o -name .wt -o -name .git \) -prune -o -type f -name '.env*' -print)
-}
-
-# lockファイルから依存インストールコマンドを判定して実行する
-install_deps() {
-  local cmd=""
-  if [ -f "$TARGET/pnpm-lock.yaml" ]; then
-    cmd="pnpm install"
-  elif [ -f "$TARGET/package-lock.json" ]; then
-    cmd="npm ci"
-  elif [ -f "$TARGET/yarn.lock" ]; then
-    cmd="yarn install"
-  fi
-
-  if [ -z "$cmd" ]; then
-    echo "install: skip（lockファイルなし）"
-  elif [ "$DRY_RUN" = 1 ]; then
-    echo "[dry-run] install: $cmd"
-  else
-    echo "install: $cmd"
-    (cd "$TARGET" && $cmd)
-  fi
-}
-
-# origin URLを正規化してキーにする
-#   git@github.com:owner/repo.git       -> github.com/owner/repo
-#   https://github.com/owner/repo.git   -> github.com/owner/repo
-#   ssh://git@github.com/owner/repo.git -> github.com/owner/repo
-normalize_repo_key() {
-  local url="$1"
-  url="${url#ssh://}"
-  url="${url#https://}"
-  url="${url#http://}"
-  url="${url#git://}"
-  # user@ を除去（scp形式・ssh形式）
-  url="${url#*@}"
-  # scp形式の最初の ':' を '/' に変換
-  url="${url/://}"
-  # 末尾の .git を除去
-  url="${url%.git}"
-  printf '%s' "$url"
-}
-
-# リポジトリ固有スクリプトがあれば実行する（失敗しても全体は継続）
-run_custom_hook() {
-  local origin key script
-  origin=$(git -C "$TARGET" remote get-url origin 2>/dev/null || true)
-  if [ -z "$origin" ]; then
-    echo "custom: skip（origin未設定）"
-    return 0
-  fi
-  key=$(normalize_repo_key "$origin")
-  script="$WORKTREE_INIT_D/$key.sh"
-  if [ ! -f "$script" ]; then
-    echo "custom: skip（$key 用スクリプトなし）"
-    return 0
-  fi
-  if [ "$DRY_RUN" = 1 ]; then
-    echo "[dry-run] custom: $script"
-    return 0
-  fi
-  echo "custom: $script"
-  if ! (cd "$TARGET" && bash "$script" "$TARGET"); then
-    echo "warning: custom hook が失敗しました（無視して継続）: $script" >&2
-  fi
-}
-
-copy_env_files
-install_deps
-run_custom_hook
+exec "$DOTCTL" worktree init "$@"

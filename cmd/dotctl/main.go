@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
@@ -16,6 +17,25 @@ import (
 
 // defaultWorktreeRoots は worktree の走査ルート（Shell 版と同じ既定）。
 const defaultWorktreeRoots = "/data/git-repos"
+
+// defaultWorktreeInitDir はリポジトリ固有の初期化スクリプトの置き場。
+//
+// **バイナリの場所ではなくビルド元のリポジトリから解く。** dotctl は
+// ~/.local/bin に置くので、バイナリ基準にすると ~/.local/scripts を見てしまう。
+func defaultWorktreeInitDir() string {
+	if buildinfo.Repo == "" {
+		return ""
+	}
+	return filepath.Join(buildinfo.Repo, "scripts", "worktree-init.d")
+}
+
+func cwd() string {
+	d, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return d
+}
 
 func main() {
 	os.Exit(command.Run(context.Background(), os.Args[1:], command.Env{
@@ -27,6 +47,8 @@ func main() {
 
 		WorktreeRoots:      envOr("WORKTREE_CLEANUP_ROOTS", defaultWorktreeRoots),
 		WorktreePRStateCmd: os.Getenv("WORKTREE_CLEANUP_PR_STATE_CMD"),
+		WorktreeInitDir:    envOr("WORKTREE_INIT_D", defaultWorktreeInitDir()),
+		Cwd:                cwd(),
 
 		Color: isTerminal(os.Stdout),
 	}))
