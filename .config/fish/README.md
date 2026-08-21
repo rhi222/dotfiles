@@ -26,6 +26,7 @@
     │   ├── 12-herdr.fish             # herdr起動ラッパー（`he`）
     │   └── 13-docker-clean.fish      # docker掃除のリマインド（起動時通知）
     └── functions/       # カスタム関数
+        ├── fish_user_key_bindings.fish       # 空定義。fzf標準統合の横取りを塞ぐ
         ├── __docker_clean_cache_file.fish    # docker-cleanキャッシュのパス解決
         ├── __docker_clean_format_bytes.fish  # バイト数→人間可読
         ├── __docker_clean_size_to_bytes.fish # 人間可読サイズ→バイト数
@@ -57,6 +58,31 @@
 
 - **プラグイン用**: `conf.d/`, `functions/` （Fisher、Oh My Fishなどが使用）
 - **個人設定用**: `my/conf.d/`, `my/functions/` （手動管理）
+
+### 1.5 キーバインドの拡張点を repo 側で握る
+
+`my/functions/fish_user_key_bindings.fish` は**中身が空なのが仕事**で、消してはいけない。
+
+昔の `~/.fzf/install` は `~/.config/fish/functions/fish_user_key_bindings.fish` に
+`fzf --fish | source` を置いていく。これは追跡外の実ファイルなので端末ごとに有無が割れ、
+有る端末では fzf 標準のシェル統合が `my/conf.d` より後に走って fzf.fish の bind を
+上書きする（Ctrl+R / Ctrl+T / Alt+C）。
+
+Ctrl+R は担当が変わると読む設定変数まで変わるのが厄介で、
+
+| 担当                              | 効く変数           | 履歴行の形            |
+| --------------------------------- | ------------------ | --------------------- |
+| fzf.fish `_fzf_search_history`    | `fzf_history_opts` | `MM-DD HH:MM:SS │ cmd` |
+| fzf 標準 `fzf-history-widget`     | `FZF_CTRL_R_OPTS`  | タブ区切り3列         |
+
+片方に寄せた設定はもう片方では丸ごと無効になる。そのため「一覧の時刻列を消す」修正が
+端末をまたぐたび元に戻っていた（実際に2回往復している）。
+
+`config.fish` が `my/functions` を `fish_function_path` の先頭に置くので、同名の空定義を
+repo に持てば追跡外のファイルは autoload されず影になり、担当が fzf.fish 側に固定される。
+手で消して回らないのは、消しても `~/.fzf/install` を踏めば復活するため。
+
+動作確認は `bash scripts/test-fish-fzf-bindings.sh`。
 
 ### 2. 機能別モジュール化
 
