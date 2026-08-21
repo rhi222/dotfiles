@@ -10,6 +10,8 @@
 #                 ドメインを渡せばそこだけ走る（例: TEST_DIR=tests/linear）
 #   TEST_TIMEOUT  1本あたりの制限秒（既定: 300）
 #   TEST_JOBS     同時実行数（既定: nproc を 16 で打ち止め。1 で直列）
+#   TEST_GO       Go テストを走らせるか（既定: TEST_DIR を明示していなければ 1）
+#   TEST_GO_REPO  go test を走らせるモジュールのルート（テストで差し替える）
 #
 # CIで走らせられないテストは、テストファイル側の先頭付近に
 #   # ci-skip: <理由>
@@ -42,7 +44,14 @@ default_test_dir() {
   local t="$SCRIPT_DIR/../tests"
   if [ -d "$t" ]; then (cd "$t" && pwd); else echo "$SCRIPT_DIR"; fi
 }
+# **ドメイン実行（TEST_DIR=tests/linear）では Go テストを走らせない。**
+# 一部だけ走らせたいときに Go のビルドまで動くと驚くため。既定を入れる前に
+# 明示されたかを見て、TEST_GO で上書きできるようにする
+TEST_GO="${TEST_GO:-$([ -n "${TEST_DIR:-}" ] && echo 0 || echo 1)}"
 TEST_DIR="${TEST_DIR:-$(default_test_dir)}"
+
+# Go モジュールのルート（テストで差し替える）
+TEST_GO_REPO="${TEST_GO_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 TEST_TIMEOUT="${TEST_TIMEOUT:-300}"
 
 # 既定の同時実行数。16 で打ち止めにする。
@@ -140,6 +149,53 @@ failed=0
 skipped=0
 failed_names=()
 
+# Go テストを1回走らせ、**既存の出力契約に畳む**。
+#   - パッケージごとに1行（`PASS  go: <pkg>`）
+#   - 成功時は go の生出力を出さない。失敗時だけ詳細を見せる
+# go test はパッケージを内部で並列に走らせるので、こちらで分割はしない。
+go_lines=()
+run_go_tests() {
+  [ "$TEST_GO" = "1" ] || return 0
+  [ -f "$TEST_GO_REPO/go.mod" ] || return 0
+
+  if ! command -v go >/dev/null 2>&1; then
+    go_lines+=("skip|go|go が無い（mise で入れる: mise install go）")
+    return 0
+  fi
+
+  local out rc
+  out=$(cd "$TEST_GO_REPO" && go test ./... 2>&1)
+  rc=$?
+
+  # `ok  <pkg>  0.01s` / `FAIL <pkg> ...` / `?  <pkg> [no test files]` を拾う。
+  # `?` はテストを持たないパッケージなので件数に数えない
+  local line pkg
+  while IFS= read -r line; do
+    case "$line" in
+      ok*)
+        pkg=$(awk '{print $2}' <<<"$line")
+        [ -n "$pkg" ] && go_lines+=("pass|$pkg|")
+        ;;
+      FAIL*)
+        pkg=$(awk '{print $2}' <<<"$line")
+        # `FAIL` 単独行（全体のサマリ）はパッケージ名を持たない
+        case "$pkg" in "" | *.go*) continue ;; esac
+        go_lines+=("fail|$pkg|")
+        ;;
+    esac
+  done <<<"$out"
+
+  # パッケージ行が1つも取れないのにコマンドが落ちたときは、ビルドエラーなどで
+  # サマリ形式にならなかった場合。**黙って成功にしない**ため1件として扱う
+  if [ "$rc" -ne 0 ] && [ "${#go_lines[@]}" -eq 0 ]; then
+    go_lines+=("fail|go build|")
+  fi
+
+  GO_OUTPUT="$out"
+}
+GO_OUTPUT=""
+run_go_tests
+
 # 出力。tests は sort 済みなので、添字順に流せば直列時と同じ並びになる
 for i in "${!tests[@]}"; do
   name="${tests[$i]#"$TEST_DIR"/}"
@@ -171,6 +227,33 @@ for i in "${!tests[@]}"; do
   failed=$((failed + 1))
   failed_names+=("$name")
 done
+
+# Go の結果を同じ体裁で流す
+for entry in ${go_lines[@]+"${go_lines[@]}"}; do
+  IFS='|' read -r kind pkg reason <<<"$entry"
+  case "$kind" in
+    pass)
+      echo "PASS  go: $pkg"
+      passed=$((passed + 1))
+      ;;
+    skip)
+      echo "SKIP  go — $reason"
+      skipped=$((skipped + 1))
+      ;;
+    fail)
+      echo "FAIL  go: $pkg"
+      failed=$((failed + 1))
+      failed_names+=("go:$pkg")
+      ;;
+  esac
+done
+
+# 失敗があったときだけ go の生出力を見せる（1本1行の体裁を崩さないため）
+if [ -n "$GO_OUTPUT" ] && printf '%s\n' ${go_lines[@]+"${go_lines[@]}"} | grep -q '^fail|'; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    printf '      | %s\n' "$line"
+  done <<<"$GO_OUTPUT"
+fi
 
 echo "---"
 echo "pass: $passed 件 / fail: $failed 件 / skip: $skipped 件"

@@ -260,8 +260,10 @@ EOF
   chmod +x "$gostub/go"
 }
 
+# 引数は取らない（--ci 併用のケースは別に env で組む）
 run_with_go() {
-  env PATH="$gostub:$PATH" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" bash "$RUNNER" "$@" 2>&1
+  env PATH="$gostub:$PATH" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" TEST_GO=1 \
+    bash "$RUNNER" 2>&1
 }
 
 # 成功時: パッケージごとに1行、詳細は出さない
@@ -294,7 +296,7 @@ check "失敗時は詳細を見せる" grep -q "期待と違う" <<<"$out"
 check "同じ実行の成功パッケージは PASS 側に出る" grep -q "PASS  go: example.test/internal/beta" <<<"$out"
 
 # go が無い端末（mise 導入前の bootstrap）では skip して通す
-out=$(env PATH="/usr/bin:/bin" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+out=$(env PATH="/usr/bin:/bin" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" TEST_GO=1 bash "$RUNNER" 2>&1)
 rc=$?
 check "go が無ければ全体は成功" test "$rc" -eq 0
 check "go が無いことを skip として伝える" grep -qE 'SKIP +go' <<<"$out"
@@ -302,10 +304,15 @@ check "go が無いことを skip として伝える" grep -qE 'SKIP +go' <<<"$o
 # go.mod が無いリポジトリでは何もしない
 nomod=$(mktemp -d)
 make_go_stub 'exit 0'
-out=$(env PATH="$gostub:$PATH" TEST_GO_REPO="$nomod" TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+out=$(env PATH="$gostub:$PATH" TEST_GO_REPO="$nomod" TEST_DIR="$tmp" TEST_GO=1 bash "$RUNNER" 2>&1)
 rc=$?
 check "go.mod が無ければ全体は成功" test "$rc" -eq 0
 rmdir "$nomod" 2>/dev/null || rm -rf "$nomod"
+
+# ドメイン実行（TEST_DIR を明示）では既定で Go を走らせない
+make_go_stub 'echo "ok  	example.test/internal/alpha	0.01s"; exit 0'
+out=$(env PATH="$gostub:$PATH" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+check "ドメイン実行では Go を走らせない" bash -c '! grep -q "go:" <<<"'"$out"'"'
 
 rm -rf "$gostub" "$gorepo"
 
