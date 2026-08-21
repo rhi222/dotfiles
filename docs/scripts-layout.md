@@ -11,7 +11,7 @@
 | 種類                 | 例                                       | 実測         |
 | -------------------- | ---------------------------------------- | ------------ |
 | 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 5,320行 |
-| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 11本 1,225行 |
+| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 10本 1,105行 |
 | 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
 | 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
 
@@ -60,8 +60,8 @@
 
 | スクリプト                  | 行数 | 引数                              | 呼び出し元 |
 | --------------------------- | ---- | --------------------------------- | ---------- |
-| `sync-claude-settings.sh`   | 189  | `status`\|`pull`\|`push [--force]`| doc link   |
-| `sync-windows-settings.sh`  | 259  | `status`\|`pull`\|`push` `[target]`| doc       |
+| `sync-claude-settings.sh`   | 23   | `status`\|`pull`\|`push [--force]`| doc link   |
+| `sync-windows-settings.sh`  | 25   | `status`\|`pull`\|`push` `[target]`| doc       |
 | `private-bundle.sh`         | 368  | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
 
 ### 更新

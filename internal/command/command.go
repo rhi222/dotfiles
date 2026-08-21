@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rhi222/dotfiles/internal/execx"
+	"github.com/rhi222/dotfiles/internal/settings"
 )
 
 // Env は dotctl が外界と触る面。**テストから全部差し替えられるようにする**
@@ -32,6 +33,10 @@ type Env struct {
 	WorktreeInitDir string
 	// Cwd はカレントディレクトリ（worktree init の既定の対象）。
 	Cwd string
+
+	// ClaudeSettings / WindowsSettings は設定同期の対象パス。
+	ClaudeSettings  settings.ClaudeConfig
+	WindowsSettings settings.WindowsConfig
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
 }
@@ -41,6 +46,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
 サブコマンド:
   worktree cleanup   消し忘れた git worktree を洗い出して掃除する
   worktree init      worktree 作成後の初期化
+  settings sync      設定ファイルのコピー同期（claude / windows）
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -64,6 +70,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return 0
 	case "worktree":
 		return runWorktree(ctx, args[1:], env)
+	case "settings":
+		return runSettings(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0
