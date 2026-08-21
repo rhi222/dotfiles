@@ -4,18 +4,22 @@
 
 各種開発ツールやアプリケーションの設定ファイルを含む個人用dotfilesリポジトリです。シンボリックリンクを使用して、異なるシステム間で設定ファイルを管理しています。
 
-**このファイルは全機能の要点と「なぜそうしたか」を持つ。** 分量が大きく独立している話題は
-`docs/` に分けてあり、ここには要約と入口だけを残している。**必要になったときに開けばよく、
-先に全部読む必要はない。**
+**このファイルは全機能の「何ができるか」と、判断に効く要点を持つ。**
+このファイルは毎セッションのコンテキストに丸ごと載るので、**各機能の表（やりたいこと →
+コマンド）と、選択を左右する数個の理由だけを置く**。細かい根拠・実測値・失敗の記録は
+`docs/` に分けてある。**必要になったときに開けばよく、先に全部読む必要はない。**
 
 | 文書                                                                 | いつ開くか                                           |
 | -------------------------------------------------------------------- | ---------------------------------------------------- |
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
 | [docs/migration.md](docs/migration.md)                               | PC 移行でリポジトリ群と作業状態を運ぶとき            |
+| [docs/claude-skills.md](docs/claude-skills.md)                       | skill の信頼境界・vendoring の判断を変えるとき       |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
 | [docs/worktree.md](docs/worktree.md)                                 | worktree の初期化・掃除の判定を変えるとき            |
 | [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` サブコマンド自体の使い方を調べるとき        |
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` の復元（herdr / nvim / claude）を触るとき       |
+| [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdr のタブ行ステータスや keybinding を変えるとき   |
+| [docs/notifications.md](docs/notifications.md)                       | トースト通知の内容や抑止の条件を変えるとき           |
 | [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定や閾値を変えるとき                    |
 
 ## セットアップとインストール
@@ -225,59 +229,20 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 | 新環境 bootstrap       | `env STRICT=1 bash scripts/setup-claude-skills.sh` + `./dotfilesLink.sh` |
 | 削除（vendored）       | `rm -rf .config/claude/skills-vendor/<name>` + `./dotfilesLink.sh`      |
 
-- **allowlist は default-deny。** allowlist 外の owner を `skill-add.sh` /
-  `setup-claude-skills.sh` に渡すと**エラーで止まり** vendor 導線が案内される。
-  `claude-skills.txt` に書いた行も同じで、bootstrap（`setup-claude-skills.sh`）は
-  信頼済みの行を入れ切ってから非0で終わる。**bootstrap の失敗ではなく行が1本間違って
-  いる**ので、その行を `skill-vendor.sh add` に移すのが直し方になる。
-  散文の規約では取りこぼすので、判定が確定する唯一の瞬間（owner を渡すところ）に
-  ゲートを置いた。ゲートは**両方**に要る。片方だけだと bootstrap 経路から素通りする
-- **allowlist に入れることは「人のレビューなしで毎日自動更新される」ことと同義。**
-  初期値は `anthropics` / `github` / `vercel-labs` の3つだけ。個人アカウントは入れない
-- **allowlist ファイルが無ければ拒否する（fail-closed）。** `secret-scan.sh` の辞書とは
-  逆に倒している。辞書不在で commit できないのは困るが、allowlist 不在で skill が
-  入らないのは機能が欠けるだけで害がない
-- **vendored はリポジトリにコミットする。** 更新のレビュー面を `git diff` に一本化する
-  ため。リポジトリ外に置くと差分を見せる仕組みを取込スクリプトが自前で持つことになり、
-  その仕組みを飛ばした更新経路が必ず生まれる
-- **中央の一覧ファイルは持たない。** `.vendor.json` が唯一の正で、`ls skills-vendor/` が
-  一覧そのもの。`claude-skills.txt` / `gh-extensions.txt` / `package.toml` が必要だったのは
-  どれも実体をリポジトリに持たないからで、vendored は前提が違う
-- **`reviewed_commit` を `commit` と別に持つ。** 一致しなければ「取り込んだがレビューして
-  いない」状態で、`status` と CI（`test-skill-vendor.sh`）が落とす。ファイルを手で
-  書き換えて `commit` だけ進めても検知される
-- **`status` は live-dir（`~/.claude/skills` / `~/.codex/skills` / `~/.agents/skills`）まで見る。**
-  `preflight` は `add` のときだけ走るので、取込後に「実際に有効になっているか」を見る場所が
-  無かった。**gh skill が先に入れた実ディレクトリが残っていると `safe_link` は SKIP する**ので
-  symlink が張られず、Claude は古い gh 版を読み続ける。それでも `.vendor.json` は正しいため
-  `status` は `[OK]` を返していた（vendoring 移行前から使っていた端末で、実際に6本すべてが
-  この状態だった）。無いこと自体は異常ではない（`dotfilesLink.sh` 未実行、その agent を
-  使っていない端末）ので、実ディレクトリと「別の場所を指す symlink」だけを落とす
-- **audit が 0 件でも人の承認を要求する。** 平文で書かれた指示型の injection
-  （「以前の指示を無視して…」）は grep では拾い切れないので、機械判定を最終判断にしない
-- **未検証の skill を Claude に読ませない。** レビューの主体は人に置く。読ませた時点で
-  ペイロードが会話コンテキストに入る。`skill-audit.sh` はプロンプトを一切生成しない
-- **不可視文字の検出はバイト列で書かない。** `grep -P` + `\x{...}` を使う。バイト列だと
-  GNU grep 3.11 と ugrep 7.8.4 で結果が食い違う（ugrep が3件中1件しか拾わない）
-- **バイナリ判定は `grep -Iq`。`file --mime` は使わない。** コードブロックの多い `.md` が
-  `application/javascript` と判定され、`vercel-react-best-practices` の正当な
-  `rules/*.md` 27件が誤って弾かれる
-- **`lint.sh` は `skills-vendor/` を除外する。** `lint.sh` は
-  「ignore 済み＝自分が保守しない」で第三者コードを切る前提に立っているが、vendored は
-  **追跡していながら自分は保守しない**ので、この前提の唯一の例外になる
-- **`secret-scan.sh` は除外しない。** vendored に社内ホスト名や実在の値が混ざっていたら
-  止めたい。誤検知はレアな手動操作なので、起きたときに対処する
-- **`daily-update.sh` は検知だけ。** vendored な実体は symlink で `~/.claude/skills` へ生で
-  繋がるので、作業ツリーを書き換えた瞬間に有効になる。未レビューのコードが有効になる
-  瞬間を作らない
-- **`local:` 行は廃止した。** shallow clone の HEAD を毎回取り直して入れるため pin も
-  レビュー面も無く、3導線のうち最も無制御だった。vendoring が上位互換
-- **sub-path は取込時に実物で確かめる。** upstream のディレクトリ構成は変わる。
-  `.vendor.json` の `sub_path` が唯一の記録なので、`SKILL.md` の所在を見てから渡す
-- vendored も `~/.claude/skills` と `~/.agents/skills` の両方へ張る。外部 skill は
-  `SKILL_AGENTS` の既定で claude-code と codex の両方に入っているので、移行で見えるものを
-  減らさない
+**allowlist は default-deny。** 初期値は `anthropics` / `github` / `vercel-labs` の3つだけで、
+**個人アカウントは入れない**（allowlist に入れることは「人のレビューなしで毎日自動更新される」
+ことと同義）。allowlist 外の owner を渡すと `skill-add.sh` と `setup-claude-skills.sh` の
+**両方**がエラーで止まり、vendor 導線が案内される。
 
+**vendored はリポジトリにコミットする。** 更新のレビュー面を `git diff` に一本化するため。
+`.vendor.json` が唯一の正で、`ls skills-vendor/` が一覧そのもの（中央の一覧ファイルは持たない）。
+
+**未検証の skill を Claude に読ませない。** レビューの主体は人に置く。読ませた時点で
+ペイロードが会話コンテキストに入るので、`skill-audit.sh` はプロンプトを一切生成せず、
+audit が0件でも人の承認を要求する。
+
+fail-closed の倒し方、`reviewed_commit` と live-dir の検査、`lint.sh` / `secret-scan.sh` の
+扱い、`local:` 行を廃止した理由は [docs/claude-skills.md](docs/claude-skills.md)。
 動作確認は `bash scripts/test-skill-audit.sh` / `test-skill-vendor.sh` /
 `test-claude-skills-allowlist.sh`。
 
@@ -390,46 +355,33 @@ Claude Code のフックと cron から、Windows側の `BurntToast` (PowerShell
 - Windows側 PowerShell の `BurntToast` モジュール（`Install-Module BurntToast`）
 - `jq`（同上）
 
-#### 完了通知（Stopフック）
-
-タイトルに作業中のリポジトリ名とブランチ、本文にトランスクリプトから抽出した最後のアシスタント発言（サブエージェント分は除外、1行120文字に整形）を出す。
+通知は2種類。**完了通知**（Stopフック）はタイトルにリポジトリ名とブランチ、本文に
+トランスクリプトから抽出した最後のアシスタント発言を出す。**日報リマインド通知**は
+平日の業務時間中に日報の状態を報告する。
 
 ```
 ✅ dotfiles (main)
 テストを追加してlintも通りました。コミット済みです。
 ```
 
-本文の長さは `STOP_NOTIFICATION_SUMMARY_MAX` で変えられる。トランスクリプトが読めない場合は `タスクが完了しました` にフォールバックする。
+- **`stop` と `cron` で報告内容を変える。** `stop` は応答が終わるたびに発火するので、
+  一日中真になり続けるチェック（90分以上未更新・未完了タスク数）は cron 専用にしている
+- **Stop フック側は二段のゲートを掛ける。** 実行ゲート（10分に1回。日報は `/mnt/c` (9p) 上に
+  あり1ファイル操作あたり数秒かかる）と通知クールダウン（同一内容は60分に1回）。
+  状態は `~/.cache/claude-nippo-notify/{last-run,last-notify}`。**通知が来なくなったと
+  思ったらこの2ファイルを消せばリセットされる**
 
-#### 日報リマインド通知
-
-平日の業務時間中に日報の状態をチェックして通知する。`nippo-check.sh` は呼び出し元コンテキストを第1引数で受け取り、報告する内容を変える。
-
-| チェック           | stop | cron |
-| ------------------ | ---- | ---- |
-| 📝 日報未作成      | ✓    | ✓    |
-| 🟢 タイマー未終了  | ✓    | ✓    |
-| 📊 finalize忘れ    | ✓    | ✓    |
-| ⏰ 90分以上未更新  | −    | ✓    |
-| 📋 未完了タスクN件 | −    | ✓    |
-
-`stop` は応答が終わるたびに発火するので、一日中真になり続ける下2つは cron 専用にしている。加えて Stop フック側で二段のゲートを掛ける。
-
-1. **実行ゲート** — チェック自体を10分に1回まで。日報は `/mnt/c` (9p) 上にあり1ファイル操作あたり数秒かかるため
-2. **通知クールダウン** — 同じ内容の通知は60分に1回まで。内容が変われば窓の途中でも通知する
-
-状態は `~/.cache/claude-nippo-notify/{last-run,last-notify}` に持つ。通知が来なくなったと思ったらこの2ファイルを消せばリセットされる。
-
-セットアップ:
+日報リマインドの有効化:
 
 ```fish
 touch ~/.config/nippo-notify-enabled
 crontab -e
-# 以下を追加
 # 0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh` / `scripts/test-notify-cooldown.sh` / `scripts/test-stop-notification.sh`。
+無効化は `rm ~/.config/nippo-notify-enabled`。チェック項目の対応表と本文の組み立ては
+[docs/notifications.md](docs/notifications.md)。動作確認は `scripts/test-nippo-check.sh` /
+`test-notify-cooldown.sh` / `test-stop-notification.sh`。
 
 ### 日報の置き場とパス解決
 
@@ -725,31 +677,11 @@ reboot 後に `he` を叩くと、レイアウトだけでなく **nvim と clau
 | nvim     | `~/.local/state/herdr-nvim/<pane_id>`   | `.config/nvim/lua/my/settings/autocmd.lua`    |
 | claude   | `~/.local/state/herdr-claude/<pane_id>` | `.config/claude/hooks/herdr-claude-marker.sh` |
 
-- **一斉起動しない。** 種別ごとに同時投入数と間隔を絞る（nvim は3個ずつ2秒間隔、claude は1個ずつ8秒間隔）。
-  reboot 直後に数十個の nvim と claude が同時に立ち上がると負荷スパイクで固まるため。
-  `HERDR_RESTORE_NVIM_BATCH` 等で調整できる
-- **`he` も `herdr-restore.sh` も flock で多重起動を防ぐ。** 複数端末から同時に `he` を叩いても
-  サーバー起動は1プロセスだけが行う
-- 何がどの順で流れるかは `bash scripts/herdr-restore.sh --dry-run` で確認できる
-- **claude の cwd はマーカーから戻す。** herdr の `session.json` が持つペインの cwd はシェルのもので、
-  claude がセッション中に worktree へ移った分は残らない。マーカーの cwd が実在するときだけ
-  `cd <cwd> && claude --resume <id>` に組み立てる（worktree が消えていても claude 自体は立てる）
-- **`SessionEnd` は自分が書いたマーカーだけ消す。** worktree に入ると session_id が変わるので、
-  無条件に消すと新セッションのマーカーを旧セッションの end が持っていき、そのペインが復元されない
-- **nvim のセッションはペイン単位で分かれる。** cwd 単位だと、同じリポジトリを2ペインで開いていたときに
+- **一斉起動しない。** 種別ごとに同時投入数と間隔を絞る（nvim は3個ずつ2秒間隔、claude は
+  1個ずつ8秒間隔）。reboot 直後に数十個が同時に立ち上がると負荷スパイクで固まるため
+- **nvim のセッションはペイン単位。** cwd 単位だと、同じリポジトリを2ペインで開いたときに
   片方のバッファでもう片方が上書きされる
-- **ペイン単位のセッションが無ければ cwd 単位のセッションへ落ちる。** タグ付けの目的は複数ペインの
-  上書き防止なので、読み込み側まで厳格にする必要はない。落ちた後の保存はペイン単位の名前で行われるため、
-  1回開けば自動で移行する（この後付けが無かったため、タグ導入直後の reboot で全ペインが空で起動した）
-- **フォールバックは引数なしの起動だけで働く。** auto-session の `no_restore` フックは
-  「タグ付きが無かった」以外の理由でも発火する。`nvim somefile` は
-  `args_allow_files_auto_save = false` により復元対象外だがフックは発火するため、絞らないと
-  指定したファイルがセッションの内容に置き換わる（実際にこれで別ファイルが開く事故が起きた）。
-  同じ理由で headless（`nvim --headless "+Lazy! sync"`）と pager モードも除く
-- **スクラッチパッドが画面に出ている間はセッションを保存しない。** `~/.inbox.md`（`:Inbox`）と
-  `~/.nvim_tmp/` 配下（`:Temp`）は全プロジェクト共有なので、プロジェクト固有のセッションの
-  表示バッファになるとフォールバック経由で同じ cwd の全ペインへ広がり、定期保存で焼き付く
-  （実際に9本のセッションが `~/.inbox.md` で埋まった）
+- 何がどの順で流れるかは `bash scripts/herdr-restore.sh --dry-run` で確認できる
 
 #### 復元の進み具合を見る
 
@@ -766,20 +698,12 @@ herdr 復元: 完了  nvim 10/10, claude 4/5 (1件は使用中でスキップ)  
 herdr 復元: 中断  nvim 4/10, claude 0/5  開始から 1分23秒 (プロセス不在)
 ```
 
-- 状態は `~/.local/state/herdr-restore.status` に key=value で持つ。書き込みは tmp + `mv` で行い、
-  読み手が書きかけの行を読まないようにする
-- **`--status` はロックより手前で処理する。** 復元中は flock が取れず、黙って終わってしまうため
-- **ペインが使用中で触らなかった分は skipped として数える。** done と total が食い違う理由が
-  表示だけでわかるようにするため
-- **`state=running` のまま pid が居なければ「中断」。** 復元プロセスが落ちたことに気づけるようにする
-- 開始と完了は Windowsトースト通知でも出す。**復元対象が0件なら状態ファイルも通知も触らない**
-  （既にサーバーが動いている状態の `he` でトーストが飛ぶのを避けるため）
-- **通知の完了は待たない。** `Import-Module BurntToast` に実測10秒前後かかり、reboot 直後は
-  さらに伸びる。復元キューの頭とお尻をそれで止めるのは割に合わないので、`timeout` を付けて投げっぱなしにする
-
-設計の経緯は [docs/session-restore-strategy.md](docs/session-restore-strategy.md)。動作確認は `test-herdr-restore.sh` /
-`test-herdr-claude-marker.sh` / `test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
-**後ろ2本は CI では走らない**（実 nvim 設定と auto-session の導入済み環境が要るため `# ci-skip:` 宣言済み）。
+投入の刻み方、claude の cwd の戻し方、auto-session のフォールバックが暴れる条件、
+進み具合の状態管理は [docs/session-restore-strategy.md](docs/session-restore-strategy.md)。
+動作確認は `test-herdr-restore.sh` / `test-herdr-claude-marker.sh` /
+`test-herdr-nvim-session-tag.sh` / `test-nvim-session-autosave.sh`。
+**後ろ2本は CI では走らない**（実 nvim 設定と auto-session の導入済み環境が要るため
+`# ci-skip:` 宣言済み）。
 
 ### herdr タブ行のステータス（時計 / CPU / メモリ / LA）
 
@@ -799,31 +723,15 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
 | 動作確認         | `bash scripts/test-herdr-status.sh`                                  |
 
 - **native の `datetime` エントリを使わず command 1本に寄せている。** `datetime` は更新間隔を
-  持たないので秒を出せない。`command` は `interval_seconds` を取れて最小が 1 秒
-- **statusline だけを着色する経路が無い。** 0.8.2 では次の2つが同時に効く。
-  ①`tab_bar_right` に色の指定フィールドが無い ②タブ行は受け取った文字列の
-  **ESC バイトだけを落として残りを可視文字として描く**ので、スクリプトが `\033[38;5;208m` を
-  出すと `[38;5;208m` が表示されてしまう。そのため `status.sh` の着色は既定 `never`。
-  閾値による色分けの実装は残してあるが、これはターミナルで直接叩いたときのためのもの
-- **色は theme の `overlay1` トークン頼みで、しかも statusline 専用ではない。**
-  `overlay1` を検証色に振って画面全体を `pane read --format ansi` で数えたところ、
-  **非活性タブのラベル / タブ行の `+` ボタン / statusline / オンボーディング本文**が同じ値を共有していた
-  （活性タブは背景バッジ + 暗い文字で `overlay1` に依らない。非活性 workspace 名は `overlay0`）。
-  **statusline を明るくすると非活性タブのラベルも一緒に変わる**ため、上書きせず素の
-  `#697196` のままにしている。目立たせたくなったら、この副作用とセットで判断する
-- **`status.sh` は外部コマンドを1つも呼ばない。** date / awk / grep / cut を素直に使った初版は
-  実測 53ms/回で、1秒間隔だと1コアの5%を常時食う。bash 組み込みだけに寄せて 2.6ms にした。
-  ここが唯一の速度要件で、可読性より優先する
-- **曜日は `%a` ではなく `%w`（番号）から自前で当てる。** `%a` はロケール次第で表記が変わり、
-  `LANG` を変えた端末で幅と見た目が動く。月日はゼロ埋めしない（`%-m/%-d`）が、
-  時刻は桁を揃える（幅が毎秒動くのを避ける）
-- **CPU% は `/proc/stat` の差分。** 前回値を `~/.cache/herdr-status/cpu` に持つ。sleep で2点取る
-  方式は毎回待つので1秒間隔と噛み合わない。前回値が無い初回だけ「起動からの平均」で埋める
-  （空欄にすると herdr 起動直後だけ欄が欠けて幅が動く）
+  持たないので秒を出せない
+- **statusline だけを着色する経路が無い。** そのため `status.sh` の着色は既定 `never`
+- **`status.sh` は外部コマンドを1つも呼ばない。** 素直に書いた初版は 53ms/回で、1秒間隔だと
+  1コアの5%を常時食う。bash 組み込みだけに寄せて 2.6ms にした。ここが唯一の速度要件で、
+  可読性より優先する
 - **読めない項目は欄ごと落として exit 0。** 1項目のためにステータス全体が消えるほうが害が大きい
-- `datetime` エントリを使う場合、format は strftime だが `%z` / `%s` は拒否される
-  （サーバーのローカル壁時計なのでオフセットとエポックの情報が無い）
-- エントリは最大16個。超過分は `ignoring extras` で捨てられる
+
+色を変えられない事情（`overlay1` が非活性タブのラベルと共有）、CPU% の取り方、
+曜日を `%w` から自前で当てる理由は [docs/herdr-ui.md](docs/herdr-ui.md)。
 
 ### herdr の keybinding
 
@@ -842,25 +750,14 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
 | `prefix+g`       | navigate mode（h/j/k/l の空間移動） | native |
 | `prefix+b`       | sidebar のトグル                    | native |
 
-- **fzf popup に寄せているのは alt 併用キーが効かない環境のため。** `previous_/next_agent` や
-  `focus_agent`（`prefix+alt+1..9`）が使えないので、単一 chord から popup を開く方式にしている
-- **tab の絞り込み検索は native に無い。** `prefix+g` の navigate mode は h/j/k/l の空間移動、
-  `prefix+1..9` は番号直打ちで、どちらも名前で絞れない。そのため `tab-switch.sh` を足している
-- **tab picker には space 名を必ず併記する。** tab の label は既定が番号なので、複数 workspace で
-  `1` が並んで一覧から区別できない（実機で3つの workspace が全て label `1` になっていた）
-- **`prefix+t` を picker に充てた。** 単独文字で空いていたのは `d` `i` `m` `t` `u` `y` だけで、
-  隣の `prefix+shift+t` が `rename_tab` なので並びが揃う
-- **`prefix+shift+s` が非対称なのは `prefix+s` が native の `settings` だから。** picker 3種を
-  `a` / `t` / `w` に揃えるには `workspace_picker = ""` で native を潰す必要があり、
-  そこまではしていない（native picker を残す判断）
-- **fzf の終了ステータスは飲む。** `set -e` 下では ESC の 130 で代入ごと失敗するため、
-  popup が「キャンセルしたのにエラー終了」になる
-- 一覧の1列目は id の隠しフィールドで、`--delimiter '\t' --with-nth 2..` で表示から外す。
-  選択後に `cut -f1` で取り出して `herdr <kind> focus` に渡す
+- **fzf popup に寄せているのは alt 併用キーが効かない環境のため。** `prefix+alt+1..9` の
+  `focus_agent` などが使えないので、単一 chord から popup を開く方式にしている
+- **tab の絞り込み検索は native に無い。** `prefix+g` は空間移動、`prefix+1..9` は番号直打ちで、
+  どちらも名前で絞れない
 
-動作確認は `bash scripts/test-herdr-tab-switch.sh`。実 herdr を立てずに検証するため、
-`herdr` と `fzf` を PATH 前方のスタブに差し替えている。反映は `herdr server reload-config`
-（`prefix+shift+r`）、検証は `herdr config check`。
+キー割り当てを `a` / `t` / `shift+s` に決めた経緯、picker に space 名を併記する理由、
+fzf の終了ステータスを飲む理由は [docs/herdr-ui.md](docs/herdr-ui.md)。
+動作確認は `bash scripts/test-herdr-status.sh` / `test-herdr-tab-switch.sh`。
 
 ### Docker開発
 
