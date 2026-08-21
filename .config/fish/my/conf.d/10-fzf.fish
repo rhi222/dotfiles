@@ -1,8 +1,13 @@
 # fzf settings
 #
 # キーバインドは fzf.fish プラグインが持つ。fzf 標準のシェル統合（`fzf --fish | source`）は
-# 有効化していないので、`FZF_CTRL_R_OPTS` などの標準側の環境変数は効かない。
+# `my/functions/fish_user_key_bindings.fish` の空定義で塞いであるので、
+# `FZF_CTRL_R_OPTS` などの標準側の環境変数は効かない。
 # プラグイン側の設定変数（`fzf_history_opts` など）を使うこと。
+#
+# **「入っていないから効かない」ではなく「入らないようにしている」。** 昔の
+# `~/.fzf/install` が置く追跡外の `fish_user_key_bindings.fish` の有無で担当が端末ごとに
+# 割れ、担当が変われば読む変数も変わるため、下の設定が端末をまたぐたび無効化されていた。
 #
 # **プラグインの有無を見てから呼ぶ。** fzf.fish は fisher 管理で、その宣言（fish_plugins）は
 # 追跡していない。新環境ではリンクだけ先に張られるので、素で呼ぶと毎回の起動で
