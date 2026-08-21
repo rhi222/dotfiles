@@ -8,4 +8,4 @@
 # 予算内でも `余裕` が毎回出るので、下げ忘れはその場で見える。
 #
 # CLAUDE.md は AGENTS.md への symlink なので、実体だけを宣言する。
-AGENTS.md 922 47
+AGENTS.md 280 30
