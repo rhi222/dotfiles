@@ -8,10 +8,17 @@
 # 根拠にしないこと、volume prune に -a を付けないこと、全ビルダーを対象に
 # することはすべてそちら（fish 版との一致も Go テストが実物で検証している）。
 #
-# ここは fish 側の3点だけを見る。
-#   1. fish の設定変数（閾値・除外グロブ）が環境変数へ移って dotctl に届くか
-#   2. dotctl の場所を $HOME/.local/bin 優先で解けるか
-#   3. 起動時フックがキャッシュを読むだけで、更新を background に逃がすか
+# ここは fish 側の4点だけを見る。
+#   1. **autoload だけで解決できるか**（関数名とファイル名が一致しているか）
+#   2. fish の設定変数（閾値・除外グロブ）が環境変数へ移って dotctl に届くか
+#   3. dotctl の場所を $HOME/.local/bin 優先で解けるか
+#   4. 起動時フックがキャッシュを読むだけで、更新を background に逃がすか
+#
+# **1 が要点。** 初版は `source dclean.fish` で検査していたため、ヘルパーを
+# dclean.fish に同居させても通ってしまい、起動時通知が
+# `__dclean_dotctl: command not found` で落ちるのを見逃した。fish の autoload は
+# 関数名とファイル名の一致を要求するので、**このテストは source せず
+# fish_function_path 経由で呼ぶ。**
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -64,13 +71,32 @@ exit "${STUB_EXIT:-0}"
 STUB
 chmod +x "$FAKE_HOME/.local/bin/dotctl"
 
-# fish から関数を読み込んで呼ぶ。実 $HOME を触らないよう HOME を差し替える
+# **autoload 経路で呼ぶ。** source すると同居させた関数まで定義されるので、
+# autoload できない配置でも通ってしまう。実 $HOME は触らない
 run_fish() {
   env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" fish -c "
-    source $FUNC_DIR/dclean.fish
+    set -g fish_function_path $FUNC_DIR \$fish_function_path
     $1
   " 2>&1
 }
+
+echo "== autoload で解決できるか =="
+
+# **関数名とファイル名が一致していること。** conf.d（起動時通知）は dclean を
+# 呼ばずに __dclean_dotctl / __dclean_env を直接使うので、dclean.fish に
+# 同居させると「dclean を先に呼んでいないと未定義」になる
+for fn in dclean __dclean_dotctl __dclean_env; do
+  check "$fn が独立ファイルにある" "yes" \
+    "$([ -f "$FUNC_DIR/$fn.fish" ] && echo yes || echo no)"
+  check "$fn の関数名がファイル名と一致する" "yes" \
+    "$(grep -q "^function $fn " "$FUNC_DIR/$fn.fish" 2>/dev/null && echo yes || echo no)"
+done
+
+# autoload だけで呼べること（source しない）
+out=$(run_fish 'type -q __dclean_dotctl; and echo AUTOLOADED')
+check "__dclean_dotctl を autoload できる" "yes" "$(has 'AUTOLOADED' "$out")"
+out=$(run_fish 'type -q __dclean_env; and echo AUTOLOADED')
+check "__dclean_env を autoload できる" "yes" "$(has 'AUTOLOADED' "$out")"
 
 echo "== 引数の転送 =="
 
@@ -119,7 +145,7 @@ echo "== 終了コードの転送 =="
 rc=$(run_fish 'dclean --status >/dev/null 2>&1; echo $status')
 check "成功を転送する" "0" "$rc"
 rc=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" STUB_EXIT=1 \
-  fish -c "source $FUNC_DIR/dclean.fish; dclean --status >/dev/null 2>&1; echo \$status" 2>&1)
+  fish -c "set -g fish_function_path $FUNC_DIR \$fish_function_path; dclean --status >/dev/null 2>&1; echo \$status" 2>&1)
 check "失敗を転送する" "1" "$rc"
 
 echo "== dotctl の解決 =="
@@ -131,11 +157,11 @@ check "\$HOME/.local/bin を優先する" "yes" "$(has "$FAKE_HOME/.local/bin/do
 mkdir -p "$TEST_DIR/pathbin"
 cp "$FAKE_HOME/.local/bin/dotctl" "$TEST_DIR/pathbin/dotctl"
 out=$(env HOME="$TEST_DIR/nohome" PATH="$TEST_DIR/pathbin:/usr/bin:/bin" \
-  fish -c "source $FUNC_DIR/dclean.fish; __dclean_dotctl" 2>&1)
+  fish -c "set -g fish_function_path $FUNC_DIR \$fish_function_path; __dclean_dotctl" 2>&1)
 check "PATH へフォールバックする" "yes" "$(has "$TEST_DIR/pathbin/dotctl" "$out")"
 
 out=$(env HOME="$TEST_DIR/nohome" PATH="/usr/bin:/bin" \
-  fish -c "source $FUNC_DIR/dclean.fish; __dclean_dotctl" 2>&1)
+  fish -c "set -g fish_function_path $FUNC_DIR \$fish_function_path; __dclean_dotctl" 2>&1)
 rc=$?
 check "どこにも無ければ非0で返す" "1" "$rc"
 check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
@@ -157,7 +183,7 @@ chmod +x "$FAKE_HOME/.local/bin/dotctl"
 
 : >"$TEST_DIR/calls.log"
 out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" fish -c "
-  source $FUNC_DIR/dclean.fish
+  set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF
   __docker_clean_greeting" 2>&1)
 check "通知行を出す" "yes" "$(has '🗑  docker' "$out")"
@@ -168,7 +194,7 @@ check "新しければ refresh しない" "no" "$(has 'docker refresh' "$(cat "$
 
 : >"$TEST_DIR/calls.log"
 env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" STALE_EXIT=0 fish -c "
-  source $FUNC_DIR/dclean.fish
+  set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF
   __docker_clean_greeting" >/dev/null 2>&1
 # background に逃がすので、少し待ってからログを見る
@@ -179,7 +205,7 @@ check "古ければ refresh する" "yes" "$(has 'docker refresh' "$(cat "$TEST_
 # ハンドラを起こし、起動のたびに snap の導入案内が出る
 : >"$TEST_DIR/calls.log"
 env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" fish -c "
-  source $FUNC_DIR/dclean.fish
+  set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF" >/dev/null 2>&1
 check "非対話 shell では通知しない" "0" "$(grep -c . "$TEST_DIR/calls.log")"
 

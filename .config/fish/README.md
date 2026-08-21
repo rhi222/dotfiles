@@ -34,6 +34,8 @@
         ├── __wt_lock_reason.fish    # worktreeのlock理由取得
         ├── __wt_main_path.fish      # メインworktreeの絶対パス取得
         ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
+        ├── __dclean_dotctl.fish     # dotctl の場所を返す（起動時通知からも呼ぶ）
+        ├── __dclean_env.fish        # fish の設定を環境変数へ移して dotctl を呼ぶ
         ├── dclean.fish              # docker掃除（dotctl docker clean の wrapper）
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
