@@ -58,6 +58,26 @@ run_step_soft() {
 # 飛ぶと無視されるようになるため。テストから差し替えられるようにパスを変数に持つ。
 YAZI_PACKAGE_FILE="${YAZI_PACKAGE_FILE:-$HOME/.config/yazi/package.toml}"
 
+# fish プラグイン（fisher 管理）の更新。宣言は .config/fish/fish_plugins。
+#
+# `fisher update` は宣言と実体を突き合わせる完全な reconcile で、未宣言のものは
+# 削除する。ここで回すのは既存の更新だけにしたいので、追加は
+# setup-fish-plugins.sh の担当（gh 拡張 / yazi と同じ役割分担）。
+#
+# fish も fisher も無い端末では何もせず成功扱いにする。yazi と同じく、
+# 宣言ファイルの有無ではなく実行系の有無で判定できるため。
+fisher_update() {
+  if ! command -v fish >/dev/null 2>&1; then
+    echo "fish not found, skipping"
+    return 0
+  fi
+  if ! fish -c 'functions -q fisher' >/dev/null 2>&1; then
+    echo "fisher not installed, skipping (run scripts/setup-fish-plugins.sh)"
+    return 0
+  fi
+  fish -c 'fisher update' </dev/null
+}
+
 yazi_pkg_upgrade() {
   if [ ! -f "$YAZI_PACKAGE_FILE" ]; then
     echo "no package.toml at $YAZI_PACKAGE_FILE, skipping"
@@ -223,6 +243,9 @@ main() {
   run_step "gh extension upgrade" gh extension upgrade --all
   # yazi プラグインも同様に、宣言済みのものの更新だけを回す。
   run_step "yazi pkg upgrade" yazi_pkg_upgrade
+  # fish プラグイン（tide / fzf.fish）も同様。ここが無かったため、この2つだけ
+  # どの端末でも手動でしか更新されていなかった。
+  run_step "fisher update" fisher_update
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check

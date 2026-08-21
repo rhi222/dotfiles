@@ -304,6 +304,71 @@ check "skills-vendor が無くても成功する" \
 check "lint.sh が skills-vendor を pathspec で除外している" \
   grep -q "skills-vendor" "$SCRIPT_DIR/lint.sh"
 
+# --- backup_fish_plugins ---
+# fish_plugins は link_configs でリンクするが、safe_link の ln -snf は実ファイルを
+# 黙って消す。この宣言リストは「その端末に何が入っているか」の唯一の記録なので、
+# 内容が違うまま消えると別端末の宣言が失われる。
+#
+# 呼び出しは `bash -c 'source "$0"; ...'` ではなくサブシェルで行う。前者は $0 と
+# BASH_SOURCE[0] が一致して末尾のガードを通り、main が丸ごと走ってしまう
+# （偽の HOME に対して実際にリンクが張られ、この関数の検査結果も汚れる）。
+run_backup_fish_plugins() {
+  (
+    # DC は source した dotfilesLink.sh 側の関数が読む global。テスト側に参照が
+    # 無いため shellcheck が SC2034 を出すが、ここで差し替えるのが目的
+    # shellcheck disable=SC2034
+    DC="$1/dc"
+    HOME="$1/home"
+    export HOME
+    backup_fish_plugins
+  ) >/dev/null 2>&1
+}
+
+fp="$tmp/fp1"
+mkdir -p "$fp/home/.config/fish" "$fp/dc/fish"
+printf 'a/b\n' >"$fp/dc/fish/fish_plugins"
+printf 'a/b\nc/d\n' >"$fp/home/.config/fish/fish_plugins"
+run_backup_fish_plugins "$fp"
+check "内容が違う実ファイルは退避される" \
+  bash -c 'compgen -G "'"$fp"'/home/.config/fish/fish_plugins.bak.*" >/dev/null'
+check "退避した内容が失われない" \
+  bash -c 'grep -q "c/d" "'"$fp"'"/home/.config/fish/fish_plugins.bak.*'
+check "退避後は実ファイルが残らない（リンクを張れる状態になる）" \
+  test ! -e "$fp/home/.config/fish/fish_plugins"
+
+fp="$tmp/fp2"
+mkdir -p "$fp/home/.config/fish" "$fp/dc/fish"
+printf 'a/b\n' >"$fp/dc/fish/fish_plugins"
+printf 'a/b\n' >"$fp/home/.config/fish/fish_plugins"
+run_backup_fish_plugins "$fp"
+check "内容が同じなら退避しない（無意味な .bak を増やさない）" \
+  bash -c '! compgen -G "'"$fp"'/home/.config/fish/fish_plugins.bak.*" >/dev/null'
+check "内容が同じなら実ファイルはそのまま残る" \
+  test -f "$fp/home/.config/fish/fish_plugins"
+
+fp="$tmp/fp3"
+mkdir -p "$fp/home/.config/fish" "$fp/dc/fish"
+printf 'a/b\n' >"$fp/dc/fish/fish_plugins"
+ln -s "$fp/dc/fish/fish_plugins" "$fp/home/.config/fish/fish_plugins"
+run_backup_fish_plugins "$fp"
+check "既に symlink なら触らない（2回目以降の実行）" \
+  test -L "$fp/home/.config/fish/fish_plugins"
+
+fp="$tmp/fp4"
+mkdir -p "$fp/home/.config/fish" "$fp/dc/fish"
+printf 'a/b\n' >"$fp/dc/fish/fish_plugins"
+check "実ファイルが無ければ成功する（fresh 環境）" run_backup_fish_plugins "$fp"
+
+# fish_plugins がリンク対象に入っていること自体を固定する。
+# 宣言をリポジトリに置いても、リンクされなければ fisher は従来どおり
+# 追跡外の実ファイルを読み、端末差が残る。
+check "link_configs が fish_plugins をリンク対象にしている" \
+  grep -q 'fish/fish_plugins|' "$SETUP"
+
+# 退避は link_configs より前でなければ意味がない（後だと実ファイルは既に消えている）
+check "main が link_configs より先に backup_fish_plugins を呼ぶ" \
+  bash -c 'awk "/^main\\(\\)/,/^}/" "'"$SETUP"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

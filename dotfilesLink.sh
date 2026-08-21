@@ -148,7 +148,11 @@ link_configs() {
     "$DC/claude/agents|$HOME/.claude/agents"
 
     # Fish shell configuration
+    # fish_plugins は fisher の宣言リスト。fisher は `printf ... > $fish_plugins` で
+    # 書き戻すので symlink を貫通し、リンクは外れない（実体を消すのは全プラグインを
+    # remove したときだけ）。
     "$DC/fish/config.fish|$HOME/.config/fish/config.fish"
+    "$DC/fish/fish_plugins|$HOME/.config/fish/fish_plugins"
     "$DC/fish/my|$HOME/.config/fish/my"
 
     # Development tools configuration
@@ -261,6 +265,28 @@ setup_claude_settings() {
     echo "       実ファイル側を残す:     bash scripts/sync-claude-settings.sh pull" >&2
     echo "       リポジトリ版で上書き:   bash scripts/sync-claude-settings.sh push --force" >&2
   fi
+}
+
+# fish_plugins は link_configs でリンクするが、safe_link の `ln -snf` は実ファイルを
+# 黙って消す。この宣言リストは端末ごとに実体が先にあり、しかも「その端末に何が
+# 入っているか」の唯一の記録なので、消えると別端末の宣言が失われる。
+#
+# 中身が同じなら退避しない。両端末とも同じ3つという通常ケースで、初回実行のたびに
+# 意味のない .bak が増えるのを避ける。
+backup_fish_plugins() {
+  local live=~/.config/fish/fish_plugins
+  local repo="$DC/fish/fish_plugins"
+
+  [ -e "$live" ] || return 0
+  [ -L "$live" ] && return 0
+  if [ -f "$repo" ] && cmp -s "$live" "$repo"; then
+    return 0
+  fi
+
+  local backup
+  backup="$live.bak.$(date +%Y%m%d%H%M%S)"
+  echo "[INFO] 既存の $live を $backup に退避します（リポジトリの宣言と内容が異なります）"
+  mv "$live" "$backup"
 }
 
 # codex: 公式ドキュメントに従いローカル設定を ~/.codex/config.toml に置く
@@ -386,6 +412,8 @@ main() {
   # 「集約先 → リポジトリ内 → ~/.claude/skills」の二段リンクになるため、
   # link_claude_skills が走る時点で一段目が済んでいる必要がある
   link_private_files
+  # link_configs が fish_plugins を張る前に、内容の違う実ファイルを退避する
+  backup_fish_plugins
   link_configs
   link_claude_skills
   setup_claude_settings

@@ -341,6 +341,54 @@ assert_eq 1 "$exit_code" "ya の失敗は隠さない"
 rm -rf "$YAZI_TEST_DIR"
 
 echo ""
+echo "[6b] fisher_update"
+
+FISHER_TEST_DIR="$(mktemp -d)"
+FISHER_STUB_BIN="$FISHER_TEST_DIR/bin"
+mkdir -p "$FISHER_STUB_BIN"
+cat >"$FISHER_STUB_BIN/fish" <<EOF
+#!/bin/bash
+echo "FISH_CALLED args=[\$*]" >>"$FISHER_TEST_DIR/fish.log"
+case "\${2:-}" in
+  *"functions -q fisher"*) exit "\${HAS_FISHER_EXIT:-0}" ;;
+  *"fisher update"*) exit "\${FISHER_EXIT:-0}" ;;
+esac
+exit 0
+EOF
+chmod +x "$FISHER_STUB_BIN/fish"
+
+# fish と fisher が揃っていれば fisher update を呼ぶ
+: >"$FISHER_TEST_DIR/fish.log"
+exit_code=0
+output=$(PATH="$FISHER_STUB_BIN:$PATH" fisher_update 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "fisher があれば成功する"
+assert_output_contains "fisher update" "$(cat "$FISHER_TEST_DIR/fish.log")" "fisher update を呼ぶ"
+
+# fish が無い端末では呼ばずに成功扱い（毎日 FAILED 通知が飛ぶのを避ける）
+: >"$FISHER_TEST_DIR/fish.log"
+exit_code=0
+output=$(PATH="/nonexistent" fisher_update 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "fish が無くても成功扱い"
+assert_output_contains "skipping" "$output" "スキップの理由を出す"
+
+# fish はあるが fisher 未導入。追加は setup-fish-plugins.sh の担当なので
+# ここでは入れずに成功扱いにし、案内だけ出す
+: >"$FISHER_TEST_DIR/fish.log"
+exit_code=0
+output=$(PATH="$FISHER_STUB_BIN:$PATH" HAS_FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "fisher 未導入でも成功扱い"
+assert_eq 0 "$(grep -c "fisher update" "$FISHER_TEST_DIR/fish.log")" "勝手に入れない"
+assert_output_contains "setup-fish-plugins.sh" "$output" "追加の導線を案内する"
+
+# fisher update 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
+: >"$FISHER_TEST_DIR/fish.log"
+exit_code=0
+output=$(PATH="$FISHER_STUB_BIN:$PATH" FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
+assert_eq 1 "$exit_code" "fisher update の失敗は隠さない"
+
+rm -rf "$FISHER_TEST_DIR"
+
+echo ""
 echo "[7] cargo_install_update"
 
 CARGO_TEST_DIR="$(mktemp -d)"
