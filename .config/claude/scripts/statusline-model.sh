@@ -11,7 +11,7 @@
 # Fable の判定は model.id の前方一致と display_name の部分一致の両方で行う。
 # display_name の実際の表記を実機で確認できていないため、どちらか一方でも拾えるようにする。
 #
-# 動作確認: bash scripts/test-statusline-model.sh
+# 動作確認: bash tests/settings/test-statusline-model.sh
 set -uo pipefail
 
 CYAN=$'\033[36m'

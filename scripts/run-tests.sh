@@ -5,7 +5,8 @@
 #   bash scripts/run-tests.sh --ci   # `# ci-skip:` 宣言のあるものを飛ばす（CIから使う）
 #
 # 環境変数:
-#   TEST_DIR      走査するディレクトリ（既定: このスクリプトの場所）
+#   TEST_DIR      走査するディレクトリ（既定: リポジトリの tests/）
+#                 ドメインを渡せばそこだけ走る（例: TEST_DIR=tests/linear）
 #   TEST_TIMEOUT  1本あたりの制限秒（既定: 300）
 #   TEST_JOBS     同時実行数（既定: nproc を 16 で打ち止め。1 で直列）
 #
@@ -15,6 +16,9 @@
 # 気付けないまま片方だけ更新されて食い違うため、宣言はテストに持たせる。
 #
 # ファイル名が test-*.sh に一致しないのは、自分自身を走査対象に含めないため。
+#
+# 表示名は TEST_DIR からの相対パス。**basename では別ドメインの同名テストを
+# 区別できず、どちらが落ちたか分からない**（tests/ を階層に分けた時点で起きる）。
 #
 # **並列で走らせるが、出力は直列時と同じ**（テスト名の昇順、1本1行、失敗した
 # ものだけ出力を見せる）。各テストの出力を個別ファイルへ溜め、全部終わってから
@@ -31,7 +35,13 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_DIR="${TEST_DIR:-$SCRIPT_DIR}"
+# 既定はリポジトリの tests/。無ければ従来どおり scripts/ を見る
+# （テストの移設前後どちらでも動くようにしておく）
+default_test_dir() {
+  local t="$SCRIPT_DIR/../tests"
+  if [ -d "$t" ]; then (cd "$t" && pwd); else echo "$SCRIPT_DIR"; fi
+}
+TEST_DIR="${TEST_DIR:-$(default_test_dir)}"
 TEST_TIMEOUT="${TEST_TIMEOUT:-300}"
 
 # 既定の同時実行数。16 で打ち止めにする。
@@ -53,7 +63,9 @@ TEST_JOBS="${TEST_JOBS:-$(default_jobs)}"
 CI_MODE=0
 [ "${1:-}" = "--ci" ] && CI_MODE=1
 
-mapfile -t tests < <(find "$TEST_DIR" -maxdepth 1 -name 'test-*.sh' | sort)
+# **再帰で拾う。** tests/<domain>/ に分けてあるので直下だけでは0件になる。
+# sort はフルパスに対して掛かるので、表示はドメインごとに固まる
+mapfile -t tests < <(find "$TEST_DIR" -type f -name 'test-*.sh' | sort)
 
 if [ "${#tests[@]}" -eq 0 ]; then
   echo "テストが1本も見つからない: $TEST_DIR" >&2
@@ -129,7 +141,7 @@ failed_names=()
 
 # 出力。tests は sort 済みなので、添字順に流せば直列時と同じ並びになる
 for i in "${!tests[@]}"; do
-  name="$(basename "${tests[$i]}")"
+  name="${tests[$i]#"$TEST_DIR"/}"
   rc="$(cat "$WORK/$i.status" 2>/dev/null || echo 1)"
 
   if [ "$rc" = "skip" ]; then

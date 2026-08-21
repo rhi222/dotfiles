@@ -67,4 +67,4 @@ Claude Code の EnterWorktree 経由では PostToolUse hook
 herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には
 作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは
 手動で `~/scripts/worktree-init.sh` を実行する。
-テストは `bash scripts/test-worktree-init.sh`。
+テストは `bash tests/worktree/test-worktree-init.sh`。

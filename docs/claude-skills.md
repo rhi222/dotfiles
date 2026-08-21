@@ -58,15 +58,15 @@ AGENTS.md の「Claude Code skill管理（信頼境界と vendoring）」の詳�
   `SKILL_AGENTS` の既定で claude-code と codex の両方に入っているので、移行で見えるものを
   減らさない
 
-動作確認は `bash scripts/test-skill-audit.sh` / `test-skill-vendor.sh` /
+動作確認は `bash tests/skills/test-skill-audit.sh` / `test-skill-vendor.sh` /
 `test-claude-skills-allowlist.sh`。
 
 ## 動作確認
 
 ```fish
-bash scripts/test-skill-audit.sh
-bash scripts/test-skill-vendor.sh
-bash scripts/test-claude-skills-allowlist.sh
+bash tests/skills/test-skill-audit.sh
+bash tests/skills/test-skill-vendor.sh
+bash tests/setup/test-claude-skills-allowlist.sh
 ```
 
 ## upstream が skill をやめることがある

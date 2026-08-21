@@ -7,6 +7,7 @@
 # 「増える一方の除外リスト」になって検査の意味が薄れる。
 scripts/example*
 scripts/*/example*
+tests/*example*
 
 # 利用者が任意で置くリポジトリ別の worktree 初期化フック。**無いのが既定**で、
 # docs/worktree.md はその置き場を説明するために具体パスを書いている。

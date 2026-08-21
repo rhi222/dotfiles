@@ -51,15 +51,15 @@ AGENTS.md の「herdr タブ行のステータス」「herdr の keybinding」�
 - 一覧の1列目は id の隠しフィールドで、`--delimiter '\t' --with-nth 2..` で表示から外す。
   選択後に `cut -f1` で取り出して `herdr <kind> focus` に渡す
 
-動作確認は `bash scripts/test-herdr-tab-switch.sh`。実 herdr を立てずに検証するため、
+動作確認は `bash tests/session/test-herdr-tab-switch.sh`。実 herdr を立てずに検証するため、
 `herdr` と `fzf` を PATH 前方のスタブに差し替えている。反映は `herdr server reload-config`
 （`prefix+shift+r`）、検証は `herdr config check`。
 
 ## 動作確認
 
 ```fish
-bash scripts/test-herdr-status.sh
-bash scripts/test-herdr-tab-switch.sh
+bash tests/session/test-herdr-status.sh
+bash tests/session/test-herdr-tab-switch.sh
 ```
 
 実 herdr を立てずに検証するため、`herdr` と `fzf` を PATH 前方のスタブに差し替えている。

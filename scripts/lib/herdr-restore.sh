@@ -3,7 +3,7 @@
 #
 # herdr API の呼び出しやプロセス起動といった副作用は scripts/herdr-restore.sh
 # （ドライバ）側に置き、ここは組み立てと判定だけを持つ。単体テストは
-# scripts/test-herdr-restore.sh。
+# tests/session/test-herdr-restore.sh。
 
 # マーカーの置き場。nvim 側の autocmd と同じく XDG_STATE_HOME を尊重する。
 herdr_restore_state_dir() {

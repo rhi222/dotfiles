@@ -42,4 +42,4 @@ crontab -e
 # 0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `scripts/test-nippo-check.sh` / `scripts/test-notify-cooldown.sh` / `scripts/test-stop-notification.sh`。
+無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `tests/nippo/test-nippo-check.sh` / `tests/notify/test-notify-cooldown.sh` / `tests/notify/test-stop-notification.sh`。

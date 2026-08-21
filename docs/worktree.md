@@ -36,7 +36,7 @@
 タグのパディングは**括弧の外側**に入れる（`[main]  `）。`[main  ]` のように内側へ入れると
 `wt` / `wtd` が `awk` で拾うフィールド番号がずれる。
 
-動作確認は `bash scripts/test-wt-select.sh`。
+動作確認は `bash tests/worktree/test-wt-select.sh`。
 
 ## worktree の掃除
 
@@ -48,7 +48,7 @@
 | 解放見込みつきで確認       | `bash scripts/worktree-cleanup.sh --size`            |
 | 実削除                     | `bash scripts/worktree-cleanup.sh --execute`         |
 | 追跡ファイルの変更ごと削除 | `bash scripts/worktree-cleanup.sh --execute --force` |
-| 動作確認                   | `bash scripts/test-worktree-cleanup.sh`              |
+| 動作確認                   | `bash tests/worktree/test-worktree-cleanup.sh`              |
 
 `git worktree list --porcelain` を起点にするため、worktree の置き場所を問わず拾える。
 `.wt/`（`git wt`）・`.claude/worktrees/`（Claude Code）・`/tmp`・旧 `~/git-worktrees/` が

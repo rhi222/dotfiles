@@ -66,7 +66,7 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
 | 運搬用に固める      | `bash scripts/private-bundle.sh export`          |
 | 新環境で展開        | `bash scripts/private-bundle.sh import <zip>`    |
 | 状態の確認          | `bash scripts/private-bundle.sh status`          |
-| 動作確認            | `bash scripts/test-private-bundle.sh`            |
+| 動作確認            | `bash tests/settings/test-private-bundle.sh`            |
 
 - **リンク規則は1つだけ。** リンク先が実ディレクトリなら1階層降り、無ければそこでリンクする。
   これでファイル単位（`config-local`）とディレクトリ単位（`ahk-snippets/js`）が自動で振り分けられ、
@@ -125,7 +125,7 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
 - 不正なJSONは相手側へ伝播させずに失敗する
 - `daily-update.sh` の `pull` は作業ツリーに差分を出すだけ。コミットするかは人間が判断する
 
-動作確認は `bash scripts/test-sync-claude-settings.sh`。
+動作確認は `bash tests/settings/test-sync-claude-settings.sh`。
 
 ### Windows 側設定の同期（.wslconfig / Windows Terminal）
 
@@ -156,7 +156,7 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
   許容するので、コメントを書くと `jq` が失敗して同期が止まる（現物はコメント無し）
 - プロファイルの GUID は distro 名から決定的に生成されるため、同じ distro 名なら別端末でも一致する
 
-動作確認は `bash scripts/test-sync-windows-settings.sh`。
+動作確認は `bash tests/settings/test-sync-windows-settings.sh`。
 
 ### statusline（ccstatusline）
 
@@ -180,7 +180,7 @@ statusline JSON をそのまま渡し、`preserveColors: true` なら stdout の
 - `jq` が無い環境では `Model: ?` を返して exit 0 する。statusline 全体を壊さないため、この経路では外部コマンドを一切呼ばない
 - 実行時間は約32ms/回。`timeout` は 3000ms に設定している
 
-動作確認は `bash scripts/test-statusline-model.sh`。見た目は statusline JSON を流し込んで確認する。
+動作確認は `bash tests/settings/test-statusline-model.sh`。見た目は statusline JSON を流し込んで確認する。
 
 ```fish
 echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"current_dir":"."}}' | ccstatusline
@@ -217,7 +217,7 @@ bash scripts/env-residue.sh
 - 件数は機械可読サマリ行（`env-residue: FOUND=N`）から取る。表示の体裁を変えても
   呼び出し側が壊れないようにするため（`worktree-cleanup.sh` と同じ作り）
 
-動作確認は `bash scripts/test-env-residue.sh`。
+動作確認は `bash tests/checks/test-env-residue.sh`。
 
 ### 日次アップデート（daily-update.sh）
 
@@ -241,7 +241,7 @@ nvim の Lazy と Mason / gh skill / gh extension / yazi プラグイン / fishe
 - **yazi プラグインは `package.toml` が無い端末では何もせず成功扱いにする。** yazi を入れていない
   環境で毎日 FAILED が出ないようにするため（他のステップと違い、宣言ファイルの有無で判定できる）
 
-動作確認は `bash scripts/test-daily-update.sh`。
+動作確認は `bash tests/setup/test-daily-update.sh`。
 
 ### aptパッケージ管理
 
@@ -284,7 +284,7 @@ audit が0件でも人の承認を要求する。
 
 fail-closed の倒し方、`reviewed_commit` と live-dir の検査、`lint.sh` / `secret-scan.sh` の
 扱い、`local:` 行を廃止した理由は [docs/claude-skills.md](docs/claude-skills.md)。
-動作確認は `bash scripts/test-skill-audit.sh` / `test-skill-vendor.sh` /
+動作確認は `bash tests/skills/test-skill-audit.sh` / `test-skill-vendor.sh` /
 `test-claude-skills-allowlist.sh`。
 
 ### Codex自作skill管理
@@ -312,7 +312,7 @@ Codex専用の自作skillは `.config/codex/skills/` に置く。`dotfilesLink.s
 | 更新             | `daily-update.sh` が `gh extension upgrade --all` を実行                          |
 | 削除             | `gh-extensions.txt` の行削除 + `gh extension remove <name>`                       |
 
-`@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash scripts/test-gh-extensions.sh`。
+`@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash tests/setup/test-gh-extensions.sh`。
 
 ### fish プラグイン管理（fisher）
 
@@ -348,7 +348,7 @@ fish のプラグインは fisher で管理し、宣言リストは `.config/fis
 - tide の見た目は156個の universal 変数で決まり `fish_variables` は追跡外なので、
   宣言には含められない。bootstrap の `tide configure --auto` が担当
 
-動作確認は `bash scripts/test-fish-plugins.sh`。
+動作確認は `bash tests/setup/test-fish-plugins.sh`。
 
 ### yaziプラグイン管理
 
@@ -376,7 +376,7 @@ yazi のプラグインは `ya`（yazi 同梱のCLI）で管理し、宣言リ�
   `ya pkg upgrade` はここを書き換えるので作業ツリーに差分が出るが、コミットするかは人間が判断する
 - 設定ディレクトリは `ya` と同じ順（`YAZI_CONFIG_HOME` → `XDG_CONFIG_HOME/yazi` → `~/.config/yazi`）で解決する
 
-動作確認は `bash scripts/test-yazi-plugins.sh`。
+動作確認は `bash tests/setup/test-yazi-plugins.sh`。
 
 ### Windowsトースト通知（WSL2専用）
 
@@ -421,7 +421,7 @@ crontab -e
 ```
 
 無効化は `rm ~/.config/nippo-notify-enabled`。チェック項目の対応表と本文の組み立ては
-[docs/notifications.md](docs/notifications.md)。動作確認は `scripts/test-nippo-check.sh` /
+[docs/notifications.md](docs/notifications.md)。動作確認は `tests/nippo/test-nippo-check.sh` /
 `test-notify-cooldown.sh` / `test-stop-notification.sh`。
 
 ### 日報の置き場とパス解決
@@ -461,7 +461,7 @@ skill は6本（`nippo-add` / `nippo-finalize` / `nippo-weekly` / `nippo-reflect
 142日分の日報で出力痕跡が計7ファイルしかなかった。`finalize` の直後に「どれを呼ぶか」を
 毎回決めさせられるのが原因なので、分岐を残すと同じ判断コストが戻る。
 
-動作確認は `bash scripts/test-nippo-paths.sh`。
+動作確認は `bash tests/nippo/test-nippo-paths.sh`。
 
 ### 日報ファイル自動作成（WSL2専用）
 
@@ -476,7 +476,7 @@ crontab -e
 # 0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/nippo-create-enabled`。動作確認は `bash scripts/test-nippo-create-cron.sh`。
+無効化は `rm ~/.config/nippo-create-enabled`。動作確認は `bash tests/nippo/test-nippo-create-cron.sh`。
 
 ### 面談準備の自動起票
 
@@ -504,7 +504,7 @@ crontab -e
 - 候補者の実名・メール・スキルシートURLは**日報（ローカル）と Linear にだけ**入る。
   リポジトリ側の skill 本文とテストには架空名しか置かない
 
-動作確認は `bash scripts/test-linear-interview-prep.sh`。
+動作確認は `bash tests/linear/test-linear-interview-prep.sh`。
 
 ### 日報ドラフト自動仕上げ（WSL2専用）
 
@@ -525,7 +525,7 @@ crontab -e
 # 30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/nippo-draft-enabled`。動作確認は `bash scripts/test-nippo-draft-cron.sh`。
+無効化は `rm ~/.config/nippo-draft-enabled`。動作確認は `bash tests/nippo/test-nippo-draft-cron.sh`。
 
 ### esa週次レポート自動生成（WSL2専用）
 
@@ -546,7 +546,7 @@ crontab -e
 # 0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
 ```
 
-無効化は `rm ~/.config/esa-weekly-enabled`。動作確認は `bash scripts/test-esa-weekly-cron.sh`。
+無効化は `rm ~/.config/esa-weekly-enabled`。動作確認は `bash tests/nippo/test-esa-weekly-cron.sh`。
 
 ### Linear個人司令塔（タスク集約とAI夜間ディスパッチ）
 
@@ -561,7 +561,7 @@ issueは元URL＋期待アウトカム＋判断状態だけを持つ。本体は
 | Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日10:10）                  |
 | 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                  |
 | 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00） |
-| 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` |
+| 動作確認            | `bash tests/linear/test-linear-api.sh` ほか `test-linear-*.sh` |
 
 **リンクは Linear → 外部の一方向のみ。GitHub / Jira には一切書き戻さない。**
 どちらもチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。
@@ -651,7 +651,7 @@ stacked かどうかが確定する唯一の瞬間が base の指定なので、
 - `git switch -c` は見ない。ブランチを切る時点では stacked かどうか決まっておらず誤検知しか生まない
 - 登録先は `settings.json` なので、変更後は `sync-claude-settings.sh` で同期し、Claude Code を再起動する
 
-動作確認は `bash scripts/test-pr-base-guard.sh`。
+動作確認は `bash tests/git/test-pr-base-guard.sh`。
 
 ### 行数予算の検査（doc-budget）
 
@@ -663,7 +663,7 @@ stacked かどうかが確定する唯一の瞬間が base の指定なので、
 | ------------ | ------------------------------------ |
 | 検査         | `bash scripts/doc-budget.sh`         |
 | 予算の変更   | `scripts/doc-budget.txt` を編集      |
-| 動作確認     | `bash scripts/test-doc-budget.sh`    |
+| 動作確認     | `bash tests/checks/test-doc-budget.sh`    |
 
 - **予算は「ファイル全体」と「1セクション」の二段。** 全体だけだと肥大した1節を見逃し、
   セクション上限だけではファイルが縮まない（900行に対し、20行上限でも削減見込みは231行。
@@ -697,7 +697,7 @@ gf 側の background 更新だけでは「clone 直後の `gf` に間に合う�
 - 更新失敗時はキャッシュを壊さず、stderr を `$cache.err` に上書きして残す（追記だと無限に肥大する）
 - テストは `$ghq_list_cache` でキャッシュ位置を差し替えて実キャッシュを避ける
 
-動作確認は `bash scripts/test-gf-cache.sh`。
+動作確認は `bash tests/shell/test-gf-cache.sh`。
 
 ### git worktree の運用
 
@@ -782,7 +782,7 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
 | 設定の検証   | `herdr config check`                                   |
 | 反映         | `herdr server reload-config`                           |
 | 別設定で試す | `env HERDR_CONFIG_PATH=<試作.toml> herdr config check` |
-| 動作確認     | `bash scripts/test-herdr-status.sh`                    |
+| 動作確認     | `bash tests/session/test-herdr-status.sh`                    |
 
 - **native の `datetime` エントリを使わず command 1本に寄せている。** `datetime` は更新間隔を
   持たないので秒を出せない
@@ -819,7 +819,7 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
 
 キー割り当てを `a` / `t` / `shift+s` に決めた経緯、picker に space 名を併記する理由、
 fzf の終了ステータスを飲む理由は [docs/herdr-ui.md](docs/herdr-ui.md)。
-動作確認は `bash scripts/test-herdr-status.sh` / `test-herdr-tab-switch.sh`。
+動作確認は `bash tests/session/test-herdr-status.sh` / `test-herdr-tab-switch.sh`。
 
 ### Docker開発
 
@@ -837,7 +837,7 @@ fzf の終了ステータスを飲む理由は [docs/herdr-ui.md](docs/herdr-ui.
 | 軽掃除       | `dclean`（停止コンテナ / dangling image / 匿名volume / 未使用のbuild cache） |
 | 重掃除       | `dclean -a`（軽 + 未使用image全部 + 共有ぶんも含むbuild cache全部）          |
 | 使い方       | `dclean --help`                                                              |
-| 動作確認     | `bash scripts/test-docker-clean.sh`                                          |
+| 動作確認     | `bash tests/cleanup/test-docker-clean.sh`                                          |
 
 - **named volume は軽・重どちらでも削除しない**（未使用でも DBデータ等は残す）
 - **稼働中コンテナも停止しない。** 閾値超過を一覧表示するだけで、停止は手動判断
@@ -912,7 +912,7 @@ fzf の終了ステータスを飲む理由は [docs/herdr-ui.md](docs/herdr-ui.
   ディレクトリ単位で ignore する
 - `--no-verify` は原則使わない
 
-動作確認は `bash scripts/test-secret-scan.sh`。
+動作確認は `bash tests/checks/test-secret-scan.sh`。
 
 ## 重要な注意事項
 

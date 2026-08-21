@@ -44,7 +44,12 @@ rc=0
 
 echo "=== shellcheck ==="
 # -x: source されるファイルも追跡 / SCRIPTDIR: source= の相対パスを各スクリプト基準で解決
-if ! shellcheck -x --source-path=SCRIPTDIR "${files[@]}"; then
+#
+# **tests/<domain>/ からの source を解決できるよう SCRIPTDIR/../../scripts も見る。**
+# テストは `source "$SCRIPTS_DIR/lib/x.sh"` の形で呼ぶが、shellcheck は変数を
+# 展開できず末尾の `lib/x.sh` をスクリプト基準で探す。テストが scripts/ 直下に
+# あった頃はそれで当たっていたが、tests/ へ移すと外れて SC1091 になる。
+if ! shellcheck -x --source-path=SCRIPTDIR:SCRIPTDIR/../../scripts "${files[@]}"; then
   rc=1
 fi
 
