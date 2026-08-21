@@ -301,6 +301,42 @@ Codex専用の自作skillは `.config/codex/skills/` に置く。`dotfilesLink.s
 
 `@<version>` を付けるとそのリリースタグに `--pin` する。動作確認は `bash scripts/test-gh-extensions.sh`。
 
+### fish プラグイン管理（fisher）
+
+fish のプラグインは fisher で管理し、宣言リストは `.config/fish/fish_plugins`
+（`dotfilesLink.sh` がリンクする）。中身は tide（プロンプト）と fzf.fish（Ctrl+R / Ctrl+T）。
+
+| やりたいこと     | コマンド                                                |
+| ---------------- | ------------------------------------------------------- |
+| プラグイン追加   | `fish_plugins` に追記 → `bash scripts/setup-fish-plugins.sh` |
+| 一括インストール | `bash scripts/setup-fish-plugins.sh`（揃っていればskip） |
+| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-fish-plugins.sh`        |
+| 更新             | `daily-update.sh` が `fisher update` を実行              |
+| 削除             | `fish_plugins` の行削除 → `setup-fish-plugins.sh`        |
+
+- **以前は追跡外だった。** そのため端末ごとにプラグイン集合が割れ、`daily-update.sh` にも
+  更新ステップが無く、tide と fzf.fish だけどの端末でも手動更新だった。
+  **Ctrl+R の時刻列を消す修正が端末をまたぐたび元へ戻った**のはこれが根にある
+  （担当が fzf.fish か fzf 標準統合かで読む変数が変わる。`.config/fish/README.md`）
+- **symlink にできる。** fisher の書き戻しは `printf ... > $fish_plugins` で symlink を
+  貫通する。`~/.claude/settings.json` のような tmp + rename ではないのでリンクが外れない
+  （実体を消すのは全プラグインを remove したときだけ）
+- **`fisher update` は未宣言のものを削除する。** 宣言と実体を突き合わせる完全な reconcile
+  なので、`ya pkg install` より強い。その端末だけで手動 install したものは消えるため、
+  `setup-fish-plugins.sh` は**消える対象を事前に名指しで出す**
+- **`ln -snf` の前に実ファイルを退避する。** 宣言リストは「その端末に何が入っているか」の
+  唯一の記録なので、黙って消すと別端末の宣言が失われる。**内容が同じなら退避しない**
+  （両端末とも同じ3つという通常ケースで無意味な `.bak` を増やさない）
+- **`dotfilesLink.sh` からは自動実行しない。** 無ければプロンプトが既定に戻り Ctrl+R が
+  fish 標準の history-pager になるだけで、yazi のように**起動そのものが失敗はしない**。
+  gh 拡張と同じ「無ければ機能が欠けるだけ」の側
+- **fisher の終了コードだけを信じない。** 緑で返っても実体が入っていなければ失敗として扱う
+  （yazi と同じ判断。プロンプトと Ctrl+R が黙って死ぬ状態を作らない）
+- tide の見た目は156個の universal 変数で決まり `fish_variables` は追跡外なので、
+  宣言には含められない。bootstrap の `tide configure --auto` が担当
+
+動作確認は `bash scripts/test-fish-plugins.sh`。
+
 ### yaziプラグイン管理
 
 yazi のプラグインは `ya`（yazi 同梱のCLI）で管理し、宣言リストは `.config/yazi/package.toml`。

@@ -336,8 +336,6 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 **次のものはリポジトリのどこにも宣言が無い。** 設定だけがリンクされて中身が伴わない状態になり、
 しかも起動はするので気づきにくい。使う分を手で入れる。
 
-- **fisher + fish プラグイン** — プロンプト（tide）と Ctrl+R（fzf.fish）の実体。
-  入れないと `05-tide-settings.fish` や `10-fzf.fish` が読まれても何も起きない
 - **tmux tpm** — `tmux.conf` の `@plugin` 宣言が全て無効になる。tmux を使う場合のみ
 - **Claude Code** — `.config/claude/` 配下の hook と skill、[手順4](#4-自動化を有効にする任意wsl2)の
   cron 自動化がすべてこれに乗っている
@@ -347,11 +345,19 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 
 #### fisher と fish プラグイン
 
-**`~/.config/fish/fish_plugins` は追跡していない**ので、プラグインは名指しで入れ直す。
+プラグインは `.config/fish/fish_plugins` で宣言している。**fisher 本体の導入から
+宣言分の install まで、これ1本で済む**（gh 拡張・yazi プラグインと同じ形）。
 
 ```fish
-curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
-fisher install jorgebucaran/fisher ilancosman/tide@v6 patrickf1/fzf.fish
+env STRICT=1 bash scripts/setup-fish-plugins.sh
+```
+
+プロンプト（tide）と Ctrl+R（fzf.fish）の実体がこれ。入れないと
+`05-tide-settings.fish` や `10-fzf.fish` が読まれても何も起きない。
+
+tide の見た目だけは別で、universal 変数なので宣言に含められない。続けて流す。
+
+```fish
 tide configure --auto \
     --style=Lean \
     --prompt_colors='True color' \
@@ -362,6 +368,14 @@ tide configure --auto \
     --transient=No
 exec fish
 ```
+
+**`fish_plugins` は追跡していて symlink で配る。** 以前は追跡外だったため端末ごとに
+プラグイン集合が割れ、`daily-update.sh` にも更新ステップが無かった。Ctrl+R の
+時刻列を消す修正が端末をまたぐたび元へ戻ったのはこれが原因（`.config/fish/README.md`）。
+
+**`fisher update` は未宣言のプラグインを削除する。** 宣言と実体を突き合わせる
+reconcile なので、その端末だけで手動 install したものは消える。残したいものは
+`fish_plugins` に足す。`setup-fish-plugins.sh` は消える対象を事前に名指しで出す。
 
 **対話の `tide configure` は使わない。** tide の見た目は156個の universal 変数で決まるが、
 `fish_variables` は追跡していないので、リポジトリ側にあるのは `05-tide-settings.fish` が
