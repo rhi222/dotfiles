@@ -15,6 +15,7 @@ dotfilesリポジトリ。
 | [docs/system-management.md](docs/system-management.md)               | ローカル設定、同期、更新、plugin管理を触る     |
 | [docs/claude-skills.md](docs/claude-skills.md)                       | Claude skillの信頼境界とvendoringを変える      |
 | [docs/scripts-layout.md](docs/scripts-layout.md)                     | scripts、tests、dotctlの構成と公開入口を変える |
+| [docs/testing.md](docs/testing.md)                                   | テストを書く・直す（固定対象・時間依存の禁止） |
 | [docs/nippo-automation.md](docs/nippo-automation.md)                 | 日報、面談準備、esa、cronを触る                |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linearの起票規約、state、Cycle、dispatchを触る |
 | [docs/development-workflows.md](docs/development-workflows.md)       | Git hook、gf、設定構造、文書予算を触る         |
