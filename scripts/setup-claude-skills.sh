@@ -26,8 +26,23 @@ STRICT="${STRICT:-0}"
 SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 REQUIRED_GH_VERSION="2.90.0"
 
-# shellcheck source=lib/trusted-skill-owners.sh
-source "$SCRIPT_DIR/lib/trusted-skill-owners.sh"
+# allowlist の判定は dotctl へ寄せている（Go 側の internal/skill）。
+# **Shell の lib と Go で二重に実装しないため。** 判定は skill-add と
+# setup-claude-skills の両方で要るので、実装を1つに保つほうを取った。
+#
+# **dotctl が無ければ拒否する（fail-closed）。** allowlist 不在で skill が
+# 入らないのは機能が欠けるだけで害がない一方、素通しさせると未検証の skill が
+# 毎日自動更新される側に入る。
+require_trusted_owner() {
+  local repo="$1" dotctl="$HOME/.local/bin/dotctl"
+  [ -x "$dotctl" ] || dotctl="$(command -v dotctl 2>/dev/null || true)"
+  if [ -z "$dotctl" ]; then
+    echo "Error: dotctl が見つからないため owner を検証できない" >&2
+    echo "  ビルドする: bash scripts/setup-dotctl.sh" >&2
+    return 1
+  fi
+  "$dotctl" skill trusted "$repo"
+}
 
 # gh skill install のログ置き場。中断（Ctrl-C / timeout）でも一時ファイルが
 # 残らないよう、ディレクトリごと EXIT で刈る

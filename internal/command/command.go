@@ -9,6 +9,7 @@ import (
 
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/settings"
+	"github.com/rhi222/dotfiles/internal/skill"
 )
 
 // Env は dotctl が外界と触る面。**テストから全部差し替えられるようにする**
@@ -37,6 +38,11 @@ type Env struct {
 	// ClaudeSettings / WindowsSettings は設定同期の対象パス。
 	ClaudeSettings  settings.ClaudeConfig
 	WindowsSettings settings.WindowsConfig
+
+	// Vendor は vendored skill の取込設定。
+	Vendor skill.VendorConfig
+	// TrustedOwnersFile は gh skill を自動更新してよい owner の allowlist。
+	TrustedOwnersFile string
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
 }
@@ -47,6 +53,8 @@ const usage = `使い方: dotctl <subcommand> [args...]
   worktree cleanup   消し忘れた git worktree を洗い出して掃除する
   worktree init      worktree 作成後の初期化
   settings sync      設定ファイルのコピー同期（claude / windows）
+  skill audit        skill の内容を機械的に検査する
+  skill vendor       vendored skill の取込と点検
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -72,6 +80,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runWorktree(ctx, args[1:], env)
 	case "settings":
 		return runSettings(ctx, args[1:], env)
+	case "skill":
+		return runSkill(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0

@@ -11,7 +11,7 @@
 | 種類                 | 例                                       | 実測         |
 | -------------------- | ---------------------------------------- | ------------ |
 | 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 5,320行 |
-| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 10本 1,105行 |
+| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 8本 1,029行 |
 | 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
 | 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
 
@@ -75,8 +75,8 @@
 | スクリプト        | 行数 | 引数                                         | 呼び出し元 |
 | ----------------- | ---- | -------------------------------------------- | ---------- |
 | `skill-add.sh`    | 76   | `<owner/repo> <skill>`                       | doc        |
-| `skill-audit.sh`  | 220  | `[--quiet] <skill-dir>`                      | doc        |
-| `skill-vendor.sh` | 431  | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc |
+| `skill-audit.sh`  | 24   | `[--quiet] <skill-dir>`                      | doc        |
+| `skill-vendor.sh` | 25   | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc |
 
 ### worktree
 

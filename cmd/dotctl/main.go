@@ -9,11 +9,14 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/settings"
+	"github.com/rhi222/dotfiles/internal/skill"
 )
 
 // defaultWorktreeRoots は worktree の走査ルート（Shell 版と同じ既定）。
@@ -68,13 +71,67 @@ func windowsSettings() settings.WindowsConfig {
 	return cfg
 }
 
-// repoPath はビルド元リポジトリ基準のパスを返す。
-// **バイナリの場所ではなくビルド元から解く**（dotctl は ~/.local/bin にある）。
+// vendorConfig は vendored skill の取込設定を解く。
+// 環境変数は Shell 版と同じ名前にしてある（手元検証の手順を変えないため）。
+func vendorConfig() skill.VendorConfig {
+	home, _ := os.UserHomeDir()
+	return skill.VendorConfig{
+		VendorDir:  envOr("SKILL_VENDOR_DIR", repoPath(".config/claude/skills-vendor")),
+		CacheDir:   envOr("SKILL_VENDOR_CACHE", filepath.Join(home, ".cache", "claude-skills-vendor")),
+		SelfSkills: envOr("SKILL_VENDOR_SELF_SKILLS", repoPath(".config/claude/skills")),
+		// symlink が張られる先。**3つ全部を見る**（agent ごとに探索先が違う）
+		LiveDirs: []string{
+			filepath.Join(home, ".claude", "skills"),
+			filepath.Join(home, ".codex", "skills"),
+			filepath.Join(home, ".agents", "skills"),
+		},
+		Today:   envOr("SKILL_VENDOR_DATE", today()),
+		AutoYes: os.Getenv("SKILL_VENDOR_YES") == "1",
+	}
+}
+
+func today() string { return time.Now().Format("2006-01-02") }
+
+// repoPath はリポジトリ基準のパスを返す。
+//
+// **バイナリの場所からは解けない**（dotctl は ~/.local/bin にあり、そこに
+// scripts/ は無い）。ビルド時に埋め込んだ Repo を第一に使う。
 func repoPath(rel string) string {
-	if buildinfo.Repo == "" {
+	root := resolveRepo()
+	if root == "" {
 		return ""
 	}
-	return filepath.Join(buildinfo.Repo, rel)
+	return filepath.Join(root, rel)
+}
+
+var repoOnce struct {
+	done bool
+	root string
+}
+
+// resolveRepo はリポジトリのルートを解く。
+//
+// ビルド時に埋め込んだ値を優先し、無ければカレントディレクトリの git ルートへ
+// 落とす。**この fallback が無いと ldflags 無しのビルド（go run、手元での
+// go build、テスト）でリポジトリ相対のパスが全部空になり、allowlist が
+// fail-closed で全部拒否になる。**
+func resolveRepo() string {
+	if repoOnce.done {
+		return repoOnce.root
+	}
+	repoOnce.done = true
+
+	if buildinfo.Repo != "" {
+		repoOnce.root = buildinfo.Repo
+		return repoOnce.root
+	}
+	res, err := execx.New().Run(context.Background(), execx.Cmd{
+		Name: "git", Args: []string{"rev-parse", "--show-toplevel"},
+	})
+	if err == nil && res.OK() {
+		repoOnce.root = strings.TrimSpace(res.Stdout)
+	}
+	return repoOnce.root
 }
 
 func cwd() string {
@@ -100,6 +157,9 @@ func main() {
 
 		ClaudeSettings:  claudeSettings(),
 		WindowsSettings: windowsSettings(),
+
+		Vendor:            vendorConfig(),
+		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
 
 		Color: isTerminal(os.Stdout),
 	}))

@@ -6,7 +6,6 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-LIB="$SCRIPTS_DIR/lib/trusted-skill-owners.sh"
 ADD="$SCRIPTS_DIR/skill-add.sh"
 SETUP="$SCRIPTS_DIR/setup-claude-skills.sh"
 OWNERS="$SCRIPTS_DIR/trusted-skill-owners.txt"
@@ -41,7 +40,7 @@ assert_eq() {
   fi
 }
 
-for f in "$LIB" "$OWNERS"; do
+for f in "$ADD" "$SETUP" "$OWNERS"; do
   if [ ! -f "$f" ]; then
     echo "ERROR: $f が存在しません"
     exit 1
@@ -75,10 +74,10 @@ for owner in sanyuan0704 mattpocock browser-use; do
 done
 echo ""
 
-echo "=== is_trusted_owner ==="
-# shellcheck source=lib/trusted-skill-owners.sh
-source "$LIB"
-
+echo "=== allowlist の判定（dotctl 経由） ==="
+# **判定の意味論（コメント・前後の空白・fail-closed）は Go 側の unit test が持つ**
+# （internal/skill の TestIsTrustedOwner*）。ここは Shell から dotctl を呼ぶ
+# 境界だけを見る: allowlist の差し替え口が効くことと、終了コードで返ること。
 CUSTOM="$TMP/owners.txt"
 cat >"$CUSTOM" <<'TXT'
 # コメント行は無視する
@@ -87,53 +86,38 @@ anthropics
   github  
 TXT
 
-TOTAL=$((TOTAL + 1))
-if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" is_trusted_owner anthropics; then
-  PASS=$((PASS + 1))
-  echo "  PASS: allowlist 内は真"
-else
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: allowlist 内は真"
-fi
+if command -v dotctl >/dev/null 2>&1 || [ -x "$HOME/.local/bin/dotctl" ]; then
+  DOTCTL="$HOME/.local/bin/dotctl"
+  [ -x "$DOTCTL" ] || DOTCTL="$(command -v dotctl)"
 
-TOTAL=$((TOTAL + 1))
-if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" is_trusted_owner github; then
-  PASS=$((PASS + 1))
-  echo "  PASS: 前後の空白は無視する"
-else
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: 前後の空白は無視する"
-fi
+  TOTAL=$((TOTAL + 1))
+  if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" "$DOTCTL" skill trusted anthropics/x >/dev/null 2>&1; then
+    PASS=$((PASS + 1))
+    echo "  PASS: allowlist 内は 0 で返る"
+  else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: allowlist 内は 0 で返る"
+  fi
 
-TOTAL=$((TOTAL + 1))
-if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" is_trusted_owner someone; then
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: allowlist 外は偽"
-else
-  PASS=$((PASS + 1))
-  echo "  PASS: allowlist 外は偽"
-fi
+  TOTAL=$((TOTAL + 1))
+  if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" "$DOTCTL" skill trusted someone/x >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: allowlist 外は非0で返る"
+  else
+    PASS=$((PASS + 1))
+    echo "  PASS: allowlist 外は非0で返る"
+  fi
 
-# コメント行の中身を owner として拾わないこと
-TOTAL=$((TOTAL + 1))
-if TRUSTED_SKILL_OWNERS_FILE="$CUSTOM" is_trusted_owner "コメント行は無視する"; then
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: コメント行を owner として拾わない"
+  TOTAL=$((TOTAL + 1))
+  if TRUSTED_SKILL_OWNERS_FILE="$TMP/does-not-exist.txt" "$DOTCTL" skill trusted anthropics/x >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: allowlist が無ければ拒否する（fail-closed）"
+  else
+    PASS=$((PASS + 1))
+    echo "  PASS: allowlist が無ければ拒否する（fail-closed）"
+  fi
 else
-  PASS=$((PASS + 1))
-  echo "  PASS: コメント行を owner として拾わない"
-fi
-
-# ファイルが無ければ拒否する（fail-closed）。
-# secret-scan.sh の辞書とは逆に倒す。辞書不在で commit できないのは困るが、
-# allowlist 不在で skill が入らないのは機能が欠けるだけで害がない
-TOTAL=$((TOTAL + 1))
-if TRUSTED_SKILL_OWNERS_FILE="$TMP/nope.txt" is_trusted_owner anthropics; then
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: allowlist ファイル不在なら拒否する"
-else
-  PASS=$((PASS + 1))
-  echo "  PASS: allowlist ファイル不在なら拒否する"
+  echo "  SKIP: dotctl が無い（bash scripts/setup-dotctl.sh でビルドする）"
 fi
 echo ""
 
