@@ -207,6 +207,40 @@ rm -f "$tmp"/test-par*.sh "$tmp"/test-ser*.sh "$tmp/ser.log" "$tmp/ser4-ran"
 # run-tests.sh は test-*.sh に一致しない名前でなければ自分を再帰実行してしまう
 check "ランナー名が test-*.sh に一致しない" bash -c '[[ "$(basename "'"$RUNNER"'")" != test-* ]]'
 
+# --- サブディレクトリの走査（テストを tests/<domain>/ へ分けるため） ---
+#
+# 直下だけを見ていた頃は、tests/ を階層に分けた瞬間に「対象0件」で落ちた。
+# 階層化は Phase 1 の目的そのものなので、再帰で拾えることを固定する。
+mkdir -p "$tmp/worktree" "$tmp/linear"
+printf '#!/bin/bash\nexit 0\n' >"$tmp/worktree/test-deep.sh"
+printf '#!/bin/bash\nexit 0\n' >"$tmp/linear/test-other.sh"
+
+out=$(TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+rc=$?
+check "サブディレクトリのテストも走らせる" test "$rc" -eq 0
+check "深い場所のテスト名を出す" grep -q "test-deep.sh" <<<"$out"
+check "直下のテストも引き続き走らせる" grep -q "test-alpha.sh" <<<"$out"
+
+# 同名のテストが別ディレクトリに並ぶと、basename 表示では区別できない。
+# **どちらが落ちたか分からない**ので、TEST_DIR からの相対パスで出す
+printf '#!/bin/bash\nexit 1\n' >"$tmp/worktree/test-dup.sh"
+printf '#!/bin/bash\nexit 0\n' >"$tmp/linear/test-dup.sh"
+
+out=$(TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+rc=$?
+check "同名テストがあれば失敗を検出する" test "$rc" -ne 0
+check "同名テストをディレクトリ付きで区別する" grep -q "worktree/test-dup.sh" <<<"$out"
+check "落ちていない同名テストは PASS 側に出る" grep -q "PASS  linear/test-dup.sh" <<<"$out"
+rm -f "$tmp/worktree/test-dup.sh" "$tmp/linear/test-dup.sh"
+
+# ドメイン単位で走らせられること（階層化の実利）
+out=$(TEST_DIR="$tmp/linear" bash "$RUNNER" 2>&1)
+rc=$?
+check "TEST_DIR でドメインだけ走らせられる" test "$rc" -eq 0
+check "他ドメインのテストは走らせない" bash -c '! grep -q "test-deep.sh" <<<"'"$out"'"'
+
+rm -rf "$tmp/worktree" "$tmp/linear"
+
 # --- 対象が0件 ---
 empty=$(mktemp -d)
 out=$(TEST_DIR="$empty" bash "$RUNNER" 2>&1)
