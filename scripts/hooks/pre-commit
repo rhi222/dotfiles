@@ -1,8 +1,18 @@
 #!/bin/bash
-# ステージ済みの内容に社内固有情報が無いか検査する。
-# ロジックは scripts/secret-scan.sh 側にある（lint とテストの対象にするため。
+# ステージ済みの内容を commit の手前で検査する。
+#   secret-scan.sh --staged  社内固有情報が混ざっていないか
+#   doc-budget.sh  --staged  文書の行数予算を超えていないか
+#
+# ロジックはどちらも scripts/ 側にある（lint とテストの対象にするため。
 # git hook はファイル名が固定で .sh を付けられず、scripts/lint.sh の対象から外れる）。
+#
+# **片方が落ちてももう片方を走らせる。** 無関係な検査なので、1回の commit で
+# 両方の指摘を受け取れるほうが手戻りが少ない（daily-update.sh と同じ倒し方）。
 set -uo pipefail
 
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec bash "$HOOK_DIR/../secret-scan.sh" --staged
+
+rc=0
+bash "$HOOK_DIR/../secret-scan.sh" --staged || rc=1
+bash "$HOOK_DIR/../doc-budget.sh" --staged || rc=1
+exit "$rc"

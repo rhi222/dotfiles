@@ -1,0 +1,36 @@
+name: doc-budget
+
+# lint.yml に相乗りしない。lint.yml は paths: ["**.sh"] で絞られていて AGENTS.md だけの
+# 変更では発火せず、絞りを外すと Markdown 変更のたびに shellcheck / shfmt / fish の導入と
+# 全テストが走って無駄になる（secret-scan.yml を別に切ったのと同じ理由）。
+# こちらは checkout + bash だけなので、専用に切っても十分軽い。
+#
+# doc-budget.sh 自体の lint と test-doc-budget.sh は lint.yml 側が拾う（*.sh なので）。
+# ここが見るのは「AGENTS.md が予算を超えていないか」だけ。
+on:
+  # GitHub Actions は YAML のアンカー/エイリアスを解釈しないので、
+  # push と pull_request で同じ paths を素直に重複させる
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - "scripts/doc-budget.sh"
+      - "scripts/doc-budget.txt"
+      - ".github/workflows/doc-budget.yml"
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "scripts/doc-budget.sh"
+      - "scripts/doc-budget.txt"
+      - ".github/workflows/doc-budget.yml"
+
+jobs:
+  doc-budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 主の防壁は pre-commit hook 側で、こちらは push 後の最終防波堤
+      # （secret-scan.yml と同じ位置づけ）。
+      - name: Check doc line budget
+        run: bash scripts/doc-budget.sh
