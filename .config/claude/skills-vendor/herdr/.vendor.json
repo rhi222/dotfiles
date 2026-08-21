@@ -1,0 +1,13 @@
+{
+  "origin": "https://github.com/herdrdev/herdr.git",
+  "sub_path": "skills/herdr",
+  "commit": "624dfd4796559042ec13ccf4d4b54374902ab81d",
+  "vendored_at": "2026-08-21",
+  "reviewed_commit": "624dfd4796559042ec13ccf4d4b54374902ab81d",
+  "audit": {
+    "high": 0,
+    "med": 0,
+    "low": 0
+  },
+  "license": "Apache-2.0"
+}
