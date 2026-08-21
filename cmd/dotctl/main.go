@@ -93,6 +93,11 @@ func vendorConfig() skill.VendorConfig {
 
 func today() string { return time.Now().Format("2006-01-02") }
 
+func homeDir() string {
+	h, _ := os.UserHomeDir()
+	return h
+}
+
 // privateConfig は集約先と起点を解く。
 func privateConfig() private.Config {
 	home, _ := os.UserHomeDir()
@@ -175,6 +180,7 @@ func main() {
 
 		Vendor:            vendorConfig(),
 		Private:           privateConfig(),
+		HomeDir:           homeDir(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
 
 		Color: isTerminal(os.Stdout),
