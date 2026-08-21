@@ -39,6 +39,22 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 > そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
 > 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
+### WSL2 では linger を有効にする
+
+```bash
+sudo loginctl enable-linger "$USER"
+```
+
+**WSL2 は `/run/user/1000` を作らない。** `systemd=true` にしていても、WSL のシェル起動は
+PAM ログインを経由しないため `pam_systemd` が走らず、systemd-logind が runtime dir を
+作らないまま `XDG_RUNTIME_DIR=/run/user/1000` という環境変数だけが取り残される。
+この状態だと `XDG_RUNTIME_DIR` にソケットを作るツールが全部壊れる
+（実例: nvim の fzf-lua が `serverstart(): Failed to start server` で落ちた）。
+
+- root には `/run/user/0` があるので「systemd が動いていない」わけではない点が紛らわしい
+- 設定は `/var/lib/systemd/linger/` に永続化され、再起動後も boot 時に自動作成される
+- 確認は `loginctl show-user $USER --property=Linger`（`Linger=yes` になっていること）
+
 ### 管理方法と例外
 
 - **`fish` は `apt-packages.txt` にも書いてあるが、それを流す `apt-setup.sh` より前に要る。**
@@ -148,6 +164,27 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 `~/.claude/settings.json` はこの仕組みの対象外。`sync-claude-settings.sh` がマスクしながら
 コピー同期する（[AGENTS.md](../AGENTS.md) 参照）。
 
+### Claude Code のメモリと履歴を運ぶ
+
+private bundle の対象外だが、旧環境からコピーしないと消えるものが `~/.claude` にある。
+
+- `~/.claude/projects/<パスslug>/memory/` — プロジェクト別の永続メモリ。
+  **slug はプロジェクトの絶対パス由来**なので、新環境でもユーザー名とリポジトリの配置
+  （`/data/git-repos` 配下）を旧環境と揃えないと読まれなくなる
+- `~/.claude/history.jsonl` — プロンプト入力履歴
+
+```fish
+# 旧環境で（memory と履歴だけなら数MBに収まる）
+cd ~
+tar czf claude-memory.tar.gz .claude/history.jsonl .claude/projects/*/memory
+
+# 新環境で
+tar xzf claude-memory.tar.gz -C ~
+```
+
+セッショントランスクリプト（`projects/**/*.jsonl`、数百MB）は含めていない。
+旧環境のセッションを `--resume` で開き直したい場合だけ追加する。
+
 ### 旧環境がない場合：台帳から用意する
 
 次の台帳で **A. 資格情報** と **B. 社内固有情報** をすべて確認する。
@@ -157,13 +194,25 @@ bash scripts/private-bundle.sh status           # 全項目がリンク済みで
 - **手書き** — 雛形が無いため、新環境でファイルを作成して値を記入する
 - **雛形** — `dotfilesLink.sh` が作った空のファイルに値を記入する
 - **自動** — セットアップ処理が配置する。内容だけ確認すればよい
+- **再ログイン** — コピー不要。新環境で各ツールにログインし直せば復旧する
 
 #### A. 資格情報
 
 漏れるとすぐに悪用される可能性がある情報。値そのものはこの文書に記録しない。
 
+- **コピー** `~/.ssh/`
+  — GitHub（個人・業務）・GitLab・Backlog の鍵、AWS の `.pem`、`config`。
+  ディレクトリごと運び、秘密鍵のパーミッションが 600 であることを確認する
+- **コピー** `~/.aws/`
+  — AWS CLI / SSO の設定と認証情報。**中身は開かずディレクトリごとコピーする**
+  （AI に読ませない領域。この台帳にも値やプロファイル名を書かない）
+- **コピー** `~/.claude/settings.local.json`
+  — esa MCP サーバー定義（API トークンを平文で含む）。`sync-claude-settings.sh` が
+  同期するのは `settings.json` だけで、このファイルは対象外
 - **コピー** `.config/AutoHotkey/ahk-snippets/passwords/` 配下5件
   — AWS・オペレータ・RDP の ID とパスワード。`README.md` と `.gitkeep` だけが追跡対象
+- **再ログイン** Claude Code（初回起動時にログイン）・Codex CLI（`codex login`。
+  `~/.codex/auth.json` のコピーでも可）・gh（`gh auth login`）
 - **手書き** `.config/fish/my/conf.d/99-local.fish`
   — esa の API トークンと `docker_clean_ignore_patterns`
 - **手書き** `~/.config/linear/api-key`
@@ -391,23 +440,39 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 | esa 週次レポート        | `~/.config/esa-weekly-enabled`         | 金曜 16:00                   |
 | Linear スイープ         | `~/.config/linear-sweep-enabled`       | 平日 8:00                    |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled`    | 火〜土曜 1:00                |
-| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 8:10                    |
+| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 10:10                   |
 
 ### cron を登録する
 
-実際に登録する cron エントリ：
+**フラグを作った機能の行だけ**登録する（全行を入れる必要はない）。
+逆に、**フラグと cron は必ずセットで揃える。** フラグだけ作って cron を忘れると
+機能が黙って止まる（linear-dispatch で実際に起きた。フラグは何も実行しない）。
 
 ```cron
-0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh
-0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh
-30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh
-0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh
-0 8 * * 1-5 $HOME/scripts/linear-sweep.sh
-0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh
-10 8 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh
+0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
+30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
+0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/linear-sweep.sh >> $HOME/.linear-sweep.log 2>&1
+0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
+10 10 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 ```
 
 フラグ作成前に、各機能の説明と手動確認方法を [AGENTS.md](../AGENTS.md) で確認する。
+
+### 旧環境の crontab を運ぶ
+
+crontab には dotfiles 管理外のエントリ（社内向けの集計ジョブ等）も入っているため、
+上の表だけでは復元できない。旧環境で全文を private 集約先に退避し、新環境で読み戻す。
+
+```fish
+# 旧環境で。集約先ルート直下は export の zip に入るが、home/ 配下ではないので
+# dotfilesLink.sh のリンク対象にはならない
+crontab -l > ~/.local/share/dotfiles-private/crontab.txt
+
+# 新環境で（import 後、中身を確認してから）
+crontab ~/.local/share/dotfiles-private/crontab.txt
+```
 
 ### 補足
 

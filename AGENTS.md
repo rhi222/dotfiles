@@ -11,6 +11,7 @@
 | 文書                                                                 | いつ開くか                                           |
 | -------------------------------------------------------------------- | ---------------------------------------------------- |
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新しい端末を立ち上げるとき。機密ファイルの台帳もここ |
+| [docs/migration.md](docs/migration.md)                               | PC 移行でリポジトリ群と作業状態を運ぶとき            |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear の起票規約・Cycle・夜間ディスパッチを触るとき |
 | [docs/worktree.md](docs/worktree.md)                                 | worktree の初期化・掃除の判定を変えるとき            |
 | [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` サブコマンド自体の使い方を調べるとき        |
@@ -465,7 +466,7 @@ issueは元URL＋期待アウトカム＋判断状態だけを持つ。本体は
 | 初期設定（ID解決）  | `bash scripts/linear-bootstrap.sh`                        |
 | 起票                | `/linear-add`（対話skill。規約を自動適用する）            |
 | draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）          |
-| Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日8:10）                   |
+| Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日10:10）                  |
 | 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                  |
 | 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00） |
 | 動作確認            | `bash scripts/test-linear-api.sh` ほか `test-linear-*.sh` |
