@@ -12,7 +12,7 @@
 
 - **named volume は軽・重どちらでも削除しない。** `docker volume prune` に `-a` を付けないため、未使用でも named volume（DBデータ等）は残る。消すときは `docker volume rm` を明示的に叩く
 - **稼働中コンテナも停止しない。** 閾値を超えて稼働しているものを一覧表示するだけで、停止するかは手動判断。一覧の下にコピペ用の停止コマンドを出し、最終行に `dclean --refresh` を添える。`--refresh` を促すのは、停止しただけでは起動時通知がキャッシュのTTLが切れるまで古い件数を出し続けるため（実際になった）。除外パターンで非表示のコンテナが閾値を超えている場合は `（除外 N 件）` を注記する（`docker ps` と件数が合わず不足に見えるのを防ぐため）
-- **一覧は種別タグを出し、停止コマンドを種別ごとに分ける。** 停止の可逆性がまるで違うため。判定は `__docker_clean_container_kind` に分離してある
+- **一覧は種別タグを出し、停止コマンドを種別ごとに分ける。** 停止の可逆性がまるで違うため。判定は Go 側の `ContainerKind` に分離してある（`internal/docker`）
 
 | タグ           | 意味                                        | 案内するコマンド                   |
 | -------------- | ------------------------------------------- | ---------------------------------- |
@@ -26,8 +26,8 @@
 - **`standalone` は `AutoRemove=true` のとき `※--rm: 停止で削除されます` を併記する。** レシピが docker 側に一切残らないうえ停止＝即削除になるため（実機の社内MCPコンテナがこれ）。復活は起動元のツール経由しかない
 - **タグのパディングは括弧の外側に入れる**（`[main]  ` と同じ規約）。ASCII に揃えているので `string pad` の East Asian 文字幅も絡まない
 - **種別表示は除外適用後の一覧に対して行う。** 既定の除外パターンはどちらも standalone なので、既定設定では `[standalone]` 行はほぼ出ない。除外リストは「知っていて放置しているもの」の宣言として残している
-- **キャッシュには `schema` を持たせ、古い版は TTL 内でも stale 扱いにする。** 種別列（`compose_project` / `compose_dir` / `auto_remove`）を持たないキャッシュを読んでいる間は orphan 件数を出せないため、起動時の background 更新に乗せて次回から正しくする。`running[]` の列を増やしたら `__docker_clean_schema_current` を上げる
-- **build cache は全ビルダーを対象にする。** `docker builder prune` は `docker buildx prune` のエイリアスで `--builder` を付けないとカレントビルダーしか掃除しない。docker-containerドライバのビルダーと daemon 側の `default` ビルダーは別のキャッシュを持つ（実測で11.2GBと13.0GB）ため、`__dclean_builders` で列挙して両方に対して実行する
+- **キャッシュには `schema` を持たせ、古い版は TTL 内でも stale 扱いにする。** 種別列（`compose_project` / `compose_dir` / `auto_remove`）を持たないキャッシュを読んでいる間は orphan 件数を出せないため、起動時の background 更新に乗せて次回から正しくする。`running[]` の列を増やしたら `internal/docker` の `SchemaCurrent` を上げる
+- **build cache は全ビルダーを対象にする。** `docker builder prune` は `docker buildx prune` のエイリアスで `--builder` を付けないとカレントビルダーしか掃除しない。docker-containerドライバのビルダーと daemon 側の `default` ビルダーは別のキャッシュを持つ（実測で11.2GBと13.0GB）ため、`Builders` で列挙して両方に対して実行する
 - **`--filter until=<duration>` は使わない。** 実測で docker / docker-container どちらのドライバでも `Total: 0B` になり、7日以上前のレコードが445件残っていても一切回収されなかった。フィルタなしなら同じ状態から5.142GB回収でき `df` の Reclaimable も 0B になる。`docker buildx du` 側も `--filter until=` を無視する（1hでも99999hでも同件数）。そのため軽/重の区別は `-a` の有無だけで付けている
 - **通知は「軽掃除で消える分」と「重掃除でしか消えない分」を分けて判定する。** `docker system df` の `Images` Reclaimable は「どのコンテナからも参照されていない image」の量で dangling かは問わない。軽掃除の `image prune -f` は dangling だけを消すため、`Images` を軽掃除の根拠にすると `dclean` しても通知が消え続ける（実際になった）。`Images` 由来が主なら通知は `→ dclean -a` を案内する。`Containers` / `Local Volumes` / `Build Cache` の Reclaimable は軽掃除の prune が回収する量に対応する（実測で prune 後 0B になる）
 - **軽モードは image と build cache の回収量を事前に出さない。** dangling image は共有レイヤのため確定できず、build cache は `buildx du` の合算（246件/5.4GB）と実際の回収量（0B）が桁違いになる。`df` の Build Cache Reclaimable は `default` ビルダーの分しか見ないので代わりにもならない。実際の回収量は実行後の `回収:` 行を見る

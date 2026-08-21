@@ -2,10 +2,7 @@ package docker
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -60,6 +57,12 @@ func TestSizeToBytesRejectsGarbage(t *testing.T) {
 	}
 }
 
+// 期待値は**fish の `math -s1` で実測したもの**。fish 版が消えた後もこの
+// 表記を守るための golden。
+//
+// 推測で書くと外れる点が2つある。
+//   - **末尾の 0 を落とす。** 12.0 は "12"（%.1f のままだと "12.0GB" になる）
+//   - **偶数丸め。** 1.25 は 1.2、1.35 は 1.4（半数切り上げではない）
 func TestFormatBytes(t *testing.T) {
 	tests := []struct {
 		in   int64
@@ -69,120 +72,27 @@ func TestFormatBytes(t *testing.T) {
 		{1, "1B"},
 		{999, "999B"},
 		{1000, "1kB"},
+		{1001, "1kB"},
 		{1234, "1.2kB"},
+		// **偶数丸めの境界。** 1.25 -> 1.2、1.35 -> 1.4
+		{1250, "1.2kB"},
+		{1350, "1.4kB"},
 		{1500, "1.5kB"},
+		{9999, "10kB"},
+		// **末尾の 0 を落とす。** 1MB / 12GB（1.0MB / 12.0GB ではない）
 		{1000000, "1MB"},
+		{1500000, "1.5MB"},
 		{12000000000, "12GB"},
 		{5368709120, "5.4GB"},
-		{1099511627776, "1.1TB"},
-		{1500000000000, "1.5TB"},
 		// **1TB の境界。** 999999999999 は GB のまま（1000GB と出る）
 		{999999999999, "1000GB"},
+		{1099511627776, "1.1TB"},
+		{1500000000000, "1.5TB"},
+		{1234567890123, "1.2TB"},
 	}
 	for _, tt := range tests {
 		if got := FormatBytes(tt.in); got != tt.want {
 			t.Errorf("FormatBytes(%d) = %q, want %q", tt.in, got, tt.want)
-		}
-	}
-}
-
-// **fish 版と同じ表記になることを実物で確かめる。** `math -s1` は末尾の 0 を
-// 落とし（12.0 は 12）、偶数丸めをする（1.25 は 1.2、1.35 は 1.4）。
-// この2つは推測で書くと外れる。
-func TestFormatBytesMatchesFish(t *testing.T) {
-	if testing.Short() {
-		t.Skip("fish を起動するので -short では飛ばす")
-	}
-	fishBin, err := exec.LookPath("fish")
-	if err != nil {
-		t.Skip("fish が無い")
-	}
-	helper := filepath.Join(repoRoot(t), ".config", "fish", "my", "functions",
-		"__docker_clean_format_bytes.fish")
-	if _, serr := os.Stat(helper); serr != nil {
-		t.Skip("fish 版が無い（移行済み）")
-	}
-
-	values := []int64{
-		0, 1, 999, 1000, 1001, 1234, 1250, 1350, 1500, 9999,
-		1000000, 1500000, 12000000000, 5368709120,
-		999999999999, 1099511627776, 1500000000000, 1234567890123,
-	}
-	var script strings.Builder
-	fmt.Fprintf(&script, "source %s\n", helper)
-	for _, v := range values {
-		fmt.Fprintf(&script, "__docker_clean_format_bytes %d\n", v)
-	}
-
-	out, err := exec.Command(fishBin, "-c", script.String()).Output()
-	if err != nil {
-		t.Fatalf("fish: %v", err)
-	}
-	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
-	if len(lines) != len(values) {
-		t.Fatalf("fish の出力行数 = %d, want %d", len(lines), len(values))
-	}
-	for i, v := range values {
-		if got := FormatBytes(v); got != lines[i] {
-			t.Errorf("FormatBytes(%d) = %q, fish = %q", v, got, lines[i])
-		}
-	}
-}
-
-// SizeToBytes も fish 版と一致すること。
-func TestSizeToBytesMatchesFish(t *testing.T) {
-	if testing.Short() {
-		t.Skip("fish を起動するので -short では飛ばす")
-	}
-	fishBin, err := exec.LookPath("fish")
-	if err != nil {
-		t.Skip("fish が無い")
-	}
-	helper := filepath.Join(repoRoot(t), ".config", "fish", "my", "functions",
-		"__docker_clean_size_to_bytes.fish")
-	if _, serr := os.Stat(helper); serr != nil {
-		t.Skip("fish 版が無い（移行済み）")
-	}
-
-	cases := [][]string{
-		{"512B"},
-		{"4.128kB"},
-		{"577.8MB*"},
-		{"12.53GB (51%)"},
-		{"1KiB"},
-		{"1MiB"},
-		{"1kB", "2kB", "3MB"},
-		{"0B"},
-	}
-	var script strings.Builder
-	fmt.Fprintf(&script, "source %s\n", helper)
-	for _, c := range cases {
-		fmt.Fprintf(&script, "__docker_clean_size_to_bytes")
-		for _, s := range c {
-			fmt.Fprintf(&script, " %q", s)
-		}
-		fmt.Fprintln(&script)
-	}
-
-	out, err := exec.Command(fishBin, "-c", script.String()).Output()
-	if err != nil {
-		t.Fatalf("fish: %v\n%s", err, script.String())
-	}
-	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
-	if len(lines) != len(cases) {
-		t.Fatalf("行数 = %d, want %d（%q）", len(lines), len(cases), out)
-	}
-	for i, c := range cases {
-		want, perr := strconv.ParseInt(strings.TrimSpace(lines[i]), 10, 64)
-		if perr != nil {
-			t.Fatalf("fish の出力が数値でない: %q", lines[i])
-		}
-		got, gerr := SizeToBytes(c...)
-		if gerr != nil {
-			t.Fatalf("SizeToBytes(%v): %v", c, gerr)
-		}
-		if got != want {
-			t.Errorf("SizeToBytes(%v) = %d, fish = %d", c, got, want)
 		}
 	}
 }
@@ -245,13 +155,4 @@ func TestPadLeft(t *testing.T) {
 	if got := PadLeft("2461", 4); got != "2461" {
 		t.Errorf("超過分は切らない: %q", got)
 	}
-}
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return filepath.Dir(filepath.Dir(wd))
 }
