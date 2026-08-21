@@ -39,12 +39,13 @@ bash scripts/apt-setup.sh        # apt パッケージ（WSL2）
 この後に必要な移植作業・外部ツールの導入・自動化の有効化と、**機密ファイル台帳**（どのファイルが
 何を持ち、コピー / 手書き / 雛形のどれで用意するか）は [docs/bootstrap.md](docs/bootstrap.md)。
 
-確認は次の3つ。
+確認は次の4つ。
 
 ```fish
 bash scripts/lint.sh                # shellcheck + shfmt（追跡＋未追跡の全 .sh）
 bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた後に）
 bash scripts/run-tests.sh           # 全テスト（並列。TEST_JOBS=1 で直列）
+bash scripts/doc-budget.sh          # AGENTS.md の行数予算
 ```
 
 `run-tests.sh` は `test-*.sh` を並列で走らせるが、**出力は直列時と同じ**
@@ -617,6 +618,27 @@ stacked かどうかが確定する唯一の瞬間が base の指定なので、
 - 登録先は `settings.json` なので、変更後は `sync-claude-settings.sh` で同期し、Claude Code を再起動する
 
 動作確認は `bash scripts/test-pr-base-guard.sh`。
+
+### 行数予算の検査（doc-budget）
+
+**このファイル自身が肥大するのを機械的に止める。** 冒頭で「表と数個の理由だけを置く」と
+宣言しているのに 4月の 6KB から 8月に 66KB まで増え、圧縮を2回やって2回とも数日で戻った。
+宣言は commit の瞬間のチェックではないので、そこにゲートを置く（`pr-base-guard` と同じ倒し方）。
+
+| やりたいこと | コマンド                             |
+| ------------ | ------------------------------------ |
+| 検査         | `bash scripts/doc-budget.sh`         |
+| 予算の変更   | `scripts/doc-budget.txt` を編集      |
+| 動作確認     | `bash scripts/test-doc-budget.sh`    |
+
+- **予算は「ファイル全体」と「1セクション」の二段。** 全体だけだと肥大した1節を見逃し、
+  セクション上限だけではファイルが縮まない（900行に対し、20行上限でも削減見込みは231行。
+  巨大な数節ではなく43セクションが平均21行で並んでいるため）
+- **上限は現状値から始めて手で下げる（ratchet）。** 目標値で入れると常時赤になり、
+  「毎日 FAILED が飛ぶと無視される」状態を作る。下げ忘れを防ぐため予算内でも `余裕` を毎回出す
+- **`#### ` は親セクションに含め、コードブロックの中は見出しと見なさない。**
+  後者が無いと crontab の設定例のコメント行をセクションとして拾う
+- 宣言リストや対象ファイルが無いときは skip して通す。pre-commit を壊すほうが害が大きい
 
 ### ghq リポジトリへの移動（gf）
 
