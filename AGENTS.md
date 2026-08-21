@@ -35,24 +35,24 @@ ghq get rhi222/dotfiles          # パスが SNIPPET_ROOT 等に埋まってい�
 cd (ghq root)/github.com/rhi222/dotfiles
 bash scripts/apt-setup.sh        # apt パッケージ（WSL2）
 ./dotfilesLink.sh                # リンク作成 + 雛形生成 + hook 有効化
+bash scripts/setup-dotctl.sh     # dotctl（Go 製の運用CLI）。mise で go を入れた後
 ```
 
 この後に必要な移植作業・外部ツールの導入・自動化の有効化と、**機密ファイル台帳**（どのファイルが
 何を持ち、コピー / 手書き / 雛形のどれで用意するか）は [docs/bootstrap.md](docs/bootstrap.md)。
 
-確認は次の4つ。
+確認は次の5つ。
 
 ```fish
 bash scripts/lint.sh                # shellcheck + shfmt（追跡＋未追跡の全 .sh）
 bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた後に）
-bash scripts/run-tests.sh           # 全テスト（並列。TEST_JOBS=1 で直列）
+bash scripts/run-tests.sh           # 全テスト（Shell + Go。TEST_JOBS=1 で直列）
 bash scripts/doc-budget.sh          # AGENTS.md の行数予算
 bash scripts/ref-check.sh           # scripts/ 配下への参照が壊れていないか
 ```
 
-`run-tests.sh` は並列で走るが**出力は直列時と同じ**。前提は各テストが `mktemp` で
-自分の作業場を作ること。`ref-check.sh` は散文からの参照先の実在を検査する
-（pre-commit と CI の二層）。詳細は [docs/scripts-layout.md](docs/scripts-layout.md)。
+テストは `tests/<domain>/`。`run-tests.sh` が Shell と Go を並列で走らせる（出力は直列時と同じ）。
+`dotctl` の更新は `daily-update.sh` が日次で行う。詳細は [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 ### ローカル設定の集約と移植（private bundle）
 
