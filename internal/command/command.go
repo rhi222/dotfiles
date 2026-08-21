@@ -1,0 +1,96 @@
+// Package command は dotctl のサブコマンドを組み立てる。
+package command
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"strings"
+
+	"github.com/rhi222/dotfiles/internal/execx"
+)
+
+// Env は dotctl が外界と触る面。**テストから全部差し替えられるようにする**
+// のが目的で、実装側は os.Stdout や exec を直接触らない。
+type Env struct {
+	Stdout io.Writer
+	Stderr io.Writer
+	Runner execx.Runner
+
+	// Commit / Repo はビルド時に埋め込まれた値（buildinfo）。
+	// どちらかが空なら version skew の検知を行わない。
+	Commit string
+	Repo   string
+}
+
+const usage = `使い方: dotctl <subcommand> [args...]
+
+サブコマンド:
+  version   バイナリのビルド情報を出す
+  help      この使い方を出す
+`
+
+// Run はサブコマンドを1つ実行して終了コードを返す。
+//
+// 規約は Shell 版に合わせる。通常結果は stdout、警告とエラーは stderr。
+func Run(ctx context.Context, args []string, env Env) int {
+	// **skew の警告はサブコマンドより先に出す。** 出力を読む人が
+	// 「古い結果を見ている」ことに気付いてから中身を読めるようにする。
+	warnIfStale(ctx, env)
+
+	if len(args) == 0 {
+		fmt.Fprint(env.Stderr, usage)
+		return 2
+	}
+
+	switch args[0] {
+	case "version":
+		fmt.Fprintf(env.Stdout, "dotctl %s\n", versionString(env))
+		return 0
+	case "help", "-h", "--help":
+		fmt.Fprint(env.Stdout, usage)
+		return 0
+	default:
+		fmt.Fprintf(env.Stderr, "dotctl: 知らないサブコマンド: %s\n\n%s", args[0], usage)
+		return 2
+	}
+}
+
+func versionString(env Env) string {
+	if env.Commit == "" {
+		return "(ビルド情報なし)"
+	}
+	return env.Commit
+}
+
+// warnIfStale はバイナリのコミットと repo HEAD がずれていたら警告する。
+//
+// **実行は止めない。** cron を skew で落とすほうが害が大きいので、
+// stderr へ1行出すだけにする。ビルド情報が無いとき（go run）と
+// repo が読めないとき（リポジトリを消した端末、バイナリだけ配った端末）は
+// 何も言わない。毎回警告が出る状態を作ると無視されるようになる。
+func warnIfStale(ctx context.Context, env Env) {
+	if env.Commit == "" || env.Repo == "" || env.Runner == nil {
+		return
+	}
+	res, err := env.Runner.Run(ctx, execx.Cmd{
+		Name: "git", Args: []string{"-C", env.Repo, "rev-parse", "HEAD"},
+	})
+	if err != nil || !res.OK() {
+		return
+	}
+	head := strings.TrimSpace(res.Stdout)
+	if head == "" || head == env.Commit {
+		return
+	}
+	fmt.Fprintf(env.Stderr,
+		"dotctl: バイナリが古い（%s、repo は %s）。再ビルド: bash scripts/setup-dotctl.sh\n",
+		short(env.Commit), short(head))
+}
+
+func short(s string) string {
+	if len(s) > 12 {
+		return s[:12]
+	}
+	return s
+}

@@ -54,3 +54,6 @@ docs/superpowers/
 .config/claude/skills-vendor/**/.git
 .config/claude/skills-vendor/**/.gitmodules
 .config/claude/skills-vendor/**/node_modules
+
+# Go のビルド成果物（バイナリはリポジトリへコミットしない）
+/dotctl
