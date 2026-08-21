@@ -14,6 +14,7 @@ import (
 
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
+	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/private"
 	"github.com/rhi222/dotfiles/internal/settings"
@@ -92,6 +93,22 @@ func vendorConfig() skill.VendorConfig {
 }
 
 func today() string { return time.Now().Format("2006-01-02") }
+
+// residueConfig は残骸チェックの参照先を解く。
+func residueConfig() doctor.ResidueConfig {
+	home := homeDir()
+	return doctor.ResidueConfig{
+		Home:            home,
+		Repo:            envOr("ENV_RESIDUE_REPO", resolveRepo()),
+		FisherFilesFile: os.Getenv("ENV_RESIDUE_FISHER_FILES"),
+		// **3つ全部を見る**（agent ごとに skill の探索先が違う）
+		LiveSkillDirs: []string{
+			filepath.Join(home, ".claude", "skills"),
+			filepath.Join(home, ".codex", "skills"),
+			filepath.Join(home, ".agents", "skills"),
+		},
+	}
+}
 
 func homeDir() string {
 	h, _ := os.UserHomeDir()
@@ -181,6 +198,7 @@ func main() {
 		Vendor:            vendorConfig(),
 		Private:           privateConfig(),
 		HomeDir:           homeDir(),
+		Residue:           residueConfig(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
 
 		Color: isTerminal(os.Stdout),

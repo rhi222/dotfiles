@@ -42,8 +42,8 @@
 | `doc-budget.sh`     | 147  | `[--staged]` | doc hook ci         |
 | `ref-check.sh`      | 133  | なし         | hook ci             |
 | `run-tests.sh`      | 169  | `[--ci]`     | doc ci              |
-| `migration-check.sh`| 75   | `[<dir>...]` | doc                 |
-| `env-residue.sh`    | 181  | なし         | doc                 |
+| `migration-check.sh`| 24   | `[<dir>...]` | doc                 |
+| `env-residue.sh`    | 25   | なし         | doc                 |
 
 ### セットアップ（新環境の立ち上げ）
 

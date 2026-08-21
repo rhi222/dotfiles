@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/private"
 	"github.com/rhi222/dotfiles/internal/settings"
@@ -49,6 +50,8 @@ type Env struct {
 	Private private.Config
 	// HomeDir は $HOME。
 	HomeDir string
+	// Residue は環境の残骸チェックの設定。
+	Residue doctor.ResidueConfig
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
 }
@@ -63,6 +66,8 @@ const usage = `使い方: dotctl <subcommand> [args...]
   skill vendor       vendored skill の取込と点検
   private-bundle     ローカル設定の集約と運搬
   wsl cleanup        WSL2 のキャッシュ掃除
+  doctor residue     環境の残骸を洗い出す
+  doctor migration   移行前チェック
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -94,6 +99,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runPrivateBundle(ctx, args[1:], env)
 	case "wsl":
 		return runWSL(ctx, args[1:], env)
+	case "doctor":
+		return runDoctor(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0
