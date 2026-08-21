@@ -146,6 +146,47 @@ run-tests.sh は各スクリプトの振る舞い、doc-budget.sh は行数し�
 - 走査は `git grep` 1回に畳んでいる。ファイル単位で `grep` を回した初版は
   8.4秒かかった（500ファイル×4プロセス）。現在 0.47秒
 
+## テストの置き場
+
+テストは `tests/<domain>/test-*.sh`。**ドメインは上の「公開入口の一覧」の役割
+グループに揃えている**（同じリポジトリに taxonomy を2つ作らないため）。
+
+| ドメイン    | 本数 | 中身                                               |
+| ----------- | ---- | -------------------------------------------------- |
+| `checks/`   | 7    | lint / secret-scan / doc-budget / ref-check / run-tests / migration-check / env-residue |
+| `setup/`    | 6    | 新環境の立ち上げと日次更新                         |
+| `settings/` | 4    | 設定の同期・運搬・statusline                       |
+| `skills/`   | 3    | skill の追加・監査・vendoring                      |
+| `worktree/` | 4    | worktree の初期化・掃除と `wt` / `wtd`             |
+| `git/`      | 3    | PR 周り（`mv2main` / `open-pr` / base ガード）     |
+| `linear/`   | 7    | Linear の API・起票・ディスパッチ                  |
+| `nippo/`    | 5    | 日報と esa レポート                                |
+| `notify/`   | 3    | トースト通知とクールダウン                         |
+| `session/`  | 6    | herdr / nvim のセッション復元                      |
+| `shell/`    | 4    | fish 関数（fzf 連携・`fkill` / `gf`）              |
+| `cleanup/`  | 2    | WSL と Docker の掃除                               |
+| `cron/`     | 1    | cron からの claude ヘッドレス実行の土台            |
+
+- **`$SCRIPT_DIR` は対象を指さない。** テストは `REPO_ROOT` と `SCRIPTS_DIR` を
+  自分の位置から起こして使う（`SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"`）
+- **フィクスチャ本文に書く `$SCRIPT_DIR` は literal のまま置く。** 移設時の一括置換で
+  ここを壊し、`ref-check.sh` の自テストが落ちて気付いた
+- 新しいテストは対象スクリプトと同じ役割グループへ置く。どのグループでもないなら
+  `checks/` ではなく、その仕組みの名前で新しいディレクトリを作る（`cron/` がその例）
+
+### 移していないもの（判断）
+
+- **宣言ファイルは `scripts/` 直下に残す。** `apt-packages.txt` や
+  `gh-extensions.txt` は利用者が編集する導線が散文に18箇所あり、消費側の
+  `apt-setup.sh` / `setup-gh-extensions.sh` と隣接していることに意味がある。
+  直下は55→45まで落ちたので、7個動かして得られるのは見た目だけ
+- **テスト harness の共通化はしない。** `setup` / `teardown` / `check` が24本、
+  `assert_eq` が22本、`assert_contains` が15本で重複しているのは事実だが、
+  **Go 移植で最大の bash テストから順に消える予定**なので、いま共通化すると
+  その多くが捨てる作業になる。移植を止める判断をした時点で改めて検討する
+- フィクスチャ**データ**に共有価値のあるものは無かった（各テストが
+  `mktemp` で自分の repo や `$HOME` を組み立てており、共有すると並列化の前提が崩れる）
+
 ## テストの実行
 
 `run-tests.sh` は `test-*.sh` を並列で走らせるが、**出力は直列時と同じ**

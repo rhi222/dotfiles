@@ -1,8 +1,9 @@
 #!/bin/bash
-# scripts/test-*.sh をまとめて実行する。
+# tests/<domain>/test-*.sh をまとめて実行する。
 #
-#   bash scripts/run-tests.sh        # 全部
-#   bash scripts/run-tests.sh --ci   # `# ci-skip:` 宣言のあるものを飛ばす（CIから使う）
+#   bash scripts/run-tests.sh                        # 全部
+#   bash scripts/run-tests.sh --ci                   # `# ci-skip:` を飛ばす（CIから）
+#   env TEST_DIR=tests/linear bash scripts/run-tests.sh   # ドメインだけ
 #
 # 環境変数:
 #   TEST_DIR      走査するディレクトリ（既定: リポジトリの tests/）
@@ -25,7 +26,7 @@
 # 順に流す。走っている最中に進捗が出ないのは、混ざった行を読むより結果が
 # 揃っているほうが速く読めるため。
 #
-# 実測（16コア機、52本）: 直列 52秒 -> 並列 9〜13秒。`--ci` では 42秒 -> 約14秒
+# 実測（16コア機、55本）: 直列 52秒 -> 並列 9〜36秒。`--ci` では 42秒 -> 約14秒
 # （`--ci` は最長の1本が ci-skip で外れるが、残りの本数は変わらない）。
 # 並列時のばらつきが大きいので、1回の計測で判断しないこと。
 #
