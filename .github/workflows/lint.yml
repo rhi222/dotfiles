@@ -11,12 +11,15 @@ on:
       - "**.fish"
       - ".shellcheckrc"
       - ".github/workflows/lint.yml"
+      # 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
+      - "**.md"
   pull_request:
     paths:
       - "**.sh"
       - "**.fish"
       - ".shellcheckrc"
       - ".github/workflows/lint.yml"
+      - "**.md"
 
 jobs:
   shell-lint:
@@ -59,6 +62,12 @@ jobs:
 
       - name: Lint shell scripts
         run: bash scripts/lint.sh
+
+      # scripts/ 配下への参照（AGENTS.md の表・docs・skill 本文・herdr config・
+      # dotfilesLink.sh）が壊れていないか。**push 後の最終防波堤**で、主の防壁は
+      # pre-commit 側（secret-scan と同じ二層構成）。
+      - name: Check scripts/ references
+        run: bash scripts/ref-check.sh
 
       # 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
       # 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。
