@@ -315,3 +315,31 @@ Linear の GraphQL 呼び出し。`curl` + `jq` で、6 skill + 5 script から�
 plan の「当面 Shell に残す」表がこの2本を挙げていたのは妥当だった、という結論。
 **そのため Linear の状態変更コマンド（`linear-dispatch-cron.sh` ほか）も
 移していない。** あれはこの評価とセットで着手する前提だった。
+
+## 残骸チェックの判断（env-residue）
+
+`dotctl doctor residue` が見るのは3種類。**既存のどのチェックにも掛からない
+種類の drift を埋めるためのもの**で、`doctor migration` は「リポジトリの作業状態」
+専用で環境は見ない。実際にこの3種類を全部踏んだ（追跡外の
+`fish_user_key_bindings.fish` で Ctrl+R の修正が端末をまたぐたび戻り、
+vendored skill 6本が古い gh 版に隠されていた）。
+
+| 何を見るか                                   | なぜ                                                     |
+| -------------------------------------------- | -------------------------------------------------------- |
+| `~/.fzf/` と `~/.fzf.bash`                   | mise 管理と二重。PATH 順で古い版を掴む端末が出る         |
+| `~/.config/fish/functions/` の追跡外ファイル | Ctrl+R の担当が端末ごとに割れる原因になる                |
+| `~/.claude` `~/.codex` `~/.agents` の skill  | 宣言に無いもの、vendored なのに実ディレクトリになったもの |
+
+- **fisher の判定は名前の規約ではなく fisher 自身が持つ一覧で行う。** fisher は
+  プラグインごとに universal 変数 `_fisher_<plugin>_files` へインストールした
+  ファイルを記録している。「`_` 始まりはプラグイン」で切った初版は tide の
+  `fish_prompt` / `fish_mode_prompt` / `tide`、`fisher` 本体、fzf.fish の
+  `fzf_configure_bindings` を**誤検知した（実環境で5件）**。公開関数は普通の名前を持つ
+- **一覧が引けない環境では名前の規約に落とす。** fish が無ければ fish 関数の
+  残骸も問題にならないので、報告漏れより誤検知を避ける側に倒す
+- **skill の宣言が読めないときは skill の判定を丸ごと諦める。** 読めないまま
+  「宣言に無い」と言うと、正しく入っているものまで残骸に見える
+- **見つかっても exit 0。** 残骸があること自体は壊れている状態ではなく、放置すると
+  事故になりうる状態。毎日 FAILED が飛ぶと無視されるようになる
+- 件数は機械可読サマリ行（`env-residue: FOUND=N`）から取る。表示の体裁を変えても
+  呼び出し側が壊れないようにするため（`worktree-cleanup.sh` と同じ作り）

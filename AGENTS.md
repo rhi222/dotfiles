@@ -195,27 +195,11 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 bash scripts/env-residue.sh
 ```
 
-| 何を見るか                                  | なぜ                                                       |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| `~/.fzf/` と `~/.fzf.bash`                  | mise 管理と二重。PATH 順で古い版を掴む端末が出る           |
-| `~/.config/fish/functions/` の追跡外ファイル | Ctrl+R の担当が端末ごとに割れる原因になる                  |
-| `~/.claude` `~/.codex` `~/.agents` の skill | 宣言に無いもの、vendored なのに実ディレクトリになったもの   |
-
-- **既存のどのチェックにも掛からない種類の drift を埋めるためのもの。**
-  `migration-check.sh` は「リポジトリの作業状態」専用で環境は見ない。
-  実際にこの3種類を全部踏んだ（追跡外の `fish_user_key_bindings.fish` で Ctrl+R の
-  修正が端末をまたぐたび戻り、vendored skill 6本が古い gh 版に隠されていた）
-- **fisher の判定は名前の規約ではなく fisher 自身が持つ一覧で行う。** fisher は
-  プラグインごとに universal 変数 `_fisher_<plugin>_files` へインストールした
-  ファイルを記録している。「`_` 始まりはプラグイン」で切った初版は tide の
-  `fish_prompt` / `fish_mode_prompt` / `tide`、`fisher` 本体、fzf.fish の
-  `fzf_configure_bindings` を**誤検知した（実環境で5件）**。公開関数は普通の名前を持つ
-- **skill の宣言が読めないときは skill の判定を丸ごと諦める。** 読めないまま
-  「宣言に無い」と言うと、正しく入っているものまで残骸に見える
-- **見つかっても exit 0。** 残骸があること自体は壊れている状態ではなく、放置すると
-  事故になりうる状態。毎日 FAILED が飛ぶと無視されるようになる
-- 件数は機械可読サマリ行（`env-residue: FOUND=N`）から取る。表示の体裁を変えても
-  呼び出し側が壊れないようにするため（`worktree-cleanup.sh` と同じ作り）
+見るのは `~/.fzf` 系・追跡外の fish 関数・宣言に無い skill の3種類。**既存のどの
+チェックにも掛からない drift を埋めるためのもの**で、実際に3種類とも踏んでいる。
+**見つかっても exit 0**（毎日 FAILED が飛ぶと無視されるようになる）。件数は機械可読
+サマリ行 `env-residue: FOUND=N` から取る。判断の根拠は
+[docs/scripts-layout.md](docs/scripts-layout.md)。
 
 動作確認は `bash tests/checks/test-env-residue.sh`。
 
@@ -242,6 +226,22 @@ nvim の Lazy と Mason / gh skill / gh extension / yazi プラグイン / fishe
   環境で毎日 FAILED が出ないようにするため（他のステップと違い、宣言ファイルの有無で判定できる）
 
 動作確認は `bash tests/setup/test-daily-update.sh`。
+
+### dotctl（Go 製の運用CLI）
+
+複雑な状態判定を集約している。**入口は従来の `scripts/*.sh` のまま**で wrapper が転送する。
+
+| コマンド                                  | 従来の入口                                        |
+| ----------------------------------------- | ------------------------------------------------- |
+| `dotctl worktree cleanup` / `init`        | `scripts/worktree-{cleanup,init}.sh`              |
+| `dotctl settings sync claude` / `windows` | `scripts/sync-{claude,windows}-settings.sh`       |
+| `dotctl skill audit` / `vendor`           | `scripts/skill-{audit,vendor}.sh`                 |
+| `dotctl private-bundle`                   | `scripts/private-bundle.sh`                       |
+| `dotctl wsl cleanup`                      | `scripts/wsl-cleanup.sh`                          |
+| `dotctl doctor residue` / `migration`     | `scripts/{env-residue,migration-check}.sh`        |
+
+新機能は**launcher や bootstrap なら Shell、状態を複数集めて判定するなら Go**で振り分ける。
+`lib/*.sh` を skill が `source` する2本は Shell に残す（[docs/scripts-layout.md](docs/scripts-layout.md)）。
 
 ### aptパッケージ管理
 
