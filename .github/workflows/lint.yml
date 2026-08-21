@@ -13,6 +13,8 @@ on:
       - ".github/workflows/lint.yml"
       # 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
       - "**.md"
+      - "**.go"
+      - "go.mod"
   pull_request:
     paths:
       - "**.sh"
@@ -20,6 +22,8 @@ on:
       - ".shellcheckrc"
       - ".github/workflows/lint.yml"
       - "**.md"
+      - "**.go"
+      - "go.mod"
 
 jobs:
   shell-lint:
@@ -47,11 +51,15 @@ jobs:
             [tools]
             "aqua:koalaman/shellcheck" = "0.11.0"
             "aqua:mvdan/sh" = "3.13.1"
+            # run-tests.sh が go test ./... も走らせるため。go が無い環境では
+            # skip して通るので CI が落ちはしないが、それでは Go 側を検査できない
+            go = "1.26"
 
       - name: Show tool versions
         run: |
           shellcheck --version | grep version
           shfmt --version
+          go version
 
       # lint.sh の fish -n と、fish 関数のテスト（gf / wt / wtd / dclean）の両方で要る。
       # **lint より前に入れる。** lint.sh は fish が無いと .fish の構文チェックを
@@ -68,6 +76,15 @@ jobs:
       # pre-commit 側（secret-scan と同じ二層構成）。
       - name: Check scripts/ references
         run: bash scripts/ref-check.sh
+
+      # Go 側の静的検査。gofmt は差分が出たら落とす（shfmt と同じ扱い）
+      - name: Lint Go
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt が必要:"; echo "$unformatted"; exit 1
+          fi
+          go vet ./...
 
       # 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
       # 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。

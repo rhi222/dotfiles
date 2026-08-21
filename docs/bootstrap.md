@@ -331,6 +331,35 @@ env STRICT=1 bash scripts/setup-gh-extensions.sh  # gh 拡張
 bash scripts/linear-bootstrap.sh                  # Linear の team/state/label ID を解決
 ```
 
+### dotctl をビルドする
+
+`dotctl` は dotfiles の運用コマンドをまとめた Go 製 CLI で、**リポジトリから
+ローカルビルドして `~/.local/bin/dotctl` に置く**（バイナリはコミットしない）。
+
+```fish
+bash scripts/setup-dotctl.sh
+dotctl version
+```
+
+**順序は `apt-setup.sh` → mise（手順1）→ `setup-dotctl.sh`。** Go は mise 導入後に
+しか無いので、この順を外すとビルドできない。逆に **`dotfilesLink.sh` は `dotctl` を
+必須にしていない**ので、ここを飛ばしても基本セットアップは完了する（`dotctl` を
+使う機能だけが欠ける）。bootstrap を Go の有無に依存させないための作りで、
+[docs/scripts-layout.md](scripts-layout.md) に移行の全体像がある。
+
+- **失敗しても既存バイナリは壊れない。** テスト・ビルド・起動確認の全部を
+  通ったものだけを rename で差し替える。落ちたときは直前まで動いていた
+  バイナリがそのまま残るので、`dotctl` 越しに動く cron と hook は止まらない
+- 更新は `daily-update.sh` が日次で `setup-dotctl.sh` を呼ぶ。**手で `git pull`
+  した直後は自分で走らせる。** 再ビルドしないと cron と hook は古いバイナリを
+  黙って実行し続ける
+- 古いバイナリで実行すると `dotctl` 自身が stderr へ1行警告する
+  （`バイナリが古い（... repo は ...）`）。実行は止めない
+- 緊急時は `bash scripts/setup-dotctl.sh --skip-tests` でテストを飛ばせる
+
+復旧は入れ直すだけでよい。`~/.local/bin/dotctl` を消しても
+`bash scripts/setup-dotctl.sh` で作り直せる。
+
 ### 宣言が無く、手で入れるもの
 
 **次のものはリポジトリのどこにも宣言が無い。** 設定だけがリンクされて中身が伴わない状態になり、
@@ -504,8 +533,13 @@ crontab ~/.local/share/dotfiles-private/crontab.txt
 bash scripts/private-bundle.sh status  # ローカル設定が全てリンク済みか
 bash scripts/lint.sh                   # shellcheck + shfmt（追跡・未追跡の全 .sh）
 bash scripts/secret-scan.sh --tree     # 機密語スキャン
-bash scripts/run-tests.sh              # 全テスト
+bash scripts/ref-check.sh              # scripts/ 配下への参照が壊れていないか
+bash scripts/run-tests.sh              # 全テスト（Shell + Go）
 ```
+
+`run-tests.sh` は `tests/<domain>/` 以下の Shell テストと `go test ./...` の両方を
+1コマンドで走らせる。**`dotctl` をビルドしていない端末では Go 側が skip されて
+通る**ので、緑になったことだけで Go 側を検査できたとは言えない。
 
 最後に、普段使うリポジトリで Git のメールアドレスが正しく切り替わることも確認する。
 

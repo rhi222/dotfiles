@@ -98,6 +98,33 @@ fisher_update() {
   fish -c 'fisher update' </dev/null
 }
 
+# dotctl の再ビルド。**git pull 後に再ビルドしないと、cron と hook は古い
+# バイナリを黙って実行し続ける**（このスクリプト自身が古い installs/<tool>/ の
+# gh を掴んで gh skill を失った事故と同型）。日次で追随させる。
+#
+# go が無い端末と go.mod が無いリポジトリでは何もせず成功扱いにする。
+# 更新対象も更新手段も無い端末で毎日 FAILED 通知が飛ぶだけになるため
+# （yazi の package.toml と同じ扱い）。あとから mise で go を入れれば
+# このステップは自動で効き始める。
+#
+# 一方 **ビルドの失敗は隠さない。** 古いバイナリを掴み続ける状態そのものなので、
+# run_step で FAILED として拾わせる。dotctl 自身も実行のたびに repo HEAD との
+# ずれを警告するが、そちらは「気付ける」だけで直しはしない。
+DOTCTL_GO_MOD="${DOTCTL_GO_MOD:-$SCRIPT_DIR/../go.mod}"
+DOTCTL_SETUP_SCRIPT="${DOTCTL_SETUP_SCRIPT:-$SCRIPT_DIR/setup-dotctl.sh}"
+
+dotctl_rebuild() {
+  if [ ! -f "$DOTCTL_GO_MOD" ]; then
+    echo "no go.mod at $DOTCTL_GO_MOD, skipping"
+    return 0
+  fi
+  if ! command -v go >/dev/null 2>&1; then
+    echo "go not found, skipping (mise install go)"
+    return 0
+  fi
+  bash "$DOTCTL_SETUP_SCRIPT"
+}
+
 yazi_pkg_upgrade() {
   if [ ! -f "$YAZI_PACKAGE_FILE" ]; then
     echo "no package.toml at $YAZI_PACKAGE_FILE, skipping"
@@ -266,6 +293,8 @@ main() {
   # fish プラグイン（tide / fzf.fish）も同様。ここが無かったため、この2つだけ
   # どの端末でも手動でしか更新されていなかった。
   run_step "fisher update" fisher_update
+  # dotctl の再ビルド。更新系の最後に置く（go 自体の更新より後にする）
+  run_step "dotctl rebuild" dotctl_rebuild
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check
