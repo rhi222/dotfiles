@@ -44,8 +44,14 @@ bash scripts/apt-setup.sh        # apt パッケージ（WSL2）
 ```fish
 bash scripts/lint.sh                # shellcheck + shfmt（追跡＋未追跡の全 .sh）
 bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた後に）
-bash scripts/run-tests.sh           # 全テスト
+bash scripts/run-tests.sh           # 全テスト（並列。TEST_JOBS=1 で直列）
 ```
+
+`run-tests.sh` は `test-*.sh` を並列で走らせるが、**出力は直列時と同じ**
+（テスト名の昇順・1本1行・失敗したものだけ出力を見せる）。各テストの出力を
+個別ファイルへ溜め、全部終わってから順に流している。並列化の前提は
+**各テストが `mktemp` で自分の作業場を作ること**で、固定パスへ書くテストを足すと
+隣と踏み合う。実測は直列52秒→並列9〜13秒（16コア機、52本）。
 
 ### ローカル設定の集約と移植（private bundle）
 
@@ -53,13 +59,13 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
 **実体は集約先にあり、各所へは `dotfilesLink.sh` が symlink を張る。** 以前はリポジトリ作業ツリー内・
 ホーム直下・XDG 配下の3箇所に散っていて、新環境で12項目を手で配り直す必要があった。
 
-| やりたいこと        | コマンド                                          |
-| ------------------- | ------------------------------------------------- |
-| 集約（旧環境で1回） | `bash scripts/private-bundle.sh adopt --execute`   |
-| 運搬用に固める      | `bash scripts/private-bundle.sh export`            |
-| 新環境で展開        | `bash scripts/private-bundle.sh import <zip>`      |
-| 状態の確認          | `bash scripts/private-bundle.sh status`            |
-| 動作確認            | `bash scripts/test-private-bundle.sh`              |
+| やりたいこと        | コマンド                                         |
+| ------------------- | ------------------------------------------------ |
+| 集約（旧環境で1回） | `bash scripts/private-bundle.sh adopt --execute` |
+| 運搬用に固める      | `bash scripts/private-bundle.sh export`          |
+| 新環境で展開        | `bash scripts/private-bundle.sh import <zip>`    |
+| 状態の確認          | `bash scripts/private-bundle.sh status`          |
+| 動作確認            | `bash scripts/test-private-bundle.sh`            |
 
 - **リンク規則は1つだけ。** リンク先が実ディレクトリなら1階層降り、無ければそこでリンクする。
   これでファイル単位（`config-local`）とディレクトリ単位（`ahk-snippets/js`）が自動で振り分けられ、
@@ -125,17 +131,17 @@ gitignore しているローカル設定・機密ファイルは `~/.local/share
 `/mnt/c` にあって symlink できない設定を `scripts/sync-windows-settings.sh` でコピー同期する。
 `sync-claude-settings.sh` と同じく**実ファイルを正とし、リポジトリが追いかける**。
 
-| リポジトリ                              | 実ファイル                                    |
-| --------------------------------------- | --------------------------------------------- |
-| `.config/wsl/.wslconfig`                | `%USERPROFILE%\.wslconfig`                    |
+| リポジトリ                               | 実ファイル                                     |
+| ---------------------------------------- | ---------------------------------------------- |
+| `.config/wsl/.wslconfig`                 | `%USERPROFILE%\.wslconfig`                     |
 | `.config/windows-terminal/settings.json` | Windows Terminal の `LocalState/settings.json` |
 
-| やりたいこと            | コマンド                                                       |
-| ----------------------- | -------------------------------------------------------------- |
-| 差分の確認              | `bash scripts/sync-windows-settings.sh status`                 |
-| 実ファイル → リポジトリ | `bash scripts/sync-windows-settings.sh pull`                   |
-| リポジトリ → 実ファイル | `bash scripts/sync-windows-settings.sh push --force`           |
-| 片方だけ                | 末尾に `wslconfig` / `terminal` を付ける                       |
+| やりたいこと            | コマンド                                             |
+| ----------------------- | ---------------------------------------------------- |
+| 差分の確認              | `bash scripts/sync-windows-settings.sh status`       |
+| 実ファイル → リポジトリ | `bash scripts/sync-windows-settings.sh pull`         |
+| リポジトリ → 実ファイル | `bash scripts/sync-windows-settings.sh push --force` |
+| 片方だけ                | 末尾に `wslconfig` / `terminal` を付ける             |
 
 - **symlink にできない理由が2つある。** ①実体が NTFS 上にあり、WSL から張った symlink を
   Windows 側が解釈しない ②Windows Terminal は distro を検出するとプロファイルを
@@ -219,15 +225,15 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 | vendored | それ以外すべて                      | `.config/claude/skills-vendor/<name>/`（コミット済み）→ symlink | 検知のみ自動。取込は手動 + audit + `git diff` |
 | 自作     | 自分                                | `.config/claude/skills/<name>/`                                 | 該当なし                                      |
 
-| やりたいこと           | コマンド                                                                |
-| ---------------------- | ----------------------------------------------------------------------- |
-| trusted な skill 追加  | `bash scripts/skill-add.sh <owner/repo> <skill>`                        |
-| vendored な skill 追加 | `bash scripts/skill-vendor.sh add <owner/repo> <sub-path> [name]`       |
-| vendored の更新        | `bash scripts/skill-vendor.sh update <name>`                            |
-| vendored の点検        | `bash scripts/skill-vendor.sh status` / `list`                          |
-| 単体で内容を検査       | `bash scripts/skill-audit.sh <skill-dir>`                               |
+| やりたいこと           | コマンド                                                                 |
+| ---------------------- | ------------------------------------------------------------------------ |
+| trusted な skill 追加  | `bash scripts/skill-add.sh <owner/repo> <skill>`                         |
+| vendored な skill 追加 | `bash scripts/skill-vendor.sh add <owner/repo> <sub-path> [name]`        |
+| vendored の更新        | `bash scripts/skill-vendor.sh update <name>`                             |
+| vendored の点検        | `bash scripts/skill-vendor.sh status` / `list`                           |
+| 単体で内容を検査       | `bash scripts/skill-audit.sh <skill-dir>`                                |
 | 新環境 bootstrap       | `env STRICT=1 bash scripts/setup-claude-skills.sh` + `./dotfilesLink.sh` |
-| 削除（vendored）       | `rm -rf .config/claude/skills-vendor/<name>` + `./dotfilesLink.sh`      |
+| 削除（vendored）       | `rm -rf .config/claude/skills-vendor/<name>` + `./dotfilesLink.sh`       |
 
 **allowlist は default-deny。** 初期値は `anthropics` / `github` / `vercel-labs` の3つだけで、
 **個人アカウントは入れない**（allowlist に入れることは「人のレビューなしで毎日自動更新される」
@@ -278,13 +284,13 @@ Codex専用の自作skillは `.config/codex/skills/` に置く。`dotfilesLink.s
 fish のプラグインは fisher で管理し、宣言リストは `.config/fish/fish_plugins`
 （`dotfilesLink.sh` がリンクする）。中身は tide（プロンプト）と fzf.fish（Ctrl+R / Ctrl+T）。
 
-| やりたいこと     | コマンド                                                |
-| ---------------- | ------------------------------------------------------- |
+| やりたいこと     | コマンド                                                     |
+| ---------------- | ------------------------------------------------------------ |
 | プラグイン追加   | `fish_plugins` に追記 → `bash scripts/setup-fish-plugins.sh` |
-| 一括インストール | `bash scripts/setup-fish-plugins.sh`（揃っていればskip） |
-| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-fish-plugins.sh`        |
-| 更新             | `daily-update.sh` が `fisher update` を実行              |
-| 削除             | `fish_plugins` の行削除 → `setup-fish-plugins.sh`        |
+| 一括インストール | `bash scripts/setup-fish-plugins.sh`（揃っていればskip）     |
+| 新環境 bootstrap | `env STRICT=1 bash scripts/setup-fish-plugins.sh`            |
+| 更新             | `daily-update.sh` が `fisher update` を実行                  |
+| 削除             | `fish_plugins` の行削除 → `setup-fish-plugins.sh`            |
 
 - **以前は追跡外だった。** そのため端末ごとにプラグイン集合が割れ、`daily-update.sh` にも
   更新ステップが無く、tide と fzf.fish だけどの端末でも手動更新だった。
@@ -714,13 +720,13 @@ herdr 0.8.2 の `ui.tab_bar_right` で、タブ行の右端に tmux の status-r
 8/20 Thu 12:09:33 · CPU 30% · MEM 6.1/11.7G · LA 2.12
 ```
 
-| やりたいこと     | コマンド                                                             |
-| ---------------- | -------------------------------------------------------------------- |
-| 出力の確認       | `bash .config/herdr/scripts/status.sh`                               |
-| 設定の検証       | `herdr config check`                                                 |
-| 反映             | `herdr server reload-config`                                         |
-| 別設定で試す     | `env HERDR_CONFIG_PATH=<試作.toml> herdr config check`               |
-| 動作確認         | `bash scripts/test-herdr-status.sh`                                  |
+| やりたいこと | コマンド                                               |
+| ------------ | ------------------------------------------------------ |
+| 出力の確認   | `bash .config/herdr/scripts/status.sh`                 |
+| 設定の検証   | `herdr config check`                                   |
+| 反映         | `herdr server reload-config`                           |
+| 別設定で試す | `env HERDR_CONFIG_PATH=<試作.toml> herdr config check` |
+| 動作確認     | `bash scripts/test-herdr-status.sh`                    |
 
 - **native の `datetime` エントリを使わず command 1本に寄せている。** `datetime` は更新間隔を
   持たないので秒を出せない

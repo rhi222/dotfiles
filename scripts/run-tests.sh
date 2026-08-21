@@ -7,6 +7,7 @@
 # 環境変数:
 #   TEST_DIR      走査するディレクトリ（既定: このスクリプトの場所）
 #   TEST_TIMEOUT  1本あたりの制限秒（既定: 300）
+#   TEST_JOBS     同時実行数（既定: nproc を 16 で打ち止め。1 で直列）
 #
 # CIで走らせられないテストは、テストファイル側の先頭付近に
 #   # ci-skip: <理由>
@@ -14,11 +15,40 @@
 # 気付けないまま片方だけ更新されて食い違うため、宣言はテストに持たせる。
 #
 # ファイル名が test-*.sh に一致しないのは、自分自身を走査対象に含めないため。
+#
+# **並列で走らせるが、出力は直列時と同じ**（テスト名の昇順、1本1行、失敗した
+# ものだけ出力を見せる）。各テストの出力を個別ファイルへ溜め、全部終わってから
+# 順に流す。走っている最中に進捗が出ないのは、混ざった行を読むより結果が
+# 揃っているほうが速く読めるため。
+#
+# 実測（16コア機、52本）: 直列 52秒 -> 並列 9〜13秒。`--ci` では 42秒 -> 約14秒
+# （`--ci` は最長の1本が ci-skip で外れるが、残りの本数は変わらない）。
+# 並列時のばらつきが大きいので、1回の計測で判断しないこと。
+#
+# 並列化の前提は「各テストが mktemp で自分の作業場を作る」こと。固定パスへ書く
+# テストを足すと隣のテストと踏み合う。/tmp の固定名を値として渡しているだけの
+# 箇所（payload の cwd など）は書き込みが無いので問題ない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_DIR="${TEST_DIR:-$SCRIPT_DIR}"
 TEST_TIMEOUT="${TEST_TIMEOUT:-300}"
+
+# 既定の同時実行数。16 で打ち止めにする。
+#
+# **下限は「最も長い1本」で決まる。** 16コア機での実測（52本）:
+#   直列 52秒 / jobs=4 15〜20秒 / jobs=8 約14秒 / jobs=16 9〜13秒 / jobs=24 11〜13秒
+# 最長が test-nvim-session-autosave.sh の 9.5秒なので、8 を超えると削れるのは
+# 尻尾だけになる。それでも 16 まで取るのは、`--ci`（この最長が ci-skip で外れる）
+# だと下限が 4.9秒まで下がり、まだ縮む余地があるため。
+default_jobs() {
+  local n
+  n="$(nproc 2>/dev/null || echo 1)"
+  [ "$n" -gt 16 ] && n=16
+  [ "$n" -lt 1 ] && n=1
+  echo "$n"
+}
+TEST_JOBS="${TEST_JOBS:-$(default_jobs)}"
 
 CI_MODE=0
 [ "${1:-}" = "--ci" ] && CI_MODE=1
@@ -30,38 +60,85 @@ if [ "${#tests[@]}" -eq 0 ]; then
   exit 1
 fi
 
+WORK="$(mktemp -d -t run-tests.XXXXXX)"
+trap 'rm -rf "$WORK"' EXIT
+
+# 1本走らせて、結果を $WORK/<idx>.{status,out} に書く。
+# 標準出力には何も出さない（呼び出し側が順に流す）。
+run_one() {
+  local idx="$1" path="$2"
+  local out rc
+  if out=$(timeout "$TEST_TIMEOUT" bash "$path" 2>&1); then
+    rc=0
+  else
+    rc=$?
+  fi
+  printf '%s\n' "$rc" >"$WORK/$idx.status"
+  printf '%s' "$out" >"$WORK/$idx.out"
+}
+
+# 投入。ci-skip の判定は走らせる前に済ませ、スキップは status に 'skip' を書く
+# （順に流すときに実行分と同じ枠で扱えるようにするため）。
+running=0
+for i in "${!tests[@]}"; do
+  t="${tests[$i]}"
+
+  # ci-skip の宣言はヘッダにだけ置く（本文中の同名文字列を拾わないよう先頭20行に限る）
+  if [ "$CI_MODE" -eq 1 ] && reason=$(head -20 "$t" | grep -m1 -oP '(?<=# ci-skip:).*'); then
+    printf 'skip\n' >"$WORK/$i.status"
+    printf '%s' "$reason" >"$WORK/$i.out"
+    continue
+  fi
+
+  if [ "$TEST_JOBS" -le 1 ]; then
+    run_one "$i" "$t"
+    continue
+  fi
+
+  run_one "$i" "$t" &
+  running=$((running + 1))
+  if [ "$running" -ge "$TEST_JOBS" ]; then
+    wait -n
+    running=$((running - 1))
+  fi
+done
+wait
+
 passed=0
 failed=0
 skipped=0
 failed_names=()
 
-for t in "${tests[@]}"; do
-  name="$(basename "$t")"
+# 出力。tests は sort 済みなので、添字順に流せば直列時と同じ並びになる
+for i in "${!tests[@]}"; do
+  name="$(basename "${tests[$i]}")"
+  rc="$(cat "$WORK/$i.status" 2>/dev/null || echo 1)"
 
-  # ci-skip の宣言はヘッダにだけ置く（本文中の同名文字列を拾わないよう先頭20行に限る）
-  if [ "$CI_MODE" -eq 1 ] && reason=$(head -20 "$t" | grep -m1 -oP '(?<=# ci-skip:).*'); then
-    echo "SKIP  $name —${reason}"
+  if [ "$rc" = "skip" ]; then
+    echo "SKIP  $name —$(cat "$WORK/$i.out" 2>/dev/null)"
     skipped=$((skipped + 1))
     continue
   fi
 
-  if out=$(timeout "$TEST_TIMEOUT" bash "$t" 2>&1); then
+  if [ "$rc" = "0" ]; then
     echo "PASS  $name"
     passed=$((passed + 1))
-  else
-    rc=$?
-    if [ "$rc" -eq 124 ]; then
-      echo "TIMEOUT  $name（${TEST_TIMEOUT}秒で打ち切り）"
-    else
-      echo "FAIL  $name（exit $rc）"
-    fi
-    # 失敗したものだけ出力を見せる。全部出すとCIログが読めなくなる
-    while IFS= read -r line; do
-      printf '      | %s\n' "$line"
-    done <<<"$out"
-    failed=$((failed + 1))
-    failed_names+=("$name")
+    continue
   fi
+
+  if [ "$rc" = "124" ]; then
+    echo "TIMEOUT  $name（${TEST_TIMEOUT}秒で打ち切り）"
+  else
+    echo "FAIL  $name（exit $rc）"
+  fi
+  # 失敗したものだけ出力を見せる。全部出すとCIログが読めなくなる。
+  # `|| [ -n "$line" ]` は末尾に改行が無いファイルの最終行を落とさないため
+  # （テストの出力をそのまま溜めているので、改行で終わらないことがある）
+  while IFS= read -r line || [ -n "$line" ]; do
+    printf '      | %s\n' "$line"
+  done <"$WORK/$i.out"
+  failed=$((failed + 1))
+  failed_names+=("$name")
 done
 
 echo "---"
