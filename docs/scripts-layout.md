@@ -10,7 +10,7 @@
 
 | 種類                 | 例                                       | 実測         |
 | -------------------- | ---------------------------------------- | ------------ |
-| 公開エントリポイント | `daily-update.sh`, `worktree-cleanup.sh` | 34本 5,774行 |
+| 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 5,320行 |
 | `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 11本 1,225行 |
 | 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
 | 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
@@ -83,7 +83,7 @@
 | スクリプト             | 行数 | 引数                            | 呼び出し元         |
 | ---------------------- | ---- | ------------------------------- | ------------------ |
 | `worktree-init.sh`     | 147  | `<worktree-path>`               | doc skill hook link|
-| `worktree-cleanup.sh`  | 518  | `[--size] [--execute] [--force]`| doc skill          |
+| `worktree-cleanup.sh`  | 28   | `[--size] [--execute] [--force]`| doc skill          |
 
 ### 掃除
 

@@ -72,6 +72,20 @@ func TestParseWorktreesExcludesMainAndKeepsFields(t *testing.T) {
 	}
 }
 
+func TestParseWorktreesTakesBranchFromBranchLineNotDirName(t *testing.T) {
+	// **ブランチ名はディレクトリ名ではなく branch 行から取る。**
+	// `git worktree add <dir> -b <branch>` で両者は食い違いうる
+	in := "worktree /repo\nbranch refs/heads/main\n\n" +
+		"worktree /repo/.wt/dirname-differs\nbranch refs/heads/actual-branch-name\n\n"
+	got := parseWorktrees(in, "/repo")
+	if len(got) != 1 {
+		t.Fatalf("件数 = %d, want 1", len(got))
+	}
+	if got[0].Branch != "actual-branch-name" {
+		t.Errorf("Branch = %q, want %q", got[0].Branch, "actual-branch-name")
+	}
+}
+
 func TestParseWorktreesHandlesLockedWithoutDetail(t *testing.T) {
 	in := "worktree /repo\nbranch refs/heads/main\n\nworktree /repo/.wt/x\nbranch refs/heads/x\nlocked\n\n"
 	got := parseWorktrees(in, "/repo")
