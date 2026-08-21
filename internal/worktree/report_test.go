@@ -77,7 +77,7 @@ func TestRenderDryRun(t *testing.T) {
 			},
 		}},
 	}
-	out := Render(p, RenderOptions{})
+	out := renderAll(p, RenderOptions{})
 
 	for _, want := range []string{
 		"worktree cleanup  mode: DRY-RUN（試走／削除しません）",
@@ -121,7 +121,7 @@ func TestRenderExecuteChangesSummaryWording(t *testing.T) {
 		Deleted:      1,
 		DeleteFailed: 0,
 	}
-	out := Render(p, RenderOptions{Execute: true})
+	out := renderAll(p, RenderOptions{Execute: true})
 
 	if !strings.Contains(out, "  削除       : 1 件") {
 		t.Errorf("実削除の件数が出ていない:\n%s", out)
@@ -144,7 +144,7 @@ func TestRenderExecuteChangesSummaryWording(t *testing.T) {
 
 func TestRenderShowsDeleteFailuresWhenPresent(t *testing.T) {
 	p := &Plan{Roots: "/r", Executed: true, Deleted: 1, DeleteFailed: 2}
-	out := Render(p, RenderOptions{Execute: true})
+	out := renderAll(p, RenderOptions{Execute: true})
 	if !strings.Contains(out, "削除失敗   : 2 件") {
 		t.Errorf("失敗件数が出ていない:\n%s", out)
 	}
@@ -158,7 +158,7 @@ func TestRenderSizeColumn(t *testing.T) {
 		}}},
 		FreedKB: 2048,
 	}
-	out := Render(p, RenderOptions{ShowSize: true})
+	out := renderAll(p, RenderOptions{ShowSize: true})
 	if !strings.Contains(out, "MERGED #1  2M") {
 		t.Errorf("DELETE 行にサイズが出ていない:\n%s", out)
 	}
@@ -170,7 +170,7 @@ func TestRenderSizeColumn(t *testing.T) {
 func TestRenderSkipsReposWithoutLinkedWorktrees(t *testing.T) {
 	// linked worktree が無いリポジトリはセクションごと出さない（出力を静かに保つ）
 	p := &Plan{Roots: "/r", Repos: []RepoPlan{{Repo: "/r/quiet", Items: nil}}}
-	out := Render(p, RenderOptions{})
+	out := renderAll(p, RenderOptions{})
 	if strings.Contains(out, "/r/quiet") {
 		t.Errorf("空のリポジトリのセクションを出している:\n%s", out)
 	}
@@ -180,7 +180,7 @@ func TestRenderNoColorWhenNotTTY(t *testing.T) {
 	p := &Plan{Roots: "/r", Repos: []RepoPlan{{Repo: "/r/x", Items: []Item{
 		{Path: "/w/a", Branch: "a", Decision: Decision{Verdict: DELETE, Reason: "MERGED #1"}},
 	}}}}
-	out := Render(p, RenderOptions{})
+	out := renderAll(p, RenderOptions{})
 	if strings.Contains(out, "\x1b[") {
 		t.Errorf("TTY でないときに ANSI を出してはいけない:\n%q", out)
 	}
@@ -190,8 +190,13 @@ func TestRenderColorWhenTTY(t *testing.T) {
 	p := &Plan{Roots: "/r", Repos: []RepoPlan{{Repo: "/r/x", Items: []Item{
 		{Path: "/w/a", Branch: "a", Decision: Decision{Verdict: DELETE, Reason: "MERGED #1"}},
 	}}}}
-	out := Render(p, RenderOptions{Color: true})
+	out := renderAll(p, RenderOptions{Color: true})
 	if !strings.Contains(out, "\x1b[32m") {
 		t.Errorf("TTY のときは DELETE を緑にする:\n%q", out)
 	}
+}
+
+// renderAll は本文とサマリを続けて返す（Shell 版1回分の出力に相当）。
+func renderAll(p *Plan, opt RenderOptions) string {
+	return RenderHead(p, opt) + RenderSummary(p, opt)
 }

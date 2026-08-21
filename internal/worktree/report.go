@@ -2,6 +2,7 @@ package worktree
 
 import (
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -55,14 +56,34 @@ func newPalette(color bool) palette {
 	}
 }
 
-// Render は Plan を表示用の文字列にする。**Plan 以外は読まない**ので、
-// dry-run と実削除で表示が食い違うことがない。
-func Render(p *Plan, opt RenderOptions) string {
+// Section は表題行を書く（本文・実行ログ・サマリで体裁を揃える）。
+func Section(w io.Writer, color bool, title string) {
+	c := newPalette(color)
+	fmt.Fprintf(w, "\n%s%s== %s ==%s\n", c.bold, c.cyan, title, c.reset)
+}
+
+// WriteIndented は外部コマンドの出力を2スペース字下げで書く
+// （Shell 版の `2>&1 | sed 's/^/  /'` と同じ）。出力が空なら何も書かない。
+func WriteIndented(w io.Writer, out string) {
+	if out == "" {
+		return
+	}
+	lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+	for _, l := range lines {
+		fmt.Fprintf(w, "  %s\n", l)
+	}
+}
+
+// RenderHead は先頭のモード行とリポジトリごとのセクションを返す。
+//
+// **Plan 以外は読まない。** dry-run と実削除で同じ Plan を参照するので、
+// 「表示したものと消すものが違う」状態が構造的に起きない。
+func RenderHead(p *Plan, opt RenderOptions) string {
 	c := newPalette(opt.Color)
 	var b strings.Builder
 
 	section := func(title string) {
-		fmt.Fprintf(&b, "\n%s%s== %s ==%s\n", c.bold, c.cyan, title, c.reset)
+		Section(&b, opt.Color, title)
 	}
 
 	mode := c.yellow + "DRY-RUN（試走／削除しません）" + c.reset
@@ -97,8 +118,16 @@ func Render(p *Plan, opt RenderOptions) string {
 		}
 	}
 
+	return b.String()
+}
+
+// RenderSummary はサマリ・機械可読行・dry-run の案内を返す。
+func RenderSummary(p *Plan, opt RenderOptions) string {
+	c := newPalette(opt.Color)
+	var b strings.Builder
+
 	cnt := p.Counts()
-	section("サマリ")
+	Section(&b, opt.Color, "サマリ")
 	// **dry-run と --execute で意味が違うので文言を分ける。** --execute のまま
 	// 「候補」と出すと「消したのにまだ候補が残っている」と読めるうえ、削除に
 	// 失敗した分まで成功に見える。

@@ -124,3 +124,99 @@ func runWithBuild(t *testing.T, r execx.Runner, commit, repo string, args ...str
 	code := Run(context.Background(), args, env)
 	return code, out.String(), errOut.String()
 }
+
+// --- worktree cleanup の配線 ---
+
+func TestWorktreeCleanupIsDryRunByDefault(t *testing.T) {
+	f := execx.NewFake()
+	f.On("git", execx.Result{Stdout: "/repo/.git\n"})
+	f.On("git", execx.Result{Stdout: "worktree /repo\nbranch refs/heads/main\n\n"})
+
+	code, out, _ := runEnv(t, Env{Runner: f, WorktreeRoots: "/repo", WorktreeRepos: []string{"/repo"}},
+		"worktree", "cleanup")
+	if code != 0 {
+		t.Errorf("exit = %d, want 0", code)
+	}
+	if !strings.Contains(out, "DRY-RUN") {
+		t.Errorf("既定は dry-run: %q", out)
+	}
+	// **既定で削除コマンドを呼ばない**（安全側の既定が配線で崩れないこと）
+	for _, c := range f.Calls {
+		if strings.Contains(c.String(), "worktree remove") {
+			t.Errorf("dry-run で remove を呼んでいる: %v", c)
+		}
+	}
+}
+
+func TestWorktreeCleanupExecuteRemoves(t *testing.T) {
+	f := execx.NewFake()
+	f.On("git", execx.Result{Stdout: "/repo/.git\n"})
+	f.On("git", execx.Result{Stdout: "worktree /repo\nbranch refs/heads/main\n\n" +
+		"worktree /repo/.wt/done\nbranch refs/heads/done\n\n"})
+	f.On("git", execx.Result{Stdout: ""}) // tracked
+	f.On("git", execx.Result{Stdout: ""}) // untracked
+	f.On("gh", execx.Result{Stdout: "MERGED #1\n"})
+	f.On("git", execx.Result{}) // remove
+
+	code, out, _ := runEnv(t, Env{Runner: f, WorktreeRoots: "/repo", WorktreeRepos: []string{"/repo"}},
+		"worktree", "cleanup", "--execute")
+	if code != 0 {
+		t.Errorf("exit = %d, want 0", code)
+	}
+	if !strings.Contains(out, "EXECUTE") {
+		t.Errorf("--execute のモード表示が無い: %q", out)
+	}
+	found := false
+	for _, c := range f.Calls {
+		if strings.Contains(c.String(), "worktree remove --force /repo/.wt/done") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("remove を呼んでいない: %v", f.Calls)
+	}
+}
+
+func TestWorktreeCleanupRejectsUnknownFlag(t *testing.T) {
+	f := execx.NewFake()
+	code, _, errOut := runEnv(t, Env{Runner: f}, "worktree", "cleanup", "--frobnicate")
+	if code == 0 {
+		t.Error("知らないオプションは非0で返してほしい")
+	}
+	if !strings.Contains(errOut, "--frobnicate") {
+		t.Errorf("何が不正だったか出ていない: %q", errOut)
+	}
+}
+
+func TestWorktreeCleanupHelpExits0(t *testing.T) {
+	f := execx.NewFake()
+	code, out, _ := runEnv(t, Env{Runner: f}, "worktree", "cleanup", "--help")
+	if code != 0 {
+		t.Errorf("exit = %d, want 0", code)
+	}
+	for _, want := range []string{"--execute", "--force", "--size"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("使い方に %q が無い: %q", want, out)
+		}
+	}
+}
+
+func TestWorktreeWithoutSubcommandFails(t *testing.T) {
+	f := execx.NewFake()
+	code, _, errOut := runEnv(t, Env{Runner: f}, "worktree")
+	if code == 0 {
+		t.Error("サブコマンド無しは非0で返してほしい")
+	}
+	if !strings.Contains(errOut, "cleanup") {
+		t.Errorf("使えるサブコマンドを出していない: %q", errOut)
+	}
+}
+
+func runEnv(t *testing.T, env Env, args ...string) (int, string, string) {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	env.Stdout = &out
+	env.Stderr = &errOut
+	code := Run(context.Background(), args, env)
+	return code, out.String(), errOut.String()
+}

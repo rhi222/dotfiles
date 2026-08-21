@@ -21,13 +21,23 @@ type Env struct {
 	// どちらかが空なら version skew の検知を行わない。
 	Commit string
 	Repo   string
+
+	// WorktreeRoots は worktree の走査ルート（スペース区切り）。
+	WorktreeRoots string
+	// WorktreeRepos を渡すと走査を省いてこのリポジトリだけを見る（テスト用）。
+	WorktreeRepos []string
+	// WorktreePRStateCmd は PR 状態取得の差し替え口。
+	WorktreePRStateCmd string
+	// Color は stdout が TTY のとき真。表示の着色に使う。
+	Color bool
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
 
 サブコマンド:
-  version   バイナリのビルド情報を出す
-  help      この使い方を出す
+  worktree cleanup   消し忘れた git worktree を洗い出して掃除する
+  version            バイナリのビルド情報を出す
+  help               この使い方を出す
 `
 
 // Run はサブコマンドを1つ実行して終了コードを返す。
@@ -47,6 +57,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 	case "version":
 		fmt.Fprintf(env.Stdout, "dotctl %s\n", versionString(env))
 		return 0
+	case "worktree":
+		return runWorktree(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0
