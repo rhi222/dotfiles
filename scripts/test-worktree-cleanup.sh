@@ -1,4 +1,5 @@
 #!/bin/bash
+# serial: 並列実行で不安定になることを実測（原因未特定。直列なら安定）
 # worktree-cleanup.sh のユニットテスト
 # 一時ディレクトリにfixtureリポジトリとworktreeを作って検証する
 set -euo pipefail

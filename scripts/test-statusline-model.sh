@@ -1,4 +1,5 @@
 #!/bin/bash
+# serial: ccstatusline の実行時間に依存するので、並列の負荷で結果が変わる
 # .config/claude/scripts/statusline-model.sh のユニットテスト
 #
 # ccstatusline の custom-command ウィジェットは stdin に Claude Code の

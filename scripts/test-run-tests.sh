@@ -1,4 +1,5 @@
 #!/bin/bash
+# serial: 並列化と打ち切りの検証で自分が経過時間を測るので、隣に負荷があると落ちる
 # run-tests.sh のテスト。偽のテスト群を作った一時ディレクトリを対象にする
 set -uo pipefail
 
@@ -142,6 +143,65 @@ out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" --ci 2>&1)
 check "並列でも ci-skip を実行しない" test ! -f "$tmp/skipme-ran"
 check "並列でも skip 件数を出す" grep -qE 'skip: 1' <<<"$out"
 rm -f "$tmp/test-skipme.sh" "$tmp/skipme-ran"
+
+# --- serial 宣言 ---
+# 並列にすると落ちるテストがある。実 nvim を起動して 5000ms のデバウンスを待つもの、
+# 実 $HOME の設定で対話シェルを起動するものなど、負荷で結果が変わる種類。
+# ci-skip と同じ形で、テストファイル側が `# serial: <理由>` と宣言する。
+make_test test-par1.sh 'exit 0'
+make_test test-par2.sh 'exit 0'
+make_test test-ser1.sh '# serial: 実nvimの起動時間に依存する
+echo "$$" >>"'"$tmp"'/ser.log"
+sleep 1
+exit 0'
+make_test test-ser2.sh '# serial: 実シェルの起動時間に依存する
+echo "$$" >>"'"$tmp"'/ser.log"
+sleep 1
+exit 0'
+
+: >"$tmp/ser.log"
+start=$(date +%s)
+out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" 2>&1)
+rc=$?
+elapsed=$(($(date +%s) - start))
+check "serial 宣言があっても exit 0" test "$rc" -eq 0
+check "serial なテストも実行する" grep -q "test-ser1.sh" <<<"$out"
+# 2本が直列なので合計2秒以上かかる（並列なら1秒で終わってしまう）
+check "serial なテストは同時に走らない" test "$elapsed" -ge 2
+# 件数はハードコードせずファイル数から出す（前のケースの残りに左右されないように）
+expected_pass=$(find "$tmp" -maxdepth 1 -name 'test-*.sh' | wc -l)
+check "serial なテストも件数に入る" grep -qE "pass: $expected_pass 件" <<<"$out"
+
+# serial 宣言は --ci でも効く（ci-skip とは独立した軸）
+: >"$tmp/ser.log"
+start=$(date +%s)
+out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" --ci 2>&1)
+elapsed=$(($(date +%s) - start))
+check "--ci でも serial は直列で走る" test "$elapsed" -ge 2
+
+# 出力順は serial かどうかに関わらずテスト名の昇順
+names=$(grep -oE 'test-(par|ser)[0-9]\.sh' <<<"$out")
+sorted=$(printf '%s\n' "$names" | sort)
+check "serial を混ぜても出力はテスト名の昇順" test "$names" = "$sorted"
+
+# serial なテストの失敗も拾う
+make_test test-ser3.sh '# serial: 理由
+echo "直列でも読める理由"; exit 1'
+out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" 2>&1)
+rc=$?
+check "serial なテストの失敗を検出する" test "$rc" -ne 0
+check "serial なテストの出力も見せる" grep -q "直列でも読める理由" <<<"$out"
+
+# ci-skip と serial の両方が付いていたら --ci ではスキップが勝つ
+make_test test-ser4.sh '# ci-skip: CIでは無理
+# serial: 実環境に依存する
+echo ran >"'"$tmp"'/ser4-ran"
+exit 0'
+rm -f "$tmp/ser4-ran"
+out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" --ci 2>&1)
+check "ci-skip と serial 併記なら --ci ではスキップ" test ! -f "$tmp/ser4-ran"
+
+rm -f "$tmp"/test-par*.sh "$tmp"/test-ser*.sh "$tmp/ser.log" "$tmp/ser4-ran"
 
 # --- 自分自身を対象にしない ---
 # run-tests.sh は test-*.sh に一致しない名前でなければ自分を再帰実行してしまう

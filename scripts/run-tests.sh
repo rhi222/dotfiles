@@ -79,14 +79,26 @@ run_one() {
 
 # 投入。ci-skip の判定は走らせる前に済ませ、スキップは status に 'skip' を書く
 # （順に流すときに実行分と同じ枠で扱えるようにするため）。
+#
+# `# serial:` を宣言したテストは並列の枠に入れず、後で1本ずつ走らせる。
+# 負荷で結果が変わる種類（実 nvim を起動して 5000ms のデバウンスを待つ、
+# 実 $HOME の設定で対話シェルを起動する）が並列化で flaky になったため。
+# ci-skip とは独立した軸で、`--ci` でもこの直列扱いは効く。
+serial_idx=()
 running=0
 for i in "${!tests[@]}"; do
   t="${tests[$i]}"
 
-  # ci-skip の宣言はヘッダにだけ置く（本文中の同名文字列を拾わないよう先頭20行に限る）
+  # ci-skip / serial の宣言はヘッダにだけ置く
+  # （本文中の同名文字列を拾わないよう先頭20行に限る）
   if [ "$CI_MODE" -eq 1 ] && reason=$(head -20 "$t" | grep -m1 -oP '(?<=# ci-skip:).*'); then
     printf 'skip\n' >"$WORK/$i.status"
     printf '%s' "$reason" >"$WORK/$i.out"
+    continue
+  fi
+
+  if head -20 "$t" | grep -qP '^#\s*serial:'; then
+    serial_idx+=("$i")
     continue
   fi
 
@@ -103,6 +115,12 @@ for i in "${!tests[@]}"; do
   fi
 done
 wait
+
+# 並列分が全部終わってから直列分を1本ずつ。**並列分と重ねない**のが要点で、
+# 重ねると「隣で16本走っている間に実 nvim を待つ」状態が再現してしまう。
+for i in "${serial_idx[@]+"${serial_idx[@]}"}"; do
+  run_one "$i" "${tests[$i]}"
+done
 
 passed=0
 failed=0

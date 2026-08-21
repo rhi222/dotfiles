@@ -1,4 +1,5 @@
 #!/bin/bash
+# serial: 実 $HOME の設定で対話 fish を起動するので、並列の負荷で起動が間に合わない
 # fish関数 dclean / __docker_clean_* のユニットテスト
 # docker をフェイクスクリプトに差し替え、固定のフィクスチャを返させて検証する
 #

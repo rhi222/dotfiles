@@ -1,4 +1,5 @@
 #!/bin/bash
+# serial: 実 nvim を起動し 5000ms のデバウンスを待つので、並列の負荷で取りこぼす
 # nvim セッションの自動保存テスト
 #
 # herdr サーバーを再起動すると、各ペインの nvim は SIGTERM/SIGHUP で終了させられる。
