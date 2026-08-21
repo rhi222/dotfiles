@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rhi222/dotfiles/internal/execx"
+	"github.com/rhi222/dotfiles/internal/private"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
 )
@@ -43,6 +44,9 @@ type Env struct {
 	Vendor skill.VendorConfig
 	// TrustedOwnersFile は gh skill を自動更新してよい owner の allowlist。
 	TrustedOwnersFile string
+
+	// Private はローカル設定の集約（private bundle）の設定。
+	Private private.Config
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
 }
@@ -55,6 +59,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   settings sync      設定ファイルのコピー同期（claude / windows）
   skill audit        skill の内容を機械的に検査する
   skill vendor       vendored skill の取込と点検
+  private-bundle     ローカル設定の集約と運搬
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -82,6 +87,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runSettings(ctx, args[1:], env)
 	case "skill":
 		return runSkill(ctx, args[1:], env)
+	case "private-bundle":
+		return runPrivateBundle(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0

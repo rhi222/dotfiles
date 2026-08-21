@@ -1,265 +1,151 @@
 #!/bin/bash
-# private-bundle.sh のユニットテスト。
-# 偽の $HOME と偽のリポジトリを mktemp -d に作り、実環境には一切触らない。
+# private-bundle.sh（互換 wrapper）の契約を検査する。
+#
+# **集約・運搬の振る舞いは Go 側が持つ**（internal/private の unit test と
+# integration test）。分類の判定、追跡ファイルを巻き込まない ignore 判定、
+# パーミッションのハードニング、zip -y で symlink を実体化しないことはそちら。
+#
+# ここは wrapper の転送と、**環境変数の差し替え口が生きていること**を見る。
+# 差し替え口が壊れると、テストが実 $HOME の機密ファイルを動かしに行く。
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-BUNDLE="$SCRIPTS_DIR/private-bundle.sh"
+TARGET="$SCRIPTS_DIR/private-bundle.sh"
 
-if [[ ! -f "$BUNDLE" ]]; then
-  echo "ERROR: $BUNDLE が存在しません"
+if [[ ! -f "$TARGET" ]]; then
+  echo "ERROR: $TARGET が存在しません"
   exit 1
 fi
 
-pass=0
-fail=0
+if ! command -v go >/dev/null 2>&1; then
+  echo "SKIP: go が無いので dotctl をビルドできない"
+  exit 0
+fi
+
+PASS=0
+FAIL=0
 
 check() {
-  local desc="$1"
-  shift
-  if "$@" >/dev/null 2>&1; then
-    echo "ok: $desc"
-    pass=$((pass + 1))
+  local name="$1" expected="$2" actual="$3"
+  if [[ "$expected" == "$actual" ]]; then
+    PASS=$((PASS + 1))
+    echo "  ok   $name"
   else
-    echo "NG: $desc"
-    fail=$((fail + 1))
+    FAIL=$((FAIL + 1))
+    echo "  FAIL $name"
+    echo "         expected: $expected"
+    echo "         actual  : $actual"
   fi
 }
 
-ORIG_HOME="$HOME"
-FIX=""
+has() { grep -q -- "$1" <<<"$2" && echo yes || echo no; }
 
-run() { bash "$BUNDLE" "$@"; }
+TEST_DIR=$(mktemp -d)
+trap 'rm -rf "$TEST_DIR"' EXIT
+FAKE_HOME="$TEST_DIR/home"
+FAKE_REPO="$TEST_DIR/repo"
+PRIVATE="$TEST_DIR/private"
+mkdir -p "$FAKE_HOME/.claude" "$FAKE_REPO/.config/git"
+printf 'ctx\n' >"$FAKE_HOME/.claude/local-context.md"
+printf 'cfg\n' >"$FAKE_REPO/.config/git/config-local"
+git -C "$FAKE_REPO" init -q
+git -C "$FAKE_REPO" config user.email test@example.com
+git -C "$FAKE_REPO" config user.name test
 
-# 偽の環境を作る。ADOPT_ENTRIES に並ぶ実パスのうち、テストに必要な分だけを用意する。
-# passwords/ は README.md を追跡させ、中身だけが ignore される本番と同じ形にする。
-setup() {
-  FIX=$(mktemp -d)
-  export HOME="$FIX/home"
-  export DOTFILES_DIR="$FIX/repo"
-  export DOTFILES_PRIVATE_DIR="$FIX/private"
+if ! (cd "$REPO_ROOT" && go build -o "$TEST_DIR/dotctl" ./cmd/dotctl) 2>"$TEST_DIR/build.err"; then
+  echo "ERROR: dotctl のビルドに失敗"
+  cat "$TEST_DIR/build.err"
+  exit 1
+fi
 
-  mkdir -p "$HOME/.claude" "$HOME/.config/linear" "$HOME/.config/dotfiles"
-  echo ctx >"$HOME/.claude/local-context.md"
-  echo key >"$HOME/.config/linear/api-key"
-  echo pat >"$HOME/.config/dotfiles/secret-patterns.txt"
-
-  mkdir -p "$DOTFILES_DIR/.config/git"
-  mkdir -p "$DOTFILES_DIR/.config/fish/my/conf.d"
-  mkdir -p "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking"
-  echo local >"$DOTFILES_DIR/.config/git/config-local"
-  echo fish >"$DOTFILES_DIR/.config/fish/my/conf.d/99-local.fish"
-  : >"$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/README.md"
-  echo aws >"$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking/aws.md"
-
-  cat >"$DOTFILES_DIR/.gitignore" <<'IGNORE'
-.config/git/config-local
-.config/fish/my/conf.d/99-local.fish
-.config/AutoHotkey/ahk-snippets/passwords/*
-!.config/AutoHotkey/ahk-snippets/passwords/README.md
-IGNORE
-
-  git -C "$DOTFILES_DIR" init -q >/dev/null 2>&1
-  git -C "$DOTFILES_DIR" add .gitignore \
-    .config/AutoHotkey/ahk-snippets/passwords/README.md >/dev/null 2>&1
+run() {
+  env HOME="$FAKE_HOME" PATH="$TEST_DIR:$PATH" \
+    DOTFILES_DIR="$FAKE_REPO" DOTFILES_PRIVATE_DIR="$PRIVATE" \
+    PRIVATE_BUNDLE_ZIP_PASSWORD=testpass \
+    bash "$TARGET" "$@" 2>&1
 }
 
-teardown() {
-  [ -n "$FIX" ] && rm -rf "$FIX"
-  export HOME="$ORIG_HOME"
-}
+echo "== 環境変数の差し替え口と引数の転送 =="
 
-# --- adopt: 既定は dry-run ---
-setup
-out=$(run adopt 2>&1)
-check "dry-run では実体を動かさない" test -f "$DOTFILES_DIR/.config/git/config-local"
-check "dry-run では集約先を作らない" test ! -d "$DOTFILES_PRIVATE_DIR"
-check "dry-run と分かる出力を出す" grep -q "DRY-RUN" <<<"$out"
-teardown
+out=$(run status)
+rc=$?
+check "集約先が無い status は 0 で返す" "0" "$rc"
+check "雛形生成へのフォールバックを案内する" "yes" "$(has '雛形生成にフォールバック' "$out")"
 
-# --- adopt --execute ---
-setup
-run adopt --execute >/dev/null 2>&1
-check "ホーム側を集約先へ移す" test -f "$DOTFILES_PRIVATE_DIR/home/.claude/local-context.md"
-check "リポジトリ側を集約先へ移す" test -f "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
-check "元の位置は symlink になる" test -L "$DOTFILES_DIR/.config/git/config-local"
-check "symlink 経由で中身が読める" grep -q local "$DOTFILES_DIR/.config/git/config-local"
-check "ホーム側も symlink になる" test -L "$HOME/.claude/local-context.md"
+out=$(run adopt)
+rc=$?
+check "adopt の既定は dry-run" "0" "$rc"
+check "dry-run と伝える" "yes" "$(has 'dry-run です' "$out")"
+check "dry-run では動かさない" "no" "$([ -d "$PRIVATE" ] && echo yes || echo no)"
 
-# @under: 追跡ファイルは残し、ignore された子だけを拾う
-check "ignore された子を集約先へ移す" \
-  test -f "$DOTFILES_PRIVATE_DIR/repo/.config/AutoHotkey/ahk-snippets/passwords/booking/aws.md"
-check "ignore された子は symlink になる" \
-  test -L "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/booking"
-check "追跡ファイルは動かさない" \
-  test -f "$DOTFILES_DIR/.config/AutoHotkey/ahk-snippets/passwords/README.md"
-check "追跡ファイルは集約先に入らない" \
-  test ! -e "$DOTFILES_PRIVATE_DIR/repo/.config/AutoHotkey/ahk-snippets/passwords/README.md"
+out=$(run adopt --execute)
+rc=$?
+check "--execute が伝わる" "0" "$rc"
+check "差し替えた集約先へ移す" "yes" \
+  "$([ -f "$PRIVATE/home/.claude/local-context.md" ] && echo yes || echo no)"
+check "元の場所は symlink になる" "yes" \
+  "$([ -L "$FAKE_HOME/.claude/local-context.md" ] && echo yes || echo no)"
+check "集約先を 700 に締める" "700" "$(stat -c '%a' "$PRIVATE")"
 
-# 集約先は資格情報を1箇所に集めたディレクトリなので、adopt でもハードニングする
-# （import 側だけだと、集約した端末で 755 のまま残る）
-check "集約先のルートが 700" test "$(stat -c %a "$DOTFILES_PRIVATE_DIR")" = 700
-check "移した秘密ファイルが 600" \
-  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.config/linear/api-key")" = 600
-check "中間ディレクトリも 700" \
-  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/repo/.config/git")" = 700
+out=$(run status)
+check "adopt 後はリンク済みに出る" "yes" "$(has 'リンク済み (2)' "$out")"
 
-# 冪等性: 2回目で壊れない
-run adopt --execute >/dev/null 2>&1
-check "2回目でも symlink のまま" test -L "$DOTFILES_DIR/.config/git/config-local"
-check "2回目でも中身が残る" grep -q local "$DOTFILES_DIR/.config/git/config-local"
-teardown
+echo "== export / import =="
 
-# --- 存在しないエントリ ---
-setup
-rm "$DOTFILES_DIR/.config/git/config-local"
-out=$(run adopt --execute 2>&1)
-check "存在しないエントリで失敗しない" test $? -eq 0
-check "存在しないエントリを報告する" grep -q "MISS" <<<"$out"
-teardown
+ZIP="$TEST_DIR/bundle.zip"
+out=$(run export --out "$ZIP")
+rc=$?
+check "export が成功する" "0" "$rc"
+check "zip を作る" "yes" "$([ -f "$ZIP" ] && echo yes || echo no)"
+check "zip を 600 にする" "600" "$(stat -c '%a' "$ZIP")"
 
-# --- export / import ---
-# 対話プロンプトを避けるためテストでは PRIVATE_BUNDLE_ZIP_PASSWORD を使う
-# （zip -e の代わりに -P。平文が ps に乗るので実運用では使わない）
-export PRIVATE_BUNDLE_ZIP_PASSWORD=test-pass
+out=$(env HOME="$FAKE_HOME" PATH="$TEST_DIR:$PATH" \
+  DOTFILES_PRIVATE_DIR="$TEST_DIR/restored" PRIVATE_BUNDLE_ZIP_PASSWORD=testpass \
+  bash "$TARGET" import "$ZIP" 2>&1)
+rc=$?
+check "import が成功する" "0" "$rc"
+check "復元される" "yes" \
+  "$([ -f "$TEST_DIR/restored/home/.claude/local-context.md" ] && echo yes || echo no)"
+check "次の手を案内する" "yes" "$(has 'dotfilesLink.sh' "$out")"
 
-setup
-run adopt --execute >/dev/null 2>&1
+echo "== エラーの転送 =="
 
-# 集約先の中の相対 symlink。実体を2つ持たないための作りなので、
-# zip -y で symlink のまま保存されなければならない
-mkdir -p "$DOTFILES_PRIVATE_DIR/repo/.config/skills/inv" \
-  "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto"
-echo yml >"$DOTFILES_PRIVATE_DIR/repo/.config/skills/inv/repos.yml"
-ln -sn ../inv/repos.yml "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
+out=$(run import)
+rc=$?
+check "zip 指定なしは 1 で返す" "1" "$rc"
 
-zipfile="$FIX/bundle.zip"
-run export --out "$zipfile" >/dev/null 2>&1
-check "zip が作られる" test -f "$zipfile"
-check "zip のパーミッションが 600" test "$(stat -c %a "$zipfile")" = 600
+out=$(run adopt --bogus)
+rc=$?
+check "不明な引数は 2 で返す" "2" "$rc"
 
-# 別の集約先へ展開して往復を確認する
-export DOTFILES_PRIVATE_DIR="$FIX/restored"
-run import "$zipfile" >/dev/null 2>&1
-check "import で集約先が作られる" test -d "$DOTFILES_PRIVATE_DIR"
-check "ホーム側の中身が復元される" \
-  grep -q ctx "$DOTFILES_PRIVATE_DIR/home/.claude/local-context.md"
-check "リポジトリ側の中身が復元される" \
-  grep -q local "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
-check "symlink は symlink のまま復元される" \
-  test -L "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
-check "復元した symlink が辿れる" \
-  grep -q yml "$DOTFILES_PRIVATE_DIR/repo/.config/skills/auto/repos.yml"
-check "ファイルは 600 になる" \
-  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.config/linear/api-key")" = 600
-check "ディレクトリは 700 になる" \
-  test "$(stat -c %a "$DOTFILES_PRIVATE_DIR/home/.claude")" = 700
+out=$(run frobnicate)
+rc=$?
+check "知らないサブコマンドは 2 で返す" "2" "$rc"
 
-# 既存の集約先は既定で上書きしない
-out=$(run import "$zipfile" 2>&1)
-check "集約先があれば既定で拒否する" test $? -ne 0
-check "--force の案内を出す" grep -q -- "--force" <<<"$out"
-run import "$zipfile" --force >/dev/null 2>&1
-check "--force なら上書きする" test $? -eq 0
-teardown
+# 既存の集約先を --force なしで上書きしない
+out=$(env HOME="$FAKE_HOME" PATH="$TEST_DIR:$PATH" \
+  DOTFILES_PRIVATE_DIR="$TEST_DIR/restored" PRIVATE_BUNDLE_ZIP_PASSWORD=testpass \
+  bash "$TARGET" import "$ZIP" 2>&1)
+rc=$?
+check "既存の集約先は --force なしで上書きしない" "1" "$rc"
+check "--force を案内する" "yes" "$(has -- '--force' "$out")"
 
-# 集約先が無ければ export は失敗する
-setup
-rm -rf "$DOTFILES_PRIVATE_DIR"
-out=$(run export --out "$FIX/none.zip" 2>&1)
-check "集約先が無ければ export は失敗する" test $? -ne 0
-check "zip は作られない" test ! -f "$FIX/none.zip"
-teardown
+echo "== dotctl の解決 =="
 
-unset PRIVATE_BUNDLE_ZIP_PASSWORD
+mkdir -p "$FAKE_HOME/.local/bin"
+printf '#!/bin/bash\necho HOME_BIN_USED\n' >"$FAKE_HOME/.local/bin/dotctl"
+chmod +x "$FAKE_HOME/.local/bin/dotctl"
+out=$(run status)
+check "\$HOME/.local/bin の dotctl を優先する" "yes" "$(has 'HOME_BIN_USED' "$out")"
+rm -rf "$FAKE_HOME/.local"
 
-# --- status ---
-# status は「見出し (件数)」に続けて項目を字下げで並べ、空行で区切る。
-# どのセクションに入ったかを検証したいので、見出しで切り出す。
-section() {
-  local label="$1" text="$2"
-  awk -v lbl="$label" '
-    index($0, lbl) == 1 { inside = 1; next }
-    /^$/ { inside = 0 }
-    inside { print }
-  ' <<<"$text"
-}
+out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" bash "$TARGET" status 2>&1)
+rc=$?
+check "dotctl が無ければ非0で返す" "1" "$rc"
+check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
 
-setup
-run adopt --execute >/dev/null 2>&1
-out=$(run status 2>&1)
-
-check "集約先のパスを出す" grep -q "$DOTFILES_PRIVATE_DIR" <<<"$out"
-check "リンク済みに config-local が入る" \
-  grep -q "config-local" <<<"$(section "リンク済み" "$out")"
-check "リンク済みに api-key が入る" \
-  grep -q "api-key" <<<"$(section "リンク済み" "$out")"
-# config-work はフィクスチャに作っていないので集約先に無いへ落ちる
-check "未作成のエントリは集約先に無いへ入る" \
-  grep -q "config-work" <<<"$(section "集約先に無い" "$out")"
-check "未リンクは空" test -z "$(section "未リンク" "$out")"
-check "リンク切れは空" test -z "$(section "リンク切れ" "$out")"
-
-# 未リンク: 集約先に実体はあるが、リンク先が symlink でない
-rm "$DOTFILES_DIR/.config/git/config-local"
-out=$(run status 2>&1)
-check "未リンクを検出する" grep -q "config-local" <<<"$(section "未リンク" "$out")"
-check "未リンクはリンク済みに入らない" \
-  bash -c '! grep -q "config-local$" <<<"$(section "リンク済み" "'"$out"'")"'
-
-# リンク切れ: symlink はあるが集約先から実体が消えている
-ln -sn "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local" \
-  "$DOTFILES_DIR/.config/git/config-local"
-rm "$DOTFILES_PRIVATE_DIR/repo/.config/git/config-local"
-out=$(run status 2>&1)
-check "リンク切れを検出する" grep -q "config-local" <<<"$(section "リンク切れ" "$out")"
-teardown
-
-# 集約先そのものが無い場合は import を案内する
-setup
-rm -rf "$DOTFILES_PRIVATE_DIR"
-out=$(run status 2>&1)
-check "集約先が無ければ成功する" test $? -eq 0
-check "集約先が無ければ import を案内する" grep -q "import" <<<"$out"
-teardown
-
-# --- .gitignore の回帰テスト（本物のリポジトリを read-only で検査する） ---
-# adopt すると repo 側は symlink になる。末尾 / のパターンはディレクトリ限定なので
-# symlink にマッチせず ignore から外れ、未追跡ファイルとして現れる。
-# 実際に js/ と cross-repo-auto-discover/ で起きた。
-#
-# 「現在 ignore されているか」だけだと fresh clone（まだ実ディレクトリ）では
-# 素通りしてしまうので、パターンが末尾 / になっていないことも直接見る。
-REAL_REPO="$REPO_ROOT"
-
-mapfile -t real_entries < <(
-  # shellcheck source=/dev/null  # 宣言（ADOPT_ENTRIES）だけを取り出す
-  source "$BUNDLE"
-  printf '%s\n' "${ADOPT_ENTRIES[@]}"
-)
-
-check "ADOPT_ENTRIES を読み出せる" test "${#real_entries[@]}" -gt 0
-
-for entry in "${real_entries[@]}"; do
-  kind="${entry%%:*}"
-  rel="${entry#*:}"
-  case "$kind" in
-    repo)
-      check "ignore される: $rel" git -C "$REAL_REPO" check-ignore -q "$rel"
-      # 末尾 / のパターンだとディレクトリ限定になり、symlink 化で外れる
-      check "ディレクトリ限定パターンでない: $rel" \
-        bash -c '! grep -qxF "'"$rel"'/" "'"$REAL_REPO"'/.gitignore"'
-      ;;
-    repo@under)
-      # 親は追跡ファイルを持つので ignore されない。直下の任意の子が ignore されること
-      check "直下の子が ignore される: $rel/*" \
-        git -C "$REAL_REPO" check-ignore -q "$rel/__probe__"
-      ;;
-  esac
-done
-
-echo "---"
-echo "pass: $pass, fail: $fail"
-[[ "$fail" -eq 0 ]]
+echo
+echo "結果: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

@@ -62,7 +62,7 @@
 | --------------------------- | ---- | --------------------------------- | ---------- |
 | `sync-claude-settings.sh`   | 23   | `status`\|`pull`\|`push [--force]`| doc link   |
 | `sync-windows-settings.sh`  | 25   | `status`\|`pull`\|`push` `[target]`| doc       |
-| `private-bundle.sh`         | 368  | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
+| `private-bundle.sh`         | 25   | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
 
 ### 更新
 

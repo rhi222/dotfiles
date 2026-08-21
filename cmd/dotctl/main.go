@@ -15,6 +15,7 @@ import (
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
 	"github.com/rhi222/dotfiles/internal/execx"
+	"github.com/rhi222/dotfiles/internal/private"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
 )
@@ -92,6 +93,20 @@ func vendorConfig() skill.VendorConfig {
 
 func today() string { return time.Now().Format("2006-01-02") }
 
+// privateConfig は集約先と起点を解く。
+func privateConfig() private.Config {
+	home, _ := os.UserHomeDir()
+	return private.Config{
+		PrivateDir: envOr("DOTFILES_PRIVATE_DIR",
+			filepath.Join(home, ".local", "share", "dotfiles-private")),
+		Home:    home,
+		RepoDir: envOr("DOTFILES_DIR", resolveRepo()),
+		// テスト専用。zip -e の代わりに -P を使う（-P は平文が ps に乗る）
+		ZipPassword: os.Getenv("PRIVATE_BUNDLE_ZIP_PASSWORD"),
+		Today:       today(),
+	}
+}
+
 // repoPath はリポジトリ基準のパスを返す。
 //
 // **バイナリの場所からは解けない**（dotctl は ~/.local/bin にあり、そこに
@@ -159,6 +174,7 @@ func main() {
 		WindowsSettings: windowsSettings(),
 
 		Vendor:            vendorConfig(),
+		Private:           privateConfig(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
 
 		Color: isTerminal(os.Stdout),

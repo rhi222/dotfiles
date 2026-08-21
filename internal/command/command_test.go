@@ -220,3 +220,54 @@ func runEnv(t *testing.T, env Env, args ...string) (int, string, string) {
 	code := Run(context.Background(), args, env)
 	return code, out.String(), errOut.String()
 }
+
+// --- private-bundle の引数解釈 ---
+
+// **引数の足りない呼び出しで panic しないこと。** `args[2:]` を素朴に書いて
+// slice bounds out of range で落ちた（パリティテストが捕まえた）。
+func TestPrivateBundleDoesNotPanicOnMissingArgs(t *testing.T) {
+	cases := [][]string{
+		{"private-bundle"},
+		{"private-bundle", "import"},
+		{"private-bundle", "export", "--out"},
+		{"private-bundle", "adopt"},
+		{"private-bundle", "status"},
+		{"private-bundle", "frobnicate"},
+	}
+	for _, args := range cases {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			f := execx.NewFake()
+			// **panic すればここで落ちる。** 終了コードそのものは
+			// 個別のテスト（TestPrivateBundleImportWithoutZipExitsOne など）が見る
+			runEnv(t, Env{Runner: f}, args...)
+		})
+	}
+}
+
+func TestPrivateBundleImportWithoutZipExitsOne(t *testing.T) {
+	// Shell 版と同じ終了コード（usage の 2 ではなく 1）
+	f := execx.NewFake()
+	code, _, errOut := runEnv(t, Env{Runner: f}, "private-bundle", "import")
+	if code != 1 {
+		t.Errorf("exit = %d, want 1", code)
+	}
+	if !strings.Contains(errOut, "zip がありません") {
+		t.Errorf("stderr = %q", errOut)
+	}
+}
+
+func TestPrivateBundleRejectsUnknownOption(t *testing.T) {
+	f := execx.NewFake()
+	for _, args := range [][]string{
+		{"private-bundle", "adopt", "--bogus"},
+		{"private-bundle", "export", "--bogus"},
+	} {
+		code, _, errOut := runEnv(t, Env{Runner: f}, args...)
+		if code != 2 {
+			t.Errorf("%v: exit = %d, want 2", args, code)
+		}
+		if !strings.Contains(errOut, "不明な引数") {
+			t.Errorf("%v: stderr = %q", args, errOut)
+		}
+	}
+}
