@@ -99,6 +99,32 @@ clone_or_fetch() {
   printf '%s' "$dir"
 }
 
+# vendored な skill が実際に有効になっているかを見る。
+#
+# **preflight は add のときだけ走るので、取込後にここを見る場所が無かった。**
+# gh skill が先に入れた実ディレクトリが残っていると safe_link は SKIP するので
+# symlink が張られず、Claude は古い gh 版を読み続ける。それでも .vendor.json は
+# 正しいので status は [OK] を返していた（実際に6本がこの状態だった）。
+#
+# 無いことは異常ではない（dotfilesLink.sh 未実行、その agent を使っていない端末）。
+check_live_dirs() {
+  local name="$1" rc=0 live target
+  for live in "$HOME/.claude/skills/$name" "$HOME/.codex/skills/$name" "$HOME/.agents/skills/$name"; do
+    if [ -L "$live" ]; then
+      target="$(readlink -f "$live")"
+      if [ "$target" != "$(readlink -f "$VENDOR_DIR/$name")" ]; then
+        echo "[NG] $name: $live が vendored を指していません（-> $target）"
+        rc=1
+      fi
+    elif [ -d "$live" ]; then
+      echo "[NG] $name: $live が実ディレクトリです（vendored が読まれていません）"
+      echo "     復旧: その実体を退避してから ./dotfilesLink.sh"
+      rc=1
+    fi
+  done
+  return "$rc"
+}
+
 # 取込前の門前払い。ここを通ってからでないと1バイトもコピーしない
 preflight() {
   local src="$1" name="$2" bin
@@ -355,7 +381,12 @@ cmd_status() {
         echo "     確認: bash scripts/skill-vendor.sh update $name"
       fi
     fi
-    if [ "$commit" = "$reviewed" ] && [ "$high" = "0" ]; then
+    local live_ok=1
+    check_live_dirs "$name" || {
+      live_ok=0
+      rc=1
+    }
+    if [ "$commit" = "$reviewed" ] && [ "$high" = "0" ] && [ "$live_ok" = "1" ]; then
       echo "[OK] $name (${commit:0:7}, reviewed $(jq -r .vendored_at "$json"))"
     fi
   done

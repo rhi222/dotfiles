@@ -164,6 +164,59 @@ assert_contains "HIGH" "$out" "HIGH を報告する"
 git -C "$WORK" show HEAD:skills/cool-thing/SKILL.md >"$DEST/cool-thing/SKILL.md"
 echo ""
 
+echo "=== status: live-dir が実ディレクトリなら落ちる ==="
+# preflight は add のときだけ走るので、取込後にこれを見る場所が無かった。
+# gh skill が先に入れた実ディレクトリが残っていると safe_link が SKIP し、
+# vendored な symlink が張られないまま「古い実体が読まれ続ける」状態になる。
+# skill-vendor.sh status は .vendor.json しか見ていなかったので [OK] を返していた。
+mkdir -p "$FAKE_HOME/.claude/skills/cool-thing"
+out="$(run_vendor status --no-network)"
+rc=$?
+assert_eq 1 "$rc" "終了コードが 1"
+assert_contains "実ディレクトリ" "$out" "実ディレクトリとして報告する"
+assert_contains ".claude/skills/cool-thing" "$out" "どのパスかを出す"
+rm -rf "$FAKE_HOME/.claude/skills/cool-thing"
+echo ""
+
+echo "=== status: codex 側の live-dir も見る ==="
+# gh skill install --agent codex は ~/.codex/skills に入れる。claude 側だけ
+# 直しても codex 側に古い実体が残り、vendored と二重になる
+mkdir -p "$FAKE_HOME/.codex/skills/cool-thing"
+out="$(run_vendor status --no-network)"
+rc=$?
+assert_eq 1 "$rc" "終了コードが 1"
+assert_contains ".codex/skills/cool-thing" "$out" "codex 側のパスを出す"
+rm -rf "$FAKE_HOME/.codex/skills/cool-thing"
+echo ""
+
+echo "=== status: live-dir が別の場所を指す symlink なら落ちる ==="
+mkdir -p "$TMP/elsewhere/cool-thing"
+mkdir -p "$FAKE_HOME/.agents/skills"
+ln -s "$TMP/elsewhere/cool-thing" "$FAKE_HOME/.agents/skills/cool-thing"
+out="$(run_vendor status --no-network)"
+rc=$?
+assert_eq 1 "$rc" "終了コードが 1"
+assert_contains "vendored を指していません" "$out" "リンク先が違うことを報告する"
+rm -f "$FAKE_HOME/.agents/skills/cool-thing"
+echo ""
+
+echo "=== status: live-dir が vendored を指す symlink なら通る ==="
+mkdir -p "$FAKE_HOME/.claude/skills"
+ln -s "$DEST/cool-thing" "$FAKE_HOME/.claude/skills/cool-thing"
+out="$(run_vendor status --no-network)"
+rc=$?
+assert_eq 0 "$rc" "終了コードが 0"
+rm -f "$FAKE_HOME/.claude/skills/cool-thing"
+echo ""
+
+echo "=== status: live-dir が無ければ通る ==="
+# dotfilesLink.sh を走らせていない端末や、その agent を使っていない端末。
+# 無いこと自体は異常ではない
+out="$(run_vendor status --no-network)"
+rc=$?
+assert_eq 0 "$rc" "終了コードが 0"
+echo ""
+
 echo "=== update: ファイルに変更が無ければ commit だけ進める ==="
 echo "# 無関係な変更" >"$WORK/README.md"
 git -C "$WORK" add -A

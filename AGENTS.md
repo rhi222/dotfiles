@@ -246,6 +246,13 @@ worktree の溜まり込みチェックと `sync-claude-settings.sh pull` を行
 - **`reviewed_commit` を `commit` と別に持つ。** 一致しなければ「取り込んだがレビューして
   いない」状態で、`status` と CI（`test-skill-vendor.sh`）が落とす。ファイルを手で
   書き換えて `commit` だけ進めても検知される
+- **`status` は live-dir（`~/.claude/skills` / `~/.codex/skills` / `~/.agents/skills`）まで見る。**
+  `preflight` は `add` のときだけ走るので、取込後に「実際に有効になっているか」を見る場所が
+  無かった。**gh skill が先に入れた実ディレクトリが残っていると `safe_link` は SKIP する**ので
+  symlink が張られず、Claude は古い gh 版を読み続ける。それでも `.vendor.json` は正しいため
+  `status` は `[OK]` を返していた（vendoring 移行前から使っていた端末で、実際に6本すべてが
+  この状態だった）。無いこと自体は異常ではない（`dotfilesLink.sh` 未実行、その agent を
+  使っていない端末）ので、実ディレクトリと「別の場所を指す symlink」だけを落とす
 - **audit が 0 件でも人の承認を要求する。** 平文で書かれた指示型の injection
   （「以前の指示を無視して…」）は grep では拾い切れないので、機械判定を最終判断にしない
 - **未検証の skill を Claude に読ませない。** レビューの主体は人に置く。読ませた時点で
