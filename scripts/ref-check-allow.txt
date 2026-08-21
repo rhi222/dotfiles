@@ -1,0 +1,13 @@
+# ref-check.sh が「実在しなくてよい」と扱う scripts/ 配下のパス。
+# 書式は1行1パス（bash の glob 可）。# 始まりと空行は無視する。
+#
+# **架空名は個別に並べない。** 例示とフィクスチャは AGENTS.md の規約
+# （example-org / example-repo などの架空名を使う）に合わせて example* に寄せ、
+# ここは1行で許す。1つ足すたびに宣言を触る運用にすると、allowlist が
+# 「増える一方の除外リスト」になって検査の意味が薄れる。
+scripts/example*
+scripts/*/example*
+
+# 利用者が任意で置くリポジトリ別の worktree 初期化フック。**無いのが既定**で、
+# docs/worktree.md はその置き場を説明するために具体パスを書いている。
+scripts/worktree-init.d*
