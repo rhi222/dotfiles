@@ -343,6 +343,73 @@ assert_eq 1 "$exit_code" "ya の失敗は隠さない"
 rm -rf "$YAZI_TEST_DIR"
 
 echo ""
+echo "[6b] dotctl_rebuild"
+
+# **git pull 後に再ビルドしないと、cron と hook は古いバイナリを黙って実行し
+# 続ける**（daily-update.sh が古い installs/<tool>/ の gh を掴んだ事故と同型）。
+# 日次で追随させる。
+DOTCTL_TEST_DIR="$(mktemp -d)"
+DOTCTL_STUB_BIN="$DOTCTL_TEST_DIR/bin"
+mkdir -p "$DOTCTL_STUB_BIN"
+printf 'module x\n' >"$DOTCTL_TEST_DIR/go.mod"
+cat >"$DOTCTL_STUB_BIN/go" <<'GOEOF'
+#!/bin/bash
+exit 0
+GOEOF
+chmod +x "$DOTCTL_STUB_BIN/go"
+cat >"$DOTCTL_TEST_DIR/setup-dotctl.sh" <<EOF
+#!/bin/bash
+echo "SETUP_CALLED args=[\$*]" >>"$DOTCTL_TEST_DIR/setup.log"
+exit "\${SETUP_EXIT:-0}"
+EOF
+chmod +x "$DOTCTL_TEST_DIR/setup-dotctl.sh"
+
+# go.mod があり go もある端末では setup-dotctl.sh を呼ぶ
+: >"$DOTCTL_TEST_DIR/setup.log"
+exit_code=0
+output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
+  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
+  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
+  dotctl_rebuild 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "go があれば成功する"
+assert_output_contains "SETUP_CALLED" "$(cat "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ぶ"
+
+# go が無い端末では呼ばずに成功扱い。**毎日 FAILED 通知が飛ぶのを避ける**
+# （yazi の package.toml と同じ扱い）
+: >"$DOTCTL_TEST_DIR/setup.log"
+exit_code=0
+output=$(PATH="/usr/bin:/bin" \
+  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
+  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
+  dotctl_rebuild 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "go が無くても成功扱い"
+assert_eq 0 "$(grep -c SETUP_CALLED "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ばない"
+assert_output_contains "skipping" "$output" "スキップの理由を出す"
+
+# go.mod が無いリポジトリでも呼ばずに成功扱い
+: >"$DOTCTL_TEST_DIR/setup.log"
+exit_code=0
+output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
+  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/nope.mod" \
+  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
+  dotctl_rebuild 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "go.mod が無くても成功扱い"
+assert_eq 0 "$(grep -c SETUP_CALLED "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ばない"
+
+# **ビルドの失敗は隠さない。** 古いバイナリを掴み続ける状態そのものなので、
+# ここは run_step で FAILED として拾わせる
+: >"$DOTCTL_TEST_DIR/setup.log"
+exit_code=0
+output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
+  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
+  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
+  SETUP_EXIT=1 \
+  dotctl_rebuild 2>&1) || exit_code=$?
+assert_eq 1 "$exit_code" "ビルド失敗は隠さない"
+
+rm -rf "$DOTCTL_TEST_DIR"
+
+echo ""
 echo "[6b] fisher_update"
 
 FISHER_TEST_DIR="$(mktemp -d)"
