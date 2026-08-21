@@ -242,6 +242,73 @@ check "他ドメインのテストは走らせない" bash -c '! grep -q "test-d
 
 rm -rf "$tmp/worktree" "$tmp/linear"
 
+# --- Go テストの統合 ---
+#
+# **既存の出力契約に畳むのが要点。** go test はパッケージ単位の別形式で出すので、
+# 素通しすると「1本1行・失敗だけ詳細」が崩れて CI ログが読めなくなる。
+#
+# go は PATH の stub に差し替える（実ビルドは go test ./... と daily-update の担当）。
+gostub=$(mktemp -d)
+gorepo=$(mktemp -d)
+printf 'module example.test\n' >"$gorepo/go.mod"
+
+make_go_stub() {
+  cat >"$gostub/go" <<EOF
+#!/bin/bash
+$1
+EOF
+  chmod +x "$gostub/go"
+}
+
+run_with_go() {
+  env PATH="$gostub:$PATH" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" bash "$RUNNER" "$@" 2>&1
+}
+
+# 成功時: パッケージごとに1行、詳細は出さない
+make_go_stub 'cat <<OUT
+ok  	example.test/internal/alpha	0.012s
+ok  	example.test/internal/beta	0.003s
+?   	example.test/cmd/tool	[no test files]
+OUT
+exit 0'
+out=$(run_with_go)
+rc=$?
+check "Go テストが通れば全体も成功" test "$rc" -eq 0
+check "パッケージごとに1行出す" grep -q "PASS  go: example.test/internal/alpha" <<<"$out"
+check "テストの無いパッケージは数えない" bash -c '! grep -q "cmd/tool" <<<"'"$out"'"'
+check "成功時は go の生出力を見せない" bash -c '! grep -q "0.012s" <<<"'"$out"'"'
+
+# 失敗時: 非0で返し、詳細を見せる
+make_go_stub 'cat <<OUT
+--- FAIL: TestSomething (0.00s)
+    alpha_test.go:12: 期待と違う
+FAIL	example.test/internal/alpha	0.010s
+ok  	example.test/internal/beta	0.003s
+OUT
+exit 1'
+out=$(run_with_go)
+rc=$?
+check "Go テストが落ちれば全体も非0" test "$rc" -ne 0
+check "落ちたパッケージを名指しする" grep -q "FAIL  go: example.test/internal/alpha" <<<"$out"
+check "失敗時は詳細を見せる" grep -q "期待と違う" <<<"$out"
+check "同じ実行の成功パッケージは PASS 側に出る" grep -q "PASS  go: example.test/internal/beta" <<<"$out"
+
+# go が無い端末（mise 導入前の bootstrap）では skip して通す
+out=$(env PATH="/usr/bin:/bin" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+rc=$?
+check "go が無ければ全体は成功" test "$rc" -eq 0
+check "go が無いことを skip として伝える" grep -qE 'SKIP +go' <<<"$out"
+
+# go.mod が無いリポジトリでは何もしない
+nomod=$(mktemp -d)
+make_go_stub 'exit 0'
+out=$(env PATH="$gostub:$PATH" TEST_GO_REPO="$nomod" TEST_DIR="$tmp" bash "$RUNNER" 2>&1)
+rc=$?
+check "go.mod が無ければ全体は成功" test "$rc" -eq 0
+rmdir "$nomod" 2>/dev/null || rm -rf "$nomod"
+
+rm -rf "$gostub" "$gorepo"
+
 # --- 対象が0件 ---
 empty=$(mktemp -d)
 out=$(TEST_DIR="$empty" bash "$RUNNER" 2>&1)
