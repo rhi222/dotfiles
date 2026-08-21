@@ -1,0 +1,172 @@
+# scripts/ の構成と公開入口
+
+`scripts/` を整理する（および一部を Go 製 `dotctl` へ移す）ときの基準を置く。
+**移動する前に「誰が何を呼んでいるか」を固定するための文書**で、日々の使い方は
+[AGENTS.md](../AGENTS.md) の各機能の表を見る。
+
+## 何が混ざっているか
+
+`scripts/` 直下には次の4種類が同じ階層に並んでいて、責務と公開範囲が見分けにくい。
+
+| 種類                 | 例                                       | 実測         |
+| -------------------- | ---------------------------------------- | ------------ |
+| 公開エントリポイント | `daily-update.sh`, `worktree-cleanup.sh` | 34本 5,774行 |
+| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 11本 1,225行 |
+| 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
+| 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
+
+**直下97エントリのうち55がテスト。** 「見づらい」の過半はここが原因で、テストを
+別階層へ出すだけで直下は40台に落ちる。
+
+## 公開入口の一覧
+
+「呼び出し元」は参照が**どの種類の場所から来ているか**。ここが移動時に壊れる面で、
+`doc` 以外は壊れても静かに壊れる。
+
+| タグ    | 参照元                                        |
+| ------- | --------------------------------------------- |
+| `doc`   | AGENTS.md / README.md / docs/                 |
+| `skill` | Claude / Codex の skill 本文                  |
+| `hook`  | git hook（`scripts/hooks/`）と Claude Code hook |
+| `fish`  | fish 関数・`conf.d`                           |
+| `ci`    | GitHub Actions                                |
+| `link`  | `dotfilesLink.sh`                             |
+| `cron`  | crontab 行（`*-cron.sh` 自身を含む）          |
+
+### 検査
+
+| スクリプト          | 行数 | 引数         | 呼び出し元          |
+| ------------------- | ---- | ------------ | ------------------- |
+| `lint.sh`           | 95   | `[--fix]`    | doc hook fish ci    |
+| `secret-scan.sh`    | 112  | `--staged` / `--tree` | doc hook ci link |
+| `doc-budget.sh`     | 147  | `[--staged]` | doc hook ci         |
+| `ref-check.sh`      | 133  | なし         | hook ci             |
+| `run-tests.sh`      | 169  | `[--ci]`     | doc ci              |
+| `migration-check.sh`| 75   | `[<dir>...]` | doc                 |
+| `env-residue.sh`    | 181  | なし         | doc                 |
+
+### セットアップ（新環境の立ち上げ）
+
+| スクリプト               | 行数 | 引数           | 呼び出し元 |
+| ------------------------ | ---- | -------------- | ---------- |
+| `apt-setup.sh`           | 14   | なし           | doc link   |
+| `setup-claude-skills.sh` | 196  | `[--dry-run]`  | doc        |
+| `setup-fish-plugins.sh`  | 187  | `[--dry-run]`  | doc        |
+| `setup-gh-extensions.sh` | 139  | `[--dry-run]`  | doc        |
+| `setup-yazi-plugins.sh`  | 144  | `[--dry-run]`  | doc link   |
+| `linear-bootstrap.sh`    | 55   | なし           | doc link   |
+
+### 同期・運搬
+
+| スクリプト                  | 行数 | 引数                              | 呼び出し元 |
+| --------------------------- | ---- | --------------------------------- | ---------- |
+| `sync-claude-settings.sh`   | 189  | `status`\|`pull`\|`push [--force]`| doc link   |
+| `sync-windows-settings.sh`  | 259  | `status`\|`pull`\|`push` `[target]`| doc       |
+| `private-bundle.sh`         | 368  | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
+
+### 更新
+
+| スクリプト         | 行数 | 引数 | 呼び出し元 |
+| ------------------ | ---- | ---- | ---------- |
+| `daily-update.sh`  | 295  | なし | doc hook   |
+
+### skill 管理
+
+| スクリプト        | 行数 | 引数                                         | 呼び出し元 |
+| ----------------- | ---- | -------------------------------------------- | ---------- |
+| `skill-add.sh`    | 76   | `<owner/repo> <skill>`                       | doc        |
+| `skill-audit.sh`  | 220  | `[--quiet] <skill-dir>`                      | doc        |
+| `skill-vendor.sh` | 431  | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc |
+
+### worktree
+
+| スクリプト             | 行数 | 引数                            | 呼び出し元         |
+| ---------------------- | ---- | ------------------------------- | ------------------ |
+| `worktree-init.sh`     | 147  | `<worktree-path>`               | doc skill hook link|
+| `worktree-cleanup.sh`  | 518  | `[--size] [--execute] [--force]`| doc skill          |
+
+### 掃除
+
+| スクリプト        | 行数 | 引数          | 呼び出し元 |
+| ----------------- | ---- | ------------- | ---------- |
+| `wsl-cleanup.sh`  | 236  | `[--execute]` | doc        |
+
+### Linear
+
+| スクリプト                     | 行数 | 引数              | 呼び出し元           |
+| ------------------------------ | ---- | ----------------- | -------------------- |
+| `linear-sweep.sh`              | 157  | なし              | doc skill fish link  |
+| `linear-slack-sweep.sh`        | 169  | `[unseen <key>]`  | doc skill            |
+| `linear-slack-sweep-cron.sh`   | 44   | なし              | doc cron             |
+| `linear-interview-prep.sh`     | 160  | `[unseen <id>]`   | doc skill cron       |
+| `linear-dispatch-cron.sh`      | 324  | なし              | doc skill link cron  |
+
+### 日報・レポート
+
+| スクリプト               | 行数 | 引数 | 呼び出し元           |
+| ------------------------ | ---- | ---- | -------------------- |
+| `nippo-check.sh`         | 129  | なし | doc hook link cron   |
+| `nippo-cron.sh`          | 54   | なし | doc link cron        |
+| `nippo-create-cron.sh`   | 59   | なし | doc cron             |
+| `nippo-draft-cron.sh`    | 44   | なし | doc cron             |
+| `esa-weekly-cron.sh`     | 37   | なし | doc skill cron       |
+
+### セッション復元
+
+| スクリプト           | 行数 | 引数          | 呼び出し元 |
+| -------------------- | ---- | ------------- | ---------- |
+| `herdr-restore.sh`   | 211  | `[--dry-run]` \| `[--status]` | doc fish |
+
+## 参照はどう壊れるか
+
+`scripts/` 配下のパスは**散文として**参照されている。実測で prod 側へ228件、
+test 側へ67件。内訳は AGENTS.md と docs/ が168件、skill 本文・herdr の
+`config.toml`・`dotfilesLink.sh`・CI が60件。
+
+**壊れても呼ばれた瞬間まで誰も気付かない。** lint.sh は shell の中身、
+run-tests.sh は各スクリプトの振る舞い、doc-budget.sh は行数しか見ないので、
+「参照先が消えた」はどの検査にも掛からなかった。cron と hook からの参照は
+黙って失敗する。
+
+そこで `ref-check.sh` が参照先の実在を検査する（pre-commit と CI の二層。
+`secret-scan.sh` と同じ構成で、主の防壁は pre-commit 側）。
+
+- 同じ実体を指す書き方を揃える。`scripts/<name>.sh` /
+  `$DOTFILES_DIR/scripts/<name>.sh` / `$HOME/scripts/<name>.sh` /
+  `~/scripts/<name>.sh`（`~/scripts` は repo の `scripts/` への symlink）/
+  `$REPO_ROOT/scripts/<name>.sh` / `$SCRIPT_DIR/<name>.sh`
+- **`$SCRIPT_DIR` は参照元のディレクトリ基準で解く。** テストを別階層へ移すと
+  基準が変わるので、移動で壊れる参照の本体はここ
+- **拾ってはいけないものが2つある。** `.config/herdr/scripts/status.sh` などの
+  同名の別ディレクトリと、テスト内で `mktemp` した一時 repo を指す
+  `$REPO/scripts/...`。どちらも拾うと恒久的に赤くなり、検査ごと無視される
+- 例示・フィクスチャの架空パスは `example*` に寄せる。AGENTS.md の
+  「例示・テストデータは架空名でよい」規約に合わせ、allowlist は glob 1行で許す。
+  **1件ずつ足すと allowlist が「増える一方の除外リスト」になる**
+- 走査は `git grep` 1回に畳んでいる。ファイル単位で `grep` を回した初版は
+  8.4秒かかった（500ファイル×4プロセス）。現在 0.47秒
+
+## テストの実行
+
+`run-tests.sh` は `test-*.sh` を並列で走らせるが、**出力は直列時と同じ**
+（テスト名の昇順・1本1行・失敗したものだけ出力を見せる）。各テストの出力を
+個別ファイルへ溜め、全部終わってから順に流している。
+
+**並列化の前提は各テストが `mktemp` で自分の作業場を作ること。** 固定パスへ書く
+テストを足すと隣と踏み合う。破壊操作のテストは実 `$HOME`・実 ghq root・
+固定の `/tmp/<name>`・現在の worktree を対象にしない。
+
+CI で動かせないものはテストファイル側の `# ci-skip:` で宣言する
+（実 nvim 設定と auto-session を要する2本がこれ）。
+
+### 実測（16コア機）
+
+| 対象                      | 所要      |
+| ------------------------- | --------- |
+| 全テスト（直列）          | 52秒      |
+| 全テスト（並列・55本）    | 9〜36秒   |
+| `lint.sh`                 | 約9秒     |
+| `ref-check.sh`            | 0.47秒    |
+
+並列時の幅は同時に走っている他の負荷による。**この値は Go 移植の効果を判断する
+基準線**で、移植後に総コード量とテスト時間の両方が改善しなければ移植を止める。

@@ -21,6 +21,7 @@
 | [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdr のタブ行ステータスや keybinding を変えるとき   |
 | [docs/notifications.md](docs/notifications.md)                       | トースト通知の内容や抑止の条件を変えるとき           |
 | [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定や閾値を変えるとき                    |
+| [docs/scripts-layout.md](docs/scripts-layout.md)                     | scripts/ の入口・参照・テストの構成を触るとき        |
 
 ## セットアップとインストール
 
@@ -46,13 +47,12 @@ bash scripts/lint.sh                # shellcheck + shfmt（追跡＋未追跡の
 bash scripts/secret-scan.sh --tree  # 機密語スキャン（辞書を埋めた後に）
 bash scripts/run-tests.sh           # 全テスト（並列。TEST_JOBS=1 で直列）
 bash scripts/doc-budget.sh          # AGENTS.md の行数予算
+bash scripts/ref-check.sh           # scripts/ 配下への参照が壊れていないか
 ```
 
-`run-tests.sh` は `test-*.sh` を並列で走らせるが、**出力は直列時と同じ**
-（テスト名の昇順・1本1行・失敗したものだけ出力を見せる）。各テストの出力を
-個別ファイルへ溜め、全部終わってから順に流している。並列化の前提は
-**各テストが `mktemp` で自分の作業場を作ること**で、固定パスへ書くテストを足すと
-隣と踏み合う。実測は直列52秒→並列9〜13秒（16コア機、52本）。
+`run-tests.sh` は並列で走るが**出力は直列時と同じ**。前提は各テストが `mktemp` で
+自分の作業場を作ること。`ref-check.sh` は散文からの参照先の実在を検査する
+（pre-commit と CI の二層）。詳細は [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 ### ローカル設定の集約と移植（private bundle）
 
