@@ -11,6 +11,9 @@
 anthropics/skills frontend-design
 anthropics/skills skill-creator
 vercel-labs/agent-browser agent-browser
-# ogulcancelik/pi-extensions の herdr は skill ではなく Pi 拡張（packages/pi-herdr、
-# SKILL.md を持たない）なので宣言を撤去した。skill としては存在しない。
+# herdr の skill はここには載らない。ogulcancelik/pi-extensions は c28f7fc
+# (2026-07-22) で packages/pi-herdr/skills/herdr/SKILL.md を削除し Pi ネイティブ
+# ツールへ移行した。生きた upstream は本体リポ herdrdev/herdr の skills/herdr だが、
+# herdrdev は trusted-skill-owners.txt に無いので vendored 導線で取り込んでいる
+# （.config/claude/skills-vendor/herdr）。
 github/gh-stack gh-stack

@@ -68,3 +68,26 @@ bash scripts/test-skill-audit.sh
 bash scripts/test-skill-vendor.sh
 bash scripts/test-claude-skills-allowlist.sh
 ```
+
+## upstream が skill をやめることがある
+
+`herdr` skill で実際に起きた。`ogulcancelik/pi-extensions` は `c28f7fc`
+（2026-07-22 "adopt native agent tools"）で `packages/pi-herdr/skills/herdr/SKILL.md` を
+195行まるごと削除し、散文の skill から Pi ネイティブの構造化ツールへ移行した。
+
+このとき手元には**削除前に `gh skill` が入れた実ディレクトリが残っていた**。宣言
+（`claude-skills.txt`）からは落としてあったので、どの導線にも属さない遺物になっていた。
+
+- **`sub_path` が消えた upstream に pin してはいけない。** `status` は
+  `git ls-remote HEAD` と `.vendor.json` の commit を比べるので、パスが無くなった
+  upstream に pin すると**毎回「upstream の HEAD が違う」と出続け、案内される
+  `update` は永久に失敗する**。`daily-update.sh` が毎日この偽アラートを出すことになり、
+  「毎日 FAILED が飛ぶと無視されるようになる」という既存の判断と衝突する
+- **skill が引っ越していないか探す。** herdr の場合は本体リポ `herdrdev/herdr` の
+  `skills/herdr` が生きた upstream で、`pi-herdr` の README 自身が
+  「standalone の skill は別途入れよ」と案内していた。生きた upstream から取れば
+  `update` も回る
+- **引っ越し先が無ければ持たない。** 自作 skill として `.config/claude/skills/` に
+  移すと、第三者コードを「自分が保守するもの」として抱えることになる。
+  自作 / vendored の境界を曖昧にするほどの価値がある skill は稀
+
