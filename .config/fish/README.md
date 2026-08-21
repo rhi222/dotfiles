@@ -84,6 +84,19 @@ repo に持てば追跡外のファイルは autoload されず影になり、�
 
 動作確認は `bash scripts/test-fish-fzf-bindings.sh`。
 
+### 1.6 .fish の構文チェック
+
+`bash scripts/lint.sh` が全 `.fish` を `fish -n`（構文チェックのみ）に掛ける。
+これが無いと `conf.d` のタイポは**シェル起動時まで発覚しない**。
+
+- 対象の集め方は `.sh` と同じ（追跡 + 未追跡、gitignore 済みと `skills-vendor/` は除外）
+- `fish -n a.fish b.fish` は**1本目しか検査しない**（2本目以降は `$argv` になる）ので
+  1ファイルずつ呼ぶ。1本 2ms、42本で 0.1 秒程度なので直列で足りる
+- fish が無い端末では skip して成功する。fish を使わない端末で commit できなくなるのを
+  避けるため。CI は fish を lint より**前に**入れて、この skip に落ちないようにしている
+
+動作確認は `bash scripts/test-lint.sh`。
+
 ### 2. 機能別モジュール化
 
 個人設定を機能ごとに分割して管理性を向上：
