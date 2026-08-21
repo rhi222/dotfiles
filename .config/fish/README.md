@@ -27,10 +27,6 @@
     │   └── 13-docker-clean.fish      # docker掃除のリマインド（起動時通知）
     └── functions/       # カスタム関数
         ├── fish_user_key_bindings.fish       # 空定義。fzf標準統合の横取りを塞ぐ
-        ├── __docker_clean_cache_file.fish    # docker-cleanキャッシュのパス解決
-        ├── __docker_clean_format_bytes.fish  # バイト数→人間可読
-        ├── __docker_clean_size_to_bytes.fish # 人間可読サイズ→バイト数
-        ├── __docker_clean_stats.fish         # docker使用状況のキャッシュ管理
         ├── __ghq_list_cache_path.fish    # gfのghq listキャッシュのパス解決
         ├── __ghq_list_cache_refresh.fish # 同キャッシュのアトミック更新
         ├── __git_tree_icon.fish     # プロンプト用git treeアイコン（PWDキャッシュ）
@@ -38,7 +34,7 @@
         ├── __wt_lock_reason.fish    # worktreeのlock理由取得
         ├── __wt_main_path.fish      # メインworktreeの絶対パス取得
         ├── __wt_select.fish         # wt/wtd共通: fzfでworktree選択
-        ├── dclean.fish              # docker掃除（軽/重プリセット）
+        ├── dclean.fish              # docker掃除（dotctl docker clean の wrapper）
         ├── find_docker_compose.fish # Docker Compose自動発見
         ├── fkill.fish               # プロセス選択終了
         ├── ftmux.fish               # tmux window/session/pane選択

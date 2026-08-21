@@ -9,11 +9,13 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
+	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/private"
@@ -110,6 +112,49 @@ func residueConfig() doctor.ResidueConfig {
 	}
 }
 
+// dockerConfig は docker 掃除の設定を解く。
+//
+// **閾値と除外リストは fish 側（99-local.fish）で設定される。** fish の変数は
+// Go から読めないので、wrapper が環境変数へ移して渡す。
+func dockerConfig() docker.Config {
+	cfg := docker.DefaultConfig(homeDir())
+	if v := os.Getenv("XDG_STATE_HOME"); v != "" {
+		cfg.CacheFile = filepath.Join(v, "docker-clean", "stats.json")
+	}
+	if v := os.Getenv("DOCKER_CLEAN_CACHE_FILE"); v != "" {
+		cfg.CacheFile = v
+	}
+	cfg.SizeThresholdGB = envFloat("DOCKER_CLEAN_SIZE_THRESHOLD_GB", cfg.SizeThresholdGB)
+	cfg.UptimeThresholdH = envFloat("DOCKER_CLEAN_UPTIME_THRESHOLD_H", cfg.UptimeThresholdH)
+	cfg.CacheTTLH = envFloat("DOCKER_CLEAN_CACHE_TTL_H", cfg.CacheTTLH)
+	// **改行区切りで受ける。** グロブに空白が入ることは無いが、区切りを
+	// 空白にすると将来の値で壊れる
+	if v := os.Getenv("DOCKER_CLEAN_IGNORE_PATTERNS"); v != "" {
+		var pats []string
+		for _, p := range strings.Split(v, "\n") {
+			if p = strings.TrimSpace(p); p != "" {
+				pats = append(pats, p)
+			}
+		}
+		if len(pats) > 0 {
+			cfg.IgnorePatterns = pats
+		}
+	}
+	return cfg
+}
+
+func envFloat(key string, def float64) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	f, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+	if err != nil {
+		return def
+	}
+	return f
+}
+
 func homeDir() string {
 	h, _ := os.UserHomeDir()
 	return h
@@ -199,6 +244,7 @@ func main() {
 		Private:           privateConfig(),
 		HomeDir:           homeDir(),
 		Residue:           residueConfig(),
+		Docker:            dockerConfig(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
 
 		Color: isTerminal(os.Stdout),

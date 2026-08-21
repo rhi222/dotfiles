@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/private"
@@ -52,6 +53,10 @@ type Env struct {
 	HomeDir string
 	// Residue は環境の残骸チェックの設定。
 	Residue doctor.ResidueConfig
+	// Docker は docker 掃除の設定。
+	Docker docker.Config
+	// ConfirmFunc は承認を取る（nil なら /dev/tty から読む）。テストで差し替える。
+	ConfirmFunc func(prompt string) bool
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
 }
@@ -68,6 +73,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   wsl cleanup        WSL2 のキャッシュ掃除
   doctor residue     環境の残骸を洗い出す
   doctor migration   移行前チェック
+  docker clean       docker の不要リソースを掃除する
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -101,6 +107,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runWSL(ctx, args[1:], env)
 	case "doctor":
 		return runDoctor(ctx, args[1:], env)
+	case "docker":
+		return runDocker(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0
