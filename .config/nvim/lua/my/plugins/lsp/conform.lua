@@ -15,12 +15,12 @@ local DIR_CACHE = {}
 local PKG_CACHE = {}
 
 -- バッファ単位の最終判定キャッシュ
--- （vim.b.js_formatter は buffer-local なので別定義不要だが、nil と区別のため用意）
+-- （vim.b.web_formatter は buffer-local なので別定義不要だが、nil と区別のため用意）
 local function clear_buffer_formatter_cache(bufnr)
 	if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
-		vim.b[bufnr].js_formatter = nil
+		vim.b[bufnr].web_formatter = nil
 	else
-		vim.b.js_formatter = nil
+		vim.b.web_formatter = nil
 	end
 end
 
@@ -177,18 +177,18 @@ local function decide_for_dir(start_dir)
 end
 
 -- バッファごとの最終判定（キャッシュ付き）
-local function get_js_formatter_cached()
+local function get_web_formatter_cached()
 	local buf = vim.api.nvim_get_current_buf()
 
 	-- 既に決定済みなら即返す
-	if vim.b.js_formatter then
-		return { vim.b.js_formatter }
+	if vim.b.web_formatter then
+		return { vim.b.web_formatter }
 	end
 
 	local fname = vim.api.nvim_buf_get_name(buf)
 	if fname == "" then
 		-- 未保存バッファは安全側で Prettier
-		vim.b.js_formatter = "prettier"
+		vim.b.web_formatter = "prettier"
 		return { "prettier" }
 	end
 
@@ -196,13 +196,13 @@ local function get_js_formatter_cached()
 	local decision = decide_for_dir(start_dir)
 
 	if decision == "biome" then
-		vim.b.js_formatter = "biome"
+		vim.b.web_formatter = "biome"
 		return { "biome" }
 	elseif decision == "prettier" then
-		vim.b.js_formatter = "prettier"
+		vim.b.web_formatter = "prettier"
 		return { "prettier" }
 	else
-		vim.b.js_formatter = "prettier"
+		vim.b.web_formatter = "prettier"
 		return { "prettier" }
 	end
 end
@@ -296,23 +296,29 @@ require("conform").setup({
 
 	formatters_by_ft = {
 		bash = { "shfmt" },
-		sh = { "shfmt" },
+		css = get_web_formatter_cached,
 		fish = { "fish_indent" },
 		go = { "goimports" },
+		graphql = get_web_formatter_cached,
 		html = { "prettier" },
 		http = { "kulala" },
-		javascript = get_js_formatter_cached, -- ★差し替え
-		javascriptreact = get_js_formatter_cached, -- ★差し替え
-		json = get_js_formatter_cached, -- ★差し替え
+		javascript = get_web_formatter_cached,
+		javascriptreact = get_web_formatter_cached,
+		json = get_web_formatter_cached,
 		json5 = { "prettier" }, -- Biome は JSON5 未対応
-		jsonc = get_js_formatter_cached,
+		jsonc = get_web_formatter_cached,
+		less = { "prettier" },
 		lua = { "stylua" },
 		markdown = { "prettier" },
 		python = { "ruff_organize_imports", "ruff_format" },
 		rust = { "rustfmt" },
+		scss = { "prettier" },
+		sh = { "shfmt" },
 		sql = { "sqlfluff" },
-		typescript = get_js_formatter_cached, -- ★差し替え
-		typescriptreact = get_js_formatter_cached, -- ★差し替え
+		toml = { "taplo" },
+		typescript = get_web_formatter_cached,
+		typescriptreact = get_web_formatter_cached,
+		vue = { "prettier" },
 		xml = { "xmlformatter" },
 		yaml = { "prettier" },
 	},

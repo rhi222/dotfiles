@@ -17,6 +17,7 @@ require("mason-lspconfig").setup({
 		"prismals",
 		"ruff",
 		"sqls",
+		"taplo",
 		"tailwindcss",
 		"ts_ls",
 		"ty",
