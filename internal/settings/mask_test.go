@@ -11,7 +11,12 @@ import (
 func TestSecretRegexReadsDictionary(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "secret-patterns.txt")
-	body := "# コメントは無視する\n\nexample-corp\nexample\\.internal\n\n# 末尾コメント\n"
+	// **架空名でも `.example` 辞書に当たる形を避ける。** 実体辞書では通るのに
+	// CI だけが落ちる。社内ドメインを示す TLD 風の語（`.int<->ernal` など）は
+	// 汎用パターン側に載っているので、予約ドメインの `example.test` に寄せる。
+	// この注意書き自体も当たる形を書くと検出されるので `<->` で崩してある。
+	// 2つ目のエントリはエスケープを含む行が読めることの検査
+	body := "# コメントは無視する\n\nexample-corp\nexample\\.test\n\n# 末尾コメント\n"
 	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -24,6 +29,13 @@ func TestSecretRegexReadsDictionary(t *testing.T) {
 	}
 	if !re.MatchString("plugin@example-corp") {
 		t.Error("辞書の語に一致しない")
+	}
+	// エスケープを含む行も読めていること（`.` がワイルドカードになっていない）
+	if !re.MatchString("host.example.test") {
+		t.Error("エスケープを含む行を読めていない")
+	}
+	if re.MatchString("hostXexampleYtest") {
+		t.Error("`\\.` がワイルドカードとして扱われている")
 	}
 	if re.MatchString("plugin@anthropics") {
 		t.Error("辞書に無い語に一致してしまう")
