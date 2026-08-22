@@ -2,10 +2,10 @@
 # lint.sh のユニットテスト
 #
 # 検査対象の集め方（git ls-files ベース、skills-vendor/ 除外）と、
-# .fish の構文チェックが実際に落ちることを見る。
+# Markdown / Fish の不正を各検査が落とすことを見る。
 #
 # 本物のリポジトリでは走らせない。LINT_REPO_ROOT で使い捨ての git リポジトリを
-# 指し、shellcheck / shfmt は PATH 前方の stub に差し替える（fish だけは実物を使う。
+# 指し、shellcheck / shfmt / rumdl は PATH 前方の stub に差し替える（fish だけは実物を使う。
 # 構文エラーを本当に検出できるかがこのテストの主目的なので）。
 set -uo pipefail
 
@@ -44,6 +44,18 @@ STUB
     chmod +x "$STUB_DIR/$tool"
   done
 
+  cat >"$STUB_DIR/rumdl" <<'STUB'
+#!/bin/bash
+[[ "${1:-}" == "check" ]] || exit 8
+for arg in "$@"; do
+  [[ "$arg" == *.md ]] || continue
+  [[ -f "$arg" ]] || exit 9
+  grep -q 'BAD_MARKDOWN' "$arg" && exit 1
+done
+exit 0
+STUB
+  chmod +x "$STUB_DIR/rumdl"
+
   git -C "$REPO" init -q
   git -C "$REPO" config user.email t@example.com
   git -C "$REPO" config user.name t
@@ -74,6 +86,37 @@ check() {
 good_fish() { printf 'function ok\n    echo hi\nend\n'; }
 # `if` を閉じないので fish -n が落ちる
 bad_fish() { printf 'function broken\n    if true\nend\n'; }
+
+echo "== Markdown lint =="
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf '# Good\n' >"$REPO/good.md"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "正しいMarkdownなら成功する" "0" "$?"
+check "rumdlの検査を行ったと出力する" "yes" \
+  "$(printf '%s' "$out" | grep -q '=== rumdl ===' && echo yes || echo no)"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf '# BAD_MARKDOWN\n' >"$REPO/broken.md"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "不正なMarkdownがあれば失敗する" "1" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts" "$REPO/.config/claude/skills-vendor/x"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf '# BAD_MARKDOWN\n' >"$REPO/.config/claude/skills-vendor/x/vendored.md"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "skills-vendor配下のMarkdownは検査しない" "0" "$?"
+teardown
 
 echo "== .fish の構文チェック =="
 

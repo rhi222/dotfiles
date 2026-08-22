@@ -87,4 +87,3 @@ bash tests/setup/test-claude-skills-allowlist.sh
 - **引っ越し先が無ければ持たない。** 自作 skill として `.config/claude/skills/` に
   移すと、第三者コードを「自分が保守するもの」として抱えることになる。
   自作 / vendored の境界を曖昧にするほどの価値がある skill は稀
-

@@ -47,6 +47,7 @@ herdr = "latest"
 "aqua:astral-sh/ruff" = "latest"
 "aqua:biomejs/biome" = "latest"
 "aqua:marp-team/marp-cli" = "latest"
+"aqua:rvben/rumdl" = "latest"
 "aqua:tree-sitter/tree-sitter" = "latest"
 
 # pipxバックエンドで管理するPython製CLIツール（隔離環境にインストール）

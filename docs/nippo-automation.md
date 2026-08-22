@@ -78,4 +78,3 @@ Claude CodeのStop/Notification hookと日報cronからBurntToastを呼ぶ。共
 Stopは最後のassistant発言、cronは継続する日報状態を通知する。
 通知本文、実行ゲートとcooldown、状態のreset方法、判定表は
 [notifications.md](notifications.md) を参照する。
-

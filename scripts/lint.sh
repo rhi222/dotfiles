@@ -1,13 +1,14 @@
 #!/bin/bash
 # リポジトリが追跡しているシェルスクリプトを検査する。
 #   *.sh   : shellcheck + shfmt
+#   *.md   : rumdl
 #   *.fish : fish -n（構文チェックのみ。fish に整形系の CLI は無い）
 #   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/lint.sh        # 検査のみ（CIと同じ）
 #   bash scripts/lint.sh --fix  # shfmt の整形を実際に適用
 #
-# 依存: shellcheck / shfmt（どちらも mise の aqua バックエンドで管理）、fish
+# 依存: shellcheck / shfmt / rumdl（mise の aqua バックエンドで管理）、fish
 #
 # 環境変数:
 #   LINT_REPO_ROOT  検査するリポジトリのルート（テストで差し替える）
@@ -62,6 +63,24 @@ echo "=== shfmt ==="
 if [ "$FIX" -eq 1 ]; then
   shfmt -w -i 2 -ci "${files[@]}"
 elif ! shfmt -d -i 2 -ci "${files[@]}"; then
+  rc=1
+fi
+
+# MarkdownもShellと同じく、自分が保守する追跡fileと未追跡fileだけを対象にする。
+# vendored skillはupstreamの書式を保つため除外する。
+mapfile -t markdown_files < <(
+  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
+    '*.md' ':!:.config/claude/skills-vendor/**' |
+    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
+    while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done | sort -u
+)
+
+echo "=== rumdl ==="
+if [ "${#markdown_files[@]}" -eq 0 ]; then
+  echo "検査対象の .md が無い"
+elif ! rumdl check --config "$REPO_ROOT/.rumdl.toml" "${markdown_files[@]}"; then
   rc=1
 fi
 

@@ -1,0 +1,19 @@
+[global]
+enable = [
+  "MD001",
+  "MD009",
+  "MD012",
+  "MD018",
+  "MD019",
+  "MD037",
+  "MD039",
+  "MD042",
+  "MD047",
+  "MD051",
+  "MD052",
+  "MD053",
+  "MD055",
+  "MD056",
+]
+exclude = [".config/claude/skills-vendor/**"]
+respect-gitignore = true

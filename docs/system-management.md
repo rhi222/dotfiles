@@ -120,4 +120,3 @@ yaziは `init.lua` がpluginを `require` するため、実体が無いと起�
 `~/.agents/skills/<name>` のsymlink。`~/.agents/skills` 全体はリンクせず、外部skillと共存する。
 setupで削除するのはリンク切れsymlinkだけ。追加後は `./dotfilesLink.sh` を実行し、必要なら
 Codexを再起動する。
-
