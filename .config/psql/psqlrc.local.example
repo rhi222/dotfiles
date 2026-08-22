@@ -1,0 +1,40 @@
+-- 案件固有の環境判定とバナーの雛形。
+--
+-- 実体は ~/.config/psql/psqlrc.local（リポジトリ外。dotfilesLink.sh がこの雛形からコピーする）。
+-- このリポジトリは public なので、ここには架空値だけを置く。
+-- DB名・DBユーザー名・prod判定のポート番号は案件codeや顧客略号にあたるため、
+-- 実値をこのファイルへ書き戻さない。
+--
+-- 呼び出し元は ~/.psqlrc（.config/psql/psqlrc へのリンク）。
+-- ここでやることは2つだけ。
+--   1. is_prod_local / is_stg_local を \gset で上書きする
+--   2. 案件固有のバナーを出す
+-- 汎用の命名規約（*_prod / *_stg / *_dev など）による判定は呼び出し元が持つので、
+-- ここには規約から外れる判定だけを書く。
+
+-- prod: 規約外のDB名 × ユーザー名、およびトンネル経由のポート番号
+SELECT COALESCE(
+    (SELECT u.usename ~ '.*prod' AND current_database() ~ 'example_app'
+     FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u),
+    false
+) OR (:PORT = '65432') AS is_prod_local
+\gset
+
+-- stg: 規約外のDB名 × ユーザー名（除外したいユーザーがあれば NOT LIKE で足す）
+SELECT COALESCE(
+    (SELECT u.usename ~ '.*(dev|stg)'
+        AND u.usename NOT LIKE 'exampleappdev'
+        AND current_database() ~ 'example_app'
+     FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u),
+    false
+) AS is_stg_local
+\gset
+
+-- 案件ごとのバナー。DB名の prefix で出し分ける。
+SELECT current_database() ~ 'foo_.*' AS is_foo
+\gset
+\if :is_foo
+	\echo '=== FOO ==='
+\else
+	-- do nothing
+\endif

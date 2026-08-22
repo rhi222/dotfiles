@@ -22,32 +22,36 @@
 36 for cyan
 37 for white
 */
-SELECT
-    current_database() ~ '.*_(stg|dev|stga|stgb)' OR (
-        (SELECT
-            CASE
-                WHEN
-			u.usename ~ '.*(dev|stg)'
-			AND u.usename not like 'wbcbookingrecorddev'
-			AND current_database() ~ 'wbc_booking_record'
-		THEN true
-                ELSE false
-            END
-         FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
-        )
-    ) AS is_stg
+
+-- 案件固有の環境判定はここに書かない。
+--
+-- このリポジトリは public。DB名・DBユーザー名・prod判定に使うポート番号は
+-- 案件codeや顧客略号そのものなので、~/.config/psql/psqlrc.local へ置く。
+-- 雛形は psqlrc.local.example（dotfilesLink.sh が無い端末へコピーする）。
+--
+-- psqlrc.local の責務は次の2つだけ。
+--   1. is_prod_local / is_stg_local を上書きする（\gset で真偽値を入れる）
+--   2. 案件固有のバナーを出す
+\set is_prod_local false
+\set is_stg_local false
+
+-- psqlrc.local を任意読み込みする。
+-- psql の \i は cwd 基準で解決し ~ も展開しないため、シェル置換で絶対パスへ直す。
+-- 無い端末では /dev/null を読み、何も起きない（エラーも出ない）。
+\set LOCALRC `f="$HOME/.config/psql/psqlrc.local"; test -f "$f" && echo "$f" || echo /dev/null`
+\i :LOCALRC
+
+-- 汎用の命名規約による判定と、psqlrc.local の判定の論理和をとる。
+--
+-- :'var'::boolean と引用付きで埋めるのは、\gset が入れる値が SQL の真偽値リテラルでは
+-- なく表示形の t / f になるため。素の :var だと 'f' が列名と解釈され
+-- `column "f" does not exist` で落ちる。引用してキャストすれば t/f と true/false の
+-- どちらでも通る。
+-- COALESCE で包むのは、psqlrc.local の判定が NULL を返したときに
+-- \if が不正値で落ちて PROMPT1 の色分けごと失われるのを防ぐため。
+SELECT COALESCE(current_database() ~ '.*_prod' OR :'is_prod_local'::boolean, false) AS is_prod
 \gset
-SELECT
-    (current_database() ~ '.*_prod' OR (
-        (SELECT
-            CASE
-                WHEN u.usename ~ '.*prod' AND current_database() ~ 'wbc_booking_record' THEN true
-                ELSE false
-            END
-         FROM (SELECT usename FROM pg_user WHERE usename = CURRENT_USER) u
-        )
-    ) OR (SELECT :PORT = '64321')
-) AS is_prod
+SELECT COALESCE(current_database() ~ '.*_(stg|stga|stgb|dev)' OR :'is_stg_local'::boolean, false) AS is_stg
 \gset
 
 \if :is_prod
@@ -59,38 +63,3 @@ SELECT
 	-- do nothing
 	\set PROMPT1 '%[%033[1;37m%]%n@%/%R%#%[%033[1;31m%]%x %[%033[1;37m%]'
 \endif
-
-SELECT current_database() ~ 'jtt_.*' as is_jtt
-\gset
-SELECT current_database() ~ 'jtb_.*' as is_jtb
-\gset
-\if :is_jtt
-	\echo                     █       █   █                                                        ███
-	\echo    ██  █████   ███████████   █  ███████   █  █    █    ██████████                 ██████ █  
-	\echo    ██  █    █   █████████      █          █  ██   █            █                       █    
-	\echo    ██  █    ██  █   █   █   █  ███████    ██  █  ██        █  █                        █    
-	\echo    ██  █    █   █████████    █  █ █  █     █     █         █ █                        █     
-	\echo    ██  █████    █   █   █     █████████         ██        ██       ███████████       ██     
-	\echo    ██  █   █    █████████    █  █ █  █          █         █                          ██     
-	\echo    ██  █    █      ███       █ █  █  █         ██         █                        ██  ██   
-	\echo    ██  █    ██    █ █ ██     █ ████████       ██         ██                       ██    ██  
-	\echo  ███   █     █  ██  █  ███  █  █     █      ██          ██                       ██      █  
-	\echo                █    █       █      ███                                                      
-\elif :is_jtb
-	\echo                                  █                                                       █                                                   
-	\echo                                  █ █     █████  █                     ████            █ █ █                                            █     
-	\echo   ██ ████████ █████         ██████████    ██    █       █████       ██  ██      █     █      ██           █                            █     
-	\echo   ██    █     █    █        ██████  █   ███████████    █  █  ██        ██       █     ███    █   █████    █     ██      ███████     ███████  
-	\echo   ██    █     █    █        █     █ █   ██████  █ █   █   █   █       ██        █  █████     █            █      █    ███    ██      ██     
-	\echo   ██    █     █    █        █████ ██    █  █ █  █ █  ██   █    █    ████████    █     █      █            █       █            █      █      
-	\echo   ██    █     █████        ███  █ ██ █  ██████  █ █  █   █     █   █   █       ██     █      █            █       █            █    ██████   
-	\echo   ██    █     █    █       █ ████ ██ █  ██████  █ █  █   █    ██      █        ███    █      ██           █       ██           █      █    ██
-	\echo   ██    █     █    ██      █     █  ██  ██████ █  █   █ █     █       █         ██ █████     ██ █         ██  █              ██       █     █
-	\echo   ██    █     █    ██         █ █   █      █   █  █   ███    ██       █         █  █  ████   ██ ██         █ █           █████        █     █
-	\echo ███     █     ██████        █ █     ██  ███████ ██         ██          ████     █  ████      █   █████      ██                        ██   █ 
-	\echo                            █  █   ██ █                                   █                                                             ████  
-	\echo                               █████  
-\else
-	-- do nothing
-\endif
-
