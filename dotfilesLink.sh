@@ -124,7 +124,7 @@ link_private_files() {
 # ディレクトリごとリンクされ、linear-bootstrap.sh が書く config.json（再生成できる）まで
 # 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
-  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.agents/skills \
+  mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.codex/rules ~/.agents/skills \
     ~/.config/dotfiles ~/.config/linear ~/.config/psql
 }
 
@@ -304,6 +304,10 @@ setup_codex() {
     mv ~/.codex/config.toml "$codex_backup"
   fi
   safe_link "$DC/codex/config.toml" ~/.codex/config.toml
+  # TUIが自動生成する default.rules と共存させ、repository管理分だけを別fileで配る。
+  mkdir -p ~/.codex/rules
+  backup_real_file ~/.codex/rules/dotfiles.rules
+  safe_link "$DC/codex/rules/dotfiles.rules" ~/.codex/rules/dotfiles.rules
   link_codex_skills
 }
 

@@ -1,0 +1,53 @@
+# GitHubで日常的に使うPR操作をsandbox外で自動許可する。
+# `gh api` はmethod次第で書き込めるため、包括的に許可しない。
+prefix_rule(
+    pattern = ["gh", "pr", "view"],
+    decision = "allow",
+    justification = "PRの参照のみを行う",
+    match = [
+        "gh pr view 123",
+        "gh pr view 123 --json title,url",
+    ],
+    not_match = [
+        "gh pr review 123 --approve",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "diff"],
+    decision = "allow",
+    justification = "PR diffの参照のみを行う",
+    match = [
+        "gh pr diff 123",
+        "gh pr diff 123 --color always",
+    ],
+    not_match = [
+        "gh pr checkout 123",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "review"],
+    decision = "allow",
+    justification = "PRにreviewを投稿する",
+    match = [
+        "gh pr review 123 --approve",
+        "gh pr review 123 --comment --body looks-good",
+    ],
+    not_match = [
+        "gh pr merge 123",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "checkout"],
+    decision = "allow",
+    justification = "PR branchをlocal worktreeにcheckoutする",
+    match = [
+        "gh pr checkout 123",
+        "gh pr checkout 123 --detach",
+    ],
+    not_match = [
+        "gh pr merge 123",
+    ],
+)

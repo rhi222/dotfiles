@@ -1,12 +1,14 @@
 # Codex 設定（公式ドキュメント準拠）
 
-Codex は **`~/.codex/config.toml`** を単一の設定ファイルとして読み込みます。
-CLI と IDE 拡張は同じ `config.toml` を共有し、CLI フラグやプロファイルが優先されます。
+Codex は **`~/.codex/config.toml`** をユーザー共通の基本設定として読み込みます。
+CLI と IDE 拡張は同じ `config.toml` を共有し、CLI フラグや選択した
+profile file が優先されます。
 
 このリポジトリでは、公式の前提に合わせて設定テンプレートと自作 skill を管理します。
 
 - `config.example.toml`: 共有テンプレート（コミット対象）
 - `~/.codex/config.toml`: ローカルの実体（コミットしない）
+- `rules/dotfiles.rules`: 共有するcommand rule（`~/.codex/rules/` へリンク）
 - `skills/`: 自作 skill の実体（`dotfilesLink.sh` が `~/.agents/skills/` へ個別リンク）
 
 skill はディレクトリ全体ではなく1件ずつリンクする。`~/.agents/skills/` には外部から導入した
@@ -23,13 +25,33 @@ skill も同居するためで、セットアップ時に削除するのはリ�
 
 2. ローカル設定を編集（Trusted Roots など）
 
-3. 1回だけの上書きは CLI で実行
+3. 設定キーを厳格に検査
 
    ```bash
-   codex --config model='"gpt-5.2"'
+   codex --strict-config
+   ```
+
+   TUI が起動すれば設定は正常。未知のキーがあれば起動前にエラーになる。
+
+4. 1回だけの上書きは CLI で実行
+
+   ```bash
+   codex --config model='"gpt-5.6-terra"'
    ```
 
 `--config` などの CLI での上書きは `config.toml` よりも優先されます。
+
+named profile は `config.toml` 内の `[profiles.<name>]` ではなく、
+`~/.codex/<name>.config.toml` へトップレベルの設定キーを書く。
+
+```bash
+codex --profile <name>
+```
+
+command allowlist は `config.toml` ではなく `.rules` に置く。共有ruleは
+`dotfiles.rules`、TUIが書き込む端末固有ruleは `default.rules` として共存させる。
+GitHubは `gh pr view` / `gh pr diff` / `gh pr review` / `gh pr checkout` を自動許可する。
+method次第で任意のAPI書き込みができる `gh api` は都度確認する。
 
 ## 更新フロー（テンプレート反映）
 

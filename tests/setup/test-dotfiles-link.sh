@@ -197,6 +197,7 @@ HOME="$fakehome" ensure_dirs
 check "ensure_dirs が ~/.config/linear を作る" test -d "$fakehome/.config/linear"
 check "ensure_dirs が ~/.config/dotfiles を作る" test -d "$fakehome/.config/dotfiles"
 check "ensure_dirs が ~/.agents/skills を作る" test -d "$fakehome/.agents/skills"
+check "ensure_dirs が ~/.codex/rules を作る" test -d "$fakehome/.codex/rules"
 
 # 親が実ディレクトリなので api-key だけがファイル単位でリンクされること
 priv="$tmp/ed/private"
@@ -206,6 +207,24 @@ PRIVATE_DIR="$priv" HOME="$fakehome" DOTFILES_DIR="$tmp/ed/repo" \
   link_private_files >/dev/null 2>&1
 check "api-key はファイル単位でリンクされる" test -L "$fakehome/.config/linear/api-key"
 check "親の .config/linear はリンクに置き換わらない" test ! -L "$fakehome/.config/linear"
+
+# --- setup_codex ---
+# repository管理ruleはTUIが書くdefault.rulesと別名で配置し、
+# 端末で蓄積したapprovalを上書きしない。
+codex_case="$tmp/codex"
+mkdir -p "$codex_case/dc/codex/rules" "$codex_case/home/.codex/rules" \
+  "$codex_case/home/.agents/skills"
+echo config >"$codex_case/dc/codex/config.toml"
+echo example >"$codex_case/dc/codex/config.example.toml"
+echo shared >"$codex_case/dc/codex/rules/dotfiles.rules"
+echo local >"$codex_case/home/.codex/rules/default.rules"
+
+HOME="$codex_case/home" DC="$codex_case/dc" setup_codex >/dev/null
+
+check "Codex configをリンクする" test -L "$codex_case/home/.codex/config.toml"
+check "共有Codex ruleを別fileでリンクする" test -L "$codex_case/home/.codex/rules/dotfiles.rules"
+check "TUIが書いたdefault.rulesを残す" \
+  grep -qx local "$codex_case/home/.codex/rules/default.rules"
 
 # --- link_claude_skills ---
 # ~/.claude/skills には2種類が同居する。自作skillへの symlink（リポジトリを指す）と、
