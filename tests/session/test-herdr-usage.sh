@@ -52,12 +52,12 @@ echo "test: dotctl の出力をそのまま返す"
 cat >"$WORK/dotctl" <<'STUB'
 #!/bin/bash
 [ "$1 $2" = "agent-usage line" ] || exit 9
-printf 'CC 5h 45%% (2h47m) weekly 50%% fable 29%% (3d11h)'
+printf 'CC s45%% w50%% f29%%'
 STUB
 chmod +x "$WORK/dotctl"
 out="$(HERDR_USAGE_DOTCTL="$WORK/dotctl" "$TARGET")"
 code=$?
-if [[ $code -eq 0 && "$out" == "CC 5h 45% (2h47m) weekly 50% fable 29% (3d11h)" ]]; then
+if [[ $code -eq 0 && "$out" == "CC s45% w50% f29%" ]]; then
   ok "出力の中継"
 else
   ng "exit=$code out='$out'"

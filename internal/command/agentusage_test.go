@@ -52,7 +52,7 @@ func TestAgentUsageLine(t *testing.T) {
 		t.Fatalf("exit = %d", code)
 	}
 	got := out.String()
-	if got != "CC 5h 45% (2h47m) weekly 50% fable 29% (3d11h)" {
+	if got != "CC s45% w50% f29%" {
 		t.Errorf("line = %q", got)
 	}
 	if strings.Contains(got, "\n") {

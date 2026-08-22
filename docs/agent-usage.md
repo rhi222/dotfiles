@@ -5,13 +5,11 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 
 ## 表示
 
-- tab bar: `CC 5h 45% (2h47m) weekly 50% fable 29% (3d11h) · CX weekly 2% (4d8h)`
+- tab bar: `CC s45% w50% f29% · CX w2%`
   （session% / weekly% / Fable weekly% / Codex weekly%）
-  AI agent の見出しは大文字2文字の `CC` / `CX` に固定し、枠は小文字の
-  `5h` / `weekly` / `fable` で表す。括弧はリセットまでの残り。`5h` の括弧は session、
-  `weekly 50% fable 29%` の後の括弧は
-  **weekly のリセット**（Fable のリセットは line には出さず、popup では絶対時刻のみで残り時間は出さない）。
-  Codex の括弧は weekly のリセット
+  AI agent の見出しは大文字2文字の `CC` / `CX`、枠は小文字1文字の
+  `s`（current session）/ `w`（weekly）/ `f`（Fable weekly）に固定する。
+  tab bar ではreset時間を省き、絶対時刻と残り時間は popup に集約する
 - `[stale]` は side 単位で末尾に1回だけ付く。付く条件は2つ:
   ①`fetched_at` が15分より古い ②表示中のいずれかの窓の `resets_at` を過ぎている
   （窓が切り替わったのにキャッシュの%が切り替わり前のまま）。窓ごとには付けない
@@ -19,7 +17,7 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 - 詳細は prefix+u の popup（バー・絶対時刻・fetched 経過）。popup は通常の端末なので
   ANSI 色を使い、見出しを太字シアン、使用率を 60% 未満=緑 / 60%以上=黄 / 85%以上=赤、
   空きバーと補足を dim、stale を太字赤で表示する。tab bar は ANSI 非対応なので着色しない
-- 実データで確認済み（`line` は `CC 5h 91% (1h46m) weekly 56% fable 33% (3d9h) · CX weekly 7% (6d20h)`、
+- 実データで確認済み（`line` は `CC s91% w56% f33% · CX w7%`、
   `detail` はバー・絶対リセット時刻・`fetched:` 経過付きの複数行）
 
 ## 仕組み

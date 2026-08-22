@@ -46,11 +46,11 @@ func countdown(w *Window, now time.Time) string {
 func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 	var parts []string
 	if s := c.Claude; s != nil && s.Session != nil && s.Weekly != nil {
-		p := fmt.Sprintf("CC 5h %d%% (%s)", s.Session.Percent, countdown(s.Session, now))
+		p := fmt.Sprintf("CC s%d%%", s.Session.Percent)
 		if s.Fable != nil {
-			p += fmt.Sprintf(" weekly %d%% fable %d%% (%s)", s.Weekly.Percent, s.Fable.Percent, countdown(s.Weekly, now))
+			p += fmt.Sprintf(" w%d%% f%d%%", s.Weekly.Percent, s.Fable.Percent)
 		} else {
-			p += fmt.Sprintf(" weekly %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
+			p += fmt.Sprintf(" w%d%%", s.Weekly.Percent)
 		}
 		if sideStale(s, now, staleAfter) {
 			p += " [stale]"
@@ -58,7 +58,7 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 		parts = append(parts, p)
 	}
 	if s := c.Codex; s != nil && s.Weekly != nil {
-		p := fmt.Sprintf("CX weekly %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
+		p := fmt.Sprintf("CX w%d%%", s.Weekly.Percent)
 		if sideStale(s, now, staleAfter) {
 			p += " [stale]"
 		}
