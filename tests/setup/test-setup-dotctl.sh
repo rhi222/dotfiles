@@ -152,8 +152,10 @@ teardown
 echo "== go が無いとき =="
 
 setup
-# stub を置かない = PATH に go が無い
-out=$(env PATH="$STUB:/usr/bin:/bin" DOTCTL_REPO="$FAKE_REPO" DOTCTL_BIN="$BINDIR/dotctl" bash "$TARGET" 2>&1)
+# **PATH を削って作らない。** CI の runner は /usr/bin:/bin にも go を持っており、
+# それだと go test まで進んでしまい、案内文の検査2件が CI だけ落ちた
+out=$(env PATH="$STUB:/usr/bin:/bin" DOTCTL_GO=definitely-not-go \
+  DOTCTL_REPO="$FAKE_REPO" DOTCTL_BIN="$BINDIR/dotctl" bash "$TARGET" 2>&1)
 rc=$?
 check "go が無ければ非0で返す" "1" "$rc"
 check "go が要ることを伝える" "yes" "$(has 'go' "$out")"

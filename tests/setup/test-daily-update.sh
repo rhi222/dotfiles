@@ -378,7 +378,9 @@ assert_output_contains "SETUP_CALLED" "$(cat "$DOTCTL_TEST_DIR/setup.log")" "set
 # （yazi の package.toml と同じ扱い）
 : >"$DOTCTL_TEST_DIR/setup.log"
 exit_code=0
-output=$(PATH="/usr/bin:/bin" \
+# **PATH を削って作らない。** CI の runner は /usr/bin:/bin にも go を持っており、
+# それで CI だけ落ちた
+output=$(DOTCTL_GO_BIN=definitely-not-go \
   DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
   DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
   dotctl_rebuild 2>&1) || exit_code=$?
@@ -552,8 +554,13 @@ echo "=== vendored_skill_check ==="
 
 vsc="$(mktemp -d)"
 mkdir -p "$vsc/skills-vendor/one"
-git init --bare --quiet "$vsc/origin.git"
-git init --quiet "$vsc/work"
+# **--initial-branch を明示する。** 省くと bare の HEAD は端末の
+# init.defaultBranch 依存になり、master の端末では refs/heads/master を指す。
+# vendored_skill_check は `git ls-remote <origin> HEAD` で追随を見るので、
+# HEAD が存在しないブランチを指していると常に「upstream を確認できません」に
+# 落ちて更新検知の2件が静かに落ちる（CI だけ赤になった）。
+git init --bare --quiet --initial-branch=main "$vsc/origin.git"
+git init --quiet --initial-branch=main "$vsc/work"
 git -C "$vsc/work" config user.email test@example.com
 git -C "$vsc/work" config user.name test
 echo x >"$vsc/work/f"

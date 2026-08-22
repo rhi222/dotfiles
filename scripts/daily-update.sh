@@ -112,13 +112,16 @@ fisher_update() {
 # ずれを警告するが、そちらは「気付ける」だけで直しはしない。
 DOTCTL_GO_MOD="${DOTCTL_GO_MOD:-$SCRIPT_DIR/../go.mod}"
 DOTCTL_SETUP_SCRIPT="${DOTCTL_SETUP_SCRIPT:-$SCRIPT_DIR/setup-dotctl.sh}"
+DOTCTL_GO_BIN="${DOTCTL_GO_BIN:-go}"
 
 dotctl_rebuild() {
   if [ ! -f "$DOTCTL_GO_MOD" ]; then
     echo "no go.mod at $DOTCTL_GO_MOD, skipping"
     return 0
   fi
-  if ! command -v go >/dev/null 2>&1; then
+  # **PATH を削って「go が無い」を作れない。** CI の runner は /usr/bin:/bin にも
+  # go を持っており、それで CI だけ落ちた。DOTCTL_GO_BIN に存在しない名前を渡す
+  if ! command -v "$DOTCTL_GO_BIN" >/dev/null 2>&1; then
     echo "go not found, skipping (mise install go)"
     return 0
   fi

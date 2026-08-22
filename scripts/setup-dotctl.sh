@@ -7,6 +7,7 @@
 # 環境変数:
 #   DOTCTL_REPO  ビルド元のリポジトリ（既定: このスクリプトの親）
 #   DOTCTL_BIN   出力先（既定: ~/.local/bin/dotctl）
+#   DOTCTL_GO    go の実行ファイル名（既定 go。テストが「go が無い」経路を作る）
 #
 # **失敗しても既存バイナリを壊さないことが最優先。** cron と hook が dotctl 越しに
 # 動くようになると、「ビルドが落ちて実行ファイルが消える」は自動化が丸ごと止まる
@@ -26,6 +27,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="${DOTCTL_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 BIN="${DOTCTL_BIN:-$HOME/.local/bin/dotctl}"
 
+# **「go が無い」経路は PATH を削って作れない。** CI の runner は
+# /usr/bin:/bin にも go を持っており、それで CI だけ落ちた。存在しない名前を
+# 渡せば PATH の中身に依存せず不在を作れる。
+GO="${DOTCTL_GO:-go}"
+
 SKIP_TESTS=0
 if [ "${1:-}" = "--skip-tests" ]; then
   SKIP_TESTS=1
@@ -36,7 +42,7 @@ fi
 
 # Go は mise 導入後にしか無い。**bootstrap の循環依存を避けるため、
 # ここが無ければ素直に失敗する**（dotfilesLink.sh はこれを必須にしない）。
-if ! command -v go >/dev/null 2>&1; then
+if ! command -v "$GO" >/dev/null 2>&1; then
   echo "setup-dotctl: go が見つからない。mise で入れる: mise install go" >&2
   exit 1
 fi
@@ -46,7 +52,7 @@ if [ "$SKIP_TESTS" -eq 1 ]; then
 else
   # -short で unit だけに絞る。実 git リポジトリを作る integration は
   # run-tests.sh と CI の担当で、日次のビルド前ゲートには重すぎる。
-  if ! (cd "$REPO" && go test -short ./...); then
+  if ! (cd "$REPO" && "$GO" test -short ./...); then
     echo "setup-dotctl: テストが落ちたのでビルドしない（既存バイナリはそのまま）" >&2
     exit 1
   fi
@@ -66,7 +72,7 @@ trap 'rm -f "$tmp"' EXIT
 commit="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
 pkg="github.com/rhi222/dotfiles/internal/buildinfo"
 
-if ! (cd "$REPO" && go build \
+if ! (cd "$REPO" && "$GO" build \
   -ldflags "-X $pkg.Commit=$commit -X $pkg.Repo=$REPO" \
   -o "$tmp" ./cmd/dotctl); then
   echo "setup-dotctl: ビルドが落ちた（既存バイナリはそのまま）" >&2
