@@ -13,8 +13,7 @@ if test -n "$WSL_DISTRO_NAME"; and type -q wslview
     set -gx BROWSER wslview
 end
 
-# 初回セットアップ手順は scripts/initial-setup.md を参照
-# （fish_color_* など、universal変数として手動設定が必要なものをまとめている）
+# fish_color_* など universal 変数として手動設定が必要なものは docs/bootstrap.md を参照
 
 # mod 777 ディレクトリの ls 表示色を上書き（既定の青字/緑背景は配色によって読みづらいため）
 set -gx LS_COLORS "$LS_COLORS:ow=01;33:tw=01;33"
