@@ -139,6 +139,7 @@ import 済みなら実体が既にあるので、雛形生成はスキップさ�
 | `~/.config/dotfiles/secret-patterns.txt` | `setup_git_hooks`     | 社内固有の語。空のままだと機密語検出 hook が機能しない            |
 | `~/.claude/local-context.md`             | `setup_local_configs` | Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、略号 |
 | `.config/nvim/lua/my/local_config.lua`   | `setup_local_configs` | HTTPS 非対応ホスト                                                |
+| `~/.config/psql/psqlrc.local`            | `setup_local_configs` | psql の環境判定。案件固有のDB名・DBユーザー名・ポート番号         |
 | `.config/codex/config.toml`              | `setup_codex`         | Codex のローカル設定                                              |
 
 ## 2. ローカル設定と機密ファイルを用意する
@@ -254,6 +255,9 @@ tar xzf claude-memory.tar.gz -C ~
   — 機密語辞書。辞書自体が社内名の一覧になるため、リポジトリには含めない
 - `.config/nvim/lua/my/local_config.lua`
   — HTTPS 非対応ホスト
+- `~/.config/psql/psqlrc.local`
+  — psql の prod/stg 判定。案件固有の DB 名・DB ユーザー名・トンネルのポート番号。
+    埋めないと汎用の命名規約（`*_prod` / `*_stg`）による判定だけになる
 
 手書きするもの：
 
