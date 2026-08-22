@@ -381,12 +381,16 @@ chmod +x "$DOTCTL_TEST_DIR/setup-dotctl.sh"
 
 # present=go あり / absent=go 無し（未導入相当。yazi の package.toml と同じ扱いで
 # 毎日 FAILED 通知が飛ぶのを避ける）/ fail=ビルド失敗（run_step で FAILED として拾う）
+#
+# **absent を PATH を削って作らない。** CI の runner は /usr/bin:/bin にも go を
+# 持っており、それで CI だけ落ちた。go の在処を指す変数側で不在を作る。
 run_dotctl_case() { # present|absent|fail
-  local path="$DOTCTL_STUB_BIN:$PATH"
-  [[ "$1" == absent ]] && path="/usr/bin:/bin"
+  local go_bin=go
+  [[ "$1" == absent ]] && go_bin=definitely-not-go
   local setup_exit=0
   [[ "$1" == fail ]] && setup_exit=1
-  PATH="$path" \
+  PATH="$DOTCTL_STUB_BIN:$PATH" \
+    DOTCTL_GO_BIN="$go_bin" \
     DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
     DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
     SETUP_EXIT="$setup_exit" \
@@ -528,8 +532,13 @@ echo "=== vendored_skill_check ==="
 
 vsc="$(mktemp -d)"
 mkdir -p "$vsc/skills-vendor/one"
-git init --bare --quiet "$vsc/origin.git"
-git init --quiet "$vsc/work"
+# **--initial-branch を明示する。** 省くと bare の HEAD は端末の
+# init.defaultBranch 依存になり、master の端末では refs/heads/master を指す。
+# vendored_skill_check は `git ls-remote <origin> HEAD` で追随を見るので、
+# HEAD が存在しないブランチを指していると常に「upstream を確認できません」に
+# 落ちて更新検知の2件が静かに落ちる（CI だけ赤になった）。
+git init --bare --quiet --initial-branch=main "$vsc/origin.git"
+git init --quiet --initial-branch=main "$vsc/work"
 git -C "$vsc/work" config user.email test@example.com
 git -C "$vsc/work" config user.name test
 echo x >"$vsc/work/f"

@@ -141,6 +141,74 @@ out=$(run_lint)
 check ".fish が無くても成功する" "0" "$?"
 teardown
 
+echo "== YAML の検査 =="
+# **パーサ不在を名指しする。** lint.sh はパーサが無いと YAML を skip して通すので、
+# 無いまま走らせると検知側の2件が理由不明で FAIL する（CI で踏んだ）。
+# **判定は lint.sh 自身に任せる。** どの python を使うかの解決を二重に持つと、
+# 片方だけ直したときに食い違う。
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf 'a: 1\n' >"$REPO/probe.yml"
+git -C "$REPO" add -A
+if run_lint | grep -q "PyYAML を持つ python が無いため skip"; then
+  teardown
+  echo "ERROR: PyYAML が無いので YAML 検査を検査できません"
+  echo "  入れる: sudo apt install python3-yaml（apt-packages.txt に宣言済み）"
+  exit 1
+fi
+teardown
+
+# **shfmt を .yml に誤って掛けた事故の再発防止。** shfmt は YAML を shell として
+# パースしてインデントを潰すが exit 0 で返るため、検査が無いと壊れた workflow を
+# push するまで気付けない（実際に踏んだ）。
+
+setup
+mkdir -p "$REPO/scripts" "$REPO/.github/workflows"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf 'name: x\njobs:\n  a:\n    runs-on: ubuntu-latest\n' >"$REPO/.github/workflows/ok.yml"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "正しい .yml なら成功する" "0" "$?"
+check "yaml の検査を行ったと出力する" "yes" \
+  "$(printf '%s' "$out" | grep -q '=== yaml ===' && echo yes || echo no)"
+teardown
+
+setup
+mkdir -p "$REPO/scripts" "$REPO/.github/workflows"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+# インデントが揃っていない = shfmt に潰されたときと同型の壊れ方
+printf 'a:\n  b: 1\n c: 2\n' >"$REPO/.github/workflows/broken.yml"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "パースできない .yml があれば失敗する" "1" "$?"
+check "落ちたファイル名を出す" "yes" \
+  "$(printf '%s' "$out" | grep -q 'broken.yml' && echo yes || echo no)"
+teardown
+
+setup
+mkdir -p "$REPO/scripts" "$REPO/.github/workflows" "$REPO/.config/claude/skills-vendor/x"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf 'a:\n  b: 1\n c: 2\n' >"$REPO/.config/claude/skills-vendor/x/broken.yml"
+git -C "$REPO" add -A
+out=$(run_lint)
+# .sh / .fish と同じ理由。vendored は追跡しているが自分は保守しない
+check "skills-vendor 配下の .yml は検査しない" "0" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+git -C "$REPO" add -A
+out=$(run_lint)
+# **0件でもリポジトリルート自体を対象にしない。** xargs は入力が空でも
+# コマンドを1回実行するので、-r を落とすと "$REPO_ROOT/" がパース対象になり
+# ディレクトリを開こうとして全 fixture が落ちる（実際に踏んだ）
+check ".yml が無くても成功する" "0" "$?"
+check "0件なら対象が無いと言う" "yes" \
+  "$(printf '%s' "$out" | grep -q '検査対象の .yml が無い' && echo yes || echo no)"
+teardown
+
 echo "== fish 未導入の端末 =="
 
 setup

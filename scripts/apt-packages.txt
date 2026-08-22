@@ -14,6 +14,9 @@ jq
 libssl-dev
 pkg-config
 plantuml
+# lint.sh の YAML 検査。python3 本体は ubuntu に既定で入っているが PyYAML は
+# 別パッケージで、無いと lint が YAML を skip して通す（CI で実際に踏んだ）
+python3-yaml
 # mise/aqua に tig が無い。GitHub リリースがソース tarball しか配っておらず
 # ubi でも取れない（`tig-completion.bash has unknown extension` で落ちる）ため、
 # CLI ツールの中でここだけ apt に寄せる

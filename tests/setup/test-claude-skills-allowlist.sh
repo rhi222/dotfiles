@@ -74,6 +74,16 @@ for owner in sanyuan0704 mattpocock browser-use; do
 done
 echo ""
 
+# **dotctl の不在を先に名指しする。** これ以降は skill-add.sh と
+# setup-claude-skills.sh を素で叩くので、dotctl が無いと fail-closed の別経路に
+# 落ち、ゲートの案内文を検査する6件が理由不明のまま FAIL する（CI で実際に起きた）。
+# skip して通す作りにはしない——ゲートの検査を丸ごと失うため。
+if ! command -v dotctl >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/dotctl" ]; then
+  echo "ERROR: dotctl が無いので allowlist ゲートを検査できません"
+  echo "  ビルドする: bash scripts/setup-dotctl.sh"
+  exit 1
+fi
+
 echo "=== allowlist の判定（dotctl 経由） ==="
 # **判定の意味論（コメント・前後の空白・fail-closed）は Go 側の unit test が持つ**
 # （internal/skill の TestIsTrustedOwner*）。ここは Shell から dotctl を呼ぶ

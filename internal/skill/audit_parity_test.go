@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,95 +11,114 @@ import (
 	"github.com/rhi222/dotfiles/internal/execx"
 )
 
-// **Shell 版 skill-audit.sh との一致を実在の vendored skill で確かめる。**
-// 監査は「何を HIGH と見なすか」の集合そのものなので、移植で取りこぼすと
-// 検査が静かに弱くなる。合成ケースでは気付けないので実物で見る。
-func TestAuditMatchesShellOnRealVendoredSkills(t *testing.T) {
+// リポジトリに実在する skill 全部を監査して、**壊れずに走り切ること**と
+// **既知の状態から外れていないこと**を見る。
+//
+// 移植時はここで Shell 版と出力を突き合わせていた（vendored 7本 + 自作 skill
+// 全部で完全一致を確認済み）。Shell 版が wrapper になった今は比較相手が
+// 居ないので、**実在の skill に対する回帰テストへ組み替えてある。**
+// 検出ルールそのものは audit_test.go のテーブルが担保する。
+//
+// **skip して通す作りにしない。** 比較相手が消えた後も skip し続けるテストは
+// 何も守らないので、実物を走らせる側に寄せる。
+func TestAuditRunsOnAllRealSkills(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Shell 版を起動するので -short では飛ばす")
+		t.Skip("実 skill を全部走査するので -short では飛ばす")
 	}
 	root := repoRoot(t)
-	shellImpl := filepath.Join(root, "scripts", "skill-audit.sh")
-	if _, err := os.Stat(shellImpl); err != nil {
-		t.Skip("Shell 版が無い（wrapper 化済み）")
-	}
-	// wrapper になっていたら比較にならないので中身で判定する
-	if b, err := os.ReadFile(shellImpl); err == nil && strings.Contains(string(b), "exec \"$DOTCTL\"") {
-		t.Skip("Shell 版は wrapper なので比較しない")
-	}
 
-	vendorDir := filepath.Join(root, ".config", "claude", "skills-vendor")
-	entries, err := os.ReadDir(vendorDir)
-	if err != nil {
-		t.Skip("vendored skill が無い")
+	dirs := append(
+		skillDirs(t, filepath.Join(root, ".config", "claude", "skills-vendor")),
+		skillDirs(t, filepath.Join(root, ".config", "claude", "skills"))...,
+	)
+	if len(dirs) == 0 {
+		t.Skip("skill が1つも無い")
 	}
 
 	checked := 0
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		dir := filepath.Join(vendorDir, e.Name())
-		t.Run(e.Name(), func(t *testing.T) {
-			cmd := exec.Command("bash", shellImpl, dir)
-			cmd.Dir = root
-			shellOut, _ := cmd.CombinedOutput()
-
-			res, aerr := Audit(context.Background(), execx.New(), dir)
-			if aerr != nil {
-				t.Fatal(aerr)
+	for _, dir := range dirs {
+		name := filepath.Base(dir)
+		t.Run(name, func(t *testing.T) {
+			res, err := Audit(context.Background(), execx.New(), dir)
+			if err != nil {
+				t.Fatalf("監査が失敗した: %v", err)
 			}
-			var buf bytes.Buffer
-			RenderAudit(&buf, res, false)
 
-			if buf.String() != string(shellOut) {
-				t.Errorf("出力が違う\n--- shell ---\n%s\n--- go ---\n%s", shellOut, buf.String())
+			// 走り切っていれば findings の合計は内訳と一致する
+			if got := res.Total(); got != res.High+res.Med+res.Low {
+				t.Errorf("件数が壊れている: total=%d high=%d med=%d low=%d",
+					got, res.High, res.Med, res.Low)
+			}
+
+			// 出力が体裁どおりに書けること（要約行は必ず出る）
+			var b bytes.Buffer
+			RenderAudit(&b, res, false)
+			if !strings.Contains(b.String(), res.Summary()) {
+				t.Errorf("要約行が出ていない:\n%s", b.String())
+			}
+
+			// findings の path は skill 内の相対パス（絶対パスが漏れると
+			// 出力が端末ごとに変わる）
+			for _, f := range res.Findings {
+				if strings.HasPrefix(f.Path, "/") {
+					t.Errorf("絶対パスを出している: %+v", f)
+				}
+				if strings.Contains(f.Path, root) {
+					t.Errorf("リポジトリのパスが漏れている: %+v", f)
+				}
 			}
 		})
 		checked++
 	}
 	if checked == 0 {
-		t.Skip("比較できる skill が無かった")
+		t.Fatal("1つも監査していない")
 	}
 }
 
-// 自作 skill でも一致すること（vendored とは書き方の癖が違う）。
-func TestAuditMatchesShellOnSelfSkills(t *testing.T) {
+// **vendored skill は HIGH が 0 でなければならない。** `skill-vendor.sh status`
+// が HIGH を見て [NG] を出す作りなので、ここが崩れると status が赤くなる。
+// 実際に取り込んだものが基準を満たし続けていることの回帰。
+func TestAuditFindsNoHighInVendoredSkills(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Shell 版を起動するので -short では飛ばす")
+		t.Skip("実 skill を走査するので -short では飛ばす")
 	}
-	root := repoRoot(t)
-	shellImpl := filepath.Join(root, "scripts", "skill-audit.sh")
-	if b, err := os.ReadFile(shellImpl); err != nil || strings.Contains(string(b), "exec \"$DOTCTL\"") {
-		t.Skip("Shell 版が無いか wrapper")
+	dirs := skillDirs(t, filepath.Join(repoRoot(t), ".config", "claude", "skills-vendor"))
+	if len(dirs) == 0 {
+		t.Skip("vendored skill が無い")
 	}
 
-	selfDir := filepath.Join(root, ".config", "claude", "skills")
-	entries, err := os.ReadDir(selfDir)
-	if err != nil {
-		t.Skip("自作 skill が無い")
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		dir := filepath.Join(selfDir, e.Name())
-		t.Run(e.Name(), func(t *testing.T) {
-			cmd := exec.Command("bash", shellImpl, dir)
-			cmd.Dir = root
-			shellOut, _ := cmd.CombinedOutput()
-
-			res, aerr := Audit(context.Background(), execx.New(), dir)
-			if aerr != nil {
-				t.Fatal(aerr)
+	for _, dir := range dirs {
+		t.Run(filepath.Base(dir), func(t *testing.T) {
+			res, err := Audit(context.Background(), execx.New(), dir)
+			if err != nil {
+				t.Fatal(err)
 			}
-			var buf bytes.Buffer
-			RenderAudit(&buf, res, false)
-			if buf.String() != string(shellOut) {
-				t.Errorf("出力が違う\n--- shell ---\n%s\n--- go ---\n%s", shellOut, buf.String())
+			if res.High != 0 {
+				var b bytes.Buffer
+				RenderAudit(&b, res, false)
+				t.Errorf("HIGH が %d 件ある（status が [NG] になる）:\n%s", res.High, b.String())
+			}
+			if res.ExitCode() != 0 {
+				t.Errorf("ExitCode = %d, want 0", res.ExitCode())
 			}
 		})
 	}
+}
+
+func skillDirs(t *testing.T, base string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range entries {
+		// symlink の場合もディレクトリとして辿る（vendored は symlink で入る）
+		if st, serr := os.Stat(filepath.Join(base, e.Name())); serr == nil && st.IsDir() {
+			out = append(out, filepath.Join(base, e.Name()))
+		}
+	}
+	return out
 }
 
 func repoRoot(t *testing.T) string {

@@ -11,6 +11,7 @@
 #   TEST_TIMEOUT  1本あたりの制限秒（既定: 300）
 #   TEST_JOBS     同時実行数（既定: nproc を 16 で打ち止め。1 で直列）
 #   TEST_GO       Go テストを走らせるか（既定: TEST_DIR を明示していなければ 1）
+#   TEST_GO_BIN   go の実行ファイル名（既定 go。テストが「go が無い」経路を作る）
 #   TEST_GO_REPO  go test を走らせるモジュールのルート（テストで差し替える）
 #
 # CIで走らせられないテストは、テストファイル側の先頭付近に
@@ -52,6 +53,11 @@ TEST_DIR="${TEST_DIR:-$(default_test_dir)}"
 
 # Go モジュールのルート（テストで差し替える）
 TEST_GO_REPO="${TEST_GO_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+
+# **go の実行ファイル名を差し替えられるようにする。** 「go が無い端末」の経路は
+# PATH を削って作れない——CI の runner は削った先にも go を持っており、
+# 実際にそれで CI だけ落ちた。存在しない名前を渡せば確実に不在を作れる。
+TEST_GO_BIN="${TEST_GO_BIN:-go}"
 TEST_TIMEOUT="${TEST_TIMEOUT:-300}"
 
 # 既定の同時実行数。16 で打ち止めにする。
@@ -158,13 +164,13 @@ run_go_tests() {
   [ "$TEST_GO" = "1" ] || return 0
   [ -f "$TEST_GO_REPO/go.mod" ] || return 0
 
-  if ! command -v go >/dev/null 2>&1; then
+  if ! command -v "$TEST_GO_BIN" >/dev/null 2>&1; then
     go_lines+=("skip|go|go が無い（mise で入れる: mise install go）")
     return 0
   fi
 
   local out rc
-  out=$(cd "$TEST_GO_REPO" && go test ./... 2>&1)
+  out=$(cd "$TEST_GO_REPO" && "$TEST_GO_BIN" test ./... 2>&1)
   rc=$?
 
   # `ok  <pkg>  0.01s` / `FAIL <pkg> ...` / `?  <pkg> [no test files]` を拾う。

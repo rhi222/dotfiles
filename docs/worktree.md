@@ -1,12 +1,40 @@
 # git worktree の運用
 
 `git wt` で作った worktree の初期化・一覧表示・掃除。
+`git wt` 自体の使い方と設定は [git-worktree-tool.md](git-worktree-tool.md)。
 
-## worktree初期化のリポジトリ別カスタム
+## worktree-init.sh（作成後の初期化）
 
-`git wt` でworktreeを作成すると `scripts/worktree-init.sh` が走り、共通処理（gitignore対象の
-`.env*` コピー・lockファイル判定による依存インストール）を行う。共通処理の後に、リポジトリ固有の
-追加初期化を差し込める。
+どの経路（git-wt / Claude Code / herdr / 手動 `git worktree add`）で作った
+worktreeでも、以下で初期化できる（冪等）:
+
+```fish
+~/scripts/worktree-init.sh [--dry-run] [worktreeパス]  # パス省略時はカレント
+```
+
+処理内容:
+
+- メインworktreeから gitignore対象の `.env*` を相対パス維持でコピー
+  - 既存ファイルは上書きしない（冪等）
+  - `node_modules` / `.wt` 配下は対象外
+  - trackedファイル（`.env.example` 等）は対象外
+- lockファイルを判定して依存をインストール
+  - `pnpm-lock.yaml` → `pnpm install`
+  - `package-lock.json` → `npm ci`
+  - `yarn.lock` → `yarn install`
+  - 該当なし → スキップ
+
+`git wt <branch>` での作成時は `wt.hook` 経由で自動実行される。
+Claude Code の EnterWorktree 経由では PostToolUse hook
+（`.config/claude/hooks/worktree-init-hook.sh`）で自動実行される。
+herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には
+作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは
+手動で `~/scripts/worktree-init.sh` を実行する。
+テストは `bash tests/worktree/test-worktree-init.sh`。
+
+### リポジトリ別カスタム
+
+共通処理の後に、リポジトリ固有の追加初期化を差し込める。
 
 - 置き場所: `scripts/worktree-init.d/<host>/<owner>/<repo>.sh`
   （例 `scripts/worktree-init.d/github.com/rhi222/dotfiles.sh`）

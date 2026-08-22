@@ -13,7 +13,7 @@ GitHub / Slack / esa 側にある。設計の全体像と根拠は Obsidian
 | 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）       |
 | Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日10:10）                        |
 | 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                        |
-| 動作確認            | `bash tests/linear/test-linear-api.sh` ほか `test-linear-*.sh` 計6本 |
+| 動作確認            | `bash tests/linear/test-linear-api.sh` ほか `tests/linear/` の全テスト |
 
 - 認証は `~/.config/linear/api-key`（chmod 600）、設定は `linear-bootstrap.sh` が生成する `config.json`
 - 有効化フラグ: `~/.config/linear-sweep-enabled` / `~/.config/linear-dispatch-enabled` /

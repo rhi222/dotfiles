@@ -40,31 +40,7 @@ worktree作成時は hook（初期化・依存インストール）実行後に�
 tmux+claude の自動起動hookは2026-07に廃止し、hookは初期化処理専用にした
 （herdr移行によりtmux前提が崩れたため。エージェント起動は手動または herdr 側で行う）。
 
-## worktree-init.sh（作成後の初期化）
+## 作成後の初期化
 
-どの経路（git-wt / Claude Code / herdr / 手動 `git worktree add`）で作った
-worktreeでも、以下で初期化できる（冪等）:
-
-```fish
-~/scripts/worktree-init.sh [--dry-run] [worktreeパス]  # パス省略時はカレント
-```
-
-処理内容:
-
-- メインworktreeから gitignore対象の `.env*` を相対パス維持でコピー
-  - 既存ファイルは上書きしない（冪等）
-  - `node_modules` / `.wt` 配下は対象外
-  - trackedファイル（`.env.example` 等）は対象外
-- lockファイルを判定して依存をインストール
-  - `pnpm-lock.yaml` → `pnpm install`
-  - `package-lock.json` → `npm ci`
-  - `yarn.lock` → `yarn install`
-  - 該当なし → スキップ
-
-`git wt <branch>` での作成時は `wt.hook` 経由で自動実行される。
-Claude Code の EnterWorktree 経由では PostToolUse hook
-（`.config/claude/hooks/worktree-init-hook.sh`）で自動実行される。
-herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には
-作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは
-手動で `~/scripts/worktree-init.sh` を実行する。
-テストは `bash tests/worktree/test-worktree-init.sh`。
+`git wt <branch>` は `wt.hook` 経由で `scripts/worktree-init.sh` を自動実行する。
+初期化の処理内容とリポジトリ別カスタムは [worktree.md](worktree.md) を参照する。

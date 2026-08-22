@@ -117,6 +117,14 @@ mise が activate されない。
 mise install --force python node
 ```
 
+`01-mise.fish` / `09-git-wt.fish` は activate 結果を `~/.cache/` にキャッシュする。
+バイナリより古ければ自動で作り直すので通常は触らないが、壊れた場合は消せば
+次のシェル起動で再生成される。
+
+```fish
+rm -f ~/.cache/mise-activate.fish ~/.cache/git-wt-init.fish
+```
+
 ### private bundle と雛形
 
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
@@ -396,6 +404,13 @@ tide configure --auto \
     --icons='Few icons' \
     --transient=No
 exec fish
+```
+
+補完候補の色も universal 変数なので、同じ理由で初回に1回だけ流す
+（既定の色は tide の配色で読みづらい）。
+
+```fish
+set -U fish_color_autosuggestion brblack
 ```
 
 **`fish_plugins` は追跡していて symlink で配る。** 以前は追跡外だったため端末ごとに
