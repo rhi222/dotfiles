@@ -37,6 +37,9 @@ local parsers = {
 -- パーサーのインストール
 require("nvim-treesitter").install(parsers)
 
+-- 引数なしの :TSUpdate が site/parser に同居する外部管理 parser まで拾わないようにする。
+require("my.plugins.editing.treesitter-update").setup_command()
+
 -- ハイライトとfoldingの有効化（filetypeベースで自動判定）
 vim.api.nvim_create_autocmd("FileType", {
 	group = vim.api.nvim_create_augroup("treesitter_setup", { clear = true }),

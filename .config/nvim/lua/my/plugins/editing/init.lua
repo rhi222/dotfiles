@@ -4,7 +4,9 @@ return {
 		"nvim-treesitter/nvim-treesitter",
 		branch = "main",
 		lazy = false,
-		build = ":TSUpdate",
+		-- 引数なしでは site/parser に同居する Kulala 管理の kulala_http まで
+		-- 更新対象と誤認するため、nvim-treesitter が管理する tier だけを指定する。
+		build = ":TSUpdate stable unstable unmaintained",
 		config = function()
 			require("my/plugins/editing/nvim-treesitter")
 		end,
