@@ -8,7 +8,7 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 - tab bar: `CC 45(2h47m) W50 F29(3d11h) · CX 2(4d8h)`
   （session% / weekly% / Fable weekly% / Codex weekly%）
   括弧はリセットまでの残り。`CC` の括弧は session、`W50 F29` の後の括弧は
-  **weekly のリセット**（Fable 単体の残りは line には出さず popup 側だけに出す）。
+  **weekly のリセット**（Fable のリセットは line には出さず、popup では絶対時刻のみで残り時間は出さない）。
   Codex の括弧は weekly のリセット
 - `?`（stale マーク）は side 単位で全%に付く。付く条件は2つ:
   ①`fetched_at` が15分より古い ②表示中のいずれかの窓の `resets_at` を過ぎている
