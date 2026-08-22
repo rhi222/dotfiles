@@ -78,6 +78,14 @@ command = "$HOME/.config/herdr/scripts/workspace-switch.sh"
 width = "80%"
 height = "50%"
 
+# agent usage の詳細を popup で見る（prefix+u）。tab bar 側は usage.sh の簡易1行
+[[keys.command]]
+key = "prefix+u"
+type = "popup"
+command = "$HOME/.config/herdr/scripts/usage-popup.sh"
+width = "70%"
+height = "50%"
+
 [ui]
 # tmux 同様マウス操作・ドラッグコピーを有効化（いずれもデフォルトだが明示）
 mouse_capture = true
@@ -97,6 +105,9 @@ agent_panel_sort = "spaces"
 # ホストの値が出る。interval_seconds の最小は 1。
 tab_bar_right = [
   { type = "zoom" },
+  # AI agent のレート上限（Claude session/weekly/Fable + Codex weekly）。
+  # カウントダウンは分単位なので 60秒間隔で足りる。詳細は prefix+u の popup
+  { type = "command", command = "$HOME/.config/herdr/scripts/usage.sh", interval_seconds = 60, timeout_seconds = 2 },
   { type = "command", command = "$HOME/.config/herdr/scripts/status.sh", interval_seconds = 1, timeout_seconds = 2 },
 ]
 tab_bar_right_separator = " · "
