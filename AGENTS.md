@@ -142,7 +142,8 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 
 Go製 `dotctl` が複雑な状態判定を担い、従来の `scripts/*.sh` wrapperが入口を維持する。
 機能固有のShell実装は `domains/<domain>/` に集約し、公開pathから互換層を介して呼ぶ。
-現在の適用先は `domains/linear/`。境界と追加基準は [docs/scripts-layout.md](docs/scripts-layout.md)。
+現在の適用先は `domains/{linear,nippo}/`。境界と追加基準は
+[docs/scripts-layout.md](docs/scripts-layout.md)。
 
 | 機能                       | 既存入口                                    |
 | -------------------------- | ------------------------------------------- |
