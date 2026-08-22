@@ -92,11 +92,20 @@ assert_output_empty() {
   fi
 }
 
+# stderr は契約行（機械可読）、stdout は通知本文（人間向け）。
+# 消費者は 2>/dev/null で stderr を捨てて stdout だけを通知に使うので、
+# テストも両者を分けて取り、通知本文の判定は stdout だけを見る。
+# 保存先は setup() が張る $TEST_DIR。run_check はコマンド置換のサブシェルで
+# 走るため、置き場をローカルに持たせると親へ伝わらない。親スコープの
+# $TEST_DIR を直に使い、書き込みも読み出しも同じパスへ向ける。
+contract_file() {
+  echo "$TEST_DIR/stderr.log"
+}
 run_check() {
   local context="${1:-stop}"
   local output
   local exit_code=0
-  output=$("$NIPPO_CHECK" "$context" 2>&1) || exit_code=$?
+  output=$("$NIPPO_CHECK" "$context" 2>"$(contract_file)") || exit_code=$?
   echo "$output|$exit_code"
 }
 
@@ -106,6 +115,13 @@ parse_output() {
 
 parse_exit() {
   echo "$1" | grep -o '[0-9]*$'
+}
+
+# 直前の run_check が stderr へ出した契約行を読む。
+parse_contract() {
+  local f
+  f="$(contract_file)"
+  [[ -f "$f" ]] && cat "$f" || true
 }
 
 # =============================================================================
@@ -160,9 +176,11 @@ export NIPPO_NOW="2026-03-09 10:00"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "9時以降でファイルなしはexit 1"
 assert_output_contains "📝" "$output" "📝メッセージを含む"
 assert_output_contains "今日の日報がまだ作成されていません" "$output" "日報未作成メッセージ"
+assert_output_contains "nippo-check: CONTEXT=stop HITS=missing" "$contract" "契約行を出す"
 teardown
 
 echo ""
