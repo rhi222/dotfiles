@@ -1,9 +1,9 @@
 {
   "origin": "https://github.com/vercel-labs/agent-skills.git",
   "sub_path": "skills/react-best-practices",
-  "commit": "b8caa260a420a73042e35521de4b5c8baf6446cc",
-  "vendored_at": "2026-08-20",
-  "reviewed_commit": "b8caa260a420a73042e35521de4b5c8baf6446cc",
+  "commit": "dd089a8c752c966dee8bf0f27cb625ba193ffd9e",
+  "vendored_at": "2026-08-22",
+  "reviewed_commit": "dd089a8c752c966dee8bf0f27cb625ba193ffd9e",
   "audit": {
     "high": 0,
     "med": 6,
