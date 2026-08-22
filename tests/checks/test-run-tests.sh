@@ -295,8 +295,12 @@ check "落ちたパッケージを名指しする" grep -q "FAIL  go: example.te
 check "失敗時は詳細を見せる" grep -q "期待と違う" <<<"$out"
 check "同じ実行の成功パッケージは PASS 側に出る" grep -q "PASS  go: example.test/internal/beta" <<<"$out"
 
-# go が無い端末（mise 導入前の bootstrap）では skip して通す
-out=$(env PATH="/usr/bin:/bin" TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" TEST_GO=1 bash "$RUNNER" 2>&1)
+# go が無い端末（mise 導入前の bootstrap）では skip して通す。
+#
+# **PATH を削って作らない。** CI の runner は削った先にも go を持っており、
+# それで CI だけ落ちた。TEST_GO_BIN に存在しない名前を渡すほうが確実。
+out=$(env TEST_GO_BIN=definitely-not-go TEST_GO_REPO="$gorepo" TEST_DIR="$tmp" TEST_GO=1 \
+  bash "$RUNNER" 2>&1)
 rc=$?
 check "go が無ければ全体は成功" test "$rc" -eq 0
 check "go が無いことを skip として伝える" grep -qE 'SKIP +go' <<<"$out"
