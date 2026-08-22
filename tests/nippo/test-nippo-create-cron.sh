@@ -1,5 +1,6 @@
 #!/bin/bash
-# nippo-create-cron.sh のテスト
+# 日報作成cronはenable fileなしでは何もせず、dry-runではclaudeを呼ばない。
+# 日報pathは端末固有値を直書きせずHOMEから解決する。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

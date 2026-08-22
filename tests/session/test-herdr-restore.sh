@@ -1,5 +1,6 @@
 #!/bin/bash
-# lib/herdr-restore.sh のユニットテスト
+# herdr復元は生存paneだけを安全な順序で計画し、使用中paneと取得失敗を破壊しない。
+# marker・status・表示整形の契約を外部herdrなしで検査する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

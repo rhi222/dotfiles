@@ -1,3 +1,5 @@
+// skill vendoringは事前検査と人の承認なしにliveへ反映せず、metadataとsymlinkの整合を保つ。
+// update時は差分を提示し、upstream欠落や未review状態を成功扱いしない。
 package skill
 
 import (

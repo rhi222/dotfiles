@@ -1,6 +1,6 @@
 #!/bin/bash
-# dotfilesLink.sh の関数単体テスト。
-# 実際にリンクを張る処理は呼ばず、source して個々の関数だけを検証する。
+# dotfilesLinkは既存実ファイルを退避して内容を失わず、管理外skillを上書きしない。
+# mainは実行せず、隔離したHOMEとrepositoryでlink関数の副作用を検証する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

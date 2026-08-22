@@ -1,5 +1,6 @@
 #!/bin/bash
-# nippo-check.sh のユニットテスト
+# 日報checkは時刻・曜日・日報状態ごとに通知の有無と契約コードを一意に返し、
+# stopでは低優先度チェックを実行しない。
 # 被テストコマンドの失敗 rc は run_check 内で `|| exit_code=$?` により捕捉するため -e と両立する
 set -euo pipefail
 

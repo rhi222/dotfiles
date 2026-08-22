@@ -1,3 +1,5 @@
+// worktree initは対象とinstall commandを正規化し、dry-runではfileもhookも変更しない。
+// custom hookの欠落や失敗で標準初期化まで失敗させない。
 package worktree
 
 import (
@@ -219,8 +221,9 @@ func TestInitDryRunShowsCustomHookWithoutRunningIt(t *testing.T) {
 	main, target := setupInitDirs(t)
 	initDir := t.TempDir()
 	script := filepath.Join(initDir, "github.com", "o", "r.sh")
+	sentinel := filepath.Join(t.TempDir(), "custom-hook-ran")
 	_ = os.MkdirAll(filepath.Dir(script), 0o755)
-	_ = os.WriteFile(script, []byte("#!/bin/bash\ntouch /tmp/should-not-happen\n"), 0o755)
+	_ = os.WriteFile(script, []byte("#!/bin/bash\ntouch "+sentinel+"\n"), 0o755)
 
 	f := initFakeGit(main, target)
 	f.On("git", execx.Result{Stdout: "git@github.com:o/r.git\n"})
@@ -236,6 +239,9 @@ func TestInitDryRunShowsCustomHookWithoutRunningIt(t *testing.T) {
 		if c.Name == "bash" {
 			t.Error("dry-run なのに固有スクリプトを実行している")
 		}
+	}
+	if _, err := os.Stat(sentinel); !os.IsNotExist(err) {
+		t.Errorf("dry-run でcustom hookの副作用が発生した: %v", err)
 	}
 }
 

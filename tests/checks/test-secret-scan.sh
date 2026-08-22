@@ -1,5 +1,6 @@
 #!/bin/bash
-# secret-scan.sh のユニットテスト
+# secret-scan は追跡内容・パス名・外部辞書の機密語を検出し、予約domainなどの
+# 公開可能なfixtureを誤検知しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

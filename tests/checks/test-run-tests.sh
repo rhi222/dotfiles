@@ -1,5 +1,6 @@
 #!/bin/bash
-# run-tests.sh のテスト。偽のテスト群を作った一時ディレクトリを対象にする
+# run-tests.sh は失敗を取りこぼさず全件を続行し、並列でも出力順と隔離を保つ。
+# 偽のテスト群を一時ディレクトリに作り、実 tests/ や実 HOME は変更しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

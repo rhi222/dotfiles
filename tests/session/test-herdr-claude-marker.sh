@@ -1,5 +1,6 @@
 #!/bin/bash
-# .config/claude/hooks/herdr-claude-marker.sh のユニットテスト
+# Claude markerはpane単位の最新sessionだけを記録し、終了時も別sessionが
+# 上書きしたmarkerを消さない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +18,9 @@ TOTAL=0
 
 TEST_DIR=""
 MARKER_DIR=""
+TEST_CWD="/tmp/proj"
+TRANSCRIPT_1="/tmp/t1.jsonl"
+TRANSCRIPT_2="/tmp/t2.jsonl"
 
 setup() {
   TEST_DIR=$(mktemp -d)
@@ -46,42 +50,42 @@ assert_eq() {
 
 payload() {
   # $1 session_id, $2 transcript_path
-  printf '{"session_id":"%s","cwd":"/tmp/proj","transcript_path":"%s","hook_event_name":"SessionStart","source":"startup"}' "$1" "$2"
+  printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","hook_event_name":"SessionStart","source":"startup"}' "$1" "$TEST_CWD" "$2"
 }
 
 end_payload() {
   # $1 session_id
-  printf '{"session_id":"%s","cwd":"/tmp/proj","hook_event_name":"SessionEnd","reason":"other"}' "$1"
+  printf '{"session_id":"%s","cwd":"%s","hook_event_name":"SessionEnd","reason":"other"}' "$1" "$TEST_CWD"
 }
 
 echo "test: HERDR_PANE_ID が無いときは何も作らない"
 setup
 unset HERDR_PANE_ID
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
 assert_eq "マーカーディレクトリが作られない" "absent" "$([[ -d "$MARKER_DIR" ]] && echo present || echo absent)"
 teardown
 
 echo "test: start でマーカーが3行で書かれる"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
 assert_eq "1行目は session_id" "sess-1" "$(awk 'NR==1' "$MARKER_DIR/w5:p29")"
-assert_eq "2行目は cwd" "/tmp/proj" "$(awk 'NR==2' "$MARKER_DIR/w5:p29")"
-assert_eq "3行目は transcript_path" "/tmp/t1.jsonl" "$(awk 'NR==3' "$MARKER_DIR/w5:p29")"
+assert_eq "2行目は cwd" "$TEST_CWD" "$(awk 'NR==2' "$MARKER_DIR/w5:p29")"
+assert_eq "3行目は transcript_path" "$TRANSCRIPT_1" "$(awk 'NR==3' "$MARKER_DIR/w5:p29")"
 teardown
 
 echo "test: 2回目の start が上書きする"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
-payload sess-2 /tmp/t2.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
+payload sess-2 "$TRANSCRIPT_2" | "$HOOK" start
 assert_eq "session_id が更新される" "sess-2" "$(awk 'NR==1' "$MARKER_DIR/w5:p29")"
 teardown
 
 echo "test: end でマーカーが消える"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
 "$HOOK" end </dev/null
 assert_eq "マーカーが削除される" "absent" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
 teardown
@@ -92,8 +96,8 @@ teardown
 echo "test: end は自分が書いたマーカーだけ消す"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
-payload sess-2 /tmp/t2.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
+payload sess-2 "$TRANSCRIPT_2" | "$HOOK" start
 end_payload sess-1 | "$HOOK" end
 assert_eq "他セッションのマーカーは残る" "present" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
 assert_eq "中身は新しいセッションのまま" "sess-2" "$(awk 'NR==1' "$MARKER_DIR/w5:p29")"
@@ -102,7 +106,7 @@ teardown
 echo "test: end は session_id が一致すれば消す"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload sess-1 /tmp/t1.jsonl | "$HOOK" start
+payload sess-1 "$TRANSCRIPT_1" | "$HOOK" start
 end_payload sess-1 | "$HOOK" end
 assert_eq "マーカーが削除される" "absent" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
 teardown
@@ -110,7 +114,7 @@ teardown
 echo "test: session_id が空なら書かない"
 setup
 export HERDR_PANE_ID="w5:p29"
-payload "" /tmp/t1.jsonl | "$HOOK" start
+payload "" "$TRANSCRIPT_1" | "$HOOK" start
 assert_eq "マーカーが作られない" "absent" "$([[ -f "$MARKER_DIR/w5:p29" ]] && echo present || echo absent)"
 teardown
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-# lib/cron-claude.sh のテスト
+# cron-claude はclaudeの引数と終了コードを透過し、ハングを上限で打ち切る。
+# enable fileと平日条件を満たさない実行は、副作用なしで正常終了する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

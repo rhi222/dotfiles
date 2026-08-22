@@ -1,3 +1,4 @@
+// skill auditは危険なcode・host・権限を検出し、通常のMarkdownや管理metadataを誤検知しない。
 package skill
 
 import (

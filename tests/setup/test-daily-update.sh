@@ -1,12 +1,15 @@
 #!/bin/bash
-# serial: 並列実行で不安定になることを実測（原因未特定。直列なら安定）
-# daily-update.sh のユニットテスト（純粋関数のみ対象）
+# daily-update は未導入ツールを追加せず、個別の失敗を集約して後続処理を続ける。
+# source 時を含めて実 HOME や実運用ログを変更せず、その判定と終了コードを検査する。
 # -e はセットアップ部（source まで）の失敗を即検知するため。テスト本体では無効化する
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
 DAILY_UPDATE="$SCRIPTS_DIR/daily-update.sh"
+TEST_HOME=$(mktemp -d)
+export HOME="$TEST_HOME"
+trap 'rm -rf "$TEST_HOME"' EXIT
 
 if [[ ! -f "$DAILY_UPDATE" ]]; then
   echo "ERROR: $DAILY_UPDATE が存在しません"

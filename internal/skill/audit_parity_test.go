@@ -1,3 +1,4 @@
+// repository内の実skillを同じaudit規則で検査し、vendored skillにHigh findingを許さない。
 package skill
 
 import (

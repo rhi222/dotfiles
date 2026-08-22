@@ -1,5 +1,6 @@
 #!/bin/bash
-# linear-api.sh のテスト。curlをstubに差し替えてHTTPを発生させない
+# Linear API層はGraphQLエラーを成功扱いせず、設定済みIDとstateを正確に返す。
+# curlをstubに差し替え、実HTTPや共有systemへの書き込みは発生させない。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -50,9 +51,13 @@ export CURL_LOG="$tmp/curl.log"
 source "$LIB"
 
 # 1. config読み出し
-check "linear_configがteam_idを返す" test "$(linear_config '.team_id')" = "team-uuid-1"
-check "linear_state_idが解決できる" test "$(linear_state_id 'AI Queued')" = "st-ready"
-check "linear_label_idが解決できる" test "$(linear_label_id 'src:github')" = "lb-gh"
+TEAM_ID=$(jq -r '.team_id' "$LINEAR_CONFIG_DIR/config.json")
+READY_STATE_ID=$(jq -r '.states["AI Queued"]' "$LINEAR_CONFIG_DIR/config.json")
+TRIAGE_STATE_ID=$(jq -r '.states.Triage' "$LINEAR_CONFIG_DIR/config.json")
+GITHUB_LABEL_ID=$(jq -r '.labels["src:github"]' "$LINEAR_CONFIG_DIR/config.json")
+check "linear_configがteam_idを返す" test "$(linear_config '.team_id')" = "$TEAM_ID"
+check "linear_state_idが解決できる" test "$(linear_state_id 'AI Queued')" = "$READY_STATE_ID"
+check "linear_label_idが解決できる" test "$(linear_label_id 'src:github')" = "$GITHUB_LABEL_ID"
 check "未知のstate名は非0" bash -c "source '$LIB'; ! linear_state_id 'NoSuch'"
 
 # 2. linear_gql 正常系: .data を返す
@@ -71,11 +76,12 @@ cat >"$tmp/create.json" <<'EOF'
           "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-1", "url": "https://linear.app/nsym/issue/NSY-1"}}}}
 EOF
 export CURL_RESPONSE="$tmp/create.json"
+CREATED_IDENTIFIER=$(jq -r '.data.issueCreate.issue.identifier' "$CURL_RESPONSE")
 : >"$CURL_LOG"
 out=$(linear_issue_create "title x" "desc y" "Triage" "src:github")
-check "issue_createがidentifierを返す" test "$(jq -r '.identifier' <<<"$out")" = "NSY-1"
-check "payloadにstateIdが入る" grep -q 'st-triage' "$CURL_LOG"
-check "payloadにlabelIdが入る" grep -q 'lb-gh' "$CURL_LOG"
+check "issue_createがidentifierを返す" test "$(jq -r '.identifier' <<<"$out")" = "$CREATED_IDENTIFIER"
+check "payloadにstateIdが入る" grep -q "$TRIAGE_STATE_ID" "$CURL_LOG"
+check "payloadにlabelIdが入る" grep -q "$GITHUB_LABEL_ID" "$CURL_LOG"
 check "payloadにassigneeIdが入る（My Issuesに出すため）" grep -q 'user-me' "$CURL_LOG"
 
 # 5. linear_issues_in_state がnodes配列を返す
@@ -129,15 +135,17 @@ cat >"$tmp/cycle.json" <<'EOF'
 ]}}}
 EOF
 export CURL_RESPONSE="$tmp/cycle.json"
+PARENT_IDENTIFIER=$(jq -r '.data.cycles.nodes[0].issues.nodes[1].parent.identifier' "$CURL_RESPONSE")
+CHILD_IDENTIFIER=$(jq -r '.data.cycles.nodes[0].issues.nodes[0].children.nodes[0].identifier' "$CURL_RESPONSE")
 : >"$CURL_LOG"
 check "cycle_issuesが配列を返す" test "$(linear_cycle_issues | jq 'length')" = "2"
 check "cycle_issuesがestimateを含む" test "$(linear_cycle_issues | jq -r '.[0].estimate')" = "2"
-check "cycle_issuesがparentを含む" test "$(linear_cycle_issues | jq -r '.[1].parent.identifier')" = "NSY-65"
-check "cycle_issuesがchildrenを含む" test "$(linear_cycle_issues | jq -r '.[0].children.nodes[0].identifier')" = "NSY-66"
+check "cycle_issuesがparentを含む" test "$(linear_cycle_issues | jq -r '.[1].parent.identifier')" = "$PARENT_IDENTIFIER"
+check "cycle_issuesがchildrenを含む" test "$(linear_cycle_issues | jq -r '.[0].children.nodes[0].identifier')" = "$CHILD_IDENTIFIER"
 check "cycle_issuesがstateを含む" test "$(linear_cycle_issues | jq -r '.[0].state.name')" = "Todo"
 # 「今週やると宣言したもの」だけを見たいので、進行中のCycleに限定する
 check "アクティブなCycleに限定するフィルタを送る" grep -q 'isActive' "$CURL_LOG"
-check "team_idで絞る" grep -q 'team-uuid-1' "$CURL_LOG"
+check "team_idで絞る" grep -q "$TEAM_ID" "$CURL_LOG"
 
 # Cycleが1本も無い / 未開始の週は空配列を返す。日報作成やtriageを止めないため
 echo '{"data": {"cycles": {"nodes": []}}}' >"$tmp/cycle-empty.json"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# serial: 実 nvim を起動し 5000ms のデバウンスを待つので、並列の負荷で取りこぼす
+# serial: 保存されないことの検査はデバウンス後の負の待ちが必要で、負荷の影響を受ける
 # nvim セッションの自動保存テスト
 #
 # herdr サーバーを再起動すると、各ペインの nvim は SIGTERM/SIGHUP で終了させられる。
@@ -18,7 +18,10 @@
 # ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
 
-SESSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/sessions"
+TEST_ROOT=$(mktemp -d)
+SESSION_DIR="$TEST_ROOT/sessions"
+mkdir -p "$SESSION_DIR"
+export MY_AUTOSESSION_ROOT_DIR="$SESSION_DIR"
 
 # 定期保存のデバウンス。テスト中だけ短縮する（auto-session.lua が
 # MY_AUTOSESSION_SAVE_DEBOUNCE_MS で上書きを受け付ける）。
@@ -47,6 +50,7 @@ cleanup() {
   for f in "${SESSION_FILES[@]:-}"; do
     [[ -n "$f" && -f "$f" ]] && rm -f "$f"
   done
+  rm -rf "$TEST_ROOT"
 }
 trap cleanup EXIT
 
@@ -157,7 +161,6 @@ test_saved_on_sigterm() {
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
-  sleep 1
 
   session=$(find_session_file "$workdir")
   if [[ -z "$session" ]]; then
@@ -190,7 +193,6 @@ test_saved_on_clean_quit() {
   # デバウンス前に終了させ、VimLeavePre 経由の保存だけを見る
   nvim --server "$sock" --remote-send ':qa<CR>' >/dev/null 2>&1
   wait "$pid" 2>/dev/null
-  sleep 1
 
   session=$(find_session_file "$workdir")
   if [[ -z "$session" ]]; then
@@ -226,7 +228,6 @@ test_not_saved_with_file_args() {
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
-  sleep 1
 
   session=$(find_session_file "$workdir")
   if [[ -n "$session" ]]; then
@@ -263,7 +264,6 @@ test_not_saved_while_scratchpad_visible() {
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
-  sleep 1
 
   session=$(find_session_file "$workdir")
   if [[ -z "$session" ]]; then
@@ -307,7 +307,6 @@ test_saved_after_scratchpad_closed() {
 
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
-  sleep 1
 
   session=$(find_session_file "$workdir")
   if [[ -z "$session" ]]; then

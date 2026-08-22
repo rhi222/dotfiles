@@ -63,6 +63,9 @@ require("auto-session").setup({
 	auto_save = true,
 	auto_restore = true,
 	show_auto_restore_notif = true,
+	-- XDG_DATA_HOME を変えると lazy.nvim の plugin root まで変わるため、実 nvim 設定を
+	-- 使うテストは session の保存先だけを一時ディレクトリへ隔離する。
+	root_dir = vim.env.MY_AUTOSESSION_ROOT_DIR or (vim.fn.stdpath("data") .. "/sessions/"),
 	suppressed_dirs = {
 		vim.fn.expand("~"),
 		vim.fn.expand("~/Downloads"),

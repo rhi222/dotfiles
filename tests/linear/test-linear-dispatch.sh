@@ -1,5 +1,6 @@
 #!/bin/bash
-# linear-dispatch-cron.sh のテスト。curl/claude/ghq/gitをstubにする
+# dispatchは権限・WIP・成果を確認してからpushとdraft PRを行い、失敗時は安全なstateへ戻す。
+# curl/claude/ghq/gitをstubにし、実repositoryや共有systemは変更しない。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

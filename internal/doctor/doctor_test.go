@@ -1,3 +1,5 @@
+// doctorは残骸と移行対象を検出しつつ、宣言を読めない場合は誤検知しない側へ倒す。
+// 情報提供のresidueと異常を示すmigrationの終了コードを混同しない。
 package doctor
 
 import (

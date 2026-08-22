@@ -1,3 +1,4 @@
+// worktree initはmainを拒否し、ignoredなenvだけを実repository間でコピーして再実行可能にする。
 package worktree
 
 import (

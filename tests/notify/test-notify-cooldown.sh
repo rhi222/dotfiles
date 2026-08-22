@@ -1,5 +1,6 @@
 #!/bin/bash
-# lib/notify-cooldown.sh のユニットテスト
+# 同一通知はクールダウン中だけ抑止し、内容変更や境界到達後は送信する。
+# 壊れたstateでは通知を落とさず、送信側へ安全に倒す。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

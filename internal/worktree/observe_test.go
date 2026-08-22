@@ -1,3 +1,4 @@
+// worktree観測はporcelain出力の境界を正しく解析し、取得不能なPRやstatusを安全側に表現する。
 package worktree
 
 import (

@@ -1,5 +1,6 @@
 #!/bin/bash
-# esa-weekly-cron.sh のテスト
+# esa週報cronはenable fileなしでは何もせず、dry-runでは外部処理を呼ばない。
+# claudeがハングした場合は上限で打ち切り、失敗を呼び出し側へ返す。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

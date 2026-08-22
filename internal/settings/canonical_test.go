@@ -1,3 +1,4 @@
+// settingsのcanonical化はJSONの意味と数値を保ち、壊れたJSONやJSONCを反対側へ伝播しない。
 package settings
 
 import (

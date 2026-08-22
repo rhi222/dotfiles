@@ -1,6 +1,6 @@
 #!/bin/bash
-# fish関数 wtd / __wt_lock_reason のユニットテスト
-# 一時リポジトリにworktreeを作り、__wt_select をスタブして検証する
+# wtdはdirtyやlockedなworktreeを通常のforceでは削除せず、二重forceだけで踏み越える。
+# 一時repositoryとstub selectorを使い、現在のworktreeは変更しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

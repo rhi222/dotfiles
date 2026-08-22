@@ -1,6 +1,6 @@
 #!/bin/bash
-# setup-gh-extensions.sh のユニットテスト
-# PATH先頭に gh のスタブを置き、実際のGitHubアクセスなしで挙動を検証する
+# gh extension setupは宣言済みの不足分だけを導入し、dry-runや不正宣言では変更しない。
+# PATH先頭のgh stubを使い、実GitHubやインストール先は変更しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

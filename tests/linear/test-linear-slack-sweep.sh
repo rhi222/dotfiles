@@ -35,6 +35,15 @@ EOF
 export LINEAR_CONFIG_DIR="$tmp/home/.config/linear"
 export LINEAR_SLACK_SWEEP_SEEN="$tmp/state/seen.txt"
 export LINEAR_SLACK_SWEEP_LOCK="$tmp/state/sweep.lock"
+TRIAGE_STATE_ID=$(jq -r '.states.Triage' "$LINEAR_CONFIG_DIR/config.json")
+SLACK_LABEL_ID=$(jq -r '.labels["src:slack"]' "$LINEAR_CONFIG_DIR/config.json")
+PLAYER_LABEL_ID=$(jq -r '.labels["role:player"]' "$LINEAR_CONFIG_DIR/config.json")
+TECH_LABEL_ID=$(jq -r '.labels["em:tech"]' "$LINEAR_CONFIG_DIR/config.json")
+GITHUB_LABEL_ID=$(jq -r '.labels["src:github"]' "$LINEAR_CONFIG_DIR/config.json")
+MANAGER_LABEL_ID=$(jq -r '.labels["role:manager"]' "$LINEAR_CONFIG_DIR/config.json")
+PEOPLE_LABEL_ID=$(jq -r '.labels["em:people"]' "$LINEAR_CONFIG_DIR/config.json")
+export CREATED_IDENTIFIER="NSY-100"
+export EXISTING_IDENTIFIER="NSY-42"
 
 # --- unseen ---
 
@@ -71,9 +80,7 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-echo '{"data": {"viewer": {"id": "user-me"},
-                "issues": {"nodes": []},
-                "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-100", "url": "u"}}}}'
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[]},"issueCreate":{"success":true,"issue":{"id":"i1","identifier":"%s","url":"u"}}}}\n' "${CREATED_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 export PATH="$tmp/bin:$PATH"
@@ -89,13 +96,13 @@ PERMALINK="https://slack.example.com/archives/C0EXAMPLE/p1786335015733309?thread
 out6=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" \
   "PMS疎通試験の結果をまとめる" "試験結果を共有し、次の判断材料にする" "スレで疎通試験の話が出た" \
   "role:player" "em:tech" 2>&1)
-check "createがcreatedを返す" grep -q "^created NSY-100$" <<<"$out6"
+check "createがcreatedを返す" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6"
 check "seenにキーが追記される" grep -qxF "C0EXAMPLE/1786335015.733309" "$LINEAR_SLACK_SWEEP_SEEN"
 check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
-check "Triageに起票する" grep -q "st-triage" "$CURL_LOG"
-check "src:slackラベルが付く" grep -q "lb-s" "$CURL_LOG"
-check "推定したroleラベルが付く" grep -q "lb-rp" "$CURL_LOG"
-check "推定したemラベルが付く" grep -q "lb-et" "$CURL_LOG"
+check "Triageに起票する" grep -q "$TRIAGE_STATE_ID" "$CURL_LOG"
+check "src:slackラベルが付く" grep -q "$SLACK_LABEL_ID" "$CURL_LOG"
+check "推定したroleラベルが付く" grep -q "$PLAYER_LABEL_ID" "$CURL_LOG"
+check "推定したemラベルが付く" grep -q "$TECH_LABEL_ID" "$CURL_LOG"
 check "本文に元URLが入る" grep -q "元URL" "$CURL_LOG"
 check "本文に期待アウトカムが入る" grep -q "期待アウトカム" "$CURL_LOG"
 
@@ -103,8 +110,8 @@ check "本文に期待アウトカムが入る" grep -q "期待アウトカム" 
 # 推定は付加価値であって起票の前提ではない。手で叩くときに省けること
 : >"$CURL_LOG"
 out6b=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.999999" "$PERMALINK" "t" "o" "s" 2>&1)
-check "ラベル省略でも起票できる" grep -q "^created NSY-100$" <<<"$out6b"
-check "ラベル省略時もsrc:slackは付く" grep -q "lb-s" "$CURL_LOG"
+check "ラベル省略でも起票できる" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6b"
+check "ラベル省略時もsrc:slackは付く" grep -q "$SLACK_LABEL_ID" "$CURL_LOG"
 
 # --- create（未知のラベル名） ---
 # agentがラベル名を1文字間違えても起票そのものは通す。
@@ -113,15 +120,15 @@ check "ラベル省略時もsrc:slackは付く" grep -q "lb-s" "$CURL_LOG"
 : >"$CURL_LOG"
 out6c=$(bash "$SCRIPT" create "C0EXAMPLE/1786335016.111111" "$PERMALINK" "t" "o" "s" \
   "em:engineering" "role:player" 2>&1)
-check "未知のラベルがあっても起票は成功する" grep -q "^created NSY-100$" <<<"$out6c"
-check "未知のラベルは無視して残りは付ける" grep -q "lb-rp" "$CURL_LOG"
+check "未知のラベルがあっても起票は成功する" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6c"
+check "未知のラベルは無視して残りは付ける" grep -q "$PLAYER_LABEL_ID" "$CURL_LOG"
 check "未知のラベルを警告に出す" grep -q "em:engineering" <<<"$out6c"
 
 # --- create（src:* は引数で受け付けない） ---
 # 流入元は事実判定なのでスクリプトが固定で付ける。agentに委ねる意味がない
 : >"$CURL_LOG"
 bash "$SCRIPT" create "C0EXAMPLE/1786335017.222222" "$PERMALINK" "t" "o" "s" "src:github" >/dev/null 2>&1
-check "src:*を引数から付けない" test "$(grep -c 'lb-gh' "$CURL_LOG")" -eq 0
+check "src:*を引数から付けない" test "$(grep -c "$GITHUB_LABEL_ID" "$CURL_LOG")" -eq 0
 
 # --- create（seen済みなら何もしない） ---
 : >"$CURL_LOG"
@@ -139,9 +146,7 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-echo '{"data": {"viewer": {"id": "user-me"},
-                "issues": {"nodes": [{"id": "i-old", "identifier": "NSY-42"}]},
-                "commentCreate": {"success": true}}}'
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[{"id":"i-old","identifier":"%s"}]},"commentCreate":{"success":true}}}\n' "${EXISTING_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 
@@ -149,11 +154,12 @@ chmod +x "$tmp/bin/curl"
 : >"$CURL_LOG"
 out8=$(bash "$SCRIPT" create "C0EXAMPLE/9999.0" "$PERMALINK" "t" "o" "スレが再燃した" \
   "role:manager" "em:people" 2>&1)
-check "重複時はcommentedを返す" grep -q "^commented NSY-42$" <<<"$out8"
+check "重複時はcommentedを返す" grep -q "^commented $EXISTING_IDENTIFIER$" <<<"$out8"
 check "重複時はissueCreateを呼ばない" test "$(grep -c 'issueCreate' "$CURL_LOG")" -eq 0
 check "重複時はcommentCreateを呼ぶ" grep -q "commentCreate" "$CURL_LOG"
 # 既にtriage済みかもしれない相手の分類を機械が上書きしない
-check "重複時はラベルを触らない" test "$(grep -c 'lb-rm\|lb-ep' "$CURL_LOG")" -eq 0
+check "重複時はラベルを触らない" \
+  test "$(grep -c "$MANAGER_LABEL_ID\|$PEOPLE_LABEL_ID" "$CURL_LOG")" -eq 0
 check "重複時もseenに追記する" grep -qxF "C0EXAMPLE/9999.0" "$LINEAR_SLACK_SWEEP_SEEN"
 # 照合はpermalinkのクエリ文字列を落とした中核部分だけで行う
 check "重複チェックは中核部分で照合する" grep -q '/archives/C0EXAMPLE/p1786335015733309' "$CURL_LOG"
