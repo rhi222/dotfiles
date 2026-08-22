@@ -221,6 +221,24 @@ PRIVATE_DIR="$priv" HOME="$fakehome" DOTFILES_DIR="$tmp/ed/repo" \
 check "api-key はファイル単位でリンクされる" test -L "$fakehome/.config/linear/api-key"
 check "親の .config/linear はリンクに置き換わらない" test ! -L "$fakehome/.config/linear"
 
+# --- safe_link の定期実行時出力 ---
+# 既に正しいlinkを全件表示するとskill数に比例してノイズが増える。
+quiet_link="$tmp/quiet-link"
+mkdir -p "$quiet_link/src" "$quiet_link/dest"
+ln -s "$quiet_link/src" "$quiet_link/dest/link"
+LINKED=0
+UNCHANGED=0
+safe_link "$quiet_link/src" "$quiet_link/dest/link" >"$quiet_link/out" 2>&1
+out=$(<"$quiet_link/out")
+check "既に正しいlinkは何も表示しない" test -z "$out"
+check "既に正しいlinkをUNCHANGEDへ数える" test "$UNCHANGED" -eq 1
+check "既に正しいlinkを張り直さない" test "$LINKED" -eq 0
+
+safe_link "$quiet_link/src" "$quiet_link/dest/new-link" >"$quiet_link/out" 2>&1
+out=$(<"$quiet_link/out")
+check "新しいlinkだけ詳細を表示する" grep -q '^\[LINK\]' <<<"$out"
+check "新しいlinkをLINKEDへ数える" test "$LINKED" -eq 1
+
 # --- Codex config: init とlinkのライフサイクルを分離 ---
 # repository管理ruleはTUIが書くdefault.rulesと別名で配置し、
 # 端末で蓄積したapprovalを上書きしない。

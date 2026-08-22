@@ -7,6 +7,8 @@ DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
 DC="$DOTFILES_DIR/.config"
 
 SKIPPED=()
+LINKED=0
+UNCHANGED=0
 
 safe_link() {
   local src="$1"
@@ -18,8 +20,13 @@ safe_link() {
     SKIPPED+=("$dest")
     return 0
   fi
+  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ]; then
+    UNCHANGED=$((UNCHANGED + 1))
+    return 0
+  fi
   if ln -snf "$src" "$dest"; then
-    echo "[OK] $dest -> $src"
+    LINKED=$((LINKED + 1))
+    echo "[LINK] $dest -> $src"
   else
     echo "[FAIL] $dest -> $src" >&2
     return 1
@@ -335,6 +342,8 @@ report_skipped() {
 
 link_main() {
   SKIPPED=()
+  LINKED=0
+  UNCHANGED=0
   ensure_dirs
   # link_configs より先に張る。cross-repo-auto-discover は
   # 「集約先 → リポジトリ内 → ~/.claude/skills」の二段リンクになるため、
@@ -348,6 +357,7 @@ link_main() {
   configure_git_hooks
   grant_exec_permissions
   warn_missing_local_git
+  echo "dotfilesLink: LINKED=$LINKED UNCHANGED=$UNCHANGED SKIPPED=${#SKIPPED[@]}"
   report_skipped
 }
 
