@@ -138,7 +138,7 @@ link_configs() {
     "$DOTFILES_DIR/.gitconfig|$HOME/.gitconfig"
     "$DC/tmux|$HOME/.config/tmux"
     "$DC/tmux/tmux.conf|$HOME/.tmux.conf"
-    "$DOTFILES_DIR/.psqlrc|$HOME/.psqlrc"
+    "$DC/psql/psqlrc|$HOME/.psqlrc"
 
     # Claude Code configuration
     # settings.json は symlink にできないため setup_claude_settings で別途同期する
