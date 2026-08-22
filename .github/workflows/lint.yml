@@ -1,93 +1,103 @@
 name: lint
 
 on:
-  # GitHub Actions は YAML のアンカー/エイリアスを解釈しないので、
-  # push と pull_request で同じ paths を素直に重複させる
-  push:
-    branches: [main]
-    paths:
-      - "**.sh"
-      # fish 関数（gf / wt / wtd / dclean）にもテストがあるので .fish でも起動する
-      - "**.fish"
-      - ".shellcheckrc"
-      - ".github/workflows/lint.yml"
-      # 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
-      - "**.md"
-      - "**.go"
-      - "go.mod"
-  pull_request:
-    paths:
-      - "**.sh"
-      - "**.fish"
-      - ".shellcheckrc"
-      - ".github/workflows/lint.yml"
-      - "**.md"
-      - "**.go"
-      - "go.mod"
+# GitHub Actions は YAML のアンカー/エイリアスを解釈しないので、
+# push と pull_request で同じ paths を素直に重複させる
+push:
+branches: [main]
+paths:
+- "**.sh"
+# fish 関数（gf / wt / wtd / dclean）にもテストがあるので .fish でも起動する
+- "**.fish"
+- ".shellcheckrc"
+- ".github/workflows/lint.yml"
+# 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
+- "**.md"
+- "**.go"
+- "go.mod"
+pull_request:
+paths:
+- "**.sh"
+- "**.fish"
+- ".shellcheckrc"
+- ".github/workflows/lint.yml"
+- "**.md"
+- "**.go"
+- "go.mod"
 
 jobs:
-  shell-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+shell-lint:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
 
-      # ローカルと同じバージョンを明示的に固定する。
-      #
-      # 以前は shellcheck を runner のプリインストール、shfmt を `go install ...@latest`
-      # で入れていたため、ローカル（mise の shellcheck 0.11.0）と CI でバージョンが
-      # 食い違い「ローカルは緑なのに CI だけ赤」が起きていた（CI 側だけ SC2317 / SC2015 を
-      # 報告した）。
-      #
-      # グローバルの .config/mise/config.toml をそのまま使うことはしない。言語ランタイム
-      # 込みで約40ツールあり、CI に入れるには重すぎる。ここでは2つだけ mise 経由で入れる。
-      #
-      # ローカル側は `latest` 宣言なので、mise を更新したらここも合わせて上げる。
-      # 差分は "Show tool versions" の出力で気付ける。
-      - uses: jdx/mise-action@v2
-        with:
-          install: true
-          cache: true
-          mise_toml: |
-            [tools]
-            "aqua:koalaman/shellcheck" = "0.11.0"
-            "aqua:mvdan/sh" = "3.13.1"
-            # run-tests.sh が go test ./... も走らせるため。go が無い環境では
-            # skip して通るので CI が落ちはしないが、それでは Go 側を検査できない
-            go = "1.26"
+# ローカルと同じバージョンを明示的に固定する。
+#
+# 以前は shellcheck を runner のプリインストール、shfmt を `go install ...@latest`
+# で入れていたため、ローカル（mise の shellcheck 0.11.0）と CI でバージョンが
+# 食い違い「ローカルは緑なのに CI だけ赤」が起きていた（CI 側だけ SC2317 / SC2015 を
+# 報告した）。
+#
+# グローバルの .config/mise/config.toml をそのまま使うことはしない。言語ランタイム
+# 込みで約40ツールあり、CI に入れるには重すぎる。ここでは2つだけ mise 経由で入れる。
+#
+# ローカル側は `latest` 宣言なので、mise を更新したらここも合わせて上げる。
+# 差分は "Show tool versions" の出力で気付ける。
+- uses: jdx/mise-action@v2
+with:
+install: true
+cache: true
+mise_toml: |
+  [tools]
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:mvdan/sh" = "3.13.1"
+# run-tests.sh が go test ./... も走らせるため。go が無い環境では
+# skip して通るので CI が落ちはしないが、それでは Go 側を検査できない
+go = "1.26"
 
-      - name: Show tool versions
-        run: |
-          shellcheck --version | grep version
-          shfmt --version
-          go version
+- name: Show tool versions
+run: |
+  shellcheck --version | grep version
+shfmt --version
+go version
 
-      # lint.sh の fish -n と、fish 関数のテスト（gf / wt / wtd / dclean）の両方で要る。
-      # **lint より前に入れる。** lint.sh は fish が無いと .fish の構文チェックを
-      # skip して成功するので、後ろに置くと CI だけ検査を素通りする。
-      # nvim / tmux / ghq / docker は要らない（各テストが stub を持つ）。
-      - name: Install fish
-        run: sudo apt-get update && sudo apt-get install -y fish
+# lint.sh の fish -n と、fish 関数のテスト（gf / wt / wtd / dclean）の両方で要る。
+# **lint より前に入れる。** lint.sh は fish が無いと .fish の構文チェックを
+# skip して成功するので、後ろに置くと CI だけ検査を素通りする。
+# nvim / tmux / ghq / docker は要らない（各テストが stub を持つ）。
+- name: Install fish
+run: sudo apt-get update && sudo apt-get install -y fish
 
-      - name: Lint shell scripts
-        run: bash scripts/lint.sh
+- name: Lint shell scripts
+run: bash scripts/lint.sh
 
-      # scripts/ 配下への参照（AGENTS.md の表・docs・skill 本文・herdr config・
-      # dotfilesLink.sh）が壊れていないか。**push 後の最終防波堤**で、主の防壁は
-      # pre-commit 側（secret-scan と同じ二層構成）。
-      - name: Check scripts/ references
-        run: bash scripts/ref-check.sh
+# scripts/ 配下への参照（AGENTS.md の表・docs・skill 本文・herdr config・
+# dotfilesLink.sh）が壊れていないか。**push 後の最終防波堤**で、主の防壁は
+# pre-commit 側（secret-scan と同じ二層構成）。
+- name: Check scripts/ references
+run: bash scripts/ref-check.sh
 
-      # Go 側の静的検査。gofmt は差分が出たら落とす（shfmt と同じ扱い）
-      - name: Lint Go
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "gofmt が必要:"; echo "$unformatted"; exit 1
-          fi
-          go vet ./...
+# Go 側の静的検査。gofmt は差分が出たら落とす（shfmt と同じ扱い）
+- name: Lint Go
+run: |
+  unformatted=$(gofmt -l .)
+if [ -n "$unformatted" ]; then
+  echo "gofmt が必要:"
+  echo "$unformatted"
+  exit 1
+fi
+go vet ./...
 
-      # 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
-      # 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。
-      # CIで動かせないものはテストファイル側の `# ci-skip:` で宣言する。
-      - name: Run shell script tests
-        run: bash scripts/run-tests.sh --ci
+# **dotctl を先にビルドする。** wrapper の契約テストは自前で `go build` するが、
+# allowlist ゲートのテストは `skill-add.sh` を素で叩くので、dotctl 不在だと
+# fail-closed の別メッセージになりゲートの案内文を検査できない
+# （終了コードだけ 1 で一致するので、CI だけ2件落ちていた）。
+# 併せて setup-dotctl.sh 自体の bootstrap 経路も CI で通る。
+- name: Build dotctl
+run: bash scripts/setup-dotctl.sh
+
+# 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
+# 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。
+# CIで動かせないものはテストファイル側の `# ci-skip:` で宣言する。
+- name: Run shell script tests
+run: bash scripts/run-tests.sh --ci
