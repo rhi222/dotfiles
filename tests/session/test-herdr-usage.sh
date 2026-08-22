@@ -1,5 +1,5 @@
 #!/bin/bash
-# .config/herdr/scripts/usage.sh のユニットテスト
+# .config/herdr/scripts/{usage,usage-popup}.sh のユニットテスト
 #
 # tab bar の command エントリとして呼ばれるので、
 #   ・dotctl が無い環境では空出力・exit 0 で欄ごと落とすこと
@@ -11,11 +11,14 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TARGET="$REPO_ROOT/.config/herdr/scripts/usage.sh"
+POPUP_TARGET="$REPO_ROOT/.config/herdr/scripts/usage-popup.sh"
 
-if [[ ! -x "$TARGET" ]]; then
-  echo "ERROR: $TARGET が実行可能ファイルとして存在しません"
-  exit 1
-fi
+for target in "$TARGET" "$POPUP_TARGET"; do
+  if [[ ! -x "$target" ]]; then
+    echo "ERROR: $target が実行可能ファイルとして存在しません"
+    exit 1
+  fi
+done
 
 PASS=0
 FAIL=0
@@ -49,12 +52,12 @@ echo "test: dotctl の出力をそのまま返す"
 cat >"$WORK/dotctl" <<'STUB'
 #!/bin/bash
 [ "$1 $2" = "agent-usage line" ] || exit 9
-printf 'CC 45(2h47m) W50 F29(3d11h)'
+printf 'CC 45%% (2h47m)  W 50%%  F 29%% (3d11h)'
 STUB
 chmod +x "$WORK/dotctl"
 out="$(HERDR_USAGE_DOTCTL="$WORK/dotctl" "$TARGET")"
 code=$?
-if [[ $code -eq 0 && "$out" == "CC 45(2h47m) W50 F29(3d11h)" ]]; then
+if [[ $code -eq 0 && "$out" == "CC 45% (2h47m)  W 50%  F 29% (3d11h)" ]]; then
   ok "出力の中継"
 else
   ng "exit=$code out='$out'"
@@ -65,6 +68,21 @@ if [[ "$out" != *$'\n'* ]]; then
   ok "1行"
 else
   ng "改行が含まれる"
+fi
+
+echo "test: popup は色付き detail を要求する"
+cat >"$WORK/dotctl-popup" <<'STUB'
+#!/bin/bash
+[ "$*" = "agent-usage detail --color" ] || exit 9
+printf '\033[1;36mClaude Code\033[0m\n'
+STUB
+chmod +x "$WORK/dotctl-popup"
+out="$(printf x | HERDR_USAGE_DOTCTL="$WORK/dotctl-popup" "$POPUP_TARGET")"
+code=$?
+if [[ $code -eq 0 && "$out" == *$'\033[1;36mClaude Code'* && "$out" == *$'\033[2m[press any key]'* ]]; then
+  ok "色付き detail と dim の終了案内"
+else
+  ng "exit=$code out='$out'"
 fi
 
 echo

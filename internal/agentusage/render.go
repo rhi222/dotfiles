@@ -46,26 +46,25 @@ func countdown(w *Window, now time.Time) string {
 func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 	var parts []string
 	if s := c.Claude; s != nil && s.Session != nil && s.Weekly != nil {
-		mark := ""
-		if sideStale(s, now, staleAfter) {
-			mark = "?"
-		}
-		p := fmt.Sprintf("CC %d%s(%s)", s.Session.Percent, mark, countdown(s.Session, now))
+		p := fmt.Sprintf("CC %d%% (%s)", s.Session.Percent, countdown(s.Session, now))
 		if s.Fable != nil {
-			p += fmt.Sprintf(" W%d%s F%d%s(%s)", s.Weekly.Percent, mark, s.Fable.Percent, mark, countdown(s.Weekly, now))
+			p += fmt.Sprintf("  W %d%%  F %d%% (%s)", s.Weekly.Percent, s.Fable.Percent, countdown(s.Weekly, now))
 		} else {
-			p += fmt.Sprintf(" W%d%s(%s)", s.Weekly.Percent, mark, countdown(s.Weekly, now))
+			p += fmt.Sprintf("  W %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
+		}
+		if sideStale(s, now, staleAfter) {
+			p += " [stale]"
 		}
 		parts = append(parts, p)
 	}
 	if s := c.Codex; s != nil && s.Weekly != nil {
-		mark := ""
+		p := fmt.Sprintf("CX %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
 		if sideStale(s, now, staleAfter) {
-			mark = "?"
+			p += " [stale]"
 		}
-		parts = append(parts, fmt.Sprintf("CX %d%s(%s)", s.Weekly.Percent, mark, countdown(s.Weekly, now)))
+		parts = append(parts, p)
 	}
-	return strings.Join(parts, " · ")
+	return strings.Join(parts, "  ·  ")
 }
 
 // bar は 8マスの使用率バー。popup は通常ペインなので Unicode を使ってよい。
@@ -80,53 +79,105 @@ func bar(percent int) string {
 	return strings.Repeat("▰", filled) + strings.Repeat("▱", 8-filled)
 }
 
-func detailRow(label string, w *Window, now time.Time, withCountdown bool) string {
-	r := time.Unix(w.ResetsAt, 0).Local()
-	row := fmt.Sprintf("  %-11s %s %3d%%  reset %d/%d %02d:%02d",
-		label, bar(w.Percent), w.Percent, int(r.Month()), r.Day(), r.Hour(), r.Minute())
-	if withCountdown {
-		row += fmt.Sprintf(" (%s)", countdown(w, now))
+const (
+	ansiReset      = "\x1b[0m"
+	ansiBold       = "\x1b[1m"
+	ansiDim        = "\x1b[2m"
+	ansiBoldRed    = "\x1b[1;31m"
+	ansiBoldGreen  = "\x1b[1;32m"
+	ansiBoldYellow = "\x1b[1;33m"
+	ansiBoldCyan   = "\x1b[1;36m"
+)
+
+func styled(enabled bool, sgr, value string) string {
+	if !enabled || value == "" {
+		return value
 	}
-	return row
+	return sgr + value + ansiReset
+}
+
+func usageColor(percent int) string {
+	switch {
+	case percent >= 85:
+		return ansiBoldRed
+	case percent >= 60:
+		return ansiBoldYellow
+	default:
+		return ansiBoldGreen
+	}
+}
+
+func detailBar(percent int, color bool) string {
+	plain := bar(percent)
+	if !color {
+		return plain
+	}
+	filled := strings.TrimRight(plain, "▱")
+	empty := strings.TrimLeft(plain, "▰")
+	return styled(true, usageColor(percent), filled) + styled(true, ansiDim, empty)
+}
+
+func detailRow(label string, w *Window, now time.Time, withCountdown, color bool) string {
+	r := time.Unix(w.ResetsAt, 0).Local()
+	reset := fmt.Sprintf("reset %d/%d %02d:%02d", int(r.Month()), r.Day(), r.Hour(), r.Minute())
+	if withCountdown {
+		reset += fmt.Sprintf(" (%s)", countdown(w, now))
+	}
+	return fmt.Sprintf("  %s %s %s  %s",
+		styled(color, ansiBold, fmt.Sprintf("%-11s", label)),
+		detailBar(w.Percent, color),
+		styled(color, usageColor(w.Percent), fmt.Sprintf("%3d%%", w.Percent)),
+		styled(color, ansiDim, reset))
 }
 
 func fetchedAgo(s *Side, now time.Time) string {
 	return FormatCountdown(now.Sub(time.Unix(s.FetchedAt, 0)))
 }
 
-// RenderDetail は popup 用の詳細表示。
+// RenderDetail は popup 用の詳細表示（ANSI 色なし）。
 func RenderDetail(c Cache, now time.Time, staleAfter time.Duration) string {
+	return renderDetail(c, now, staleAfter, false)
+}
+
+// RenderDetailColor は通常の端末として動く popup 用の ANSI 色付き詳細表示。
+func RenderDetailColor(c Cache, now time.Time, staleAfter time.Duration) string {
+	return renderDetail(c, now, staleAfter, true)
+}
+
+func renderDetail(c Cache, now time.Time, staleAfter time.Duration, color bool) string {
 	if c.Claude == nil && c.Codex == nil {
-		return "キャッシュがまだ無い。dotctl agent-usage refresh を実行するか、しばらく待つ。"
+		return styled(color, ansiBoldYellow,
+			"キャッシュがまだ無い。dotctl agent-usage refresh を実行するか、しばらく待つ。")
 	}
 	var b strings.Builder
 	var fetched []string
 	if s := c.Claude; s != nil {
-		b.WriteString("Claude Code\n")
+		b.WriteString(styled(color, ansiBoldCyan, "Claude Code") + "\n")
 		if s.Session != nil {
-			b.WriteString(detailRow("Session 5h", s.Session, now, true) + "\n")
+			b.WriteString(detailRow("Session 5h", s.Session, now, true, color) + "\n")
 		}
 		if s.Weekly != nil {
-			b.WriteString(detailRow("Weekly", s.Weekly, now, true) + "\n")
+			b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
 		}
 		if s.Fable != nil {
-			b.WriteString(detailRow("Fable wk", s.Fable, now, false) + "\n")
+			b.WriteString(detailRow("Fable wk", s.Fable, now, false, color) + "\n")
 		}
-		note := ""
+		fetchedText := styled(color, ansiDim, fmt.Sprintf("claude %s前", fetchedAgo(s, now)))
 		if sideStale(s, now, staleAfter) {
-			note = " [stale]"
+			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")
 		}
-		fetched = append(fetched, fmt.Sprintf("claude %s前%s", fetchedAgo(s, now), note))
+		fetched = append(fetched, fetchedText)
 	}
 	if s := c.Codex; s != nil && s.Weekly != nil {
-		b.WriteString("Codex\n")
-		b.WriteString(detailRow("Weekly", s.Weekly, now, true) + "\n")
-		note := ""
+		b.WriteString(styled(color, ansiBoldCyan, "Codex") + "\n")
+		b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
+		fetchedText := styled(color, ansiDim, fmt.Sprintf("codex %s前", fetchedAgo(s, now)))
 		if sideStale(s, now, staleAfter) {
-			note = " [stale]"
+			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")
 		}
-		fetched = append(fetched, fmt.Sprintf("codex %s前%s", fetchedAgo(s, now), note))
+		fetched = append(fetched, fetchedText)
 	}
-	b.WriteString("\nfetched: " + strings.Join(fetched, " / "))
+	b.WriteString("\n" + styled(color, ansiDim, "fetched: ") +
+		strings.Join(fetched, styled(color, ansiDim, " / ")))
 	return b.String()
 }

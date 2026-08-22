@@ -52,7 +52,7 @@ func TestAgentUsageLine(t *testing.T) {
 		t.Fatalf("exit = %d", code)
 	}
 	got := out.String()
-	if got != "CC 45(2h47m) W50 F29(3d11h)" {
+	if got != "CC 45% (2h47m)  W 50%  F 29% (3d11h)" {
 		t.Errorf("line = %q", got)
 	}
 	if strings.Contains(got, "\n") {
@@ -79,6 +79,17 @@ func TestAgentUsageDetail(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Claude Code") {
 		t.Errorf("detail = %q", out.String())
+	}
+	if strings.Contains(out.String(), "\x1b[") {
+		t.Errorf("detail に意図しない ANSI escape がある: %q", out.String())
+	}
+
+	env, out = agentUsageEnv(t, cache)
+	if code := Run(context.Background(), []string{"agent-usage", "detail", "--color"}, env); code != 0 {
+		t.Fatalf("detail --color exit = %d", code)
+	}
+	if !strings.Contains(out.String(), "\x1b[") {
+		t.Errorf("detail --color に ANSI escape が無い: %q", out.String())
 	}
 }
 

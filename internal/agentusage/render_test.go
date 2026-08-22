@@ -47,7 +47,7 @@ func fixtureCache(now time.Time) Cache {
 func TestRenderLineFresh(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	got := RenderLine(fixtureCache(now), now, 15*time.Minute)
-	want := "CC 45(2h47m) W50 F29(3d11h) · CX 2(4d8h)"
+	want := "CC 45% (2h47m)  W 50%  F 29% (3d11h)  ·  CX 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -58,7 +58,7 @@ func TestRenderLineStale(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.FetchedAt = now.Add(-20 * time.Minute).Unix() // staleAfter=15m を超過
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45?(2h47m) W50? F29?(3d11h) · CX 2(4d8h)"
+	want := "CC 45% (2h47m)  W 50%  F 29% (3d11h) [stale]  ·  CX 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -70,7 +70,7 @@ func TestRenderLineResetPassed(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Session.ResetsAt = now.Add(-1 * time.Minute).Unix()
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45?(0m) W50? F29?(3d11h) · CX 2(4d8h)"
+	want := "CC 45% (0m)  W 50%  F 29% (3d11h) [stale]  ·  CX 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -81,7 +81,7 @@ func TestRenderLinePartial(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude = nil // Claude 側キャッシュがまだ無い → 欄ごと落とす
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CX 2(4d8h)"
+	want := "CX 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -93,7 +93,7 @@ func TestRenderLineFableMissing(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Fable = nil
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45(2h47m) W50(3d11h) · CX 2(4d8h)"
+	want := "CC 45% (2h47m)  W 50% (3d11h)  ·  CX 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -120,6 +120,30 @@ func TestRenderDetail(t *testing.T) {
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderDetail に %q が無い:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "\x1b[") {
+		t.Errorf("色なし detail に ANSI escape がある: %q", got)
+	}
+}
+
+func TestRenderDetailColor(t *testing.T) {
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.Claude.Weekly.Percent = 65
+	c.Claude.Fable.Percent = 90
+	c.Claude.FetchedAt = now.Add(-20 * time.Minute).Unix()
+	got := RenderDetailColor(c, now, 15*time.Minute)
+	for _, want := range []string{
+		"\x1b[1;36mClaude Code", // 見出し
+		"\x1b[1;32m",            // 60% 未満
+		"\x1b[1;33m",            // 60% 以上
+		"\x1b[1;31m",            // 85% 以上と stale
+		"\x1b[2m",               // 空きバーと補足
+		"[stale]",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderDetailColor に %q が無い:\n%q", want, got)
 		}
 	}
 }

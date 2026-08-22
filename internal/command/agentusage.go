@@ -15,7 +15,7 @@ const agentUsageUsage = `使い方: dotctl agent-usage <line|detail|refresh>
   AI agent（Claude Code / Codex）のレート上限を表示する。
 
   line     herdr tab bar 用の1行（キャッシュが古ければ裏で refresh を起動）
-  detail   popup 用の詳細表示
+  detail [--color]  popup 用の詳細表示（--color で ANSI 色付き）
   refresh  いま取得してキャッシュを更新する
 `
 
@@ -39,7 +39,11 @@ func runAgentUsage(ctx context.Context, args []string, env Env) int {
 		return 0
 	case "detail":
 		c, _ := agentusage.LoadCache(cfg.CacheFile) // 無ければ空 Cache → 案内が出る
-		fmt.Fprintln(env.Stdout, agentusage.RenderDetail(c, cfg.NowOrDefault(), cfg.StaleAfter))
+		if len(args) > 1 && args[1] == "--color" {
+			fmt.Fprintln(env.Stdout, agentusage.RenderDetailColor(c, cfg.NowOrDefault(), cfg.StaleAfter))
+		} else {
+			fmt.Fprintln(env.Stdout, agentusage.RenderDetail(c, cfg.NowOrDefault(), cfg.StaleAfter))
+		}
 		return 0
 	case "refresh":
 		if err := agentusage.Refresh(ctx, cfg); err != nil {
