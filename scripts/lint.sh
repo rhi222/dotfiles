@@ -104,7 +104,7 @@ echo "=== yaml ==="
 mapfile -t yaml_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
     '*.yml' '*.yaml' ':!:.config/claude/skills-vendor/**' |
-    xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
 )
 if [ "${#yaml_files[@]}" -eq 0 ]; then
   echo "検査対象の .yml が無い"
