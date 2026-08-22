@@ -92,6 +92,38 @@ assert_output_empty() {
   fi
 }
 
+assert_output_nonempty() {
+  local actual="$1"
+  local test_name="$2"
+
+  TOTAL=$((TOTAL + 1))
+  if [[ -n "$actual" ]]; then
+    PASS=$((PASS + 1))
+    echo "  PASS: $test_name"
+  else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $test_name"
+    echo "    expected non-empty output, got empty"
+  fi
+}
+
+assert_output_not_contains() {
+  local unexpected="$1"
+  local actual="$2"
+  local test_name="$3"
+
+  TOTAL=$((TOTAL + 1))
+  if echo "$actual" | grep -qF "$unexpected"; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $test_name"
+    echo "    expected NOT to contain: $unexpected"
+    echo "    actual: $actual"
+  else
+    PASS=$((PASS + 1))
+    echo "  PASS: $test_name"
+  fi
+}
+
 # stderr は契約行（機械可読）、stdout は通知本文（人間向け）。
 # 消費者は 2>/dev/null で stderr を捨てて stdout だけを通知に使うので、
 # テストも両者を分けて取り、通知本文の判定は stdout だけを見る。
@@ -140,16 +172,20 @@ export NIPPO_NOW="2026-03-07 10:00"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "土曜日はexit 0"
 assert_output_empty "$output" "土曜日は出力なし"
+assert_output_contains "HITS=none" "$contract" "土曜日は none を報告"
 
 # 2026-03-08 は日曜日
 export NIPPO_NOW="2026-03-08 14:00"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "日曜日はexit 0"
 assert_output_empty "$output" "日曜日は出力なし"
+assert_output_contains "HITS=none" "$contract" "日曜日は none を報告"
 teardown
 
 echo ""
@@ -162,8 +198,10 @@ export NIPPO_NOW="2026-03-09 08:30"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "9時前でファイルなしはexit 0"
 assert_output_empty "$output" "9時前でファイルなしは出力なし"
+assert_output_contains "HITS=none" "$contract" "9時前は none を報告"
 teardown
 
 echo ""
@@ -178,9 +216,8 @@ output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
 contract=$(parse_contract)
 assert_exit 1 "$exit_code" "9時以降でファイルなしはexit 1"
-assert_output_contains "📝" "$output" "📝メッセージを含む"
-assert_output_contains "今日の日報がまだ作成されていません" "$output" "日報未作成メッセージ"
-assert_output_contains "nippo-check: CONTEXT=stop HITS=missing" "$contract" "契約行を出す"
+assert_output_nonempty "$output" "通知本文を出す"
+assert_output_contains "nippo-check: CONTEXT=stop HITS=missing" "$contract" "missing を報告する"
 teardown
 
 echo ""
@@ -200,10 +237,10 @@ NIPPO
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "未終了タイマーはexit 1"
-assert_output_contains "🟢" "$output" "🟢メッセージを含む"
-assert_output_contains "API設計" "$output" "タスク名を含む"
-assert_output_contains "未終了" "$output" "未終了メッセージ"
+assert_output_nonempty "$output" "通知本文を出す"
+assert_output_contains "HITS=open-timer" "$contract" "open-timer を報告する"
 teardown
 
 echo ""
@@ -224,8 +261,10 @@ NIPPO
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "終了済みタイマーはexit 0"
 assert_output_empty "$output" "終了済みタイマーは出力なし"
+assert_output_contains "HITS=none" "$contract" "問題なしは none を報告"
 teardown
 
 echo ""
@@ -249,21 +288,26 @@ touch -t "202603091200.00" "$FIXTURE"
 result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "cronでは陳腐化検知でexit 1"
-assert_output_contains "⏰" "$output" "⏰メッセージを含む"
-assert_output_contains "更新されていません" "$output" "更新なしメッセージ"
+assert_output_nonempty "$output" "通知本文を出す"
+assert_output_contains "HITS=stale" "$contract" "stale を報告する"
 
 # 同じ状態でも stop では通知しない（低優先度チェックのため）
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "stopでは陳腐化検知はexit 0"
 assert_output_empty "$output" "stopでは陳腐化検知は出力なし"
+assert_output_not_contains "stale" "$contract" "stopでは stale を報告しない"
 teardown
 
 echo ""
 
 # --- 5b. 90分以上だが未完了タスクなし ---
+# 件数ロジックの下限側。cron（全チェック）でも未完了0件なら陳腐化は発火しない。
+# case 5（未完了ありで発火）と同じ経過時間・同じ cron で件数だけを変えた対。
 echo "[5b] 90分以上経過だが未完了タスクなし"
 
 setup
@@ -277,11 +321,13 @@ cat >"$FIXTURE" <<'NIPPO'
 - [x] レビュー対応
 NIPPO
 touch -t "202603091200.00" "$FIXTURE"
-result=$(run_check stop)
+result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "未完了なしならexit 0"
 assert_output_empty "$output" "未完了なしなら出力なし"
+assert_output_not_contains "stale" "$contract" "未完了0件なら stale を報告しない"
 teardown
 
 echo ""
@@ -304,9 +350,10 @@ touch -t "202603091820.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "Finalize忘れはexit 1"
-assert_output_contains "📊" "$output" "📊メッセージを含む"
-assert_output_contains "finalize" "$output" "finalizeメッセージ"
+assert_output_nonempty "$output" "通知本文を出す"
+assert_output_contains "HITS=finalize" "$contract" "finalize を報告する"
 teardown
 
 echo ""
@@ -332,8 +379,10 @@ touch -t "202603091820.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "Finalize済みはexit 0"
 assert_output_empty "$output" "Finalize済みは出力なし"
+assert_output_not_contains "finalize" "$contract" "Finalize済みは finalize を報告しない"
 teardown
 
 echo ""
@@ -359,17 +408,19 @@ touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "cronでは未完了タスクありでexit 1"
-assert_output_contains "📋" "$output" "📋メッセージを含む"
-assert_output_contains "未完了タスク" "$output" "未完了タスクメッセージ"
-assert_output_contains "3件" "$output" "未完了3件を含む"
+assert_output_nonempty "$output" "通知本文を出す"
+assert_output_contains "HITS=incomplete" "$contract" "incomplete を報告する"
 
 # 同じ状態でも stop では通知しない（一日中鳴り続けるため）
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "stopでは未完了タスクはexit 0"
 assert_output_empty "$output" "stopでは未完了タスクは出力なし"
+assert_output_not_contains "incomplete" "$contract" "stopでは incomplete を報告しない"
 teardown
 
 echo ""
@@ -393,13 +444,18 @@ touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check stop)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 0 "$exit_code" "問題なしはexit 0"
 assert_output_empty "$output" "問題なしは出力なし"
+assert_output_contains "HITS=none" "$contract" "問題なしは none を報告"
 teardown
 
 echo ""
 
 # --- 9. 優先度テスト: 未終了タイマーが未完了タスクより先 ---
+# cron（全チェック）で走らせる。未終了タイマーと未完了タスクの両方が発火条件を
+# 満たすが、先に評価される未終了タイマーが preempt し incomplete は報告されない。
+# stop だと incomplete は無効化されて競合が起きず、優先順位を検証できない。
 echo "[9] 優先度テスト: 未終了タイマーが未完了タスクより優先"
 
 setup
@@ -414,21 +470,13 @@ cat >"$FIXTURE" <<'NIPPO'
 NIPPO
 # mtimeをNIPPO_NOWの10分前に設定
 touch -t "202603091350.00" "$FIXTURE"
-result=$(run_check stop)
+result=$(run_check cron)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "未終了タイマー優先でexit 1"
-assert_output_contains "🟢" "$output" "🟢（未終了タイマー）が出力される"
-# 📋（未完了タスク）は出力されないはず
-TOTAL=$((TOTAL + 1))
-if echo "$output" | grep -qF "📋"; then
-  FAIL=$((FAIL + 1))
-  echo "  FAIL: 📋は出力されないべき"
-  echo "    output: $output"
-else
-  PASS=$((PASS + 1))
-  echo "  PASS: 📋は出力されない（未終了タイマーが優先）"
-fi
+assert_output_contains "HITS=open-timer" "$contract" "open-timer を報告する"
+assert_output_not_contains "incomplete" "$contract" "incomplete は preempt され報告されない"
 teardown
 
 echo ""
@@ -442,8 +490,9 @@ for ctx in stop cron; do
   result=$(run_check "$ctx")
   output=$(parse_output "$result")
   exit_code=$(parse_exit "$result")
+  contract=$(parse_contract)
   assert_exit 1 "$exit_code" "日報未作成は${ctx}でexit 1"
-  assert_output_contains "📝" "$output" "日報未作成は${ctx}で📝"
+  assert_output_contains "HITS=missing" "$contract" "日報未作成は${ctx}で missing"
 done
 teardown
 
@@ -460,8 +509,9 @@ for ctx in stop cron; do
   result=$(run_check "$ctx")
   output=$(parse_output "$result")
   exit_code=$(parse_exit "$result")
+  contract=$(parse_contract)
   assert_exit 1 "$exit_code" "未終了タイマーは${ctx}でexit 1"
-  assert_output_contains "🟢" "$output" "未終了タイマーは${ctx}で🟢"
+  assert_output_contains "HITS=open-timer" "$contract" "未終了タイマーは${ctx}で open-timer"
 done
 teardown
 
@@ -480,8 +530,9 @@ for ctx in stop cron; do
   result=$(run_check "$ctx")
   output=$(parse_output "$result")
   exit_code=$(parse_exit "$result")
+  contract=$(parse_contract)
   assert_exit 1 "$exit_code" "finalize忘れは${ctx}でexit 1"
-  assert_output_contains "📊" "$output" "finalize忘れは${ctx}で📊"
+  assert_output_contains "HITS=finalize" "$contract" "finalize忘れは${ctx}で finalize"
 done
 teardown
 
@@ -504,8 +555,10 @@ touch -t "202603091450.00" "$FIXTURE"
 result=$(run_check manual)
 output=$(parse_output "$result")
 exit_code=$(parse_exit "$result")
+contract=$(parse_contract)
 assert_exit 1 "$exit_code" "未知のコンテキストは低優先度も報告する"
-assert_output_contains "📋" "$output" "未知のコンテキストで📋"
+assert_output_contains "HITS=incomplete" "$contract" "未知のコンテキストで incomplete"
+assert_output_contains "CONTEXT=manual" "$contract" "契約行は渡した CONTEXT を反映する"
 teardown
 
 echo ""
