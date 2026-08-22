@@ -23,12 +23,7 @@ return {
 		},
 		keys = {
 			-- https://minerva.mamansoft.net/Notes/%F0%9F%93%95telescope.nvim%E3%83%AC%E3%82%B7%E3%83%94 から拝借
-			km.lazy_key(
-				"finder",
-				"telescope_find_files",
-				":Telescope find_files<CR>",
-				{ silent = true }
-			),
+			km.lazy_key("finder", "telescope_find_files", ":Telescope find_files<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_smart_open", ":Telescope smart_open<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_live_grep", ":Telescope egrepify<CR>", { silent = true }),
 			km.lazy_key(
@@ -39,19 +34,14 @@ return {
 			),
 			km.lazy_key("finder", "telescope_commands", ":Telescope commands<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_cmd_history", ":Telescope command_history<CR>", { silent = true }),
-	
+
 			km.lazy_key(
 				"finder",
 				"telescope_symbols",
 				":Telescope lsp_dynamic_workspace_symbols<CR>",
 				{ silent = true }
 			),
-			km.lazy_key(
-				"finder",
-				"telescope_git_status",
-				":Telescope git_status<CR>",
-				{ silent = true }
-			),
+			km.lazy_key("finder", "telescope_git_status", ":Telescope git_status<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_resume", ":Telescope resume<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_buffers", ":Telescope buffers<CR>", { silent = true }),
 			km.lazy_key("finder", "telescope_oldfiles", ":Telescope oldfiles<CR>", { silent = true }),

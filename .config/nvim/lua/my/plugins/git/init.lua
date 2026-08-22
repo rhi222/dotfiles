@@ -22,12 +22,7 @@ return {
 			"nvim-telescope/telescope.nvim", -- optional
 		},
 		keys = {
-			km.lazy_key(
-				"git",
-				"neogit_open",
-				"<cmd>lua require('neogit').open()<CR>",
-				{ noremap = true }
-			),
+			km.lazy_key("git", "neogit_open", "<cmd>lua require('neogit').open()<CR>", { noremap = true }),
 		},
 		opts = {
 			disable_line_numbers = false,

@@ -55,11 +55,8 @@ local function write_manifest()
 		table.insert(entries, string.format('    {"name": %q, "svg": %q}', rel, svg_name(abs_path)))
 	end
 	table.sort(entries)
-	local json = string.format(
-		'{\n  "files": [\n%s\n  ],\n  "updated_at": %d\n}',
-		table.concat(entries, ",\n"),
-		os.time()
-	)
+	local json =
+		string.format('{\n  "files": [\n%s\n  ],\n  "updated_at": %d\n}', table.concat(entries, ",\n"), os.time())
 	local fh = io.open(output_dir .. "/manifest.json", "w")
 	if fh then
 		fh:write(json)
@@ -226,8 +223,10 @@ local function start_server()
 	end
 	write_server_py()
 	server_job_id = vim.fn.jobstart({
-		"python3", output_dir .. "/server.py",
-		tostring(SERVER_PORT), output_dir,
+		"python3",
+		output_dir .. "/server.py",
+		tostring(SERVER_PORT),
+		output_dir,
 	}, {
 		on_stderr = function(_, data, _)
 			vim.schedule(function()
@@ -304,9 +303,13 @@ local function start_manifest_poll()
 		return
 	end
 	manifest_poll_timer = vim.uv.new_timer()
-	manifest_poll_timer:start(3000, 3000, vim.schedule_wrap(function()
-		sync_registered_files_from_manifest()
-	end))
+	manifest_poll_timer:start(
+		3000,
+		3000,
+		vim.schedule_wrap(function()
+			sync_registered_files_from_manifest()
+		end)
+	)
 end
 
 local function stop_manifest_poll()

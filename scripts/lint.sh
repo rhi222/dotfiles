@@ -2,13 +2,14 @@
 # リポジトリが追跡しているシェルスクリプトを検査する。
 #   *.sh   : shellcheck + shfmt
 #   *.md   : rumdl
+#   *.lua  : stylua
 #   *.fish : fish -n（構文チェックのみ。fish に整形系の CLI は無い）
 #   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/lint.sh        # 検査のみ（CIと同じ）
 #   bash scripts/lint.sh --fix  # shfmt の整形を実際に適用
 #
-# 依存: shellcheck / shfmt / rumdl（mise の aqua バックエンドで管理）、fish
+# 依存: shellcheck / shfmt / rumdl / stylua（mise の aqua バックエンドで管理）、fish
 #
 # 環境変数:
 #   LINT_REPO_ROOT  検査するリポジトリのルート（テストで差し替える）
@@ -81,6 +82,24 @@ echo "=== rumdl ==="
 if [ "${#markdown_files[@]}" -eq 0 ]; then
   echo "検査対象の .md が無い"
 elif ! rumdl check --config "$REPO_ROOT/.rumdl.toml" "${markdown_files[@]}"; then
+  rc=1
+fi
+
+mapfile -t lua_files < <(
+  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
+    '*.lua' ':!:.config/claude/skills-vendor/**' |
+    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
+    while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done | sort -u
+)
+
+echo "=== stylua ==="
+if [ "${#lua_files[@]}" -eq 0 ]; then
+  echo "検査対象の .lua が無い"
+elif [ "$FIX" -eq 1 ]; then
+  stylua "${lua_files[@]}"
+elif ! stylua --check "${lua_files[@]}"; then
   rc=1
 fi
 

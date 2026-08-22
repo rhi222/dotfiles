@@ -14,6 +14,7 @@ on:
       # 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
       - "**.md"
       - ".rumdl.toml"
+      - "**.lua"
       - "**.go"
       - "go.mod"
   pull_request:
@@ -24,6 +25,7 @@ on:
       - ".github/workflows/lint.yml"
       - "**.md"
       - ".rumdl.toml"
+      - "**.lua"
       - "**.go"
       - "go.mod"
 
@@ -54,6 +56,7 @@ jobs:
             "aqua:koalaman/shellcheck" = "0.11.0"
             "aqua:mvdan/sh" = "3.13.1"
             "aqua:rvben/rumdl" = "0.2.58"
+            "aqua:JohnnyMorganz/StyLua" = "2.5.2"
             # run-tests.sh が go test ./... も走らせるため。go が無い環境では
             # skip して通るので CI が落ちはしないが、それでは Go 側を検査できない
             go = "1.26"
@@ -63,6 +66,7 @@ jobs:
           shellcheck --version | grep version
           shfmt --version
           rumdl --version
+          stylua --version
           go version
 
       # lint.sh の fish -n と、fish 関数のテスト（gf / wt / wtd / dclean）の両方で要る。
