@@ -47,7 +47,7 @@ func fixtureCache(now time.Time) Cache {
 func TestRenderLineFresh(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	got := RenderLine(fixtureCache(now), now, 15*time.Minute)
-	want := "CC 45% (2h47m) W 50% F 29% (3d11h) · CX 2% (4d8h)"
+	want := "CC 5h 45% (2h47m) weekly 50% fable 29% (3d11h) · CX weekly 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -58,7 +58,7 @@ func TestRenderLineStale(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.FetchedAt = now.Add(-20 * time.Minute).Unix() // staleAfter=15m を超過
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45% (2h47m) W 50% F 29% (3d11h) [stale] · CX 2% (4d8h)"
+	want := "CC 5h 45% (2h47m) weekly 50% fable 29% (3d11h) [stale] · CX weekly 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -70,7 +70,7 @@ func TestRenderLineResetPassed(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Session.ResetsAt = now.Add(-1 * time.Minute).Unix()
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45% (0m) W 50% F 29% (3d11h) [stale] · CX 2% (4d8h)"
+	want := "CC 5h 45% (0m) weekly 50% fable 29% (3d11h) [stale] · CX weekly 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -81,7 +81,7 @@ func TestRenderLinePartial(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude = nil // Claude 側キャッシュがまだ無い → 欄ごと落とす
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CX 2% (4d8h)"
+	want := "CX weekly 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -93,7 +93,7 @@ func TestRenderLineFableMissing(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Fable = nil
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC 45% (2h47m) W 50% (3d11h) · CX 2% (4d8h)"
+	want := "CC 5h 45% (2h47m) weekly 50% (3d11h) · CX weekly 2% (4d8h)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
