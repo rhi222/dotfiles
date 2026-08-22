@@ -63,6 +63,9 @@ require("auto-session").setup({
 	auto_save = true,
 	auto_restore = true,
 	show_auto_restore_notif = true,
+	-- headlessテストではLazy画面の終了順が通常起動と異なり、復元待ちのままwqaすると
+	-- セッションが保存されない。テスト時だけ待機を外し、VimEnterを直接検査する。
+	lazy_support = not vim.env.AUTOSESSION_UNIT_TESTING,
 	-- XDG_DATA_HOME を変えると lazy.nvim の plugin root まで変わるため、実 nvim 設定を
 	-- 使うテストは session の保存先だけを一時ディレクトリへ隔離する。
 	root_dir = vim.env.MY_AUTOSESSION_ROOT_DIR or (vim.fn.stdpath("data") .. "/sessions/"),

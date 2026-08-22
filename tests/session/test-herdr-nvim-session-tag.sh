@@ -13,8 +13,11 @@ TOTAL=0
 
 WORK=$(mktemp -d)
 SESSION_DIR="$WORK/sessions"
-mkdir -p "$SESSION_DIR"
+mkdir -p "$SESSION_DIR" "$WORK/cache" "$WORK/state"
 export MY_AUTOSESSION_ROOT_DIR="$SESSION_DIR"
+# 実設定を読み込んでもLua cache・ShaDa・logを実HOMEへ書かない。
+export XDG_CACHE_HOME="$WORK/cache"
+export XDG_STATE_HOME="$WORK/state"
 
 # auto-session はセッション名をエスケープしてファイル名にする。
 # 一時ディレクトリのパスに含まれる / と . が %2F / %2E になる。
@@ -86,14 +89,16 @@ tagged_session_exists() {
   [[ -f "$SESSION_DIR/$(session_key)%7C%7C$pane_escaped.vim" ]] && echo present || echo absent
 }
 
-# フォールバック復元は no_restore フック経由で走る。
-# auto_restore_session() はこのフックを発火しないため、VimEnter 用の
-# 入口を直接呼ぶ。qa! で抜けるので、終了時の保存も併せて確認できる。
+# フォールバック復元はVimEnterのno_restoreフック経由で走る。
+# headlessでは設定読込がVimEnterより後になるため、VimEnter用の入口を明示的に呼ぶ。
+# ただしauto-session自身のVimEnterも残すと、負荷次第で明示呼び出しの後に復元が
+# もう一度走る。対象autocmdを消して入口を一度だけ呼び、復元結果を決定的にする。
+# qa!で抜けるので、終了時の保存も併せて確認できる。
 restored_buffers_at_vim_enter() {
   local pane="$1"
   local out="$WORK/.enter.$pane"
   (cd "$WORK" && HERDR_PANE_ID="$pane" nvim --headless \
-    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c 'lua vim.api.nvim_clear_autocmds({ group = "auto_session_group", event = "VimEnter" }); require("auto-session").auto_restore_session_at_vim_enter()' \
     -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
     -c 'qa!') >/dev/null 2>&1
   cat "$out" 2>/dev/null
@@ -107,7 +112,7 @@ restored_buffers_with_file_arg() {
   local pane="$1" file="$2"
   local out="$WORK/.arg.$pane"
   (cd "$WORK" && HERDR_PANE_ID="$pane" nvim --headless "$file" \
-    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c 'lua vim.api.nvim_clear_autocmds({ group = "auto_session_group", event = "VimEnter" }); require("auto-session").auto_restore_session_at_vim_enter()' \
     -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
     -c 'qa!') >/dev/null 2>&1
   cat "$out" 2>/dev/null
@@ -120,7 +125,7 @@ restored_buffers_headless() {
   local pane="$1"
   local out="$WORK/.headless.$pane"
   (cd "$WORK" && env -u AUTOSESSION_UNIT_TESTING HERDR_PANE_ID="$pane" nvim --headless \
-    -c 'lua require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c 'lua vim.api.nvim_clear_autocmds({ group = "auto_session_group", event = "VimEnter" }); require("auto-session").auto_restore_session_at_vim_enter()' \
     -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
     -c 'qa!') >/dev/null 2>&1
   cat "$out" 2>/dev/null

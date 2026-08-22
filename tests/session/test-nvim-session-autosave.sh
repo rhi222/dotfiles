@@ -20,8 +20,11 @@ set -uo pipefail
 
 TEST_ROOT=$(mktemp -d)
 SESSION_DIR="$TEST_ROOT/sessions"
-mkdir -p "$SESSION_DIR"
+mkdir -p "$SESSION_DIR" "$TEST_ROOT/cache" "$TEST_ROOT/state"
 export MY_AUTOSESSION_ROOT_DIR="$SESSION_DIR"
+# 実設定を読み込んでもLua cache・ShaDa・logを実HOMEへ書かない。
+export XDG_CACHE_HOME="$TEST_ROOT/cache"
+export XDG_STATE_HOME="$TEST_ROOT/state"
 
 # 定期保存のデバウンス。テスト中だけ短縮する（auto-session.lua が
 # MY_AUTOSESSION_SAVE_DEBOUNCE_MS で上書きを受け付ける）。
