@@ -106,14 +106,26 @@ mapfile -t yaml_files < <(
     '*.yml' '*.yaml' ':!:.config/claude/skills-vendor/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
 )
+# **PATH の python3 だけを見ない。** CI の runner は PATH 先頭に tool cache の
+# python3 を持っており、apt の python3-yaml（/usr/bin/python3 側に入る）が
+# 見えない。それで CI だけ YAML を skip して通った。
+yaml_py=""
+for py in python3 /usr/bin/python3 python; do
+  command -v "$py" >/dev/null 2>&1 || continue
+  if "$py" -c 'import yaml' 2>/dev/null; then
+    yaml_py="$py"
+    break
+  fi
+done
+
 if [ "${#yaml_files[@]}" -eq 0 ]; then
   echo "検査対象の .yml が無い"
-elif ! python3 -c 'import yaml' 2>/dev/null; then
+elif [ -z "$yaml_py" ]; then
   # fish と同じ扱い。パーサが無いだけで commit できなくなるのは避ける
-  echo "python3 の pyyaml が無いため skip（${#yaml_files[@]} 件）"
+  echo "PyYAML を持つ python が無いため skip（${#yaml_files[@]} 件）"
 else
   for f in "${yaml_files[@]}"; do
-    if ! python3 -c 'import sys,yaml; yaml.safe_load(open(sys.argv[1]))' "$f"; then
+    if ! "$yaml_py" -c 'import sys,yaml; yaml.safe_load(open(sys.argv[1]))' "$f"; then
       echo "  parse error: $f" >&2
       rc=1
     fi
