@@ -6,8 +6,15 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 ## 表示
 
 - tab bar: `CC 45(2h47m) W50 F29(3d11h) · CX 2(4d8h)`
-  （session% / weekly% / Fable weekly% / Codex weekly%。括弧はリセットまでの残り）
-- 15分より古い値は `45?` と ? が付く。キャッシュが無い側は欄ごと消える
+  （session% / weekly% / Fable weekly% / Codex weekly%）
+  括弧はリセットまでの残り。`CC` の括弧は session、`W50 F29` の後の括弧は
+  **weekly のリセット**（Fable 単体の残りは line には出さず popup 側だけに出す）。
+  Codex の括弧は weekly のリセット
+- `?`（stale マーク）は side 単位で全%に付く。付く条件は2つ:
+  ①`fetched_at` が15分より古い ②表示中のいずれかの窓の `resets_at` を過ぎている
+  （窓が切り替わったのにキャッシュの%が切り替わり前のまま）。窓ごとには付けず、
+  どちらか一方でも真なら CC / CX の全%が `45?` になる
+- キャッシュが無い側は欄ごと消える
 - 詳細は prefix+u の popup（バー・絶対時刻・fetched 経過）
 - 実データで確認済み（`line` は `CC 91(1h46m) W56 F33(3d9h) · CX 7(6d20h)`、
   `detail` はバー・絶対リセット時刻・`fetched:` 経過付きの複数行）
@@ -27,8 +34,9 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
   accessToken で GET（ヘッダ `anthropic-beta: oauth-2025-04-20`）。
   **非公式エンドポイント**（Claude Code の /usage と同じもの）で、`limits[]` の
   `kind: session / weekly_all / weekly_scoped` を読む。仕様変更・401 では
-  fetch を err にして旧値温存 → ? 表示に倒れる。token は Claude Code の起動で
-  更新されるので、失効からも自然回復する
+  fetch を err にして旧値温存 → 15分の stale 閾値を超えれば ? 表示に倒れる
+  （それ以前に Claude Code が再起動して token が更新されれば ? は出ない）。
+  token は Claude Code の起動で更新されるので、失効からも自然回復する
 - Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` の最後の `rate_limits`
   （`window_minutes >= 10080` の窓）。ネットワーク不要。鮮度は最後に codex を
   使った時点だが、使っていなければ%も動かないので実用上は正確。直近3日に
