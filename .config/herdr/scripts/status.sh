@@ -1,16 +1,12 @@
 #!/bin/bash
-# herdr の ui.tab_bar_right（command エントリ）に出す1行ステータス。
+# herdr の ui.tab_bar_right に出すマシンリソースの1行ステータス。
 #
-#   8/20 Thu 12:09:33 · CPU 12% · MEM 5.9/11.7G · LA 1.06
+#   CPU 12%  ·  MEM 5.9/11.7G  ·  LA 1.06
 #
 # 設計上の決めごと:
 #   ・herdr は「成功した出力の最終行」だけを使うので、出力は必ず1行に閉じる。
 #     読めない項目は欄ごと落として exit 0 で返す。1項目のためにステータス全体が
 #     消えるほうが害が大きい。
-#   ・日時もこのスクリプトで出す。native の datetime エントリは更新間隔を指定できず、
-#     秒まで出すなら interval_seconds = 1 の command 側に寄せるしかない。
-#   ・曜日は %a ではなく %w（番号）から自前で当てる。%a はロケール次第で表記が変わり、
-#     LANG を変えた端末で幅と見た目が動く。
 #   ・**herdr に出すときは着色しない（既定 never）。** herdr のタブ行は受け取った文字列の
 #     ESC バイトだけを落とし、残りを可視文字として描画する。`\033[38;5;208m` を出すと
 #     `[38;5;208m` がそのまま表示される（入れ子 herdr を pane read して実測）。
@@ -30,7 +26,7 @@ MEMINFO_FILE="${HERDR_STATUS_MEMINFO:-/proc/meminfo}"
 LOADAVG_FILE="${HERDR_STATUS_LOADAVG:-/proc/loadavg}"
 CACHE_FILE="${HERDR_STATUS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/herdr-status/cpu}"
 COLOR="${HERDR_STATUS_COLOR:-never}"
-SEP=" · "
+SEP="  ·  "
 
 OUT=""
 SGR=""
@@ -65,25 +61,6 @@ add() {
 tenths() {
   printf -v TENTHS '%s.%s' "$(($1 / 10))" "$(($1 % 10))"
 }
-
-# --- 日時 -----------------------------------------------------------------
-# 「8/20 Thu 12:09:33」の形。%(...)T は strftime なので TZ を尊重する。
-# 月日はゼロ埋めしない（%-m/%-d）が、時刻は桁を揃える（幅が毎秒動くのを避ける）。
-# 曜日は %a を使わず番号(%w)から自前で当てる。%a はロケール次第で表記が変わるため。
-# 区切りに | を使うのは、要素の中に空白が入っても分解を誤らないようにするため。
-CLOCK=""
-printf -v CLOCK '%(%w|%-m/%-d|%H:%M:%S)T' "${HERDR_STATUS_EPOCH:--1}" 2>/dev/null || CLOCK=""
-if [ -n "$CLOCK" ]; then
-  DOW_NAMES=(Sun Mon Tue Wed Thu Fri Sat)
-  dow="${CLOCK%%|*}"
-  clock_rest="${CLOCK#*|}"
-  md="${clock_rest%%|*}"
-  hms="${clock_rest#*|}"
-  case "$dow" in
-    [0-6]) add "" "$md ${DOW_NAMES[$dow]} $hms" "1;93" ;;
-    *) add "" "$md $hms" "1;93" ;;
-  esac
-fi
 
 # --- CPU ------------------------------------------------------------------
 # 集計行から累積 total と累積 busy を出す。busy は total から idle(4) と iowait(5) を除く。
