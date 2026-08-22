@@ -4,14 +4,26 @@
 **移動する前に「誰が何を呼んでいるか」を固定するための文書**で、日々の使い方は
 [AGENTS.md](../AGENTS.md) の各機能の表を見る。
 
+## ドメイン境界と公開入口
+
+機能固有の実装は `domains/<domain>/` にまとめ、`scripts/` 直下はcron、hook、skill、
+手動操作から呼ぶ互換entrypointとして維持する。テストは既存どおり
+`tests/<domain>/`、詳細仕様は `docs/` に置く。配置規約のため `.config/<tool>/` に
+置く必要がある設定は無理に移さず、domain READMEから参照する。
+
+最初の適用先は `domains/linear/`。`scripts/linear-*.sh` と
+`scripts/lib/linear-api.sh` は公開APIなので残し、実装パスを外部から直接呼ばない。
+新しいdomainを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
+ファイル数が増えただけの設定toolごとには作らない。
+
 ## 何が混ざっているか
 
 `scripts/` 直下には次の4種類が同じ階層に並んでいて、責務と公開範囲が見分けにくい。
 
 | 種類                 | 例                                       | 実測         |
 | -------------------- | ---------------------------------------- | ------------ |
-| 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 5,320行 |
-| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 8本 1,029行 |
+| 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 2,842行 |
+| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 8本 853行 |
 | 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
 | 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
 
