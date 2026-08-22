@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/rhi222/dotfiles/internal/agentusage"
 	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
@@ -59,6 +60,13 @@ type Env struct {
 	ConfirmFunc func(prompt string) bool
 	// Color は stdout が TTY のとき真。表示の着色に使う。
 	Color bool
+
+	// AgentUsage は agent-usage の参照先。
+	AgentUsage agentusage.Config
+	// AgentUsageSelfExe は detached refresh 用の自分自身のパス（os.Executable）。
+	AgentUsageSelfExe string
+	// AgentUsageNoSpawn はテスト用に外部プロセス起動を止める。
+	AgentUsageNoSpawn bool
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
@@ -74,6 +82,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   doctor residue     環境の残骸を洗い出す
   doctor migration   移行前チェック
   docker clean       docker の不要リソースを掃除する
+  agent-usage        AI agent のレート上限を表示する（herdr 連携）
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -109,6 +118,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runDoctor(ctx, args[1:], env)
 	case "docker":
 		return runDocker(ctx, args[1:], env)
+	case "agent-usage":
+		return runAgentUsage(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0

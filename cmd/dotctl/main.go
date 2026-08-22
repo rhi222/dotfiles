@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rhi222/dotfiles/internal/agentusage"
 	"github.com/rhi222/dotfiles/internal/buildinfo"
 	"github.com/rhi222/dotfiles/internal/command"
 	"github.com/rhi222/dotfiles/internal/docker"
@@ -143,6 +144,25 @@ func dockerConfig() docker.Config {
 	return cfg
 }
 
+// agentUsageConfig は agent-usage の参照先を解く。
+// 環境変数はテストと手元検証のための差し替え口。
+func agentUsageConfig() agentusage.Config {
+	home := homeDir()
+	cacheDir := filepath.Join(home, ".cache")
+	if v := os.Getenv("XDG_CACHE_HOME"); v != "" {
+		cacheDir = v
+	}
+	return agentusage.Config{
+		CacheFile:        envOr("AGENT_USAGE_CACHE", filepath.Join(cacheDir, "agent-usage", "usage.json")),
+		CredentialsFile:  envOr("AGENT_USAGE_CLAUDE_CREDENTIALS", filepath.Join(home, ".claude", ".credentials.json")),
+		CodexSessionsDir: envOr("AGENT_USAGE_CODEX_SESSIONS", filepath.Join(home, ".codex", "sessions")),
+		Endpoint:         envOr("AGENT_USAGE_ENDPOINT", "https://api.anthropic.com/api/oauth/usage"),
+		TTL:              5 * time.Minute,
+		StaleAfter:       15 * time.Minute,
+		HTTPTimeout:      10 * time.Second,
+	}
+}
+
 func envFloat(key string, def float64) float64 {
 	v := os.Getenv(key)
 	if v == "" {
@@ -225,6 +245,7 @@ func cwd() string {
 }
 
 func main() {
+	selfExe, _ := os.Executable()
 	os.Exit(command.Run(context.Background(), os.Args[1:], command.Env{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -246,6 +267,9 @@ func main() {
 		Residue:           residueConfig(),
 		Docker:            dockerConfig(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
+
+		AgentUsage:        agentUsageConfig(),
+		AgentUsageSelfExe: selfExe,
 
 		Color: isTerminal(os.Stdout),
 	}))
