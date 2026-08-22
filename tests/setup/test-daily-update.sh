@@ -57,6 +57,39 @@ assert_output_contains() {
   fi
 }
 
+# 外部ツール更新の定型3分岐「導入済み→呼ぶ / 未導入→skip して rc=0 /
+# 実体の失敗→rc 伝播」を検証する。ツールごとに env の差し替え口が違うため、
+# その差分は runner 関数に閉じ、ヘルパは共通の3分岐アサーションだけを担う。
+#   $1=表示名
+#   $2=runner 関数名。present|absent|fail を受け取り、対象関数を1回だけ呼ぶ
+#   $3=呼び出しログのパス。各ケースの直前に空にして、実体の呼び出しを記録させる
+#   $4=実体が呼ばれたことを示すマーカー文字列（呼び出しログに現れる実サブコマンド）
+assert_tool_triad() {
+  local name="$1" runner="$2" log="$3" marker="$4"
+  local exit_code output
+
+  # 導入済み: 実体を呼び、成功する
+  : >"$log"
+  exit_code=0
+  output=$("$runner" present 2>&1) || exit_code=$?
+  assert_eq 0 "$exit_code" "$name: 導入済みなら成功する"
+  assert_output_contains "$marker" "$(cat "$log")" "$name: 実体を呼ぶ"
+
+  # 未導入: 実体を呼ばず、成功扱い（毎日 FAILED 通知が飛ぶのを避ける）
+  : >"$log"
+  exit_code=0
+  output=$("$runner" absent 2>&1) || exit_code=$?
+  assert_eq 0 "$exit_code" "$name: 未導入でも成功扱い"
+  assert_eq 0 "$(grep -c "$marker" "$log")" "$name: 実体を呼ばない"
+  assert_output_contains "skipping" "$output" "$name: スキップの理由を出す"
+
+  # 実体の失敗: rc をそのまま伝播する（run_step 側で FAILED として拾わせる）
+  : >"$log"
+  exit_code=0
+  output=$("$runner" fail 2>&1) || exit_code=$?
+  assert_eq 1 "$exit_code" "$name: 実体の失敗は隠さない"
+}
+
 # npm_select_targets <outdated_json> <installed_names> <name...>
 # 出力（name@latest の改行区切り）を | 区切りに畳んで比較する
 select_targets() {
@@ -309,36 +342,18 @@ echo "YA_CALLED args=[\$*]" >>"$YAZI_TEST_DIR/ya.log"
 exit "\${YA_EXIT:-0}"
 EOF
 chmod +x "$YAZI_STUB_BIN/ya"
-
-# package.toml があれば ya pkg upgrade を呼ぶ
-: >"$YAZI_TEST_DIR/ya.log"
 touch "$YAZI_TEST_DIR/package.toml"
-exit_code=0
-output=$(PATH="$YAZI_STUB_BIN:$PATH" \
-  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/package.toml" \
-  yazi_pkg_upgrade 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "宣言があれば成功する"
-assert_output_contains "pkg upgrade" "$(cat "$YAZI_TEST_DIR/ya.log")" "ya pkg upgrade を呼ぶ"
 
-# package.toml が無い端末（yazi 未導入）では呼ばずに成功扱い。
-# 毎日 FAILED 通知が飛ぶのを避けるため。
-: >"$YAZI_TEST_DIR/ya.log"
-exit_code=0
-output=$(PATH="$YAZI_STUB_BIN:$PATH" \
-  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/does-not-exist.toml" \
-  yazi_pkg_upgrade 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "package.toml が無くても成功扱い"
-assert_eq 0 "$(grep -c YA_CALLED "$YAZI_TEST_DIR/ya.log")" "ya を呼ばない"
-assert_output_contains "skipping" "$output" "スキップの理由を出す"
-
-# ya 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
-: >"$YAZI_TEST_DIR/ya.log"
-exit_code=0
-output=$(PATH="$YAZI_STUB_BIN:$PATH" \
-  YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/package.toml" \
-  YA_EXIT=1 \
-  yazi_pkg_upgrade 2>&1) || exit_code=$?
-assert_eq 1 "$exit_code" "ya の失敗は隠さない"
+# present=宣言あり / absent=package.toml 無し（yazi 未導入相当）/ fail=ya が失敗
+run_yazi_case() { # present|absent|fail
+  local toml="$YAZI_TEST_DIR/package.toml"
+  [[ "$1" == absent ]] && toml="$YAZI_TEST_DIR/does-not-exist.toml"
+  local ya_exit=0
+  [[ "$1" == fail ]] && ya_exit=1
+  PATH="$YAZI_STUB_BIN:$PATH" YAZI_PACKAGE_FILE="$toml" YA_EXIT="$ya_exit" \
+    yazi_pkg_upgrade
+}
+assert_tool_triad "yazi" run_yazi_case "$YAZI_TEST_DIR/ya.log" "pkg upgrade"
 
 rm -rf "$YAZI_TEST_DIR"
 
@@ -364,29 +379,22 @@ exit "\${SETUP_EXIT:-0}"
 EOF
 chmod +x "$DOTCTL_TEST_DIR/setup-dotctl.sh"
 
-# go.mod があり go もある端末では setup-dotctl.sh を呼ぶ
-: >"$DOTCTL_TEST_DIR/setup.log"
-exit_code=0
-output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
-  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
-  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
-  dotctl_rebuild 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "go があれば成功する"
-assert_output_contains "SETUP_CALLED" "$(cat "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ぶ"
+# present=go あり / absent=go 無し（未導入相当。yazi の package.toml と同じ扱いで
+# 毎日 FAILED 通知が飛ぶのを避ける）/ fail=ビルド失敗（run_step で FAILED として拾う）
+run_dotctl_case() { # present|absent|fail
+  local path="$DOTCTL_STUB_BIN:$PATH"
+  [[ "$1" == absent ]] && path="/usr/bin:/bin"
+  local setup_exit=0
+  [[ "$1" == fail ]] && setup_exit=1
+  PATH="$path" \
+    DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
+    DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
+    SETUP_EXIT="$setup_exit" \
+    dotctl_rebuild
+}
+assert_tool_triad "dotctl" run_dotctl_case "$DOTCTL_TEST_DIR/setup.log" "SETUP_CALLED"
 
-# go が無い端末では呼ばずに成功扱い。**毎日 FAILED 通知が飛ぶのを避ける**
-# （yazi の package.toml と同じ扱い）
-: >"$DOTCTL_TEST_DIR/setup.log"
-exit_code=0
-output=$(PATH="/usr/bin:/bin" \
-  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
-  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
-  dotctl_rebuild 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "go が無くても成功扱い"
-assert_eq 0 "$(grep -c SETUP_CALLED "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ばない"
-assert_output_contains "skipping" "$output" "スキップの理由を出す"
-
-# go.mod が無いリポジトリでも呼ばずに成功扱い
+# go.mod が無いリポジトリでも呼ばずに成功扱い（triad の絞りとは別軸の固有分岐）
 : >"$DOTCTL_TEST_DIR/setup.log"
 exit_code=0
 output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
@@ -395,17 +403,6 @@ output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
   dotctl_rebuild 2>&1) || exit_code=$?
 assert_eq 0 "$exit_code" "go.mod が無くても成功扱い"
 assert_eq 0 "$(grep -c SETUP_CALLED "$DOTCTL_TEST_DIR/setup.log")" "setup-dotctl.sh を呼ばない"
-
-# **ビルドの失敗は隠さない。** 古いバイナリを掴み続ける状態そのものなので、
-# ここは run_step で FAILED として拾わせる
-: >"$DOTCTL_TEST_DIR/setup.log"
-exit_code=0
-output=$(PATH="$DOTCTL_STUB_BIN:$PATH" \
-  DOTCTL_GO_MOD="$DOTCTL_TEST_DIR/go.mod" \
-  DOTCTL_SETUP_SCRIPT="$DOTCTL_TEST_DIR/setup-dotctl.sh" \
-  SETUP_EXIT=1 \
-  dotctl_rebuild 2>&1) || exit_code=$?
-assert_eq 1 "$exit_code" "ビルド失敗は隠さない"
 
 rm -rf "$DOTCTL_TEST_DIR"
 
@@ -426,34 +423,26 @@ exit 0
 EOF
 chmod +x "$FISHER_STUB_BIN/fish"
 
-# fish と fisher が揃っていれば fisher update を呼ぶ
-: >"$FISHER_TEST_DIR/fish.log"
-exit_code=0
-output=$(PATH="$FISHER_STUB_BIN:$PATH" fisher_update 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "fisher があれば成功する"
-assert_output_contains "fisher update" "$(cat "$FISHER_TEST_DIR/fish.log")" "fisher update を呼ぶ"
-
-# fish が無い端末では呼ばずに成功扱い（毎日 FAILED 通知が飛ぶのを避ける）
-: >"$FISHER_TEST_DIR/fish.log"
-exit_code=0
-output=$(PATH="/nonexistent" fisher_update 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "fish が無くても成功扱い"
-assert_output_contains "skipping" "$output" "スキップの理由を出す"
+# present=fish と fisher が揃う / absent=fish 無し（未導入相当）/ fail=fisher update が失敗。
+# マーカーは実サブコマンド "fisher update"。fish は capability check でも呼ばれるため、
+# 単なる呼び出し印（FISH_CALLED）では「update を呼んだ」を区別できない。
+run_fisher_case() { # present|absent|fail
+  local path="$FISHER_STUB_BIN:$PATH"
+  [[ "$1" == absent ]] && path="/nonexistent"
+  local fisher_exit=0
+  [[ "$1" == fail ]] && fisher_exit=1
+  PATH="$path" FISHER_EXIT="$fisher_exit" fisher_update
+}
+assert_tool_triad "fisher" run_fisher_case "$FISHER_TEST_DIR/fish.log" "fisher update"
 
 # fish はあるが fisher 未導入。追加は setup-fish-plugins.sh の担当なので
-# ここでは入れずに成功扱いにし、案内だけ出す
+# ここでは入れずに成功扱いにし、案内だけ出す（triad の絞りとは別軸の固有分岐）
 : >"$FISHER_TEST_DIR/fish.log"
 exit_code=0
 output=$(PATH="$FISHER_STUB_BIN:$PATH" HAS_FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
 assert_eq 0 "$exit_code" "fisher 未導入でも成功扱い"
 assert_eq 0 "$(grep -c "fisher update" "$FISHER_TEST_DIR/fish.log")" "勝手に入れない"
 assert_output_contains "setup-fish-plugins.sh" "$output" "追加の導線を案内する"
-
-# fisher update 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
-: >"$FISHER_TEST_DIR/fish.log"
-exit_code=0
-output=$(PATH="$FISHER_STUB_BIN:$PATH" FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
-assert_eq 1 "$exit_code" "fisher update の失敗は隠さない"
 
 rm -rf "$FISHER_TEST_DIR"
 
@@ -511,35 +500,22 @@ exit 0
 EOF
 chmod +x "$CARGO_STUB_BIN/cargo-install-update"
 
-# cargo-update が入っていれば cargo install-update -a を呼ぶ
-: >"$CARGO_TEST_DIR/cargo.log"
-exit_code=0
-output=$(PATH="$CARGO_STUB_BIN:$PATH" \
-  cargo_install_update 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "cargo-update があれば成功する"
-assert_output_contains "install-update -a" "$(cat "$CARGO_TEST_DIR/cargo.log")" "cargo install-update -a を呼ぶ"
-
-# cargo-update が無い端末では呼ばずに成功扱い。
-# 更新対象も更新手段も無い状態で毎日 FAILED 通知が飛ぶのを避けるため。
-: >"$CARGO_TEST_DIR/cargo.log"
+# absent 用に cargo だけあって cargo-install-update が無い PATH を用意する
 CARGO_ONLY_BIN="$CARGO_TEST_DIR/bin-nocrate"
 mkdir -p "$CARGO_ONLY_BIN"
 cp "$CARGO_STUB_BIN/cargo" "$CARGO_ONLY_BIN/cargo"
-exit_code=0
-# PATH をスタブだけに絞る。実機の ~/.cargo/bin を拾って結果が変わるのを防ぐ
-output=$(PATH="$CARGO_ONLY_BIN:/usr/bin:/bin" \
-  cargo_install_update 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "cargo-update が無くても成功扱い"
-assert_eq 0 "$(grep -c CARGO_CALLED "$CARGO_TEST_DIR/cargo.log")" "cargo を呼ばない"
-assert_output_contains "skipping" "$output" "スキップの理由を出す"
 
-# cargo 自体の失敗はそのまま伝える（run_step 側で FAILED として拾わせる）
-: >"$CARGO_TEST_DIR/cargo.log"
-exit_code=0
-output=$(PATH="$CARGO_STUB_BIN:$PATH" \
-  CARGO_EXIT=1 \
-  cargo_install_update 2>&1) || exit_code=$?
-assert_eq 1 "$exit_code" "cargo の失敗は隠さない"
+# present=cargo-update あり / absent=cargo-update 無し（未導入相当。更新対象も手段も
+# 無い端末で毎日 FAILED 通知が飛ぶのを避ける）/ fail=cargo が失敗。
+# absent は PATH をスタブだけに絞り、実機の ~/.cargo/bin を拾わせない。
+run_cargo_case() { # present|absent|fail
+  local path="$CARGO_STUB_BIN:$PATH"
+  [[ "$1" == absent ]] && path="$CARGO_ONLY_BIN:/usr/bin:/bin"
+  local cargo_exit=0
+  [[ "$1" == fail ]] && cargo_exit=1
+  PATH="$path" CARGO_EXIT="$cargo_exit" cargo_install_update
+}
+assert_tool_triad "cargo" run_cargo_case "$CARGO_TEST_DIR/cargo.log" "install-update -a"
 
 rm -rf "$CARGO_TEST_DIR"
 
