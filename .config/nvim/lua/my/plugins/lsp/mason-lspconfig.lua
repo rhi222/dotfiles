@@ -13,7 +13,7 @@ require("mason-lspconfig").setup({
 		"markdown_oxide",
 		"prismals",
 		"ruff",
-		"sqlls",
+		"sqls",
 		"tailwindcss",
 		"ts_ls",
 		"ty",
@@ -22,7 +22,7 @@ require("mason-lspconfig").setup({
 	-- automatic_enable は全インストール済みserverが対象。ensure_installedから
 	-- 外しただけでは既存のMarksmanも起動するため、移行元を明示的に除外する。
 	automatic_enable = {
-		exclude = { "marksman", "pylsp" },
+		exclude = { "marksman", "pylsp", "sqlls" },
 	},
 	-- サーバー固有設定は ~/.config/nvim/lsp/*.lua で定義。
 })
