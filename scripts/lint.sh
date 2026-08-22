@@ -3,7 +3,7 @@
 #   *.sh   : shellcheck + shfmt
 #   *.md   : rumdl
 #   *.lua  : stylua + LuaLS CLI
-#   *.fish : fish -n（構文チェックのみ。fish に整形系の CLI は無い）
+#   *.fish : fish -n + fish_indent
 #   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/lint.sh        # 検査のみ（CIと同じ）
@@ -152,6 +152,17 @@ else
       rc=1
     fi
   done
+fi
+
+echo "=== fish_indent ==="
+if [ "${#fish_files[@]}" -eq 0 ]; then
+  echo "検査対象の .fish が無い"
+elif ! command -v fish_indent >/dev/null 2>&1; then
+  echo "fish_indent が無いため skip（${#fish_files[@]} 件）"
+elif [ "$FIX" -eq 1 ]; then
+  fish_indent --write "${fish_files[@]}"
+elif ! fish_indent --check "${fish_files[@]}"; then
+  rc=1
 fi
 
 echo "=== yaml ==="

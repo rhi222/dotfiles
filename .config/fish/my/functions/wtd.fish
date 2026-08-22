@@ -6,7 +6,7 @@
 # 「終了済みセッションの残骸か / 実行中のセッションか」を提示する。
 # 削除するかどうかの判断自体は人間に残す（自動unlockはしない）。
 function wtd
-    argparse h/help 'f/force' -- $argv
+    argparse h/help f/force -- $argv
     or return 1
 
     if set -q _flag_help

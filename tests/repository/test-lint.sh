@@ -112,6 +112,8 @@ check() {
 good_fish() { printf 'function ok\n    echo hi\nend\n'; }
 # `if` を閉じないので fish -n が落ちる
 bad_fish() { printf 'function broken\n    if true\nend\n'; }
+# 構文は正しいが、function内のindentが無いのでfish_indentが落ちる
+bad_format_fish() { printf 'function messy\necho hi\nend\n'; }
 
 echo "== Markdown lint =="
 
@@ -199,6 +201,17 @@ out=$(run_lint)
 check "構文エラーのある .fish があれば失敗する" "1" "$?"
 check "落ちたファイル名を出す" "yes" \
   "$(printf '%s' "$out" | grep -q 'broken.fish' && echo yes || echo no)"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+bad_format_fish >"$REPO/messy.fish"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "未整形の .fish があれば失敗する" "1" "$?"
+check "fish_indentの検査を行ったと出力する" "yes" \
+  "$(printf '%s' "$out" | grep -q '=== fish_indent ===' && echo yes || echo no)"
 teardown
 
 echo "== 対象の集め方 =="

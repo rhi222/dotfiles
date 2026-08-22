@@ -1,4 +1,3 @@
-
 # Add my functions directory to fish_function_path
 #
 # conf.d を source する前に設定する。conf.d の中から my/functions の関数を呼ぶと、
