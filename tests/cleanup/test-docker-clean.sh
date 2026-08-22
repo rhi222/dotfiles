@@ -53,6 +53,17 @@ check() {
 
 has() { grep -q -- "$1" <<<"$2" && echo yes || echo no; }
 
+# background に逃がした処理の完了待ち。固定 sleep は負荷で足りずに落ちるので
+# 上限付きポーリングにする。50×0.1秒=5秒は実待ち（1秒未満）より十分大きく取った
+# 上限であって計測値ではない。負荷でも間に合わせ、更新が来なければ諦めて抜ける。
+wait_for_log() { # $1=grep パターン $2=ログファイル
+  for _ in $(seq 1 50); do
+    grep -q -- "$1" "$2" 2>/dev/null && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
 TEST_DIR=$(mktemp -d)
 trap 'rm -rf "$TEST_DIR"' EXIT
 FAKE_HOME="$TEST_DIR/home"
@@ -197,8 +208,8 @@ env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" STALE_EXIT=0 fish -c "
   set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF
   __docker_clean_greeting" >/dev/null 2>&1
-# background に逃がすので、少し待ってからログを見る
-sleep 1
+# background に逃がすので、ログに refresh が現れるまで上限付きで待つ
+wait_for_log 'docker refresh' "$TEST_DIR/calls.log"
 check "古ければ refresh する" "yes" "$(has 'docker refresh' "$(cat "$TEST_DIR/calls.log")")"
 
 # **docker が無い端末では何も呼ばない。** docker info が command not found
