@@ -251,7 +251,7 @@ func main() {
 		Stderr: os.Stderr,
 		Runner: execx.New(),
 		Commit: buildinfo.Commit,
-		Repo:   buildinfo.Repo,
+		Repo:   envOr("DOTCTL_REPO", buildinfo.Repo),
 
 		WorktreeRoots:      envOr("WORKTREE_CLEANUP_ROOTS", defaultWorktreeRoots),
 		WorktreePRStateCmd: os.Getenv("WORKTREE_CLEANUP_PR_STATE_CMD"),

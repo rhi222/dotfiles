@@ -83,6 +83,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   doctor migration   移行前チェック
   docker clean       docker の不要リソースを掃除する
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
+  rebuild            ビルド元のrepositoryからdotctlを再ビルドする
   version            バイナリのビルド情報を出す
   help               この使い方を出す
 `
@@ -93,7 +94,10 @@ const usage = `使い方: dotctl <subcommand> [args...]
 func Run(ctx context.Context, args []string, env Env) int {
 	// **skew の警告はサブコマンドより先に出す。** 出力を読む人が
 	// 「古い結果を見ている」ことに気付いてから中身を読めるようにする。
-	warnIfStale(ctx, env)
+	// rebuild 自体は skew を解消する操作なので、同じ警告を重ねない。
+	if len(args) == 0 || args[0] != "rebuild" {
+		warnIfStale(ctx, env)
+	}
 
 	if len(args) == 0 {
 		fmt.Fprint(env.Stderr, usage)
@@ -120,6 +124,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runDocker(ctx, args[1:], env)
 	case "agent-usage":
 		return runAgentUsage(ctx, args[1:], env)
+	case "rebuild":
+		return runRebuild(ctx, args[1:], env)
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Stdout, usage)
 		return 0
@@ -157,7 +163,7 @@ func warnIfStale(ctx context.Context, env Env) {
 		return
 	}
 	fmt.Fprintf(env.Stderr,
-		"dotctl: バイナリが古い（%s、repo は %s）。再ビルド: bash scripts/setup-dotctl.sh\n",
+		"dotctl: バイナリが古い（%s、repo は %s）。再ビルド: dotctl rebuild\n",
 		short(env.Commit), short(head))
 }
 

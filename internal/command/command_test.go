@@ -86,6 +86,9 @@ func TestWarnsWhenBinaryIsStaleAgainstRepoHead(t *testing.T) {
 	if !strings.Contains(errOut, "再ビルド") {
 		t.Errorf("再ビルドを促す警告が無い: %q", errOut)
 	}
+	if !strings.Contains(errOut, "dotctl rebuild") {
+		t.Errorf("場所に依存しない再ビルドcommandを案内していない: %q", errOut)
+	}
 }
 
 func TestSilentWhenBinaryMatchesRepoHead(t *testing.T) {

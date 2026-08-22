@@ -53,7 +53,7 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
     herdr config check
 
 - 表示には `agent-usage` subcommand を持つ `dotctl` の install が要る。古い binary だと
-  欄が黙って空になる（stdout 空・exit 2 で tab bar は壊れない）。`bash scripts/setup-dotctl.sh` で再ビルドする
+  欄が黙って空になる（stdout 空・exit 2 で tab bar は壊れない）。`dotctl rebuild` で再ビルドする
 
 ---
 

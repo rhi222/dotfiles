@@ -158,7 +158,7 @@ Go製 `dotctl` が複雑な状態判定を担い、従来の `scripts/*.sh` wrap
 | residue / migration doctor | `scripts/{env-residue,migration-check}.sh`  |
 | docker clean               | `dclean`（fish function）                   |
 
-buildは `bash scripts/setup-dotctl.sh`。新command、wrapper、test配置、移植の評価結果は
+初回buildは `bash scripts/setup-dotctl.sh`、更新は `dotctl rebuild`。新command、wrapper、test配置、移植の評価結果は
 [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 ## 自動化
