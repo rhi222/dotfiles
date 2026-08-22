@@ -72,6 +72,18 @@ exit 0
 EOF
 chmod +x "$STUB_BIN/powershell.exe"
 
+# wslpath も stub する。**WSL 専用コマンドなので CI（素の Linux）には無い。**
+# 無いと lib 側の win_icon_path が空になり、AppLogo の検査だけが CI で落ちる
+# （実際に10回連続で赤だった）。変換は「先頭に C: を付ける」程度で足り、
+# 検査しているのはファイル名が渡っているかどうか。
+cat >"$STUB_BIN/wslpath" <<'EOF'
+#!/bin/bash
+# wslpath -w <unix path> 相当。区切りを \ にして C: を付けるだけ
+p="${!#}"
+printf 'C:%s\n' "${p//\//\\}"
+EOF
+chmod +x "$STUB_BIN/wslpath"
+
 echo "[1] cmdlet をガードしてから呼ぶ"
 PS_LOG="$TEST_DIR/ps.log"
 export PS_LOG
