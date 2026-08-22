@@ -3,7 +3,8 @@ return {
 	-- デフォルトのroot_markersには ".git" が含まれるため、
 	-- monorepoではrepo root全体がworkspaceになりメモリを大量消費する。
 	-- ".git" を除外し、最寄りのtsconfig.json/package.jsonでworkspaceを区切る。
-	root_markers = { "tsconfig.json", "jsconfig.json", "package.json" },
+	-- nested listにして3種類を同順位にし、種類ではなく距離で最寄りを選ぶ。
+	root_markers = { { "tsconfig.json", "jsconfig.json", "package.json" } },
 	init_options = {
 		-- tsserverのヒープ上限(MB)。未指定だとNodeのデフォルト(4GB前後)まで
 		-- 際限なく成長しうるため、複数プロジェクト同時起動時のメモリ暴走を防ぐ。

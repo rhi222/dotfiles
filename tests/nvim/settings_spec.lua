@@ -31,4 +31,12 @@ for _, filetype in ipairs({ "go", "gomod", "gowork", "make", "tsv" }) do
 	assert_indent(filetype, false, 4)
 end
 
+local ts_config = dofile(config_dir .. "/lsp/ts_ls.lua")
+assert(
+	vim.deep_equal(ts_config.root_markers, {
+		{ "tsconfig.json", "jsconfig.json", "package.json" },
+	}),
+	"TypeScript root markers must have equal priority"
+)
+
 io.write("PASS\n")
