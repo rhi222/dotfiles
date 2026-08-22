@@ -7,7 +7,7 @@
 # fresh clone has the declarations but none of the bodies. yazi's init.lua does
 # `require("git")`, which makes this fatal rather than degraded: yazi exits 1
 # with "Failed to load plugin from .../git.yazi/main.lua" and never starts.
-# That is why this runs from dotfilesLink.sh instead of being a manual step.
+# New-machine bootstrap runs this after linking ~/.config/yazi.
 #
 # Idempotent: `ya pkg install` runs only when a declared package has no body,
 # so re-running on a healthy machine costs no network round-trip.

@@ -24,7 +24,9 @@ check() {
 check "旧domainsディレクトリが無い" test ! -e "$REPO_ROOT/domains"
 check "internalの配置規約がある" test -f "$REPO_ROOT/internal/README.md"
 check "dotfilesLinkの公開入口を維持する" test -x "$REPO_ROOT/dotfilesLink.sh"
-check "dotfilesLink実装はinternalにある" test -f "$REPO_ROOT/internal/bootstrap/link.sh"
+check "bootstrapの公開入口を維持する" test -x "$REPO_ROOT/scripts/bootstrap.sh"
+check "dotfilesLink実装はinternal/linkにある" test -f "$REPO_ROOT/internal/link/reconcile.sh"
+check "bootstrap実装はinternal/bootstrapにある" test -f "$REPO_ROOT/internal/bootstrap/setup.sh"
 check "Linear実装はinternalにある" test -f "$REPO_ROOT/internal/linear/lib/api.sh"
 check "日報実装はinternalにある" test -f "$REPO_ROOT/internal/nippo/lib/paths.sh"
 

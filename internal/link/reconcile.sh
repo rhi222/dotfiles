@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# dotfiles setup implementation. The public entrypoint is ../../dotfilesLink.sh.
+# Repeatable symlink reconciliation. The public entrypoint is ../../dotfilesLink.sh.
 
 DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DC="$DOTFILES_DIR/.config"
@@ -100,11 +100,9 @@ link_private_tree() {
 }
 
 # 集約先のローカル設定を各所へ配る。
-# 集約先が無い端末（旧環境からの移植をしていない立ち上げ）では何もしない。
-# setup_local_configs / setup_git_hooks が .example から雛形を作る従来の経路に落ちる。
+# 集約先が無い端末では何もしない。雛形生成はbootstrapの明示実行に任せる。
 link_private_files() {
   if [ ! -d "$PRIVATE_DIR" ]; then
-    echo "[INFO] $PRIVATE_DIR がありません。ローカル設定は雛形生成にフォールバックします" >&2
     return 0
   fi
   if [ -d "$PRIVATE_DIR/home" ]; then
@@ -130,7 +128,7 @@ ensure_dirs() {
 # 単純な src -> dest のリンクを宣言的に列挙する。
 # "リポジトリ内のパス|リンク先" のペアで定義し、まとめてリンクする。
 # 特殊処理が必要な Claude skills / Codex は個別関数
-# （link_claude_skills / setup_codex）で扱う。
+# （link_claude_skills / link_codex_config）で扱う。
 link_configs() {
   local links=(
     # Root configuration files
@@ -254,18 +252,6 @@ link_codex_skills() {
   link_vendor_skills_into ~/.agents/skills
 }
 
-# Claude Code の settings.json はコピーで同期する。
-# Claude Code が /config の操作などで実行時に書き戻す際、一時ファイル + rename で
-# 置き換えるため symlink にしても必ず実ファイル化してしまう（書き込まれない
-# CLAUDE.md や commands/ は symlink のままでよい）。詳細は sync-claude-settings.sh 冒頭。
-setup_claude_settings() {
-  if ! bash "$DOTFILES_DIR/scripts/sync-claude-settings.sh" push; then
-    echo "[WARN] ~/.claude/settings.json は更新しませんでした" >&2
-    echo "       実ファイル側を残す:     bash scripts/sync-claude-settings.sh pull" >&2
-    echo "       リポジトリ版で上書き:   bash scripts/sync-claude-settings.sh push --force" >&2
-  fi
-}
-
 # fish_plugins は link_configs でリンクするが、safe_link の `ln -snf` は実ファイルを
 # 黙って消す。この宣言リストは端末ごとに実体が先にあり、しかも「その端末に何が
 # 入っているか」の唯一の記録なので、消えると別端末の宣言が失われる。
@@ -288,21 +274,16 @@ backup_fish_plugins() {
   mv "$live" "$backup"
 }
 
-# codex: 公式ドキュメントに従いローカル設定を ~/.codex/config.toml に置く
-setup_codex() {
-  # config.toml は gitignore されているため fresh clone には存在しない。テンプレートから作成する
-  if [ ! -e "$DC/codex/config.toml" ]; then
-    cp "$DC/codex/config.example.toml" "$DC/codex/config.toml"
-    echo "[INFO] .config/codex/config.toml を config.example.toml から作成しました"
+# Codex config の内容は初期化しない。repo側の実体がある場合だけlinkをreconcileする。
+# 無い状態でlive側を張り替えると、migration後の設定をexample相当へ戻してしまうため。
+link_codex_config() {
+  if [ -e "$DC/codex/config.toml" ]; then
+    backup_real_file ~/.codex/config.toml
+    safe_link "$DC/codex/config.toml" ~/.codex/config.toml
+  else
+    echo "[WARN] $DC/codex/config.toml が無いためCodex configのlinkを変更しません" >&2
+    echo "       初期化: bash scripts/bootstrap.sh" >&2
   fi
-  # 既存の実ファイルがあればタイムスタンプ付きで退避してからリンクする
-  if [ -e ~/.codex/config.toml ] && [ ! -L ~/.codex/config.toml ]; then
-    local codex_backup
-    codex_backup=~/.codex/config.toml.bak."$(date +%Y%m%d%H%M%S)"
-    echo "[INFO] 既存の ~/.codex/config.toml を $codex_backup に退避します"
-    mv ~/.codex/config.toml "$codex_backup"
-  fi
-  safe_link "$DC/codex/config.toml" ~/.codex/config.toml
   # TUIが自動生成する default.rules と共存させ、repository管理分だけを別fileで配る。
   mkdir -p ~/.codex/rules
   backup_real_file ~/.codex/rules/dotfiles.rules
@@ -310,60 +291,11 @@ setup_codex() {
   link_codex_skills
 }
 
-# yazi のプラグイン実体を配置する。
-# plugins/ は gitignore しているので fresh clone には宣言（package.toml）だけがあり、
-# init.lua が require("git") するため実体が欠けていると yazi が起動そのものに失敗する。
-# gh 拡張や claude skill のように「無ければ機能が欠けるだけ」ではないので、
-# 手動手順ではなくリンク作成と同じ流れで通す。
-#
-# ネットワーク断でリンク作業まで巻き込まないよう、失敗しても続行する。
-setup_yazi_plugins() {
-  if ! bash "$DOTFILES_DIR/scripts/setup-yazi-plugins.sh"; then
-    echo "[WARN] yazi のプラグイン配置に失敗しました（yazi が起動できない状態です）" >&2
-    echo "       復旧: bash scripts/setup-yazi-plugins.sh" >&2
-  fi
-}
-
 # pre-commit hook を有効にする。このリポジトリは public なので、社内固有情報を
 # 含むコミットを commit の手前で止める。詳細は scripts/secret-scan.sh 冒頭。
-#
-# 機密語辞書はリポジトリではなく ~/.config/dotfiles/ に置く。辞書そのものが
-# 機密なので、コミットすると分離した意味が消えるため。
-setup_git_hooks() {
+configure_git_hooks() {
   git -C "$DOTFILES_DIR" config core.hooksPath scripts/hooks
   chmod +x "$DOTFILES_DIR/scripts/hooks/pre-commit" 2>/dev/null || true
-
-  local patterns="$HOME/.config/dotfiles/secret-patterns.txt"
-  if [ ! -f "$patterns" ]; then
-    mkdir -p "$(dirname "$patterns")"
-    cp "$DOTFILES_DIR/scripts/secret-patterns.txt.example" "$patterns"
-    echo "[INFO] $patterns を雛形から作成しました" >&2
-    echo "       社内固有の語を追記してください（この内容はコミットされません）" >&2
-  fi
-}
-
-# gitignore されているローカル設定を雛形から作る。
-# いずれも社内固有の値を持つため、リポジトリには .example だけを置いている。
-setup_local_configs() {
-  local pairs=(
-    "$DC/nvim/lua/my/local_config.lua.example|$DC/nvim/lua/my/local_config.lua"
-    # local-context.md の置き場所は ~/.claude/ 直下（リポジトリ外）。
-    # .config/claude/ は ~/.config/claude へリンクされるので、そこに置くとリポジトリ内に現れる
-    "$DC/claude/local-context.md.example|$HOME/.claude/local-context.md"
-    # psqlrc は ~/.psqlrc へリンクされるが、案件固有の判定は
-    # ~/.config/psql/psqlrc.local（リポジトリ外）に置く。psqlrc が任意読み込みする。
-    "$DC/psql/psqlrc.local.example|$HOME/.config/psql/psqlrc.local"
-  )
-  local pair src dest
-  for pair in "${pairs[@]}"; do
-    src="${pair%%|*}"
-    dest="${pair##*|}"
-    if [ ! -e "$dest" ] && [ -e "$src" ]; then
-      cp "$src" "$dest"
-      echo "[INFO] $dest を雛形から作成しました" >&2
-      echo "       社内固有の値を埋めてください（この内容はコミットされません）" >&2
-    fi
-  done
 }
 
 # 日報通知スクリプトに実行権限を付与
@@ -401,18 +333,8 @@ report_skipped() {
   fi
 }
 
-print_next_steps() {
-  echo ""
-  echo "To install apt packages: ./scripts/apt-setup.sh"
-  echo ""
-  echo "日報リマインド通知を有効にするには:"
-  echo "  1. touch ~/.config/nippo-notify-enabled"
-  echo "  2. crontab -e で以下を追加:"
-  echo "     0 9,11,13,15,17,19 * * 1-5 \$HOME/scripts/nippo-cron.sh >> \$HOME/.nippo-cron.log 2>&1"
-  echo "  無効化: rm ~/.config/nippo-notify-enabled"
-}
-
-main() {
+link_main() {
+  SKIPPED=()
   ensure_dirs
   # link_configs より先に張る。cross-repo-auto-discover は
   # 「集約先 → リポジトリ内 → ~/.claude/skills」の二段リンクになるため、
@@ -422,16 +344,11 @@ main() {
   backup_fish_plugins
   link_configs
   link_claude_skills
-  setup_claude_settings
-  setup_codex
-  # link_configs で ~/.config/yazi を張った後に呼ぶ（package.toml がそこにある）
-  setup_yazi_plugins
-  setup_git_hooks
-  setup_local_configs
+  link_codex_config
+  configure_git_hooks
   grant_exec_permissions
   warn_missing_local_git
   report_skipped
-  print_next_steps
 }
 
 # 実行判断は公開entrypointの dotfilesLink.sh が行う。このファイルは関数定義だけを持つ。

@@ -5,7 +5,7 @@
 # ここで守るのは構造の不変条件だけ。
 #   1. repo 側の psqlrc に案件固有値が戻っていない
 #   2. psqlrc が psqlrc.local を任意読み込みしている（無い端末で落ちない形）
-#   3. 雛形が存在し、dotfilesLink.sh が実体を用意する経路を持つ
+#   3. 雛形が存在し、bootstrapが実体を用意する経路を持つ
 #   4. 実体が gitignore されていて、追跡ファイルに混ざらない
 set -uo pipefail
 
@@ -13,8 +13,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PSQLRC="$REPO_DIR/.config/psql/psqlrc"
 EXAMPLE="$REPO_DIR/.config/psql/psqlrc.local.example"
-LINK="$REPO_DIR/dotfilesLink.sh"
-LINK_IMPL="$REPO_DIR/internal/bootstrap/link.sh"
+BOOTSTRAP="$REPO_DIR/scripts/bootstrap.sh"
+BOOTSTRAP_IMPL="$REPO_DIR/internal/bootstrap/setup.sh"
+LINK_IMPL="$REPO_DIR/internal/link/reconcile.sh"
 
 PASS=0
 FAIL=0
@@ -42,7 +43,7 @@ assert_no_grep() {
   if grep -qE -- "$pattern" "$file"; then ng "$name"; else ok "$name"; fi
 }
 
-for f in "$PSQLRC" "$EXAMPLE" "$LINK" "$LINK_IMPL"; do
+for f in "$PSQLRC" "$EXAMPLE" "$BOOTSTRAP" "$BOOTSTRAP_IMPL" "$LINK_IMPL"; do
   if [ ! -f "$f" ]; then
     echo "ERROR: $f が存在しません"
     exit 1
@@ -77,9 +78,9 @@ echo ""
 echo "=== 雛形と配布経路 ==="
 assert_grep 'is_prod_local' "$EXAMPLE" "雛形が is_prod_local を設定している"
 assert_grep 'is_stg_local' "$EXAMPLE" "雛形が is_stg_local を設定している"
-assert_grep 'psqlrc\.local\.example\|\$HOME/\.config/psql/psqlrc\.local' "$LINK_IMPL" \
-  "dotfilesLink.sh が雛形から実体を作る"
-assert_grep '[~]/\.config/psql' "$LINK_IMPL" "dotfilesLink.sh が ~/.config/psql を用意する"
+assert_grep 'psqlrc\.local\.example\|\$HOME/\.config/psql/psqlrc\.local' "$BOOTSTRAP_IMPL" \
+  "bootstrapが雛形から実体を作る"
+assert_grep '[~]/\.config/psql' "$LINK_IMPL" "link reconcileが ~/.config/psql を用意する"
 echo ""
 
 echo "=== 実体が追跡されない ==="

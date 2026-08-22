@@ -65,13 +65,13 @@ dotfilesリポジトリ。
 
 ### 新環境
 
-`dotfilesLink.sh` だけでは完了しない。gitignoreされた認証情報・端末固有値の準備も必要。
+`scripts/bootstrap.sh` だけでは完了しない。gitignoreされた認証情報・端末固有値の準備も必要。
 
 ```fish
 ghq get rhi222/dotfiles
 cd (ghq root)/github.com/rhi222/dotfiles
 bash scripts/apt-setup.sh
-./dotfilesLink.sh
+bash scripts/bootstrap.sh
 bash scripts/setup-dotctl.sh  # miseでGoを導入した後
 ```
 
@@ -95,7 +95,8 @@ Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-s
 
 ### symlink
 
-`./dotfilesLink.sh` がGit、Neovim、Fish、tmux、mise、Claude Codeなどを配置する。
+`./dotfilesLink.sh` がGit、Neovim、Fish、tmux、mise、Claude Codeなどのlinkをreconcileする。
+雛形生成・既存設定のadopt・初回plugin配置は新環境で `bash scripts/bootstrap.sh` を実行する。
 ローカル設定の実体は `~/.local/share/dotfiles-private/` に集約する。
 
 | 操作           | コマンド                                         |

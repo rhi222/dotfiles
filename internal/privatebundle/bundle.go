@@ -417,7 +417,7 @@ func Status(ctx context.Context, r execx.Runner, cfg Config, w IO) int {
 	if st, err := os.Stat(cfg.PrivateDir); err != nil || !st.IsDir() {
 		fmt.Fprintf(w.out(), "集約先がありません: %s\n", cfg.PrivateDir)
 		fmt.Fprintln(w.out(), "  旧環境があるなら: bash scripts/private-bundle.sh import <zip>")
-		fmt.Fprintln(w.out(), "  無いなら雛形生成にフォールバックします（./dotfilesLink.sh）")
+		fmt.Fprintln(w.out(), "  無いなら雛形生成にフォールバックします（bash scripts/bootstrap.sh）")
 		return 0
 	}
 

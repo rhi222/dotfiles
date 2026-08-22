@@ -4,7 +4,7 @@
 gitignore している機密ファイルの移植台帳も兼ねる。
 
 > [!IMPORTANT]
-> `dotfilesLink.sh` だけではセットアップは完了しない。
+> `scripts/bootstrap.sh` だけではセットアップは完了しない。
 > 認証情報や社内固有の値はリポジトリに含められないため、旧環境からのコピーや手入力が必要になる。
 
 ## 全体の流れ
@@ -36,7 +36,7 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 
 > [!WARNING]
 > **この時点で `mise` は裸のコマンド名では通らない。** インストーラは `~/.local/bin/mise` に置くが、
-> そこを PATH に足しているのは `00-paths.fish` で、**`dotfilesLink.sh` を走らせるまで存在しない**。
+> そこを PATH に足しているのは `00-paths.fish` で、**`scripts/bootstrap.sh` を走らせるまで存在しない**。
 > 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
 ### WSL2 では linger を有効にする
@@ -83,7 +83,7 @@ cd /data/git-repos/github.com/rhi222/dotfiles
 
 bash scripts/apt-setup.sh                                    # apt パッケージの導入（WSL2 のみ）
 bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
-./dotfilesLink.sh                                            # リンク作成、雛形生成、hook 有効化
+bash scripts/bootstrap.sh                                    # 初期化後にlinkをreconcile
 exec fish                                                    # リンクした設定を読み込む
 mise install                                                 # config.toml のツールを一括導入
 ```
@@ -92,9 +92,9 @@ mise install                                                 # config.toml の�
 
 **この3つの順序には理由があり、入れ替えると静かに壊れる。**
 
-1. **`dotfilesLink.sh` が先。** `~/.config/mise/config.toml` はリンクで配置されるので、
-   先に `mise install` すると宣言そのものが見つからない。`dotfilesLink.sh` 自体は
-   リンクを張るだけで `mise install` は呼ばないため、ここで明示的に実行する
+1. **`scripts/bootstrap.sh` が先。** `~/.config/mise/config.toml` は内部で呼ぶ
+   `dotfilesLink.sh` により配置されるので、先に `mise install` すると宣言そのものが見つからない。
+   bootstrapは `mise install` を呼ばないため、ここで明示的に実行する
 2. **`exec fish` が次。** リンクされた `my/conf.d/*.fish` がここで初めて読まれ、
    `00-paths.fish` が `~/.local/bin` を PATH に入れ、`01-mise.fish` が
    `MISE_*_DEFAULT_PACKAGES_FILE` を設定する
@@ -130,17 +130,17 @@ rm -f ~/.cache/mise-activate.fish ~/.cache/git-wt-init.fish
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
 
-集約ファイルを import していない場合、`dotfilesLink.sh` は次の雛形を `.example` ファイルから
+集約ファイルを import していない場合、`scripts/bootstrap.sh` は次の雛形を `.example` ファイルから
 自動生成する。ただし、生成されるファイルの値は空なので、手順2で中身を埋める。
 import 済みなら実体が既にあるので、雛形生成はスキップされる。
 
 | ファイル                                 | 生成処理              | 埋める内容                                                        |
 | ---------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| `~/.config/dotfiles/secret-patterns.txt` | `setup_git_hooks`     | 社内固有の語。空のままだと機密語検出 hook が機能しない            |
-| `~/.claude/local-context.md`             | `setup_local_configs` | Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、略号 |
-| `.config/nvim/lua/my/local_config.lua`   | `setup_local_configs` | HTTPS 非対応ホスト                                                |
-| `~/.config/psql/psqlrc.local`            | `setup_local_configs` | psql の環境判定。案件固有のDB名・DBユーザー名・ポート番号         |
-| `.config/codex/config.toml`              | `setup_codex`         | Codex のローカル設定                                              |
+| `~/.config/dotfiles/secret-patterns.txt` | `init_secret_patterns` | 社内固有の語。空のままだと機密語検出 hook が機能しない            |
+| `~/.claude/local-context.md`             | `init_local_configs`   | Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、略号 |
+| `.config/nvim/lua/my/local_config.lua`   | `init_local_configs`   | HTTPS 非対応ホスト                                                |
+| `~/.config/psql/psqlrc.local`            | `init_local_configs`   | psql の環境判定。案件固有のDB名・DBユーザー名・ポート番号         |
+| `.config/codex/config.toml`              | `init_codex_config`    | 既存live設定をadopt。無ければCodexの既定設定                       |
 
 ## 2. ローカル設定と機密ファイルを用意する
 
@@ -161,7 +161,7 @@ bash scripts/private-bundle.sh export           # ~/dotfiles-private-YYYYMMDD.zi
 
 # 新環境で
 bash scripts/private-bundle.sh import ~/dotfiles-private-YYYYMMDD.zip
-./dotfilesLink.sh
+bash scripts/bootstrap.sh
 bash scripts/private-bundle.sh status           # 全項目がリンク済みであること
 ```
 
@@ -201,7 +201,7 @@ tar xzf claude-memory.tar.gz -C ~
 
 - **コピー** — 再作成が難しいため、旧環境からファイルやディレクトリを持ってくる
 - **手書き** — 雛形が無いため、新環境でファイルを作成して値を記入する
-- **雛形** — `dotfilesLink.sh` が作った空のファイルに値を記入する
+- **雛形** — `scripts/bootstrap.sh` が作った空のファイルに値を記入する
 - **自動** — セットアップ処理が配置する。内容だけ確認すればよい
 - **再ログイン** — コピー不要。新環境で各ツールにログインし直せば復旧する
 
@@ -227,7 +227,7 @@ tar xzf claude-memory.tar.gz -C ~
 - **手書き** `~/.config/linear/api-key`
   — Linear の API キー。作成後に `chmod 600 ~/.config/linear/api-key` を実行する
 - **自動** `~/.claude/settings.json`
-  — 社内 marketplace の定義を含む。`dotfilesLink.sh` が `sync-claude-settings.sh push` で配置し、
+  — 社内 marketplace の定義を含む。`scripts/bootstrap.sh` が `sync-claude-settings.sh push` で配置し、
   同期時には機密値をマスクする
 
 #### B. 社内固有情報
@@ -247,7 +247,7 @@ tar xzf claude-memory.tar.gz -C ~
 - `.config/AutoHotkey/scripts/snippets-local.ahk`
   — 上記スクリプトを登録する定義
 
-`dotfilesLink.sh` が生成した雛形に値を入れるもの：
+`scripts/bootstrap.sh` が生成した雛形に値を入れるもの：
 
 - `~/.claude/local-context.md`
   — Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、案件・顧客の略号
@@ -354,7 +354,7 @@ dotctl version
 ```
 
 **順序は `apt-setup.sh` → mise（手順1）→ `setup-dotctl.sh`。** Go は mise 導入後に
-しか無いので、この順を外すとビルドできない。逆に **`dotfilesLink.sh` は `dotctl` を
+しか無いので、この順を外すとビルドできない。逆に **`scripts/bootstrap.sh` は `dotctl` を
 必須にしていない**ので、ここを飛ばしても基本セットアップは完了する（`dotctl` を
 使う機能だけが欠ける）。bootstrap を Go の有無に依存させないための作りで、
 [docs/scripts-layout.md](scripts-layout.md) に移行の全体像がある。

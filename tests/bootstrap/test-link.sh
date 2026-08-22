@@ -1,13 +1,15 @@
 #!/bin/bash
-# dotfilesLinkは既存実ファイルを退避して内容を失わず、管理外skillを上書きしない。
-# mainは実行せず、隔離したHOMEとrepositoryでlink関数の副作用を検証する。
+# dotfilesLinkは初期設定を生成せず、既存実ファイルを失わずにlinkだけをreconcileする。
+# bootstrapは既存Codex設定をdefaultより優先してadoptする。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
 SETUP="$REPO_ROOT/dotfilesLink.sh"
-IMPLEMENTATION="$REPO_ROOT/internal/bootstrap/link.sh"
+BOOTSTRAP="$REPO_ROOT/scripts/bootstrap.sh"
+BOOTSTRAP_IMPLEMENTATION="$REPO_ROOT/internal/bootstrap/setup.sh"
+IMPLEMENTATION="$REPO_ROOT/internal/link/reconcile.sh"
 
 pass=0
 fail=0
@@ -40,9 +42,18 @@ if [[ ! -f "$SETUP" ]]; then
   echo "ERROR: $SETUP が存在しません"
   exit 1
 fi
+if [[ ! -x "$BOOTSTRAP" ]]; then
+  echo "ERROR: $BOOTSTRAP が実行可能ではありません"
+  exit 1
+fi
 
 # shellcheck source=/dev/null  # 検査対象は実行時に決まる相対パス
 source "$SETUP"
+check "dotfilesLinkはbootstrap初期化関数を読み込まない" \
+  test -z "$(type -t init_codex_config)"
+# bootstrap固有関数もmainを実行せず読み込む。
+# shellcheck source=/dev/null
+source "$BOOTSTRAP_IMPLEMENTATION"
 set +eo pipefail # スクリプト側の set -euo pipefail をテストシェルへ持ち込まない
 
 tmp=$(mktemp -d)
@@ -51,6 +62,8 @@ trap 'rm -rf "$tmp"' EXIT
 # source で関数が読み込まれること。ここでは main は走らない（$0 はこのテスト
 # スクリプトなので dotfilesLink.sh 末尾のガードが false になる）
 check "関数が読み込まれる" test "$(type -t warn_missing_local_git)" = function
+check "bootstrap入口から初期化関数を読み込める" \
+  bash -c 'source "$1"; test "$(type -t bootstrap_main)" = function' _ "$BOOTSTRAP"
 
 # 再発防止。`bash -c 'source "$0"; ...' "$SETUP"` の形は $0 と BASH_SOURCE[0] が
 # 一致して dotfilesLink.sh 末尾のガードを通り、main が丸ごと走る。
@@ -131,7 +144,7 @@ check "実体は1つのまま" test -L "$priv/repo/.config/skills/auto/repos.yml
 
 # ケース4: リンク先に手書きの実ファイルがあれば退避してからリンクする。
 # ln -snf は黙って消すので、import より先に config-local を手書きした端末で
-# 内容が失われる。setup_codex と同じくタイムスタンプ付きで退避する。
+# 内容が失われる。link_codex_configと同じくタイムスタンプ付きで退避する。
 priv="$tmp/c4/private"
 fr="$tmp/c4/repo"
 mkdir -p "$priv/repo/.config/git" "$fr/.config/git"
@@ -161,11 +174,10 @@ check ".DS_Store はリンクしない" test ! -e "$fr/.config/.DS_Store"
 check "エディタのバックアップはリンクしない" test ! -e "$fr/.config/real.conf~"
 
 # --- link_private_files ---
-# 集約先が無い端末では何もせず成功する。旧環境が無い立ち上げでも
-# 従来どおり .example からの雛形生成にフォールバックできるようにするため。
+# 集約先が無い端末は正常なので、定期reconcileでは無言で成功する。
 out=$(PRIVATE_DIR="$tmp/does-not-exist" link_private_files 2>&1)
 check "集約先が無ければ成功する" test $? -eq 0
-check "フォールバックすることを伝える" grep -q "フォールバック" <<<"$out"
+check "集約先が無い定期reconcileは何も表示しない" test -z "$out"
 
 # home/ と repo/ の両方を配ること
 priv="$tmp/pf/private"
@@ -209,7 +221,7 @@ PRIVATE_DIR="$priv" HOME="$fakehome" DOTFILES_DIR="$tmp/ed/repo" \
 check "api-key はファイル単位でリンクされる" test -L "$fakehome/.config/linear/api-key"
 check "親の .config/linear はリンクに置き換わらない" test ! -L "$fakehome/.config/linear"
 
-# --- setup_codex ---
+# --- Codex config: init とlinkのライフサイクルを分離 ---
 # repository管理ruleはTUIが書くdefault.rulesと別名で配置し、
 # 端末で蓄積したapprovalを上書きしない。
 codex_case="$tmp/codex"
@@ -220,12 +232,42 @@ echo example >"$codex_case/dc/codex/config.example.toml"
 echo shared >"$codex_case/dc/codex/rules/dotfiles.rules"
 echo local >"$codex_case/home/.codex/rules/default.rules"
 
-HOME="$codex_case/home" DC="$codex_case/dc" setup_codex >/dev/null
+HOME="$codex_case/home" DC="$codex_case/dc" link_codex_config >/dev/null
 
 check "Codex configをリンクする" test -L "$codex_case/home/.codex/config.toml"
 check "共有Codex ruleを別fileでリンクする" test -L "$codex_case/home/.codex/rules/dotfiles.rules"
 check "TUIが書いたdefault.rulesを残す" \
   grep -qx local "$codex_case/home/.codex/rules/default.rules"
+
+# migration先のrepo configが無い場合、既存live設定をexampleより優先して取り込む。
+codex_migration="$tmp/codex-migration"
+mkdir -p "$codex_migration/dc/codex" "$codex_migration/home/.codex"
+echo migrated >"$codex_migration/home/.codex/config.toml"
+echo default >"$codex_migration/dc/codex/config.example.toml"
+HOME="$codex_migration/home" DC="$codex_migration/dc" init_codex_config >/dev/null
+check "migration済みCodex設定をrepo側へadoptする" \
+  grep -qx migrated "$codex_migration/dc/codex/config.toml"
+
+# live設定もrepo設定も無いfresh環境だけexampleを使う。
+codex_fresh="$tmp/codex-fresh"
+mkdir -p "$codex_fresh/dc/codex" "$codex_fresh/home/.codex"
+echo default >"$codex_fresh/dc/codex/config.example.toml"
+HOME="$codex_fresh/home" DC="$codex_fresh/dc" init_codex_config >/dev/null
+check "fresh環境ではCodex exampleから生成する" \
+  grep -qx default "$codex_fresh/dc/codex/config.toml"
+
+# 定期実行するdotfilesLink側はrepo configが無くてもlive設定を書き換えない。
+codex_reconcile="$tmp/codex-reconcile"
+mkdir -p "$codex_reconcile/dc/codex/rules" "$codex_reconcile/dc/codex/skills" \
+  "$codex_reconcile/dc/claude/skills-vendor" "$codex_reconcile/home/.codex/rules" \
+  "$codex_reconcile/home/.agents/skills"
+echo live >"$codex_reconcile/home/.codex/config.toml"
+echo shared >"$codex_reconcile/dc/codex/rules/dotfiles.rules"
+HOME="$codex_reconcile/home" DC="$codex_reconcile/dc" link_codex_config >/dev/null 2>&1
+check "reconcileはCodex live設定をdefaultへ戻さない" \
+  grep -qx live "$codex_reconcile/home/.codex/config.toml"
+check "reconcileはrepo configを生成しない" \
+  test '!' -e "$codex_reconcile/dc/codex/config.toml"
 
 # --- link_claude_skills ---
 # ~/.claude/skills には2種類が同居する。自作skillへの symlink（リポジトリを指す）と、
@@ -416,8 +458,8 @@ check "link_configs が fish_plugins をリンク対象にしている" \
   grep -q 'fish/fish_plugins|' "$IMPLEMENTATION"
 
 # 退避は link_configs より前でなければ意味がない（後だと実ファイルは既に消えている）
-check "main が link_configs より先に backup_fish_plugins を呼ぶ" \
-  bash -c 'awk "/^main\\(\\)/,/^}/" "'"$IMPLEMENTATION"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
+check "link_main が link_configs より先に backup_fish_plugins を呼ぶ" \
+  bash -c 'awk "/^link_main\\(\\)/,/^}/" "'"$IMPLEMENTATION"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
 
 echo "---"
 echo "pass: $pass, fail: $fail"

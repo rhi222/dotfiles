@@ -27,7 +27,7 @@ subdomain形式は汎用辞書に一致しうるため、`slack.example.com` の
 | GitHub Actions | `--tree` | `.example` の汎用pattern |
 
 - CIへ実体辞書を渡さない。public logに辞書そのものが漏れるため
-- 辞書が無い新環境は警告して通し、`dotfilesLink.sh` が雛形を作る
+- 辞書が無い新環境は警告して通し、`scripts/bootstrap.sh` が雛形を作る
 - 内容だけでなくpath名も検査する
 - 社内名を含む対象は、名前を `.gitignore` に書かず親directory単位でignoreする
 - `--no-verify` は原則使わない

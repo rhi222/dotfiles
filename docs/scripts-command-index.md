@@ -15,6 +15,7 @@
 | `fish`  | fish 関数・`conf.d`                             |
 | `ci`    | GitHub Actions                                  |
 | `link`  | `dotfilesLink.sh`                               |
+| `boot`  | `scripts/bootstrap.sh`                          |
 | `cron`  | crontab 行（`*-cron.sh` 自身を含む）            |
 
 ### 検査
@@ -33,18 +34,19 @@
 
 | スクリプト               | 引数          | 呼び出し元 |
 | ------------------------ | ------------- | ---------- |
-| `apt-setup.sh`           | なし          | doc link   |
+| `bootstrap.sh`           | なし          | doc        |
+| `apt-setup.sh`           | なし          | doc boot   |
 | `setup-claude-skills.sh` | `[--dry-run]` | doc        |
 | `setup-fish-plugins.sh`  | `[--dry-run]` | doc        |
 | `setup-gh-extensions.sh` | `[--dry-run]` | doc        |
-| `setup-yazi-plugins.sh`  | `[--dry-run]` | doc link   |
+| `setup-yazi-plugins.sh`  | `[--dry-run]` | doc boot   |
 | `linear-bootstrap.sh`    | なし          | doc link   |
 
 ### 同期・運搬
 
 | スクリプト                 | 引数                                                    | 呼び出し元 |
 | -------------------------- | ------------------------------------------------------- | ---------- |
-| `sync-claude-settings.sh`  | `status`\|`pull`\|`push [--force]`                      | doc link   |
+| `sync-claude-settings.sh`  | `status`\|`pull`\|`push [--force]`                      | doc boot   |
 | `sync-windows-settings.sh` | `status`\|`pull`\|`push` `[target]`                     | doc        |
 | `private-bundle.sh`        | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link   |
 

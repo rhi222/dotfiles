@@ -10,7 +10,7 @@
 テストは `tests/<feature>/`、Go unit testは対象package、詳細仕様は `docs/` に置く。
 配置規約のため `.config/<tool>/` に必要な設定は無理に移さず、feature READMEから参照する。
 
-Shell実装も `internal/{linear,nippo,bootstrap,automation,session,update}/` に置く。
+Shell実装も `internal/{linear,nippo,bootstrap,link,automation,session,update}/` に置く。
 `scripts/linear-*.sh`、`scripts/nippo-*.sh`、`scripts/lib/{linear-api,nippo-paths}.sh` は公開APIなので残し、`internal/` の実装パスを外部から直接呼ばない。
 新しいfeatureを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
 ファイル数が増えただけの設定toolごとには作らない。
@@ -67,7 +67,8 @@ Goの細かな分岐はpackage内のunit test、Shell内部APIと公開wrapper�
 | feature          | 中身                                                      |
 | ---------------- | --------------------------------------------------------- |
 | `repository/`    | lint / secret-scan / doc-budget / ref-check / test runner |
-| `bootstrap/`     | `dotfilesLink.sh`                                         |
+| `bootstrap/`     | `scripts/bootstrap.sh`                                    |
+| `link/`          | `dotfilesLink.sh`                                         |
 | `setup/`         | tool・pluginの導入                                        |
 | `update/`        | 日次更新                                                  |
 | `settings/`      | 設定同期とstatusline                                      |
