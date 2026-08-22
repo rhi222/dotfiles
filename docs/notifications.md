@@ -3,7 +3,7 @@
 AGENTS.md の「Windowsトースト通知（WSL2専用）」の詳細。エントリポイントと
 `lib/` の分担・依存はあちらにあり、ここには**通知ごとの内容と抑止の設計**を置く。
 
-#### 完了通知（Stopフック）
+## 完了通知（Stopフック）
 
 タイトルに作業中のリポジトリ名とブランチ、本文にトランスクリプトから抽出した最後のアシスタント発言（サブエージェント分は除外、1行120文字に整形）を出す。
 
@@ -14,7 +14,7 @@ AGENTS.md の「Windowsトースト通知（WSL2専用）」の詳細。エン�
 
 本文の長さは `STOP_NOTIFICATION_SUMMARY_MAX` で変えられる。トランスクリプトが読めない場合は `タスクが完了しました` にフォールバックする。
 
-#### 日報リマインド通知
+## 日報リマインド通知
 
 平日の業務時間中に日報の状態をチェックして通知する。`nippo-check.sh` は呼び出し元コンテキストを第1引数で受け取り、報告する内容を変える。
 
@@ -33,13 +33,6 @@ AGENTS.md の「Windowsトースト通知（WSL2専用）」の詳細。エン�
 
 状態は `~/.cache/claude-nippo-notify/{last-run,last-notify}` に持つ。通知が来なくなったと思ったらこの2ファイルを消せばリセットされる。
 
-セットアップ:
-
-```fish
-touch ~/.config/nippo-notify-enabled
-crontab -e
-# 以下を追加
-# 0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
-```
-
-無効化は `rm ~/.config/nippo-notify-enabled`。動作確認は `tests/nippo/test-nippo-check.sh` / `tests/notify/test-notify-cooldown.sh` / `tests/notify/test-stop-notification.sh`。
+有効化は `touch ~/.config/nippo-notify-enabled`、無効化はその削除。cron 行の登録は
+[bootstrap.md](bootstrap.md) の crontab 例を使う。動作確認は `tests/nippo/test-nippo-check.sh` /
+`tests/notify/test-notify-cooldown.sh` / `tests/notify/test-stop-notification.sh`。

@@ -75,9 +75,7 @@ env NIPPO_DRAFT_FORCE=1 bash scripts/nippo-draft-cron.sh
 Claude CodeのStop/Notification hookと日報cronからBurntToastを呼ぶ。共通処理は
 `scripts/lib/{notify-windows-toast,stop-notification,notify-cooldown}.sh`。
 
-- Stopは最後のassistant発言、cronは継続する日報状態を通知する
-- Stop側は10分の実行ゲートと、同一内容60分の通知cooldownを持つ
-- 状態は `~/.cache/claude-nippo-notify/{last-run,last-notify}`。通知停止時はこの2つを消してresetする
-
-通知本文、依存、判定表は [notifications.md](notifications.md) を参照する。
+Stopは最後のassistant発言、cronは継続する日報状態を通知する。
+通知本文、実行ゲートとcooldown、状態のreset方法、判定表は
+[notifications.md](notifications.md) を参照する。
 

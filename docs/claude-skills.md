@@ -58,9 +58,6 @@ AGENTS.md の「Claude Code skill管理（信頼境界と vendoring）」の詳�
   `SKILL_AGENTS` の既定で claude-code と codex の両方に入っているので、移行で見えるものを
   減らさない
 
-動作確認は `bash tests/skills/test-skill-audit.sh` / `test-skill-vendor.sh` /
-`test-claude-skills-allowlist.sh`。
-
 ## 動作確認
 
 ```fish

@@ -352,24 +352,9 @@ vendored skill 6本が古い gh 版に隠されていた）。
 移した先は `dotctl docker clean` / `notice` / `stale` / `refresh`。**`dclean` という
 呼び名は残す**（fish の補完と指の記憶がこの名前に紐づいているため）。
 
-### 移植で守った判断
-
-- **`df` の Images Reclaimable を軽掃除の根拠にしない。** あれは「どのコンテナから
-  も参照されていない image」の量で dangling かは問わない。軽掃除の
-  `image prune -f` は dangling だけを消すため、ここを根拠にすると
-  「dclean しても通知が消えない」状態になる（実際になった）
-- **軽モードで build cache のサイズを出さない。** `buildx du` の Size は共有レイヤを
-  含むうえ、軽モードはそのうち未使用ぶんだけを消すので、合算すると桁が変わる
-  （246件/5.4GB と表示して実際の回収が 0B になった）
-- **`volume prune` に軽・重どちらでも `-a` を付けない。** `-a` なしなら匿名 volume
-  だけが対象になり、named volume（DB データ）が守られる
-- **`--builder` を全ビルダーぶん付ける。** 付けないとカレントビルダーしか掃除せず、
-  default と docker-container ドライバは別のキャッシュを持つ（実測 11.2GB と 6.8GB）
-- **`--filter until=` は使わない。** 実測でどちらのドライバでも無視され、7日以上前の
-  レコードが残っていても一切回収されなかった
-- **`compose_dir` が空のときは orphan にせず compose に倒す。** orphan は削除を伴う
-  `docker compose down` を案内する側なので、孤児だと証明できないものを孤児扱いしない
-- **稼働中コンテナは停止しない。** 一覧とコピペ用コマンドを出すだけ
+掃除範囲・閾値・通知の判定（`df` の Reclaimable の読み方、`--builder` / `--filter until=` の
+実測、orphan 判定など）は [docker-clean.md](docker-clean.md) が正で、移植で全て維持した。
+ここには fish 側に残った wrapper の注意だけを置く。
 
 ### fish 側で気を付けた2点
 
@@ -379,5 +364,3 @@ vendored skill 6本が古い gh 版に隠されていた）。
 - **設定変数の受け渡しに `string collect` が要る。** fish のコマンド置換は改行で
   分割するので、付けないと除外グロブが2要素になり `env` が2つ目をコマンド名として
   扱う（実際に踏んだ）
-- **起動時フックはキャッシュを読むだけ。** `docker system df` は実測 5.2 秒かかる
-  ので同期実行してはならない。更新は background + disown に逃がす
