@@ -11,7 +11,7 @@ const dockerUsage = `使い方: dotctl docker <subcommand>
 
   clean [-a] [--status]   不要リソースを掃除する（既定は軽掃除。-a で重掃除）
   refresh                 キャッシュ更新のみ（起動時通知が background で使う）
-  notice                  起動時通知の1行を出す（閾値未満なら何も出さず 1）
+  notice                  起動時通知を出す。キャッシュが TTL 超なら 0
   stale                   キャッシュが TTL 超なら 0
 
   named volume は軽・重どちらでも削除しない。消すときは docker volume rm を使う。
@@ -27,18 +27,20 @@ func runDocker(ctx context.Context, args []string, env Env) int {
 
 	switch args[0] {
 	case "notice":
-		// **キャッシュを読むだけ。** `docker system df` は実測 5.2 秒かかるので、
-		// shell 起動時に同期実行してはならない
+		// **通知と stale 判定を1プロセスにまとめる。** 別々に呼ぶと、dotctl の
+		// version skew 警告が fish 起動時に同じ文言で2回出る。
+		// キャッシュを読むだけで、遅い更新は終了コードを見た shell が background
+		// に逃がす。
 		s, ok := docker.ReadStats(cfg.CacheFile)
-		if !ok {
-			return 1
+		if ok {
+			if line := docker.Notice(s, cfg, docker.DirExists); line != "" {
+				fmt.Fprintln(env.Stdout, line)
+			}
 		}
-		line := docker.Notice(s, cfg, docker.DirExists)
-		if line == "" {
-			return 1
+		if docker.IsStale(cfg) {
+			return 0
 		}
-		fmt.Fprintln(env.Stdout, line)
-		return 0
+		return 1
 
 	case "stale":
 		if docker.IsStale(cfg) {

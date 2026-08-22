@@ -179,13 +179,14 @@ check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
 echo "== 起動時フック =="
 
 # **キャッシュを読むだけ**で、docker を同期実行しないこと。
-# stub は docker notice / stale / refresh のどれを呼ばれたかを記録する
+# stub は docker notice / refresh のどれを呼ばれたかを記録する。
+# **notice と stale を別々に呼ぶと、dotctl の version skew 警告が重複する。**
+# 起動時の foreground 呼び出しが notice 1回だけであることを回帰検査する。
 cat >"$FAKE_HOME/.local/bin/dotctl" <<STUB
 #!/bin/bash
 echo "\$*" >>"$TEST_DIR/calls.log"
 case "\$2" in
-  notice) echo "🗑  docker: 6GB 回収可能  → dclean"; exit 0 ;;
-  stale)  exit "\${STALE_EXIT:-1}" ;;
+  notice) echo "🗑  docker: 6GB 回収可能  → dclean"; exit "\${STALE_EXIT:-1}" ;;
   *)      exit 0 ;;
 esac
 STUB
@@ -197,8 +198,8 @@ out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" fish -c "
   source $CONF
   __docker_clean_greeting" 2>&1)
 check "通知行を出す" "yes" "$(has '🗑  docker' "$out")"
-check "notice を呼ぶ" "yes" "$(has 'docker notice' "$(cat "$TEST_DIR/calls.log")")"
-check "stale を確認する" "yes" "$(has 'docker stale' "$(cat "$TEST_DIR/calls.log")")"
+check "notice を1回だけ呼ぶ" "1" "$(grep -c '^docker notice$' "$TEST_DIR/calls.log")"
+check "stale を別に呼ばない" "no" "$(has 'docker stale' "$(cat "$TEST_DIR/calls.log")")"
 # 新しければ更新しない（起動を遅くしない）
 check "新しければ refresh しない" "no" "$(has 'docker refresh' "$(cat "$TEST_DIR/calls.log")")"
 

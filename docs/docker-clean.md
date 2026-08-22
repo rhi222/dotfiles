@@ -33,7 +33,7 @@
 - **軽モードは image と build cache の回収量を事前に出さない。** dangling image は共有レイヤのため確定できず、build cache は `buildx du` の合算（246件/5.4GB）と実際の回収量（0B）が桁違いになる。`df` の Build Cache Reclaimable は `default` ビルダーの分しか見ないので代わりにもならない。実際の回収量は実行後の `回収:` 行を見る
 - **起動時通知は orphan が1件以上のときだけ件数を併記する**（`12h超稼働 3件（orphan 1）`）。確実な停止候補が居るかどうかで「今 `dclean --status` を見る価値があるか」が変わるため。0件なら括弧は付けない
 - 意図的に未使用 image を残していて通知が邪魔な場合は `docker_clean_size_threshold_gb` を上げる
-- `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。キャッシュがTTL（既定6h）を超えている場合の更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下。**キャッシュを読むだけなので、コンテナを停止しても通知の件数はすぐには変わらない。** 即座に反映したいときは `dclean --refresh`（`dclean` / `dclean --status` の実行でも更新される）
+- `docker system df` は実測5.2秒かかるため、起動時通知は `$XDG_STATE_HOME/docker-clean/stats.json` のキャッシュを読むだけにしている。`dotctl docker notice` 1回で通知表示とTTL判定を行い、キャッシュが古ければ終了コード0を返す。別コマンドに分けるとdotctlのversion skew警告が2回出るため、fish側では分けない。更新は background + disown で行い、結果は次回の起動時に反映される。起動時間への影響はフックあり0.62s / なし0.63sでノイズ以下。**キャッシュを読むだけなので、コンテナを停止しても通知の件数はすぐには変わらない。** 即座に反映したいときは `dclean --refresh`（`dclean` / `dclean --status` の実行でも更新される）
 - 閾値と除外リストは変数で上書きできる（`99-local.fish` などで設定する）
 
 | 変数                              | 既定値              | 意味                                      |
