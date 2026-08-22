@@ -160,9 +160,11 @@ function M.find_duplicates()
 		if type(entries) == "table" and cat_name ~= "commands" then
 			for key_name, entry in pairs(entries) do
 				if type(entry) == "table" and entry[1] then
-					local modes = entry.mode or "n"
-					if type(modes) == "string" then
-						modes = { modes }
+					local modes
+					if type(entry.mode) == "table" then
+						modes = entry.mode
+					else
+						modes = { entry.mode or "n" }
 					end
 					for _, m in ipairs(modes) do
 						local id = entry[1] .. ":" .. m

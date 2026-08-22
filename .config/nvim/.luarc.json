@@ -1,8 +1,11 @@
 {
-  "diagnostics": {
-    "globals": ["vim"]
-  },
-  "workspace": {
-    "checkThirdParty": false
-  }
+  "runtime.version": "LuaJIT",
+  "diagnostics.globals": ["vim"],
+  "diagnostics.disable": [
+    "different-requires",
+    "redundant-parameter",
+    "undefined-doc-name"
+  ],
+  "workspace.checkThirdParty": false,
+  "workspace.ignoreDir": [".config/claude/skills-vendor"]
 }

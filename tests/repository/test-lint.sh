@@ -5,7 +5,7 @@
 # Markdown / Lua / Fish の不正を各検査が落とすことを見る。
 #
 # 本物のリポジトリでは走らせない。LINT_REPO_ROOT で使い捨ての git リポジトリを
-# 指し、shellcheck / shfmt / rumdl / stylua は PATH 前方の stub に差し替える
+# 指し、shellcheck / shfmt / rumdl / stylua / LuaLS は PATH 前方の stub に差し替える
 # （fish だけは実物を使う）。
 # 構文エラーを本当に検出できるかがこのテストの主目的なので）。
 set -uo pipefail
@@ -62,11 +62,25 @@ STUB
 for arg in "$@"; do
   [[ "$arg" == *.lua ]] || continue
   [[ -f "$arg" ]] || exit 9
-  grep -q 'BAD_LUA' "$arg" && exit 1
+  grep -q 'BAD_STYLUA' "$arg" && exit 1
 done
 exit 0
 STUB
   chmod +x "$STUB_DIR/stylua"
+
+  cat >"$STUB_DIR/lua-language-server" <<'STUB'
+#!/bin/bash
+root=""
+for arg in "$@"; do
+  case "$arg" in
+    --check=*) root=${arg#--check=} ;;
+  esac
+done
+[[ -n "$root" && -d "$root" ]] || exit 8
+[[ -f "$root/broken.lua" ]] && grep -q 'BAD_LUALS' "$root/broken.lua" && exit 1
+exit 0
+STUB
+  chmod +x "$STUB_DIR/lua-language-server"
 
   git -C "$REPO" init -q
   git -C "$REPO" config user.email t@example.com
@@ -146,10 +160,21 @@ teardown
 setup
 mkdir -p "$REPO/scripts"
 echo '#!/bin/bash' >"$REPO/scripts/a.sh"
-printf 'local BAD_LUA=true\n' >"$REPO/broken.lua"
+printf 'local BAD_STYLUA=true\n' >"$REPO/broken.lua"
 git -C "$REPO" add -A
 out=$(run_lint)
 check "未整形のLuaがあれば失敗する" "1" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf 'local BAD_LUALS = true\n' >"$REPO/broken.lua"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "LuaLSの診断があれば失敗する" "1" "$?"
+check "LuaLSの検査を行ったと出力する" "yes" \
+  "$(printf '%s' "$out" | grep -q '=== LuaLS ===' && echo yes || echo no)"
 teardown
 
 echo "== .fish の構文チェック =="

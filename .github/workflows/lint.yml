@@ -15,6 +15,7 @@ on:
       - "**.md"
       - ".rumdl.toml"
       - "**.lua"
+      - ".config/nvim/.luarc.json"
       - "**.go"
       - "go.mod"
   pull_request:
@@ -26,6 +27,7 @@ on:
       - "**.md"
       - ".rumdl.toml"
       - "**.lua"
+      - ".config/nvim/.luarc.json"
       - "**.go"
       - "go.mod"
 
@@ -57,6 +59,7 @@ jobs:
             "aqua:mvdan/sh" = "3.13.1"
             "aqua:rvben/rumdl" = "0.2.58"
             "aqua:JohnnyMorganz/StyLua" = "2.5.2"
+            "aqua:LuaLS/lua-language-server" = "3.19.1"
             # run-tests.sh が go test ./... も走らせるため。go が無い環境では
             # skip して通るので CI が落ちはしないが、それでは Go 側を検査できない
             go = "1.26"
@@ -67,6 +70,7 @@ jobs:
           shfmt --version
           rumdl --version
           stylua --version
+          lua-language-server --version
           go version
 
       # lint.sh の fish -n と、fish 関数のテスト（gf / wt / wtd / dclean）の両方で要る。

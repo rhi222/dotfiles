@@ -2,14 +2,14 @@
 # リポジトリが追跡しているシェルスクリプトを検査する。
 #   *.sh   : shellcheck + shfmt
 #   *.md   : rumdl
-#   *.lua  : stylua
+#   *.lua  : stylua + LuaLS CLI
 #   *.fish : fish -n（構文チェックのみ。fish に整形系の CLI は無い）
 #   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/lint.sh        # 検査のみ（CIと同じ）
 #   bash scripts/lint.sh --fix  # shfmt の整形を実際に適用
 #
-# 依存: shellcheck / shfmt / rumdl / stylua（mise の aqua バックエンドで管理）、fish
+# 依存: shellcheck / shfmt / rumdl / stylua / lua-language-server（miseで管理）、fish
 #
 # 環境変数:
 #   LINT_REPO_ROOT  検査するリポジトリのルート（テストで差し替える）
@@ -101,6 +101,23 @@ elif [ "$FIX" -eq 1 ]; then
   stylua "${lua_files[@]}"
 elif ! stylua --check "${lua_files[@]}"; then
   rc=1
+fi
+
+echo "=== LuaLS ==="
+if [ "${#lua_files[@]}" -eq 0 ]; then
+  echo "検査対象の .lua が無い"
+else
+  lua_check_dir=$(mktemp -d)
+  if ! lua-language-server \
+    --check="$REPO_ROOT" \
+    --checklevel=Warning \
+    --check_format=pretty \
+    --configpath="$REPO_ROOT/.config/nvim/.luarc.json" \
+    --metapath="$lua_check_dir/meta" \
+    --logpath="$lua_check_dir/log"; then
+    rc=1
+  fi
+  rm -rf -- "$lua_check_dir"
 fi
 
 # .fish は shellcheck も shfmt も読めないので、fish 自身の構文チェックに掛ける。
