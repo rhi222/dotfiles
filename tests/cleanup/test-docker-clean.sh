@@ -1,5 +1,4 @@
 #!/bin/bash
-# serial: 実 $HOME の設定で対話 fish を起動するので、並列の負荷で起動が間に合わない
 #
 # dclean（fish の wrapper）と起動時通知の契約を検査する。
 #
