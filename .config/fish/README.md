@@ -25,6 +25,8 @@
     │   ├── 11-yazi.fish              # yazi統合（終了時にcwdへcd）
     │   ├── 12-herdr.fish             # herdr起動ラッパー（`he`）
     │   └── 13-docker-clean.fish      # docker掃除のリマインド（起動時通知）
+    ├── completions/      # カスタムコマンドの補完
+    │   └── dotctl.fish   # dotctlのサブコマンド補完
     └── functions/       # カスタム関数
         ├── fish_user_key_bindings.fish       # 空定義。fzf標準統合の横取りを塞ぐ
         ├── __ghq_list_cache_path.fish    # gfのghq listキャッシュのパス解決
@@ -119,8 +121,9 @@ repo に持てば追跡外のファイルは autoload されず影になり、�
 `config.fish`で明示的に読み込み順序を制御：
 
 ```fish
-# 個人関数を優先パスに追加（conf.d より前）
+# 個人関数・補完を優先パスに追加（conf.d より前）
 set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
+set -g fish_complete_path ~/.config/fish/my/completions $fish_complete_path
 
 # 個人設定を順次読み込み
 for file in ~/.config/fish/my/conf.d/*.fish

@@ -6,6 +6,9 @@
 # しかも当該処理は黙って何もしないまま終わる）。
 set -g fish_function_path ~/.config/fish/my/functions $fish_function_path
 
+# Add my completions directory to fish_complete_path
+set -g fish_complete_path ~/.config/fish/my/completions $fish_complete_path
+
 # Load my custom configurations in order
 for file in ~/.config/fish/my/conf.d/*.fish
     if test -r $file
