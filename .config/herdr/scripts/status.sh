@@ -1,7 +1,7 @@
 #!/bin/bash
 # herdr の ui.tab_bar_right に出すマシンリソースの1行ステータス。
 #
-#   CPU 12%  ·  MEM 5.9/11.7G  ·  LA 1.06
+#   CPU 12% · MEM 5.9/11.7G · LA 1.06
 #
 # 設計上の決めごと:
 #   ・herdr は「成功した出力の最終行」だけを使うので、出力は必ず1行に閉じる。
@@ -26,7 +26,7 @@ MEMINFO_FILE="${HERDR_STATUS_MEMINFO:-/proc/meminfo}"
 LOADAVG_FILE="${HERDR_STATUS_LOADAVG:-/proc/loadavg}"
 CACHE_FILE="${HERDR_STATUS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/herdr-status/cpu}"
 COLOR="${HERDR_STATUS_COLOR:-never}"
-SEP="  ·  "
+SEP=" · "
 
 OUT=""
 SGR=""

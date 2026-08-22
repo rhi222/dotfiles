@@ -122,8 +122,8 @@ rc=$?
 check_eq "終了コードは0" "0" "$rc"
 check_eq "1行にまとまる" "1" "$(printf '%s' "$out" | grep -c '' || true)"
 check_eq "時計はリソースと分離して出す" "8/20 Thu 11:42:03" "$clock_out"
-check_eq "CPU・MEM・LA は余白を広げて並ぶ" \
-  "CPU 50%  ·  MEM 5.9/11.7G  ·  LA 1.06" \
+check_eq "CPU・MEM・LA は区切って並ぶ" \
+  "CPU 50% · MEM 5.9/11.7G · LA 1.06" \
   "$(printf '%s' "$out" | strip_ansi)"
 
 echo "=== 月日はゼロ埋めしない ==="
