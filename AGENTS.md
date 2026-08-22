@@ -23,6 +23,7 @@ dotfilesリポジトリ。
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` のherdr/nvim/claude復元を触る             |
 | [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdrのtab statusとkeybindingを変える          |
 | [docs/notifications.md](docs/notifications.md)                       | Windows toastの内容・抑止条件を変える          |
+| [docs/agent-usage.md](docs/agent-usage.md)                           | tab barのusage表示・取得・キャッシュを触る     |
 | [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定・閾値を変える                  |
 | [docs/public-repository-policy.md](docs/public-repository-policy.md) | 機密情報の置き場所・scan規則を変える           |
 
