@@ -49,6 +49,38 @@ if ! command -v "$GO" >/dev/null 2>&1; then
   exit 1
 fi
 
+# HEAD・Go toolchain・Go sourceがすべて同じなら、毎日のtest/buildを省く。
+# sourceはdirtyの有無ではなく内容のfingerprintで比べる。未コミットのGo変更が
+# あっても、一度その内容をbuild済みなら次回はskipできる。
+commit="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
+current_go="$("$GO" version 2>/dev/null | awk '{print $3}')"
+if ! source_hash="$({
+  cd "$REPO" || exit 1
+  git ls-files -co --exclude-standard -- '*.go' go.mod go.sum |
+    LC_ALL=C sort |
+    while IFS= read -r file; do
+      printf '%s\0' "$file"
+      git hash-object "$file"
+    done |
+    git hash-object --stdin
+})"; then
+  echo "setup-dotctl: Go sourceのfingerprintを計算できない" >&2
+  exit 1
+fi
+installed_commit=""
+installed_go=""
+installed_source_hash=""
+if [ -x "$BIN" ]; then
+  installed_commit="$("$BIN" version 2>/dev/null | awk 'NR == 1 && $1 == "dotctl" { print $2 }')"
+  installed_source_hash="$("$BIN" version 2>/dev/null | awk 'NR == 1 && $1 == "dotctl" { print $3 }')"
+  installed_go="$("$GO" version -m "$BIN" 2>/dev/null | awk 'NR == 1 { print $2 }')"
+fi
+if [ -n "$current_go" ] && [ "$installed_commit" = "$commit" ] &&
+  [ "$installed_go" = "$current_go" ] && [ "$installed_source_hash" = "$source_hash" ]; then
+  echo "setup-dotctl: already current ($commit, $current_go), skipping"
+  exit 0
+fi
+
 if [ "$SKIP_TESTS" -eq 1 ]; then
   echo "setup-dotctl: テストを skip した（--skip-tests）"
 else
@@ -71,11 +103,10 @@ mkdir -p "$BIN_DIR" || {
 tmp="$(mktemp "$BIN_DIR/.dotctl.XXXXXX")" || exit 1
 trap 'rm -f "$tmp"' EXIT
 
-commit="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
 pkg="github.com/rhi222/dotfiles/internal/buildinfo"
 
 if ! (cd "$REPO" && "$GO" build \
-  -ldflags "-X $pkg.Commit=$commit -X $pkg.Repo=$REPO" \
+  -ldflags "-X $pkg.Commit=$commit -X $pkg.Repo=$REPO -X $pkg.SourceHash=$source_hash" \
   -o "$tmp" ./cmd/dotctl); then
   echo "setup-dotctl: ビルドが落ちた（既存バイナリはそのまま）" >&2
   exit 1

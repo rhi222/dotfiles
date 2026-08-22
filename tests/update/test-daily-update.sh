@@ -422,17 +422,18 @@ mkdir -p "$FISHER_STUB_BIN"
 cat >"$FISHER_STUB_BIN/fish" <<EOF
 #!/bin/bash
 echo "FISH_CALLED args=[\$*]" >>"$FISHER_TEST_DIR/fish.log"
-case "\${2:-}" in
-  *"functions -q fisher"*) exit "\${HAS_FISHER_EXIT:-0}" ;;
-  *"fisher update"*) exit "\${FISHER_EXIT:-0}" ;;
-esac
-exit 0
+exit "\${HAS_FISHER_EXIT:-0}"
 EOF
 chmod +x "$FISHER_STUB_BIN/fish"
+cat >"$FISHER_STUB_BIN/dotctl" <<EOF
+#!/bin/bash
+echo "DOTCTL_CALLED args=[\$*]" >>"$FISHER_TEST_DIR/dotctl.log"
+exit "\${FISHER_EXIT:-0}"
+EOF
+chmod +x "$FISHER_STUB_BIN/dotctl"
 
 # present=fish と fisher が揃う / absent=fish 無し（未導入相当）/ fail=fisher update が失敗。
-# マーカーは実サブコマンド "fisher update"。fish は capability check でも呼ばれるため、
-# 単なる呼び出し印（FISH_CALLED）では「update を呼んだ」を区別できない。
+# remote/cache判定はGo unit testで固定し、ここはShell入口のtriadだけを見る。
 run_fisher_case() { # present|absent|fail
   local path="$FISHER_STUB_BIN:$PATH"
   [[ "$1" == absent ]] && path="/nonexistent"
@@ -440,15 +441,16 @@ run_fisher_case() { # present|absent|fail
   [[ "$1" == fail ]] && fisher_exit=1
   PATH="$path" FISHER_EXIT="$fisher_exit" fisher_update
 }
-assert_tool_triad "fisher" run_fisher_case "$FISHER_TEST_DIR/fish.log" "fisher update"
+assert_tool_triad "fisher" run_fisher_case "$FISHER_TEST_DIR/dotctl.log" "fisher-update"
 
 # fish はあるが fisher 未導入。追加は setup-fish-plugins.sh の担当なので
 # ここでは入れずに成功扱いにし、案内だけ出す（triad の絞りとは別軸の固有分岐）
 : >"$FISHER_TEST_DIR/fish.log"
+: >"$FISHER_TEST_DIR/dotctl.log"
 exit_code=0
 output=$(PATH="$FISHER_STUB_BIN:$PATH" HAS_FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
 assert_eq 0 "$exit_code" "fisher 未導入でも成功扱い"
-assert_eq 0 "$(grep -c "fisher update" "$FISHER_TEST_DIR/fish.log")" "勝手に入れない"
+assert_eq 0 "$(grep -c "fisher-update" "$FISHER_TEST_DIR/dotctl.log")" "勝手に入れない"
 assert_output_contains "setup-fish-plugins.sh" "$output" "追加の導線を案内する"
 
 rm -rf "$FISHER_TEST_DIR"

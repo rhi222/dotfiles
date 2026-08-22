@@ -171,6 +171,77 @@ check "testを実repo rootで走らせる" "yes" "$(has "test $REPO_ROOT" "$cwd_
 check "buildを実repo rootで走らせる" "yes" "$(has "build $REPO_ROOT" "$cwd_log")"
 teardown
 
+echo "== 更新不要ならskip =="
+
+setup
+head=$(git -C "$FAKE_REPO" rev-parse HEAD)
+# dirtyかどうかではなく、実際にbuildした内容との一致でskipする。
+printf 'package dirty\n' >"$FAKE_REPO/dirty.go"
+source_hash=$(cd "$FAKE_REPO" && git ls-files -co --exclude-standard -- '*.go' go.mod go.sum | LC_ALL=C sort | while IFS= read -r file; do
+  printf '%s\0' "$file"
+  git hash-object "$file"
+done | git hash-object --stdin)
+cat >"$STUB/go" <<'EOF'
+#!/bin/bash
+if [ "$1" = version ] && [ "${2:-}" = -m ]; then
+  printf '%s: go1.27.0\n' "$3"
+elif [ "$1" = version ]; then
+  echo 'go version go1.27.0 linux/amd64'
+else
+  echo "UNEXPECTED $*" >>"$GO_CALL_LOG"
+  exit 9
+fi
+EOF
+chmod +x "$STUB/go"
+cat >"$BINDIR/dotctl" <<EOF
+#!/bin/bash
+echo 'dotctl $head $source_hash'
+EOF
+chmod +x "$BINDIR/dotctl"
+out=$(GO_CALL_LOG="$TEST_DIR/go.log" run_setup)
+rc=$?
+check "未commit sourceもbuild済みなら成功する" "0" "$rc"
+check "未commit sourceも同じ内容ならtest/buildしない" "0" "$([ -f "$TEST_DIR/go.log" ] && wc -l <"$TEST_DIR/go.log" || echo 0)"
+check "skipしたことを伝える" "yes" "$(has 'skipping' "$out")"
+teardown
+
+setup
+head=$(git -C "$FAKE_REPO" rev-parse HEAD)
+source_hash=$(cd "$FAKE_REPO" && git ls-files -co --exclude-standard -- '*.go' go.mod go.sum | LC_ALL=C sort | while IFS= read -r file; do
+  printf '%s\0' "$file"
+  git hash-object "$file"
+done | git hash-object --stdin)
+cat >"$STUB/go" <<'EOF'
+#!/bin/bash
+case "$1" in
+  version)
+    if [ "${2:-}" = -m ]; then
+      printf '%s: go1.26.0\n' "$3"
+    else
+      echo 'go version go1.27.0 linux/amd64'
+    fi
+    ;;
+  test) exit 0 ;;
+  build)
+    while [ $# -gt 0 ]; do
+      [ "$1" = -o ] && { out="$2"; shift; }
+      shift
+    done
+    printf '#!/bin/bash\necho dotctl rebuilt\n' >"$out"
+    chmod +x "$out"
+    ;;
+esac
+EOF
+chmod +x "$STUB/go"
+cat >"$BINDIR/dotctl" <<EOF
+#!/bin/bash
+echo 'dotctl $head $source_hash'
+EOF
+chmod +x "$BINDIR/dotctl"
+run_setup >/dev/null
+check "commitが同じでもGoが変われば再buildする" "dotctl rebuilt" "$("$BINDIR/dotctl")"
+teardown
+
 echo "== go が無いとき =="
 
 setup
@@ -252,6 +323,7 @@ env PATH="$STUB:/usr/bin:/bin" DOTCTL_REPO="$FAKE_REPO" DOTCTL_BIN="$BINDIR/dotc
 log=$(cat "$TEST_DIR/ldflags" 2>/dev/null || echo "")
 check "commit を埋め込む" "yes" "$(has "$head" "$log")"
 check "repo パスを埋め込む" "yes" "$(has "$FAKE_REPO" "$log")"
+check "source fingerprintを埋め込む" "yes" "$(has '.SourceHash=' "$log")"
 teardown
 
 echo "== テストを飛ばせる（緊急時） =="

@@ -25,8 +25,9 @@ type Env struct {
 
 	// Commit / Repo はビルド時に埋め込まれた値（buildinfo）。
 	// どちらかが空なら version skew の検知を行わない。
-	Commit string
-	Repo   string
+	Commit     string
+	Repo       string
+	SourceHash string
 
 	// WorktreeRoots は worktree の走査ルート（スペース区切り）。
 	WorktreeRoots string
@@ -67,6 +68,10 @@ type Env struct {
 	AgentUsageSelfExe string
 	// AgentUsageNoSpawn はテスト用に外部プロセス起動を止める。
 	AgentUsageNoSpawn bool
+
+	// FisherPluginFile / FisherCacheFile はfisher-updateの宣言と前回成功state。
+	FisherPluginFile string
+	FisherCacheFile  string
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
@@ -83,6 +88,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   doctor migration   移行前チェック
   docker clean       docker の不要リソースを掃除する
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
+  fisher-update      変更があるときだけfish pluginを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする
   version            バイナリのビルド情報を出す
   help               この使い方を出す
@@ -124,6 +130,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runDocker(ctx, args[1:], env)
 	case "agent-usage":
 		return runAgentUsage(ctx, args[1:], env)
+	case "fisher-update":
+		return runFisherUpdate(ctx, args[1:], env)
 	case "rebuild":
 		return runRebuild(ctx, args[1:], env)
 	case "help", "-h", "--help":
@@ -138,6 +146,9 @@ func Run(ctx context.Context, args []string, env Env) int {
 func versionString(env Env) string {
 	if env.Commit == "" {
 		return "(ビルド情報なし)"
+	}
+	if env.SourceHash != "" {
+		return env.Commit + " " + env.SourceHash
 	}
 	return env.Commit
 }

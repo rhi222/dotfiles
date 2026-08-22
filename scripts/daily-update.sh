@@ -17,6 +17,8 @@ find "$LOG_DIR" -name '*.log' -mtime +30 -delete 2>/dev/null || true
 
 # shellcheck source=../internal/update/pkg.sh
 source "$SCRIPT_DIR/../internal/update/pkg.sh"
+# shellcheck source=../internal/update/fisher.sh
+source "$SCRIPT_DIR/../internal/update/fisher.sh"
 
 failures=()
 
@@ -76,26 +78,6 @@ env_residue_check() {
   count="${count:-0}"
   echo "環境の残骸: $count 件"
   return 0
-}
-
-# fish プラグイン（fisher 管理）の更新。宣言は .config/fish/fish_plugins。
-#
-# `fisher update` は宣言と実体を突き合わせる完全な reconcile で、未宣言のものは
-# 削除する。ここで回すのは既存の更新だけにしたいので、追加は
-# setup-fish-plugins.sh の担当（gh 拡張 / yazi と同じ役割分担）。
-#
-# fish も fisher も無い端末では何もせず成功扱いにする。yazi と同じく、
-# 宣言ファイルの有無ではなく実行系の有無で判定できるため。
-fisher_update() {
-  if ! command -v fish >/dev/null 2>&1; then
-    echo "fish not found, skipping"
-    return 0
-  fi
-  if ! fish -c 'functions -q fisher' >/dev/null 2>&1; then
-    echo "fisher not installed, skipping (run scripts/setup-fish-plugins.sh)"
-    return 0
-  fi
-  fish -c 'fisher update' </dev/null
 }
 
 # dotctl の再ビルド。**git pull 後に再ビルドしないと、cron と hook は古い
@@ -281,6 +263,9 @@ main() {
   # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
   # 参照されなくなったツール版を実削除。確認プロンプトなし）
   run_step "mise prune" mise prune
+  # 以降の更新判定（fisher cacheを含む）が現在のdotctl実装を使えるよう、
+  # Go更新後すぐに再ビルドする。
+  run_step "dotctl rebuild" dotctl_rebuild
   run_step "npm global update" npm_global_update
   run_step "pip global update" pip_global_update
   run_step "nvim Lazy update" timeout 300 nvim --headless -c "luafile $SCRIPT_DIR/nvim-lazy-update.lua" +qa
@@ -296,8 +281,6 @@ main() {
   # fish プラグイン（tide / fzf.fish）も同様。ここが無かったため、この2つだけ
   # どの端末でも手動でしか更新されていなかった。
   run_step "fisher update" fisher_update
-  # dotctl の再ビルド。更新系の最後に置く（go 自体の更新より後にする）
-  run_step "dotctl rebuild" dotctl_rebuild
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check

@@ -91,6 +91,10 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 - miseのshimをPATH前方へ戻してから更新する
 - 新規追加は担当の宣言ファイル・setupコマンドで行い、daily-updateは更新だけを担う
 - yaziの `package.toml` が無い環境は成功扱いでskipする
+- fisherはremote commit SHAを `~/.cache/dotfiles/fisher-update.refs` に記録し、
+  宣言またはSHAが変わったときだけfull reconcileする。cache削除時は次回full updateする
+- dotctlはmiseによるGo更新の直後に再buildする。HEAD・build時のGo version・Go sourceが
+  すべて現在値と一致すればtest/buildをskipする
 
 `env-residue.sh` は宣言外の `~/.fzf`、fish関数、skillを報告する。情報提供なので発見時も
 exit 0とし、件数は `env-residue: FOUND=N` から取得する。
@@ -111,7 +115,7 @@ fisherは未宣言pluginを削除する完全reconcileなので、setupは削除
 fish自体は起動できるため、`dotfilesLink.sh` から自動実行しない。
 
 yaziは `init.lua` がpluginを `require` するため、実体が無いと起動できない。このためyaziだけは
-`dotfilesLink.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
+新環境の `scripts/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
 検査する。`package.toml` はrev/hashを持つlockfileであり、upgradeによる差分のcommitは人間が判断する。
 
 ## Codex自作skill

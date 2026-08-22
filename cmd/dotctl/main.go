@@ -163,6 +163,13 @@ func agentUsageConfig() agentusage.Config {
 	}
 }
 
+func fisherPaths() (string, string) {
+	home := homeDir()
+	cacheDir := envOr("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
+	return envOr("FISHER_PLUGIN_FILE", filepath.Join(home, ".config", "fish", "fish_plugins")),
+		envOr("FISHER_CACHE_FILE", filepath.Join(cacheDir, "dotfiles", "fisher-update.refs"))
+}
+
 func envFloat(key string, def float64) float64 {
 	v := os.Getenv(key)
 	if v == "" {
@@ -246,12 +253,14 @@ func cwd() string {
 
 func main() {
 	selfExe, _ := os.Executable()
+	fisherPluginFile, fisherCacheFile := fisherPaths()
 	os.Exit(command.Run(context.Background(), os.Args[1:], command.Env{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Runner: execx.New(),
-		Commit: buildinfo.Commit,
-		Repo:   envOr("DOTCTL_REPO", buildinfo.Repo),
+		Stdout:     os.Stdout,
+		Stderr:     os.Stderr,
+		Runner:     execx.New(),
+		Commit:     buildinfo.Commit,
+		Repo:       envOr("DOTCTL_REPO", buildinfo.Repo),
+		SourceHash: buildinfo.SourceHash,
 
 		WorktreeRoots:      envOr("WORKTREE_CLEANUP_ROOTS", defaultWorktreeRoots),
 		WorktreePRStateCmd: os.Getenv("WORKTREE_CLEANUP_PR_STATE_CMD"),
@@ -270,6 +279,8 @@ func main() {
 
 		AgentUsage:        agentUsageConfig(),
 		AgentUsageSelfExe: selfExe,
+		FisherPluginFile:  fisherPluginFile,
+		FisherCacheFile:   fisherCacheFile,
 
 		Color: isTerminal(os.Stdout),
 	}))

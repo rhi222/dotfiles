@@ -14,4 +14,6 @@ var (
 	Commit = ""
 	// Repo はビルド元のリポジトリのパス。
 	Repo = ""
+	// SourceHash はGoのbuild入力から計算したfingerprint。
+	SourceHash = ""
 )
