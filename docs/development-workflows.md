@@ -42,10 +42,9 @@ tool integration。追加時は既存番号の責務へ置き、番号を増や�
 - code block内の見出し風コメントはsectionに数えない
 - 対象文書や宣言が無い新環境ではskipし、壊れた宣言はfailする
 
-検査は `bash scripts/doc-budget.sh`、テストは `bash tests/checks/test-doc-budget.sh`。
+検査は `bash scripts/doc-budget.sh`、テストは `bash tests/repository/test-doc-budget.sh`。
 
 ## Docker
 
 composeは `find_docker_compose` で探索し、`dc` / `dcl` / `dcu` / `dcd` のfish略語を使う。
 掃除の仕様と安全条件は [docker-clean.md](docker-clean.md) を参照する。
-

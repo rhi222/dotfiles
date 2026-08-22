@@ -94,7 +94,7 @@ while IFS= read -r hit; do
   # `scripts/worktree-init.d*` のような宣言そのものを dangling として報告する
   [ "$file" = "scripts/ref-check-allow.txt" ] && continue
 
-  # $SCRIPT_DIR は参照元のディレクトリで解く。**テストを tests/<domain>/ へ
+  # $SCRIPT_DIR は参照元のディレクトリで解く。**テストを tests/<feature>/ へ
   # 移すと基準が変わるので、移動で壊れる参照の本体はここ**
   case "$ref" in
     '$SCRIPT_DIR/'*)

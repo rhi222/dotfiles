@@ -164,7 +164,7 @@ check "同一ディレクトリ基準で解決する" "0" "$rc"
 teardown
 
 setup
-# テストを tests/<domain>/ へ移すと $SCRIPT_DIR の基準が変わる。**Phase 1 で
+# テストを tests/<feature>/ へ移すと $SCRIPT_DIR の基準が変わる。**Phase 1 で
 # 壊れるのはまさにこの参照**なので、ディレクトリ相対で解けていることを確かめる
 make_target scripts/example-alpha.sh
 make_referrer tests/worktree/test-example-alpha.sh 'TARGET="$SCRIPT_DIR/example-alpha.sh"'

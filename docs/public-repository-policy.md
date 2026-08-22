@@ -45,5 +45,4 @@ GitHub側のcacheやforkも消せないため、資格情報でない限り代�
 
 `psqlrc` の案件固有値（DB名、DBユーザー名、判定に使うport）はこの経路で受容済み。
 
-動作確認は `bash tests/checks/test-secret-scan.sh`。
-
+動作確認は `bash tests/repository/test-secret-scan.sh`。

@@ -11,7 +11,7 @@ import (
 	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
-	"github.com/rhi222/dotfiles/internal/private"
+	"github.com/rhi222/dotfiles/internal/privatebundle"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
 )
@@ -49,7 +49,7 @@ type Env struct {
 	TrustedOwnersFile string
 
 	// Private はローカル設定の集約（private bundle）の設定。
-	Private private.Config
+	Private privatebundle.Config
 	// HomeDir は $HOME。
 	HomeDir string
 	// Residue は環境の残骸チェックの設定。

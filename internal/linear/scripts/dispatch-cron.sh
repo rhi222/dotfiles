@@ -33,7 +33,7 @@ DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"
 # shellcheck source=../lib/api.sh
 source "$DOMAIN_DIR/lib/api.sh"
-source "$REPO_ROOT/scripts/lib/cron-claude.sh"
+source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
 # 実装タスクを1件まるごと任せるので長い。それでも上限は要る（夜間に無人で走るため）

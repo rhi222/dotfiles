@@ -15,7 +15,7 @@ set -euo pipefail
 
 DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"
-source "$REPO_ROOT/scripts/lib/cron-claude.sh"
+source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
 # フラグファイルで有効化チェック
 cron_require_flag "$HOME/.config/nippo-create-enabled"

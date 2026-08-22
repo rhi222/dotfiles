@@ -57,8 +57,9 @@ dotfilesリポジトリ。
 - launcher、bootstrap、外部command数個の直列実行はShell
 - 複数の状態を集めて判定する処理、JSON、実行計画はGo製 `dotctl`
 - skillが `source` する `lib/nippo-paths.sh` と `lib/linear-api.sh` はShell APIを維持する
-- 公開入口は `scripts/*.sh`。Goへ移しても薄いwrapperを残し、cron・hook・skillのpathを壊さない
-- 新しいtestは `tests/<domain>/test-*.sh`、Go unit testは対象packageと同じdirectory
+- 公開入口は `scripts/*.sh`。内部実装は言語を問わず `internal/<feature>/` に置く
+- Goへ移しても薄いwrapperを残し、cron・hook・skillのpathを壊さない
+- 新しいtestは `tests/<feature>/test-*.sh`、Go unit testは対象packageと同じdirectory
 
 ## セットアップと検証
 
@@ -86,7 +87,7 @@ bash scripts/doc-budget.sh
 bash scripts/ref-check.sh
 ```
 
-`run-tests.sh` は `tests/<domain>/` のShell testと `go test ./...` を並列実行する。
+`run-tests.sh` は `tests/<feature>/` のShell testと `go test ./...` を並列実行する。
 Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-skip: <理由>`、
 並列不能なら `# serial: <理由>` を宣言する。
 
@@ -143,8 +144,8 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 ## dotctlとscripts
 
 Go製 `dotctl` が複雑な状態判定を担い、従来の `scripts/*.sh` wrapperが入口を維持する。
-機能固有のShell実装は `domains/<domain>/` に集約し、公開pathから互換層を介して呼ぶ。
-現在の適用先は `domains/{linear,nippo}/`。境界と追加基準は
+機能固有の実装はShell・Goとも `internal/<feature>/` に集約し、公開pathから互換層を介して呼ぶ。
+`scripts/lib/` にはskillやhookがsourceする公開Shell APIだけを置く。境界と追加基準は
 [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 | 機能                       | 既存入口                                    |

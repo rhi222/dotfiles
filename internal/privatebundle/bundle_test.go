@@ -1,6 +1,6 @@
 // private bundleはdry-runで変更せず、adopt時も既存内容を失わずsymlinkと権限を整える。
 // export/importは壊れた入力や競合を拒否し、明示的なforceなしに上書きしない。
-package private
+package privatebundle
 
 import (
 	"bytes"

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Compatibility entrypoint. Implementation: domains/nippo/scripts/check.sh
+# Compatibility entrypoint. Implementation: internal/nippo/scripts/check.sh
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-exec bash "$SCRIPT_DIR/../domains/nippo/scripts/check.sh" "$@"
+exec bash "$SCRIPT_DIR/../internal/nippo/scripts/check.sh" "$@"

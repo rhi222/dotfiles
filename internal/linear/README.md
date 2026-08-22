@@ -9,7 +9,7 @@ Linearを個人タスクの司令塔として使う機能を、このディレ�
 
 外部からの公開入口は従来どおり `scripts/linear-*.sh`、公開Shell APIは
 `scripts/lib/linear-api.sh` とする。どちらも互換層なので、cron、skill、hook、文書から
-`domains/` の実装パスを直接呼ばない。
+`internal/` の実装パスを直接呼ばない。
 
-依存方向は `公開入口 -> domains/linear -> scripts/libの共通基盤`。LinearからSlack、
+依存方向は `scriptsの公開入口 -> internal/linear -> internalの共有基盤`。LinearからSlack、
 GitHub、Jira、esaへ書き戻さず、外部へのpointerだけを保持する。

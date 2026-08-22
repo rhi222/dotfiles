@@ -47,7 +47,7 @@ remote無し・未push・stash・dirty・worktree の5項目を全リポジト�
 （remote の無い使い捨てリポジトリはここにいることが実際にあった）。
 全リポジトリがきれいなら終了コード 0 を返すので、移行直前の最終確認ゲートとしても使える。
 
-動作確認は `bash tests/checks/test-migration-check.sh`。
+動作確認は `bash tests/doctor/test-migration.sh`。
 
 ## ① tar で運ぶ
 

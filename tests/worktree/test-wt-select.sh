@@ -64,7 +64,7 @@ assert_eq() {
 # フィクスチャを __wt_format_rows に流し、指定パスを含む行のタグだけを取り出す
 tag_of() {
   local fixture="$1" main_path="$2" needle="$3"
-  fish -c "
+  fish -N -c "
     source '$FORMAT_ROWS'
     printf '%s\n' '$fixture' | __wt_format_rows '$main_path'
   " 2>&1 | grep -F "$needle" | sed -E 's/^\*? *\[([^]]*)\].*/\1/'
@@ -110,7 +110,7 @@ echo ""
 # wt.fish:   branch = ($1 == "*") ? $3 : $2
 # wtd.fish:  path   = ($1 == "*") ? $4 : $3
 echo "[4] wt/wtd とのフィールド互換"
-rows=$(fish -c "source '$FORMAT_ROWS'; printf '%s\n' '$FIXTURE' | __wt_format_rows /data/repos/app" 2>&1)
+rows=$(fish -N -c "source '$FORMAT_ROWS'; printf '%s\n' '$FIXTURE' | __wt_format_rows /data/repos/app" 2>&1)
 
 marked=$(echo "$rows" | grep -F '* ')
 assert_eq "main" "$(echo "$marked" | awk '{if ($1 == "*") print $3; else print $2}')" \
@@ -128,7 +128,7 @@ echo ""
 
 # --- 5. main_path が取れなかった場合も落ちない ---
 echo "[5] main_path が空"
-out=$(fish -c "source '$FORMAT_ROWS'; printf '%s\n' '$FIXTURE' | __wt_format_rows ''; echo rc=\$status" 2>&1)
+out=$(fish -N -c "source '$FORMAT_ROWS'; printf '%s\n' '$FIXTURE' | __wt_format_rows ''; echo rc=\$status" 2>&1)
 assert_eq "rc=0" "$(echo "$out" | tail -1)" "空文字でもエラーにしない"
 assert_eq "4" "$(echo "$out" | grep -cF '[')" "全行を出力する"
 echo ""
@@ -136,15 +136,15 @@ echo ""
 # --- 6. __wt_main_path: メインworktreeを返す ---
 echo "[6] __wt_main_path"
 setup_repo
-assert_eq "$REPO" "$(fish -c "source '$MAIN_PATH'; cd '$REPO'; __wt_main_path" 2>&1)" \
+assert_eq "$REPO" "$(fish -N -c "source '$MAIN_PATH'; cd '$REPO'; __wt_main_path" 2>&1)" \
   "メインworktree内ではそのパスを返す"
 
 git -C "$REPO" worktree add -q "$REPO/.wt/feat-x" -b feat-x
-assert_eq "$REPO" "$(fish -c "source '$MAIN_PATH'; cd '$REPO/.wt/feat-x'; __wt_main_path" 2>&1)" \
+assert_eq "$REPO" "$(fish -N -c "source '$MAIN_PATH'; cd '$REPO/.wt/feat-x'; __wt_main_path" 2>&1)" \
   "リンクworktree内でもメインworktreeのパスを返す"
 teardown_repo
 
-out=$(fish -c "source '$MAIN_PATH'; cd /; __wt_main_path; echo rc=\$status" 2>&1)
+out=$(fish -N -c "source '$MAIN_PATH'; cd /; __wt_main_path; echo rc=\$status" 2>&1)
 assert_eq "rc=1" "$(echo "$out" | tail -1)" "gitリポジトリ外では return 1"
 echo ""
 

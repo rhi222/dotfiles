@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
 SETUP="$REPO_ROOT/dotfilesLink.sh"
+IMPLEMENTATION="$REPO_ROOT/internal/bootstrap/link.sh"
 
 pass=0
 fail=0
@@ -412,11 +413,11 @@ check "実ファイルが無ければ成功する（fresh 環境）" run_backup_
 # 宣言をリポジトリに置いても、リンクされなければ fisher は従来どおり
 # 追跡外の実ファイルを読み、端末差が残る。
 check "link_configs が fish_plugins をリンク対象にしている" \
-  grep -q 'fish/fish_plugins|' "$SETUP"
+  grep -q 'fish/fish_plugins|' "$IMPLEMENTATION"
 
 # 退避は link_configs より前でなければ意味がない（後だと実ファイルは既に消えている）
 check "main が link_configs より先に backup_fish_plugins を呼ぶ" \
-  bash -c 'awk "/^main\\(\\)/,/^}/" "'"$SETUP"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
+  bash -c 'awk "/^main\\(\\)/,/^}/" "'"$IMPLEMENTATION"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
 
 echo "---"
 echo "pass: $pass, fail: $fail"

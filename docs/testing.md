@@ -1,6 +1,6 @@
 # テストの設計規範
 
-`tests/<domain>/test-*.sh` と Go unit test を書く・直すときの規範。
+`tests/<feature>/test-*.sh` と Go unit test を書く・直すときの規範。
 置き場と実行の仕組みは [scripts-layout.md](scripts-layout.md)、
 検証コマンドは [../AGENTS.md](../AGENTS.md) を見る。
 

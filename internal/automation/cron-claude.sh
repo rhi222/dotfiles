@@ -2,7 +2,7 @@
 # cron から headless の Claude Code を呼ぶための共通関数。
 #
 # 使い方:
-#   source "$(dirname "${BASH_SOURCE[0]}")/lib/cron-claude.sh"
+# repository内のcron実装から source する内部Shell API。
 #   cron_run_claude "日報仕上げ" "$TIMEOUT" "$CLAUDE_BIN" -p "$PROMPT" --allowedTools "$TOOLS"
 #
 # 必ず timeout を噛ませる。cron から起動する headless 実行は誰も見ていないので、

@@ -6,7 +6,7 @@
 //
 // 移植対象の宣言（Entries）はこのパッケージだけが持つ。dotfilesLink.sh は
 // 「集約先にあるものを配る」しか知らないので、対象が増えても向こうは変わらない。
-package private
+package privatebundle
 
 import (
 	"context"

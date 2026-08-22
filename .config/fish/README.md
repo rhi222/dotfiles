@@ -93,7 +93,7 @@ repo に持てば追跡外のファイルは autoload されず影になり、�
 - fish が無い端末では skip して成功する。fish を使わない端末で commit できなくなるのを
   避けるため。CI は fish を lint より**前に**入れて、この skip に落ちないようにしている
 
-動作確認は `bash tests/checks/test-lint.sh`。
+動作確認は `bash tests/repository/test-lint.sh`。
 
 ### 2. 機能別モジュール化
 
@@ -134,7 +134,7 @@ end
 `my/functions` の関数を呼ぶ設定（`13-docker-clean.fish` など）があるため、後回しにすると
 autoload に失敗して `fish_command_not_found` が走る。`mise hook-not-found` と
 `/usr/lib/command-not-found` で実測 380ms を浪費するうえ、当該処理は黙って何もしない
-まま終わるので気づきにくい。回帰テストは `tests/cleanup/test-docker-clean.sh` の
+まま終わるので気づきにくい。回帰テストは `tests/docker/test-clean.sh` の
 「実際の対話シェルで通知が出る」で担保している。
 
 ## パフォーマンス最適化

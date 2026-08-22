@@ -222,7 +222,7 @@ rm -f "$tmp"/test-par*.sh "$tmp"/test-ser*.sh "$tmp"/ser-overlap "$tmp"/ser-live
 # run-tests.sh は test-*.sh に一致しない名前でなければ自分を再帰実行してしまう
 check "ランナー名が test-*.sh に一致しない" bash -c '[[ "$(basename "'"$RUNNER"'")" != test-* ]]'
 
-# --- サブディレクトリの走査（テストを tests/<domain>/ へ分けるため） ---
+# --- サブディレクトリの走査（テストを tests/<feature>/ へ分けるため） ---
 #
 # 直下だけを見ていた頃は、tests/ を階層に分けた瞬間に「対象0件」で落ちた。
 # 階層化は Phase 1 の目的そのものなので、再帰で拾えることを固定する。

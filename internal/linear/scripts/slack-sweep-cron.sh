@@ -18,7 +18,7 @@ set -euo pipefail
 # 解決しないと repo root が $HOME になり、skillもスクリプトも見つからない
 DOMAIN_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"
-source "$REPO_ROOT/scripts/lib/cron-claude.sh"
+source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
 cron_require_flag "$HOME/.config/linear-slack-sweep-enabled"
 

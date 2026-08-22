@@ -4,8 +4,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-LIB="$SCRIPTS_DIR/lib/cron-claude.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+LIB="$REPO_ROOT/internal/automation/cron-claude.sh"
 
 pass=0
 fail=0

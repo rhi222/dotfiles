@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rhi222/dotfiles/internal/private"
+	"github.com/rhi222/dotfiles/internal/privatebundle"
 )
 
 const privateUsage = `使い方: dotctl private-bundle <subcommand>
@@ -21,7 +21,7 @@ func runPrivateBundle(ctx context.Context, args []string, env Env) int {
 		return 2
 	}
 	cfg := env.Private
-	w := private.IO{Stdout: env.Stdout, Stderr: env.Stderr}
+	w := privatebundle.IO{Stdout: env.Stdout, Stderr: env.Stderr}
 
 	switch args[0] {
 	case "adopt":
@@ -34,7 +34,7 @@ func runPrivateBundle(ctx context.Context, args []string, env Env) int {
 				return 2
 			}
 		}
-		return private.Adopt(ctx, env.Runner, cfg, execute, w)
+		return privatebundle.Adopt(ctx, env.Runner, cfg, execute, w)
 
 	case "export":
 		out := ""
@@ -52,7 +52,7 @@ func runPrivateBundle(ctx context.Context, args []string, env Env) int {
 			fmt.Fprintf(env.Stderr, "[FAIL] 不明な引数: %s\n", rest[i])
 			return 2
 		}
-		return private.Export(ctx, env.Runner, cfg, out, w)
+		return privatebundle.Export(ctx, env.Runner, cfg, out, w)
 
 	case "import":
 		// **引数なしは「zip がありません」で 1。** Shell 版の終了コードに
@@ -72,10 +72,10 @@ func runPrivateBundle(ctx context.Context, args []string, env Env) int {
 				return 2
 			}
 		}
-		return private.Import(ctx, env.Runner, cfg, zipfile, force, w)
+		return privatebundle.Import(ctx, env.Runner, cfg, zipfile, force, w)
 
 	case "status":
-		return private.Status(ctx, env.Runner, cfg, w)
+		return privatebundle.Status(ctx, env.Runner, cfg, w)
 
 	case "-h", "--help":
 		fmt.Fprint(env.Stdout, privateUsage)

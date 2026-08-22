@@ -56,7 +56,7 @@ make_dirty() {
 # __wt_select をスタブして wtd を実行する。
 # スタブは `  [.wt] <branch> <path> <sha>` 形式（awkが3列目をpathとして拾う）
 run_wtd() {
-  fish -c "
+  fish -N -c "
     function __wt_select; echo '  [.wt] feat-x $WT abc1234'; end
     source '$LOCK_REASON'
     source '$WTD'
@@ -204,11 +204,11 @@ echo ""
 # --- 8. __wt_lock_reason: 非lockのworktreeは空を返す ---
 echo "[8] __wt_lock_reason"
 setup
-output=$(fish -c "source '$LOCK_REASON'; cd '$REPO'; __wt_lock_reason '$WT'; echo \"rc=\$status\"" 2>&1)
+output=$(fish -N -c "source '$LOCK_REASON'; cd '$REPO'; __wt_lock_reason '$WT'; echo \"rc=\$status\"" 2>&1)
 assert_contains "rc=1" "$output" "非lockはreturn 1"
 
 git -C "$REPO" worktree lock --reason "hold me" "$WT"
-output=$(fish -c "source '$LOCK_REASON'; cd '$REPO'; __wt_lock_reason '$WT'" 2>&1)
+output=$(fish -N -c "source '$LOCK_REASON'; cd '$REPO'; __wt_lock_reason '$WT'" 2>&1)
 assert_eq "hold me" "$output" "lock理由を返す"
 teardown
 echo ""

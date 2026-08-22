@@ -33,7 +33,10 @@ FIX=0
 mapfile -t files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
     '*.sh' ':!:.config/claude/skills-vendor/**' |
-    xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+    xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" |
+    while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done | sort -u
 )
 
 if [ "${#files[@]}" -eq 0 ]; then
@@ -46,7 +49,7 @@ rc=0
 echo "=== shellcheck ==="
 # -x: source されるファイルも追跡 / SCRIPTDIR: source= の相対パスを各スクリプト基準で解決
 #
-# **tests/<domain>/ からの source を解決できるよう SCRIPTDIR/../../scripts も見る。**
+# **tests/<feature>/ からの source を解決できるよう SCRIPTDIR/../../scripts も見る。**
 # テストは `source "$SCRIPTS_DIR/lib/x.sh"` の形で呼ぶが、shellcheck は変数を
 # 展開できず末尾の `lib/x.sh` をスクリプト基準で探す。テストが scripts/ 直下に
 # あった頃はそれで当たっていたが、tests/ へ移すと外れて SC1091 になる。
@@ -72,7 +75,10 @@ fi
 mapfile -t fish_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
     '*.fish' ':!:.config/claude/skills-vendor/**' |
-    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
+    while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done | sort -u
 )
 
 echo "=== fish -n ==="
@@ -104,7 +110,10 @@ echo "=== yaml ==="
 mapfile -t yaml_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
     '*.yml' '*.yaml' ':!:.config/claude/skills-vendor/**' |
-    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+    xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
+    while IFS= read -r file; do
+      [ -f "$file" ] && printf '%s\n' "$file"
+    done | sort -u
 )
 # **PATH の python3 だけを見ない。** CI の runner は PATH 先頭に tool cache の
 # python3 を持っており、apt の python3-yaml（/usr/bin/python3 側に入る）が

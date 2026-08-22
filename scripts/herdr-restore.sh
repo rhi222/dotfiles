@@ -19,8 +19,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/herdr-restore.sh
-source "$SCRIPT_DIR/lib/herdr-restore.sh"
+# shellcheck source=../internal/session/restore.sh
+source "$SCRIPT_DIR/../internal/session/restore.sh"
 
 DRY_RUN=0
 SHOW_STATUS=0

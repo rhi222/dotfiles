@@ -4,33 +4,35 @@
 **移動する前に「誰が何を呼んでいるか」を固定するための文書**で、日々の使い方は
 [AGENTS.md](../AGENTS.md) の各機能の表を見る。
 
-## ドメイン境界と公開入口
+## 内部実装と公開入口
 
-機能固有の実装は `domains/<domain>/` にまとめ、`scripts/` 直下はcron、hook、skill、
-手動操作から呼ぶ互換entrypointとして維持する。テストは既存どおり
-`tests/<domain>/`、詳細仕様は `docs/` に置く。配置規約のため `.config/<tool>/` に
-置く必要がある設定は無理に移さず、domain READMEから参照する。
+機能固有の実装は、ShellとGoのどちらも `internal/<feature>/` にまとめる。
+`scripts/` 直下はcron、hook、skill、手動操作から呼ぶ互換entrypointとして維持する。
+テストは `tests/<feature>/`、Go unit testは対象package、詳細仕様は `docs/` に置く。
+配置規約のため `.config/<tool>/` に必要な設定は無理に移さず、feature READMEから参照する。
 
-適用先は `domains/linear/` と `domains/nippo/`。`scripts/linear-*.sh`、
+Shell実装も `internal/{linear,nippo,bootstrap,automation,session,update}/` に置く。
+`scripts/linear-*.sh`、
 `scripts/nippo-*.sh`、`scripts/lib/{linear-api,nippo-paths}.sh` は公開APIなので残し、
-実装パスを外部から直接呼ばない。
-新しいdomainを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
+`internal/` の実装パスを外部から直接呼ばない。
+新しいfeatureを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
 ファイル数が増えただけの設定toolごとには作らない。
 
 ## 現在の層
 
 公開pathの安定性と実装のまとまりを両立するため、次の層に分ける。
 
-| 層                     | 例                                        | 実測         |
-| ---------------------- | ----------------------------------------- | ------------ |
-| 公開entrypoint         | `daily-update.sh`, `linear-sweep.sh`      | 35本 2,549行 |
-| 共有・互換Shell API    | `lib/cron-claude.sh`, `lib/nippo-paths.sh`| 8本 796行    |
-| domain実装             | `domains/{linear,nippo}/`                 | 13本 1,490行 |
-| 宣言・template         | `apt-packages.txt`, `doc-budget.txt`      | 7本          |
-| 回帰test               | `tests/<domain>/test-*.sh`                | 56本         |
+| 層                  | 例                                           |
+| ------------------- | -------------------------------------------- |
+| 公開entrypoint      | `scripts/daily-update.sh`, `scripts/linear-sweep.sh` |
+| 公開Shell API       | `scripts/lib/{linear-api,nippo-paths}.sh`    |
+| Shell内部実装       | `internal/{linear,nippo,bootstrap}/`         |
+| Go内部実装          | `internal/{worktree,settings,skill}/`        |
+| 宣言・template      | `scripts/apt-packages.txt`, `scripts/doc-budget.txt` |
+| black-box test      | `tests/<feature>/test-*.sh`                  |
 
-`scripts/` 直下は45entry。ここをdomain別に見せるために公開pathまで移すとcronやskillを
-壊すため、直下はコマンド索引、`domains/` は実装を読む入口、と役割を分ける。
+本数や行数は変更のたびに古くなるため、この文書では固定しない。`scripts/` 直下をfeature別に
+移すとcronやskillを壊すため、直下は公開コマンド索引、`internal/` は実装を読む入口とする。
 
 ## 公開入口の一覧
 
@@ -49,87 +51,87 @@
 
 ### 検査
 
-| スクリプト          | 行数 | 引数         | 呼び出し元          |
-| ------------------- | ---- | ------------ | ------------------- |
-| `lint.sh`           | 95   | `[--fix]`    | doc hook fish ci    |
-| `secret-scan.sh`    | 112  | `--staged` / `--tree` | doc hook ci link |
-| `doc-budget.sh`     | 147  | `[--staged]` | doc hook ci         |
-| `ref-check.sh`      | 133  | なし         | hook ci             |
-| `run-tests.sh`      | 169  | `[--ci]`     | doc ci              |
-| `migration-check.sh`| 24   | `[<dir>...]` | doc                 |
-| `env-residue.sh`    | 25   | なし         | doc                 |
+| スクリプト          | 引数         | 呼び出し元          |
+| ------------------- | ------------ | ------------------- |
+| `lint.sh`           | `[--fix]`    | doc hook fish ci    |
+| `secret-scan.sh`    | `--staged` / `--tree` | doc hook ci link |
+| `doc-budget.sh`     | `[--staged]` | doc hook ci         |
+| `ref-check.sh`      | なし         | hook ci             |
+| `run-tests.sh`      | `[--ci]`     | doc ci              |
+| `migration-check.sh`| `[<dir>...]` | doc                 |
+| `env-residue.sh`    | なし         | doc                 |
 
 ### セットアップ（新環境の立ち上げ）
 
-| スクリプト               | 行数 | 引数           | 呼び出し元 |
-| ------------------------ | ---- | -------------- | ---------- |
-| `apt-setup.sh`           | 14   | なし           | doc link   |
-| `setup-claude-skills.sh` | 196  | `[--dry-run]`  | doc        |
-| `setup-fish-plugins.sh`  | 187  | `[--dry-run]`  | doc        |
-| `setup-gh-extensions.sh` | 139  | `[--dry-run]`  | doc        |
-| `setup-yazi-plugins.sh`  | 144  | `[--dry-run]`  | doc link   |
-| `linear-bootstrap.sh`    | 55   | なし           | doc link   |
+| スクリプト               | 引数           | 呼び出し元 |
+| ------------------------ | -------------- | ---------- |
+| `apt-setup.sh`           | なし           | doc link   |
+| `setup-claude-skills.sh` | `[--dry-run]`  | doc        |
+| `setup-fish-plugins.sh`  | `[--dry-run]`  | doc        |
+| `setup-gh-extensions.sh` | `[--dry-run]`  | doc        |
+| `setup-yazi-plugins.sh`  | `[--dry-run]`  | doc link   |
+| `linear-bootstrap.sh`    | なし           | doc link   |
 
 ### 同期・運搬
 
-| スクリプト                  | 行数 | 引数                              | 呼び出し元 |
-| --------------------------- | ---- | --------------------------------- | ---------- |
-| `sync-claude-settings.sh`   | 23   | `status`\|`pull`\|`push [--force]`| doc link   |
-| `sync-windows-settings.sh`  | 25   | `status`\|`pull`\|`push` `[target]`| doc       |
-| `private-bundle.sh`         | 25   | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
+| スクリプト                  | 引数                              | 呼び出し元 |
+| --------------------------- | --------------------------------- | ---------- |
+| `sync-claude-settings.sh`   | `status`\|`pull`\|`push [--force]`| doc link   |
+| `sync-windows-settings.sh`  | `status`\|`pull`\|`push` `[target]`| doc       |
+| `private-bundle.sh`         | `adopt [--execute]`\|`export`\|`import <zip>`\|`status` | doc link |
 
 ### 更新
 
-| スクリプト         | 行数 | 引数 | 呼び出し元 |
-| ------------------ | ---- | ---- | ---------- |
-| `daily-update.sh`  | 295  | なし | doc hook   |
+| スクリプト         | 引数 | 呼び出し元 |
+| ------------------ | ---- | ---------- |
+| `daily-update.sh`  | なし | doc hook   |
 
 ### skill 管理
 
-| スクリプト        | 行数 | 引数                                         | 呼び出し元 |
-| ----------------- | ---- | -------------------------------------------- | ---------- |
-| `skill-add.sh`    | 76   | `<owner/repo> <skill>`                       | doc        |
-| `skill-audit.sh`  | 24   | `[--quiet] <skill-dir>`                      | doc        |
-| `skill-vendor.sh` | 25   | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc |
+| スクリプト        | 引数                                         | 呼び出し元 |
+| ----------------- | -------------------------------------------- | ---------- |
+| `skill-add.sh`    | `<owner/repo> <skill>`                       | doc        |
+| `skill-audit.sh`  | `[--quiet] <skill-dir>`                      | doc        |
+| `skill-vendor.sh` | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc |
 
 ### worktree
 
-| スクリプト             | 行数 | 引数                            | 呼び出し元         |
-| ---------------------- | ---- | ------------------------------- | ------------------ |
-| `worktree-init.sh`     | 27   | `[--dry-run] [<path>]`          | doc skill hook link|
-| `worktree-cleanup.sh`  | 28   | `[--size] [--execute] [--force]`| doc skill          |
+| スクリプト             | 引数                            | 呼び出し元         |
+| ---------------------- | ------------------------------- | ------------------ |
+| `worktree-init.sh`     | `[--dry-run] [<path>]`          | doc skill hook link|
+| `worktree-cleanup.sh`  | `[--size] [--execute] [--force]`| doc skill          |
 
 ### 掃除
 
-| スクリプト        | 行数 | 引数          | 呼び出し元 |
-| ----------------- | ---- | ------------- | ---------- |
-| `wsl-cleanup.sh`  | 24   | `[--execute]` | doc        |
+| スクリプト        | 引数          | 呼び出し元 |
+| ----------------- | ------------- | ---------- |
+| `wsl-cleanup.sh`  | `[--execute]` | doc        |
 
 ### Linear
 
-| スクリプト                     | 行数 | 引数              | 呼び出し元           |
-| ------------------------------ | ---- | ----------------- | -------------------- |
-| `linear-sweep.sh`              | 157  | なし              | doc skill fish link  |
-| `linear-slack-sweep.sh`        | 169  | `[unseen <key>]`  | doc skill            |
-| `linear-slack-sweep-cron.sh`   | 44   | なし              | doc cron             |
-| `linear-interview-prep.sh`     | 160  | `[unseen <id>]`   | doc skill cron       |
-| `linear-dispatch-cron.sh`      | 324  | なし              | doc skill link cron  |
+| スクリプト                     | 引数              | 呼び出し元           |
+| ------------------------------ | ----------------- | -------------------- |
+| `linear-sweep.sh`              | なし              | doc skill fish link  |
+| `linear-slack-sweep.sh`        | `[unseen <key>]`  | doc skill            |
+| `linear-slack-sweep-cron.sh`   | なし              | doc cron             |
+| `linear-interview-prep.sh`     | `[unseen <id>]`   | doc skill cron       |
+| `linear-dispatch-cron.sh`      | なし              | doc skill link cron  |
 
 ### 日報・レポート
 
-| スクリプト               | 行数 | 引数 | 呼び出し元           |
-| ------------------------ | ---- | ---- | -------------------- |
-| `nippo-check.sh`         | 140  | なし | doc hook link cron   |
-| `nippo-cron.sh`          | 54   | なし | doc link cron        |
-| `nippo-create-cron.sh`   | 59   | なし | doc cron             |
-| `nippo-draft-cron.sh`    | 44   | なし | doc cron             |
-| `esa-weekly-cron.sh`     | 37   | なし | doc skill cron       |
+| スクリプト               | 引数 | 呼び出し元           |
+| ------------------------ | ---- | -------------------- |
+| `nippo-check.sh`         | なし | doc hook link cron   |
+| `nippo-cron.sh`          | なし | doc link cron        |
+| `nippo-create-cron.sh`   | なし | doc cron             |
+| `nippo-draft-cron.sh`    | なし | doc cron             |
+| `esa-weekly-cron.sh`     | なし | doc skill cron       |
 
 ### セッション復元
 
-| スクリプト           | 行数 | 引数          | 呼び出し元 |
-| -------------------- | ---- | ------------- | ---------- |
-| `herdr-restore.sh`   | 211  | `[--dry-run]` \| `[--status]` | doc fish |
+| スクリプト           | 引数          | 呼び出し元 |
+| -------------------- | ------------- | ---------- |
+| `herdr-restore.sh`   | `[--dry-run]` \| `[--status]` | doc fish |
 
 ## 参照はどう壊れるか
 
@@ -162,31 +164,37 @@ run-tests.sh は各スクリプトの振る舞い、doc-budget.sh は行数し�
 
 ## テストの置き場
 
-テストは `tests/<domain>/test-*.sh`。**ドメインは上の「公開入口の一覧」の役割
-グループに揃えている**（同じリポジトリに taxonomy を2つ作らないため）。
+テストは `tests/<feature>/test-*.sh`。`internal/<feature>/` と同じ機能名を優先し、
+ShellかGoかでは分類しない。Goの細かな分岐はpackage内のunit test、Shell内部APIと
+公開wrapper・hook・fish関数の契約は `tests/` で確認する。
 
-| ドメイン    | 本数 | 中身                                               |
-| ----------- | ---- | -------------------------------------------------- |
-| `checks/`   | 7    | lint / secret-scan / doc-budget / ref-check / run-tests / migration-check / env-residue |
-| `setup/`    | 6    | 新環境の立ち上げと日次更新                         |
-| `settings/` | 4    | 設定の同期・運搬・statusline                       |
-| `skills/`   | 3    | skill の追加・監査・vendoring                      |
-| `worktree/` | 4    | worktree の初期化・掃除と `wt` / `wtd`             |
-| `git/`      | 3    | PR 周り（`mv2main` / `open-pr` / base ガード）     |
-| `linear/`   | 7    | Linear の API・起票・ディスパッチ                  |
-| `nippo/`    | 5    | 日報と esa レポート                                |
-| `notify/`   | 3    | トースト通知とクールダウン                         |
-| `session/`  | 6    | herdr / nvim のセッション復元                      |
-| `shell/`    | 4    | fish 関数（fzf 連携・`fkill` / `gf`）              |
-| `cleanup/`  | 2    | WSL と Docker の掃除                               |
-| `cron/`     | 1    | cron からの claude ヘッドレス実行の土台            |
+| feature          | 中身                                              |
+| ---------------- | ------------------------------------------------- |
+| `repository/`    | lint / secret-scan / doc-budget / ref-check / test runner |
+| `bootstrap/`     | `dotfilesLink.sh`                                 |
+| `setup/`         | tool・pluginの導入                                |
+| `update/`        | 日次更新                                          |
+| `settings/`      | 設定同期とstatusline                              |
+| `privatebundle/` | ローカル設定の集約と運搬                          |
+| `doctor/`        | migrationと環境残骸                               |
+| `docker/`        | Docker掃除                                        |
+| `wsl/`           | WSL掃除                                           |
+| `automation/`    | cronからのheadless実行基盤                        |
+| `skills/`        | skillの追加・監査・vendoring                      |
+| `worktree/`      | worktreeの初期化・掃除と `wt` / `wtd`             |
+| `git/`           | PR周り                                            |
+| `linear/`        | LinearのAPI・起票・ディスパッチ                   |
+| `nippo/`         | 日報とesaレポート                                 |
+| `notify/`        | トースト通知とクールダウン                        |
+| `session/`       | herdr / nvimのセッション復元                      |
+| `shell/`         | 複数featureに属さないfish関数                     |
 
 - **`$SCRIPT_DIR` は対象を指さない。** テストは `REPO_ROOT` と `SCRIPTS_DIR` を
   自分の位置から起こして使う（`SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"`）
 - **フィクスチャ本文に書く `$SCRIPT_DIR` は literal のまま置く。** 移設時の一括置換で
   ここを壊し、`ref-check.sh` の自テストが落ちて気付いた
-- 新しいテストは対象スクリプトと同じ役割グループへ置く。どのグループでもないなら
-  `checks/` ではなく、その仕組みの名前で新しいディレクトリを作る（`cron/` がその例）
+- 新しいテストは対象の `internal/<feature>/` または公開入口と同じfeatureへ置く。
+  どのfeatureでもない場合は `repository/` に寄せず、その仕組みの名前を作る
 
 ### 移していないもの（判断）
 

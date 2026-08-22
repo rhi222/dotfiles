@@ -4,15 +4,15 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-LIB="$SCRIPTS_DIR/lib/herdr-restore.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+LIB="$REPO_ROOT/internal/session/restore.sh"
 
 if [[ ! -f "$LIB" ]]; then
   echo "ERROR: $LIB が存在しません"
   exit 1
 fi
 
-# shellcheck source=lib/herdr-restore.sh
+# shellcheck source=../../internal/session/restore.sh
 source "$LIB"
 
 PASS=0

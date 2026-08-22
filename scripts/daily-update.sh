@@ -15,8 +15,8 @@ mkdir -p "$LOG_DIR"
 # 日次ログは溜まり続けるので、30日より古いものを起動時に掃除する
 find "$LOG_DIR" -name '*.log' -mtime +30 -delete 2>/dev/null || true
 
-# shellcheck source=lib/pkg-update.sh
-source "$SCRIPT_DIR/lib/pkg-update.sh"
+# shellcheck source=../internal/update/pkg.sh
+source "$SCRIPT_DIR/../internal/update/pkg.sh"
 
 failures=()
 

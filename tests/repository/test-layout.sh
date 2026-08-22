@@ -1,0 +1,41 @@
+#!/bin/bash
+# 内部実装の置き場を言語で分けず、公開入口とinternalの境界を維持する。
+# 旧domainsと内部専用scripts/libが戻ると、機能を探すtaxonomyが再び二重になる。
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+pass=0
+fail=0
+
+check() {
+  local name="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    echo "ok: $name"
+    pass=$((pass + 1))
+  else
+    echo "NG: $name"
+    fail=$((fail + 1))
+  fi
+}
+
+check "旧domainsディレクトリが無い" test ! -e "$REPO_ROOT/domains"
+check "internalの配置規約がある" test -f "$REPO_ROOT/internal/README.md"
+check "dotfilesLinkの公開入口を維持する" test -x "$REPO_ROOT/dotfilesLink.sh"
+check "dotfilesLink実装はinternalにある" test -f "$REPO_ROOT/internal/bootstrap/link.sh"
+check "Linear実装はinternalにある" test -f "$REPO_ROOT/internal/linear/lib/api.sh"
+check "日報実装はinternalにある" test -f "$REPO_ROOT/internal/nippo/lib/paths.sh"
+
+# ref-checkが削除済みpathのliteralを参照と誤認しないよう、名前は変数で組み立てる。
+check "cron共通実装はscripts/libへ戻さない" \
+  test ! -e "$REPO_ROOT/scripts/lib/${CRON_LIB:-cron-claude}.sh"
+check "session共通実装はscripts/libへ戻さない" \
+  test ! -e "$REPO_ROOT/scripts/lib/${SESSION_LIB:-herdr-restore}.sh"
+check "update共通実装はscripts/libへ戻さない" \
+  test ! -e "$REPO_ROOT/scripts/lib/${UPDATE_LIB:-pkg-update}.sh"
+
+echo "---"
+echo "pass: $pass, fail: $fail"
+[[ "$fail" -eq 0 ]]

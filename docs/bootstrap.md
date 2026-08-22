@@ -538,7 +538,7 @@ crontab ~/.local/share/dotfiles-private/crontab.txt
 
 ### 補足
 
-- headless の Claude を呼ぶ処理には、`lib/cron-claude.sh` で timeout を設定している。
+- headless の Claude を呼ぶ内部実装には、`internal/automation/cron-claude.sh` で timeout を設定している。
   上限は `NIPPO_CREATE_TIMEOUT` など、機能ごとの環境変数で変更できる
 - Windows トースト通知には、Windows 側で `Install-Module BurntToast` の実行が必要
 - AutoHotkey は `bash .config/AutoHotkey/deploy-ahk-script.sh` で Windows 側へコピーする。
@@ -556,7 +556,7 @@ bash scripts/ref-check.sh              # scripts/ 配下への参照が壊れて
 bash scripts/run-tests.sh              # 全テスト（Shell + Go）
 ```
 
-`run-tests.sh` は `tests/<domain>/` 以下の Shell テストと `go test ./...` の両方を
+`run-tests.sh` は `tests/<feature>/` 以下の Shell テストと `go test ./...` の両方を
 1コマンドで走らせる。**`dotctl` をビルドしていない端末では Go 側が skip されて
 通る**ので、緑になったことだけで Go 側を検査できたとは言えない。
 

@@ -19,7 +19,7 @@ import (
 	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
-	"github.com/rhi222/dotfiles/internal/private"
+	"github.com/rhi222/dotfiles/internal/privatebundle"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
 )
@@ -181,9 +181,9 @@ func homeDir() string {
 }
 
 // privateConfig は集約先と起点を解く。
-func privateConfig() private.Config {
+func privateConfig() privatebundle.Config {
 	home, _ := os.UserHomeDir()
-	return private.Config{
+	return privatebundle.Config{
 		PrivateDir: envOr("DOTFILES_PRIVATE_DIR",
 			filepath.Join(home, ".local", "share", "dotfiles-private")),
 		Home:    home,

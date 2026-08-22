@@ -35,6 +35,10 @@ setup() {
   for tool in shellcheck shfmt; do
     cat >"$STUB_DIR/$tool" <<'STUB'
 #!/bin/bash
+for arg in "$@"; do
+  [[ "$arg" == *.sh ]] || continue
+  [[ -f "$arg" ]] || exit 9
+done
 exit 0
 STUB
     chmod +x "$STUB_DIR/$tool"
@@ -128,6 +132,18 @@ git -C "$REPO" add .gitignore
 out=$(run_lint)
 # ignore 済み＝自分が保守しない
 check "gitignore された .fish は検査しない" "0" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/alive.sh"
+echo '#!/bin/bash' >"$REPO/scripts/moved.sh"
+git -C "$REPO" add -A
+rm "$REPO/scripts/moved.sh"
+out=$(run_lint)
+# 未stageの移動では旧pathがindexに残る。実在確認なしでshellcheckへ渡すと、
+# リファクタリング中だけlintが実行不能になる。
+check "indexにだけ残る削除済みpathは検査しない" "0" "$?"
 teardown
 
 echo "== .fish が1本も無いとき =="

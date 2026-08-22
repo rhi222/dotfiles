@@ -33,7 +33,8 @@ bash scripts/run-tests.sh   # 全テスト
 bash scripts/secret-scan.sh --tree
 ```
 
-- シェルスクリプトは `scripts/` に置き、`scripts/test-<名前>.sh` でテストを書く。`run-tests.sh` が自動で拾う
+- 公開Shell APIは `scripts/`、内部実装は言語を問わず `internal/<feature>/` に置く
+- Shellのblack-box testは `tests/<feature>/test-*.sh` に置く。`run-tests.sh` が自動で拾う
 - CI で動かせないテストは、テストファイルの先頭付近に `# ci-skip: <理由>` と書いて宣言する
 - lint は git が追跡している（＋未追跡で ignore されていない）`*.sh` すべてを対象にする
 

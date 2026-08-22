@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests/<domain>/test-*.sh をまとめて実行する。
+# tests/<feature>/test-*.sh をまとめて実行する。
 #
 #   bash scripts/run-tests.sh                        # 全部
 #   bash scripts/run-tests.sh --ci                   # `# ci-skip:` を飛ばす（CIから）
@@ -79,7 +79,7 @@ TEST_JOBS="${TEST_JOBS:-$(default_jobs)}"
 CI_MODE=0
 [ "${1:-}" = "--ci" ] && CI_MODE=1
 
-# **再帰で拾う。** tests/<domain>/ に分けてあるので直下だけでは0件になる。
+# **再帰で拾う。** tests/<feature>/ に分けてあるので直下だけでは0件になる。
 # sort はフルパスに対して掛かるので、表示はドメインごとに固まる
 mapfile -t tests < <(find "$TEST_DIR" -type f -name 'test-*.sh' | sort)
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # private-bundle.sh（互換 wrapper）の契約を検査する。
 #
-# **集約・運搬の振る舞いは Go 側が持つ**（internal/private の unit test と
+# **集約・運搬の振る舞いは Go 側が持つ**（internal/privatebundle の unit test と
 # integration test）。分類の判定、追跡ファイルを巻き込まない ignore 判定、
 # パーミッションのハードニング、zip -y で symlink を実体化しないことはそちら。
 #
