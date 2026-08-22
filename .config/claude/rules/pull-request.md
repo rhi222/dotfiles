@@ -1,3 +1,8 @@
+---
+paths:
+  - "/data/git-repos/**"
+---
+
 # PR作成方針（GitHub）
 
 大きな変更は stacked PR で分割し、各PRをレビュー可能なサイズに保つ。
