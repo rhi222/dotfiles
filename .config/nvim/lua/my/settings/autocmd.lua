@@ -39,7 +39,7 @@ end
 M.markdown = function()
 	setup_indent({
 		tab_length = 4,
-		is_hard_tab = true,
+		is_hard_tab = false,
 		is_auto_indent = true,
 	})
 	-- チェックボックス入力補助: cb + スペース → - [ ]
@@ -70,7 +70,7 @@ for _, ft in ipairs({
 	M[ft] = function()
 		setup_indent({
 			tab_length = 4,
-			is_hard_tab = true,
+			is_hard_tab = false,
 			is_auto_indent = true,
 		})
 	end
@@ -97,6 +97,24 @@ for _, ft in ipairs({
 	M[ft] = function()
 		setup_indent({
 			tab_length = 2,
+			is_hard_tab = false,
+			is_auto_indent = true,
+		})
+	end
+end
+
+-- hard tabが標準、またはタブ文字自体に意味がある形式だけhard tabを使う。
+-- その他のfiletypeは、新規ファイルでvim-sleuthが推測できない場合もspaceを安全な既定にする。
+for _, ft in ipairs({
+	"go",
+	"gomod",
+	"gowork",
+	"make",
+	"tsv",
+}) do
+	M[ft] = function()
+		setup_indent({
+			tab_length = 4,
 			is_hard_tab = true,
 			is_auto_indent = true,
 		})
@@ -109,7 +127,7 @@ local my_filetype = setmetatable(M, {
 			-- print("Unexpected filetype!")
 			setup_indent({
 				tab_length = 4,
-				is_hard_tab = true,
+				is_hard_tab = false,
 				is_auto_indent = true,
 			})
 		end
