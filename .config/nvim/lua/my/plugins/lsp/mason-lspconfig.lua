@@ -10,7 +10,7 @@ require("mason-lspconfig").setup({
 		"graphql",
 		"jsonls",
 		"lua_ls",
-		"marksman",
+		"markdown_oxide",
 		"prismals",
 		"pylsp",
 		"ruff",
@@ -19,7 +19,10 @@ require("mason-lspconfig").setup({
 		"ts_ls",
 		"yamlls",
 	},
-	-- automatic_enable (default: true) が全インストール済みサーバーに対して
-	-- vim.lsp.config() + vim.lsp.enable() を自動実行する。
+	-- automatic_enable は全インストール済みserverが対象。ensure_installedから
+	-- 外しただけでは既存のMarksmanも起動するため、移行元を明示的に除外する。
+	automatic_enable = {
+		exclude = { "marksman" },
+	},
 	-- サーバー固有設定は ~/.config/nvim/lsp/*.lua で定義。
 })
