@@ -8,6 +8,6 @@
 # status.sh と違い 60秒間隔なので、Go バイナリ起動（数ms）は許容範囲。
 set -uo pipefail
 
-DOTCTL="${HERDR_USAGE_DOTCTL:-$HOME/.local/bin/dotctl}"
+DOTCTL="${HERDR_USAGE_DOTCTL:-${HOME:-}/.local/bin/dotctl}"
 [ -x "$DOTCTL" ] || exit 0
 exec "$DOTCTL" agent-usage line

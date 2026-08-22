@@ -2,7 +2,7 @@
 # prefix+u の popup: agent usage の詳細表示。任意のキーで閉じる。
 set -uo pipefail
 
-DOTCTL="${HERDR_USAGE_DOTCTL:-$HOME/.local/bin/dotctl}"
+DOTCTL="${HERDR_USAGE_DOTCTL:-${HOME:-}/.local/bin/dotctl}"
 if [ -x "$DOTCTL" ]; then
   "$DOTCTL" agent-usage detail
 else
