@@ -2,6 +2,7 @@
 # リポジトリが追跡しているシェルスクリプトを検査する。
 #   *.sh   : shellcheck + shfmt
 #   *.fish : fish -n（構文チェックのみ。fish に整形系の CLI は無い）
+#   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/lint.sh        # 検査のみ（CIと同じ）
 #   bash scripts/lint.sh --fix  # shfmt の整形を実際に適用
@@ -87,6 +88,33 @@ else
   for f in "${fish_files[@]}"; do
     if ! fish -n "$f"; then
       echo "  syntax error: $f" >&2
+      rc=1
+    fi
+  done
+fi
+
+echo "=== yaml ==="
+# **shfmt を .yml へ誤って掛けた事故の再発防止。** shfmt は YAML を shell として
+# パースしてインデントを全部潰すが、それでも exit 0 で返る。lint.sh は .sh しか
+# 見ていなかったので pre-commit も CI も素通りし、壊れた workflow を push して
+# 初めて「workflow file issue」で気付いた。
+#
+# **整形はしない。** クォートやコメント位置の流儀に手を入れる必要はなく、
+# 見たいのは「構造が壊れていないか」だけ。
+mapfile -t yaml_files < <(
+  git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
+    '*.yml' '*.yaml' ':!:.config/claude/skills-vendor/**' |
+    xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" | sort -u
+)
+if [ "${#yaml_files[@]}" -eq 0 ]; then
+  echo "検査対象の .yml が無い"
+elif ! python3 -c 'import yaml' 2>/dev/null; then
+  # fish と同じ扱い。パーサが無いだけで commit できなくなるのは避ける
+  echo "python3 の pyyaml が無いため skip（${#yaml_files[@]} 件）"
+else
+  for f in "${yaml_files[@]}"; do
+    if ! python3 -c 'import sys,yaml; yaml.safe_load(open(sys.argv[1]))' "$f"; then
+      echo "  parse error: $f" >&2
       rc=1
     fi
   done
