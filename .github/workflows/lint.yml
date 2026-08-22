@@ -65,8 +65,12 @@ jobs:
       # **lint より前に入れる。** lint.sh は fish が無いと .fish の構文チェックを
       # skip して成功するので、後ろに置くと CI だけ検査を素通りする。
       # nvim / tmux / ghq / docker は要らない（各テストが stub を持つ）。
-      - name: Install fish
-        run: sudo apt-get update && sudo apt-get install -y fish
+      #
+      # python3-yaml は lint.sh の YAML 検査。runner の python3 は PyYAML を
+      # 持っておらず、無いと YAML を skip して通す（同じ理由でここに入れる）。
+      # どちらも apt-packages.txt に宣言済み。
+      - name: Install fish and PyYAML
+        run: sudo apt-get update && sudo apt-get install -y fish python3-yaml
 
       - name: Lint shell scripts
         run: bash scripts/lint.sh

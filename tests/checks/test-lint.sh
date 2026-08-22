@@ -142,6 +142,15 @@ check ".fish が無くても成功する" "0" "$?"
 teardown
 
 echo "== YAML の検査 =="
+# **PyYAML の不在を名指しする。** lint.sh はパーサが無いと YAML を skip して
+# 通すので、無いまま走らせると検知側の2件が理由不明で FAIL する（CI で踏んだ）。
+# skip して通す作りにはしない——YAML の検査を丸ごと失うため。
+if ! python3 -c 'import yaml' 2>/dev/null; then
+  echo "ERROR: python3 の PyYAML が無いので YAML 検査を検査できません"
+  echo "  入れる: sudo apt install python3-yaml（apt-packages.txt に宣言済み）"
+  exit 1
+fi
+
 # **shfmt を .yml に誤って掛けた事故の再発防止。** shfmt は YAML を shell として
 # パースしてインデントを潰すが exit 0 で返るため、検査が無いと壊れた workflow を
 # push するまで気付けない（実際に踏んだ）。
