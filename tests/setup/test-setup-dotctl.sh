@@ -53,6 +53,9 @@ make_go_stub() {
   local test_rc="$1" build_rc="$2"
   cat >"$STUB/go" <<EOF
 #!/bin/bash
+if [ -n "\${GO_CWD_LOG:-}" ]; then
+  printf '%s %s\n' "\$1" "\$PWD" >>"\$GO_CWD_LOG"
+fi
 case "\$1" in
   test)  exit $test_rc ;;
   build)
@@ -147,6 +150,25 @@ make_go_stub 0 0
 rm -rf "$BINDIR"
 run_setup >/dev/null
 check "出力先の親ディレクトリを作る" "yes" "$([ -x "$BINDIR/dotctl" ] && echo yes || echo no)"
+teardown
+
+echo "== symlink経由のrepo解決 =="
+
+setup
+make_go_stub 0 0
+mkdir -p "$TEST_DIR/home"
+ln -s "$SCRIPTS_DIR" "$TEST_DIR/home/scripts"
+# 今回の障害の回帰。~/scripts -> <repo>/scripts のsymlink経由で起動すると、以前は
+# scripts/.. を論理pathで辿って$HOMEをrepoと誤認し、go test ./... が失敗していた。
+out=$(env PATH="$STUB:/usr/bin:/bin" \
+  GO_CWD_LOG="$TEST_DIR/go-cwd.log" \
+  DOTCTL_BIN="$BINDIR/dotctl" \
+  bash "$TEST_DIR/home/scripts/setup-dotctl.sh" 2>&1)
+rc=$?
+cwd_log=$(cat "$TEST_DIR/go-cwd.log" 2>/dev/null || true)
+check "symlink経由でも成功する" "0" "$rc"
+check "testを実repo rootで走らせる" "yes" "$(has "test $REPO_ROOT" "$cwd_log")"
+check "buildを実repo rootで走らせる" "yes" "$(has "build $REPO_ROOT" "$cwd_log")"
 teardown
 
 echo "== go が無いとき =="

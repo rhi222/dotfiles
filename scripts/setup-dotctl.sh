@@ -23,7 +23,9 @@
 # 埋め込んだ値と repo HEAD がずれていたら dotctl 自身が stderr へ1行警告する。
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ~/scripts のように scripts/ 自体が symlink の場合も、物理pathを基準にrepo rootを
+# 求める。論理pathのまま `..` へ進むと $HOME をrepoと誤認し、go test ./... が落ちる。
+SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO="${DOTCTL_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 BIN="${DOTCTL_BIN:-$HOME/.local/bin/dotctl}"
 
