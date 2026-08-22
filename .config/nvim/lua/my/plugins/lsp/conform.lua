@@ -107,7 +107,7 @@ end
 
 -- あるディレクトリから上方向に探索して、どのフォーマッタを使うかを決める
 -- ルール（近い順優先・各階層で formatter 検出を全部行ってから境界判定）:
---  1. 同階層に biome.json / biome.jsonc または package.json の "biome" → "biome"
+--  1. 同階層に Biome 設定ファイル → "biome"
 --  2. 同階層に Prettier 設定ファイル または package.json の "prettier" → "prettier"
 --  3. 上記いずれも無い場合のみ、package.json の "workspaces" / .git で境界打ち切り
 --     （monorepo root に .prettierrc がある構成で先に "none" になるのを防ぐため）
@@ -140,11 +140,11 @@ local function decide_for_dir(start_dir)
 
 		local pkg = read_json_once(dir .. "/package.json")
 
-		-- 1) biome 検出（同階層の biome.json / biome.jsonc / package.json#biome）
-		local has_biome = fs_readable(dir .. "/biome.json") or fs_readable(dir .. "/biome.jsonc")
-		if pkg and pkg.biome ~= nil then
-			has_biome = true
-		end
+		-- 1) Biome 公式の設定ファイルを検出
+		local has_biome = fs_readable(dir .. "/biome.json")
+			or fs_readable(dir .. "/biome.jsonc")
+			or fs_readable(dir .. "/.biome.json")
+			or fs_readable(dir .. "/.biome.jsonc")
 		if has_biome then
 			return cache_and_return("biome")
 		end
@@ -296,33 +296,25 @@ require("conform").setup({
 
 	formatters_by_ft = {
 		bash = { "shfmt" },
+		sh = { "shfmt" },
 		fish = { "fish_indent" },
-		go = { "goimports", "gofmt" },
+		go = { "goimports" },
 		html = { "prettier" },
 		http = { "kulala" },
 		javascript = get_js_formatter_cached, -- ★差し替え
 		javascriptreact = get_js_formatter_cached, -- ★差し替え
 		json = get_js_formatter_cached, -- ★差し替え
-		json5 = get_js_formatter_cached, -- ★差し替え
+		json5 = { "prettier" }, -- Biome は JSON5 未対応
+		jsonc = get_js_formatter_cached,
 		lua = { "stylua" },
 		markdown = { "prettier" },
-		python = function(bufnr)
-			if require("conform").get_formatter_info("ruff_format", bufnr).available then
-				return { "ruff_format" }
-			else
-				return { "isort", "black" }
-			end
-		end,
-		rust = { "rustfmt", lsp_format = "fallback" },
-		sql = { "sqlfluff", "injected" },
+		python = { "ruff_organize_imports", "ruff_format" },
+		rust = { "rustfmt" },
+		sql = { "sqlfluff" },
 		typescript = get_js_formatter_cached, -- ★差し替え
 		typescriptreact = get_js_formatter_cached, -- ★差し替え
-		xml = { "xmlformat" },
-		-- NOTE: yamlfmtを検討してもよいかも, なんならbiome?
+		xml = { "xmlformatter" },
 		yaml = { "prettier" },
-		-- Use the "_" filetype to run formatters on filetypes that don't
-		-- have other formatters configured.
-		["_"] = { "trim_whitespace" },
 	},
 
 	formatters = {
@@ -332,13 +324,9 @@ require("conform").setup({
 			stdin = false,
 		},
 		sqlfluff = {
-			-- note: configファイル指定
 			command = "sqlfluff",
-			args = { "format", "--dialect", "postgres", "-" },
+			args = { "format", "--stdin-filename", "$FILENAME", "-" },
 			stdin = true,
-			condition = function()
-				return true
-			end,
 		},
 	},
 })
@@ -402,6 +390,8 @@ vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 		"package.json",
 		"biome.json",
 		"biome.jsonc",
+		".biome.json",
+		".biome.jsonc",
 	}, PRETTIER_CONF_FILES),
 	callback = clear_all_formatter_caches,
 })
