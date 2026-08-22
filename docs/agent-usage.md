@@ -5,9 +5,9 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 
 ## 表示
 
-- tab bar: `CC 45% (2h47m)  W 50%  F 29% (3d11h)  ·  CX 2% (4d8h)`
+- tab bar: `CC 45% (2h47m) W 50% F 29% (3d11h) · CX 2% (4d8h)`
   （session% / weekly% / Fable weekly% / Codex weekly%）
-  括弧はリセットまでの残り。`CC` の括弧は session、`W 50%  F 29%` の後の括弧は
+  括弧はリセットまでの残り。`CC` の括弧は session、`W 50% F 29%` の後の括弧は
   **weekly のリセット**（Fable のリセットは line には出さず、popup では絶対時刻のみで残り時間は出さない）。
   Codex の括弧は weekly のリセット
 - `[stale]` は side 単位で末尾に1回だけ付く。付く条件は2つ:
@@ -17,7 +17,7 @@ AGENTS.md の一覧から参照される設計記録。判定・表示を変え�
 - 詳細は prefix+u の popup（バー・絶対時刻・fetched 経過）。popup は通常の端末なので
   ANSI 色を使い、見出しを太字シアン、使用率を 60% 未満=緑 / 60%以上=黄 / 85%以上=赤、
   空きバーと補足を dim、stale を太字赤で表示する。tab bar は ANSI 非対応なので着色しない
-- 実データで確認済み（`line` は `CC 91% (1h46m)  W 56%  F 33% (3d9h)  ·  CX 7% (6d20h)`、
+- 実データで確認済み（`line` は `CC 91% (1h46m) W 56% F 33% (3d9h) · CX 7% (6d20h)`、
   `detail` はバー・絶対リセット時刻・`fetched:` 経過付きの複数行）
 
 ## 仕組み

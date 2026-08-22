@@ -48,9 +48,9 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 	if s := c.Claude; s != nil && s.Session != nil && s.Weekly != nil {
 		p := fmt.Sprintf("CC %d%% (%s)", s.Session.Percent, countdown(s.Session, now))
 		if s.Fable != nil {
-			p += fmt.Sprintf("  W %d%%  F %d%% (%s)", s.Weekly.Percent, s.Fable.Percent, countdown(s.Weekly, now))
+			p += fmt.Sprintf(" W %d%% F %d%% (%s)", s.Weekly.Percent, s.Fable.Percent, countdown(s.Weekly, now))
 		} else {
-			p += fmt.Sprintf("  W %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
+			p += fmt.Sprintf(" W %d%% (%s)", s.Weekly.Percent, countdown(s.Weekly, now))
 		}
 		if sideStale(s, now, staleAfter) {
 			p += " [stale]"
@@ -64,7 +64,7 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 		}
 		parts = append(parts, p)
 	}
-	return strings.Join(parts, "  ·  ")
+	return strings.Join(parts, " · ")
 }
 
 // bar は 8マスの使用率バー。popup は通常ペインなので Unicode を使ってよい。

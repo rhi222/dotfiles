@@ -1,7 +1,7 @@
 #!/bin/bash
 # herdr の ui.tab_bar_right（command エントリ2本目）: AI agent のレート上限。
 #
-#   CC 45% (2h47m)  W 50%  F 29% (3d11h)  ·  CX 2% (4d8h)
+#   CC 45% (2h47m) W 50% F 29% (3d11h) · CX 2% (4d8h)
 #
 # ロジックは全部 dotctl agent-usage 側にある（JSON と複数状態の集約は Go に
 # 置く repo の方針）。ここは「dotctl が無い環境で欄ごと落とす」だけの薄い皮。
