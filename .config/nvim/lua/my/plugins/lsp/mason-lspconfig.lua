@@ -7,6 +7,7 @@ end
 require("mason-lspconfig").setup({
 	ensure_installed = {
 		"biome",
+		"gopls",
 		"graphql",
 		"jsonls",
 		"lua_ls",
