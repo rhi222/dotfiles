@@ -30,35 +30,6 @@ return {
 		end,
 	},
 	{
-		"folke/snacks.nvim",
-		lazy = false,
-		priority = 1000,
-		config = function()
-			-- 使用しないモジュールを無効化
-			local disabled = {
-				"bigfile",
-				"dashboard",
-				"explorer",
-				"image",
-				-- indent guide は indent-blankline.nvim を使うため無効化（二重描画防止）
-				"indent",
-				"input",
-				"notifier",
-				"picker",
-				"quickfile",
-				"scope",
-				"scroll",
-				"statuscolumn",
-				"words",
-			}
-			local opts = {}
-			for _, mod in ipairs(disabled) do
-				opts[mod] = { enabled = false }
-			end
-			require("snacks").setup(opts)
-		end,
-	},
-	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
 		dependencies = {
