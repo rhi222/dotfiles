@@ -105,7 +105,7 @@
 
 | スクリプト               | 行数 | 引数 | 呼び出し元           |
 | ------------------------ | ---- | ---- | -------------------- |
-| `nippo-check.sh`         | 129  | なし | doc hook link cron   |
+| `nippo-check.sh`         | 139  | なし | doc hook link cron   |
 | `nippo-cron.sh`          | 54   | なし | doc link cron        |
 | `nippo-create-cron.sh`   | 59   | なし | doc cron             |
 | `nippo-draft-cron.sh`    | 44   | なし | doc cron             |

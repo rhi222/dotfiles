@@ -13,6 +13,21 @@ set -euo pipefail
 # 呼び出し元コンテキスト。stop は Claude Code の Stop フック、cron は定時実行。
 CONTEXT="${1:-stop}"
 
+# 機械可読な契約行。テストと将来の呼び出し側はこれ（stderr 最終行）を見る。
+# stdout は通知本文なので、体裁を変えてもこの契約は壊れない。
+# 消費者（nippo-cron.sh / notify-windows.sh）は 2>/dev/null で捨てるため影響しない。
+# 各チェックは発火した時点で即 exit する制御構造なので、HITS は常に単一コード。
+report() { # $1=検査コード $2=人間向けメッセージ
+  echo "$2"
+  echo "nippo-check: CONTEXT=${CONTEXT} HITS=$1" >&2
+  exit 1
+}
+# 何も発火しなかった（通知なし）。
+clean_exit() {
+  echo "nippo-check: CONTEXT=${CONTEXT} HITS=none" >&2
+  exit 0
+}
+
 # パス解決は共有ライブラリに委ねる。ここで組み立てない。
 # ghq ではなく自身の位置から相対で引くのは、このスクリプトが cron や Stop フックから
 # 直接実行され、ghq が PATH に無い状態を踏みうるため。
@@ -47,16 +62,15 @@ NIPPO_FILE="$(nippo_daily_file "$TODAY")"
 
 # --- チェック1: 平日判定 ---
 if [[ "$DOW" -ge 6 ]]; then
-  exit 0
+  clean_exit
 fi
 
 # --- チェック2: ファイル存在チェック ---
 if [[ ! -f "$NIPPO_FILE" ]]; then
   if [[ "$HOUR" -ge 9 ]]; then
-    echo "📝 今日の日報がまだ作成されていません"
-    exit 1
+    report missing "📝 今日の日報がまだ作成されていません"
   fi
-  exit 0
+  clean_exit
 fi
 
 # --- チェック3: 未終了タイマー ---
@@ -82,8 +96,7 @@ for task in "${started_tasks[@]}"; do
     fi
   done
   if [[ "$found" == false ]]; then
-    echo "🟢 「${task}」が開始のまま未終了です"
-    exit 1
+    report open-timer "🟢 「${task}」が開始のまま未終了です"
   fi
 done
 
@@ -107,23 +120,20 @@ if [[ "$LOW_PRIORITY_CHECKS" -eq 1 && "$incomplete_count" -gt 0 ]]; then
   elapsed_minutes=$(((now_epoch - file_mtime) / 60))
 
   if [[ "$elapsed_minutes" -ge 90 ]]; then
-    echo "⏰ 日報が${elapsed_minutes}分以上更新されていません（未完了: ${incomplete_count}件）"
-    exit 1
+    report stale "⏰ 日報が${elapsed_minutes}分以上更新されていません（未完了: ${incomplete_count}件）"
   fi
 fi
 
 # --- チェック5: Finalize忘れ ---
 if [[ "$HOUR" -ge 18 ]]; then
   if ! grep -q '^## Finalize:' "$NIPPO_FILE" 2>/dev/null; then
-    echo "📊 日報のfinalize忘れていませんか？"
-    exit 1
+    report finalize "📊 日報のfinalize忘れていませんか？"
   fi
 fi
 
 # --- チェック6: 未完了タスク（低優先度） ---
 if [[ "$LOW_PRIORITY_CHECKS" -eq 1 && "$incomplete_count" -gt 0 ]]; then
-  echo "📋 未完了タスク: ${incomplete_count}件"
-  exit 1
+  report incomplete "📋 未完了タスク: ${incomplete_count}件"
 fi
 
-exit 0
+clean_exit
