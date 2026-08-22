@@ -1,5 +1,6 @@
 #!/bin/bash
-# nippo-draft-cron.sh のテスト
+# 日報draft cronはenable fileなしでは何もせず、dry-runではclaudeを呼ばない。
+# GitHub活動収集に必要なread-only toolだけを許可して日報pathをHOMEから解決する。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

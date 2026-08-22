@@ -1,5 +1,6 @@
 #!/bin/bash
-# lib/stop-notification.sh のユニットテスト
+# Stop通知はmain chain最後の意味ある本文を1行へ整形し、長さを制限する。
+# titleはrepository状態を反映しつつ、不正なcwdでも安全な既定値へ戻る。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

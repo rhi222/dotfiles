@@ -1,3 +1,5 @@
+// CLIは引数と終了コードの契約を守り、破壊操作をdry-run既定にする。
+// stale binaryの警告はrepositoryを読めない環境で通常実行を妨げない。
 package command
 
 import (

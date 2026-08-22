@@ -1,3 +1,4 @@
+// cleanup reportはShell版のbyte幅と契約行を保ち、dry-runとexecuteの結果を混同しない。
 package worktree
 
 import (

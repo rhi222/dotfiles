@@ -23,6 +23,17 @@ check() {
   fi
 }
 
+# background process の状態待ち。壁時計の速さではなくマーカーファイルで同期し、
+# 上限はテストが壊れたときにハングさせないためだけに使う。
+wait_for_file() { # $1=path $2=試行回数
+  local path="$1" attempts="$2"
+  for _ in $(seq 1 "$attempts"); do
+    [[ -e "$path" ]] && return 0
+    sleep 0.05
+  done
+  return 1
+}
+
 tmp=$(mktemp -d)
 mkdir -p "$tmp/home/.config/linear" "$tmp/home/.local/state" "$tmp/bin"
 echo "lin_api_test" >"$tmp/home/.config/linear/api-key"
@@ -31,6 +42,10 @@ cat >"$tmp/home/.config/linear/config.json" <<'EOF'
  "states": {"Triage": "st-triage", "Todo": "st-todo", "AI Queued": "st-r", "AI Running": "st-x", "My Review": "st-j", "Waiting": "st-w", "Done": "st-d"},
  "labels": {"src:github": "lb-gh", "src:jira": "lb-jira", "src:slack": "lb-s", "src:mtg": "lb-m", "role:player": "lb-rp", "role:manager": "lb-rm", "em:people": "lb-ep", "em:tech": "lb-et", "em:project": "lb-epj", "em:product": "lb-epd"}}
 EOF
+TRIAGE_STATE_ID=$(jq -r '.states.Triage' "$tmp/home/.config/linear/config.json")
+GITHUB_LABEL_ID=$(jq -r '.labels["src:github"]' "$tmp/home/.config/linear/config.json")
+PLAYER_LABEL_ID=$(jq -r '.labels["role:player"]' "$tmp/home/.config/linear/config.json")
+TECH_LABEL_ID=$(jq -r '.labels["em:tech"]' "$tmp/home/.config/linear/config.json")
 
 # stub gh: 呼び出しを記録し、search 以外（書き込み系）が来たら異常終了する
 cat >"$tmp/bin/gh" <<'EOF'
@@ -84,16 +99,16 @@ HOME="$tmp/home" LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/d
 seen="$tmp/home/.local/state/linear-sweep/seen.txt"
 check "seenファイルにURLが記録される" grep -q "repo1/pull/1" "$seen"
 check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
-check "src:githubラベルが付く" grep -q "lb-gh" "$CURL_LOG"
-check "Triageに起票される" grep -q "st-triage" "$CURL_LOG"
+check "src:githubラベルが付く" grep -q "$GITHUB_LABEL_ID" "$CURL_LOG"
+check "Triageに起票される" grep -q "$TRIAGE_STATE_ID" "$CURL_LOG"
 check "bot作成PRは起票しない" bash -c "! grep -q 'repo9/pull/9' '$CURL_LOG'"
 check "bot作成PRはseenにも入れない" bash -c "! grep -q 'repo9/pull/9' '$seen'"
 check "自分のdraft PRは起票される" grep -q "repo1/pull/1" "$CURL_LOG"
 check "レビュー依頼は検索すらしない" bash -c "! grep -q 'review-requested' '$GH_LOG'"
 check "起票タイトルはdraft仕上げ" grep -q 'draft仕上げ' "$CURL_LOG"
 # src:* だけだと後からrole/emをバックフィルする羽目になるので起票時に確定させる
-check "role:playerラベルが付く" grep -q 'lb-rp' "$CURL_LOG"
-check "em:techラベルが付く" grep -q 'lb-et' "$CURL_LOG"
+check "role:playerラベルが付く" grep -q "$PLAYER_LABEL_ID" "$CURL_LOG"
+check "em:techラベルが付く" grep -q "$TECH_LABEL_ID" "$CURL_LOG"
 
 # 2-2. LINEAR_SWEEP_MAX で起票数を絞れる（gh stubは2種類の検索に各2件返すので計4件相当）
 tmp2=$(mktemp -d)
@@ -154,25 +169,47 @@ mkdir -p "$tmp3/.config/linear" "$tmp3/state"
 cp "$tmp/home/.config/linear/api-key" "$tmp/home/.config/linear/config.json" "$tmp3/.config/linear/"
 touch "$tmp3/.config/linear-sweep-enabled"
 lock="$tmp3/state/sweep.lock"
+lock_ready="$tmp3/state/lock-ready"
+lock_release="$tmp3/state/lock-release"
+sweep_done="$tmp3/state/sweep-done"
+sweep_rc="$tmp3/state/sweep-rc"
+sweep_out="$tmp3/state/sweep-out"
 
 : >"$CURL_LOG"
-# 別プロセスがロックを保持している状態で起動する
+# 別プロセスがロックを保持し、release マーカーまで解放しない。sweep が
+# release より先に完了すれば、ロック待ちをせず抜けたことを時間計測なしで証明できる。
 (
   exec 9>"$lock"
   flock 9
-  sleep 3
+  touch "$lock_ready"
+  wait_for_file "$lock_release" 400
 ) &
 holder=$!
-sleep 0.5
+wait_for_file "$lock_ready" 100 || {
+  echo "NG: ロック保持プロセスの準備が完了しない"
+  kill "$holder" 2>/dev/null || true
+  exit 1
+}
 
-start=$(date +%s)
-out6=$(HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" \
-  LINEAR_SWEEP_LOCK="$lock" LINEAR_SWEEP_SEEN="$tmp3/state/seen.txt" \
-  LINEAR_SWEEP_LAST_RUN="$tmp3/state/last-run" bash "$SCRIPT" 2>&1)
-elapsed=$(($(date +%s) - start))
+(
+  rc=0
+  HOME="$tmp3" LINEAR_CONFIG_DIR="$tmp3/.config/linear" \
+    LINEAR_SWEEP_LOCK="$lock" LINEAR_SWEEP_SEEN="$tmp3/state/seen.txt" \
+    LINEAR_SWEEP_LAST_RUN="$tmp3/state/last-run" bash "$SCRIPT" >"$sweep_out" 2>&1 || rc=$?
+  echo "$rc" >"$sweep_rc"
+  touch "$sweep_done"
+) &
+sweep_pid=$!
+
+completed_before_release=no
+wait_for_file "$sweep_done" 100 && completed_before_release=yes
+touch "$lock_release"
 wait "$holder" 2>/dev/null
+wait "$sweep_pid" 2>/dev/null
+out6=$(cat "$sweep_out")
 
-check "ロック中は待たずに抜ける" test "$elapsed" -lt 3
+check "ロック中は待たずに抜ける" test "$completed_before_release" = yes
+check "ロック中も正常終了する" test "$(cat "$sweep_rc")" = 0
 check "ロック中は起票しない" bash -c "! grep -q issueCreate '$CURL_LOG'"
 check "ロック中は静かに終わる" test -z "$out6"
 

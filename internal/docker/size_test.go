@@ -1,3 +1,4 @@
+// Dockerのsize表記を境界値込みで正規化し、fish版と同じ表示幅・paddingを維持する。
 package docker
 
 import (

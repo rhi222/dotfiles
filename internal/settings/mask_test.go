@@ -1,3 +1,4 @@
+// secret maskは機密値だけを追跡表現から除き、push時にlive値を復元して新しいkeyを捏造しない。
 package settings
 
 import (

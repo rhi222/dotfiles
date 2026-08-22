@@ -125,7 +125,7 @@ link_private_files() {
 # 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
   mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.agents/skills \
-    ~/.config/dotfiles ~/.config/linear
+    ~/.config/dotfiles ~/.config/linear ~/.config/psql
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
@@ -138,7 +138,7 @@ link_configs() {
     "$DOTFILES_DIR/.gitconfig|$HOME/.gitconfig"
     "$DC/tmux|$HOME/.config/tmux"
     "$DC/tmux/tmux.conf|$HOME/.tmux.conf"
-    "$DOTFILES_DIR/.psqlrc|$HOME/.psqlrc"
+    "$DC/psql/psqlrc|$HOME/.psqlrc"
 
     # Claude Code configuration
     # settings.json は symlink にできないため setup_claude_settings で別途同期する
@@ -347,6 +347,9 @@ setup_local_configs() {
     # local-context.md の置き場所は ~/.claude/ 直下（リポジトリ外）。
     # .config/claude/ は ~/.config/claude へリンクされるので、そこに置くとリポジトリ内に現れる
     "$DC/claude/local-context.md.example|$HOME/.claude/local-context.md"
+    # psqlrc は ~/.psqlrc へリンクされるが、案件固有の判定は
+    # ~/.config/psql/psqlrc.local（リポジトリ外）に置く。psqlrc が任意読み込みする。
+    "$DC/psql/psqlrc.local.example|$HOME/.config/psql/psqlrc.local"
   )
   local pair src dest
   for pair in "${pairs[@]}"; do

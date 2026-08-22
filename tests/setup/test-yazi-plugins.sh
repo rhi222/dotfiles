@@ -1,6 +1,6 @@
 #!/bin/bash
-# setup-yazi-plugins.sh のユニットテスト
-# PATH先頭に ya のスタブを置き、実際のGitHubアクセスなしで挙動を検証する
+# yazi plugin setupは宣言と実体をreconcileし、dry-runや導入失敗を成功扱いしない。
+# PATH先頭のya stubを使い、実GitHubやplugin directoryは変更しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

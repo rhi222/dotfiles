@@ -1,3 +1,5 @@
+// settings同期は実体を正として方向を守り、競合や壊れた入力をforceなしに上書きしない。
+// 書込みはatomicに行い、既存権限とlive側のsecretを保持する。
 package settings
 
 import (

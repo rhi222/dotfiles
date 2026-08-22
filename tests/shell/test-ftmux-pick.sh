@@ -1,5 +1,6 @@
 #!/bin/bash
-# __ftmux_pick_id のテスト。fzf を stub にして選択結果を固定する
+# __ftmux_pick_idは表示列ではなくID列だけを返し、キャンセルを非0で伝播する。
+# fzfをstubにして選択結果を固定し、呼び出し元のlocal変数を壊さないことも検査する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

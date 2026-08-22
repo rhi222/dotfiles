@@ -8,6 +8,7 @@
 | Jira/GitLab/esaなどの社内context | `~/.claude/local-context.md` | `.config/claude/local-context.md.example` |
 | 機密語辞書 | `~/.config/dotfiles/secret-patterns.txt` | `scripts/secret-patterns.txt.example` |
 | nvimのHTTPS非対応host | `my/local_config.lua` | `my/local_config.lua.example` |
+| psqlのprod/stg判定 | `~/.config/psql/psqlrc.local` | `.config/psql/psqlrc.local.example` |
 | dclean除外 | `99-local.fish` | なし |
 | 社内AHK snippet | `snippets-local.ahk`, `ahk-snippets/js/` | なし |
 | 社内pluginとmarketplace | 実 `settings.json`。同期時にmask | なし |
@@ -30,6 +31,19 @@ subdomain形式は汎用辞書に一致しうるため、`slack.example.com` の
 - 内容だけでなくpath名も検査する
 - 社内名を含む対象は、名前を `.gitignore` に書かず親directory単位でignoreする
 - `--no-verify` は原則使わない
+
+## 既に公開された履歴
+
+**HEADから消しても過去のcommitは読める。** 混入に気づいた時点で、履歴を書き換えるか
+受容するかを決める。既定は受容。force pushはclone済みの他端末とworktreeを壊し、
+GitHub側のcacheやforkも消せないため、資格情報でない限り代償が見合わない。
+
+受容した場合の後始末は次の2つ。
+
+- 該当語を実体辞書へ追加し、同じ値が再びcommitされるのをpre-commitで止める
+- 実値をrepo外へ出し、repoには `.example` だけを残す
+
+`psqlrc` の案件固有値（DB名、DBユーザー名、判定に使うport）はこの経路で受容済み。
 
 動作確認は `bash tests/checks/test-secret-scan.sh`。
 

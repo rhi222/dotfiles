@@ -38,6 +38,11 @@ docs/superpowers/
 # nvim のローカル設定（社内ホスト名など）。雛形は local_config.lua.example
 .config/nvim/lua/my/local_config.lua
 
+# psql の環境判定（DB名・DBユーザー名・prod判定のポート番号）。雛形は psqlrc.local.example。
+# 実体の置き場所は ~/.config/psql/psqlrc.local（リポジトリ外）だが、
+# .config/psql/ 配下に置いてしまった場合の保険として ignore しておく。
+.config/psql/psqlrc.local
+
 # 社内固有値の集約先。実体は ~/.claude/local-context.md（リポジトリ外）だが、
 # .config/claude/ 配下に置いてしまった場合の保険として ignore しておく。
 .config/claude/local-context.md

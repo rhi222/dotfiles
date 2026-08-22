@@ -1,3 +1,4 @@
+// trusted owner判定は完全一致かつdefault-denyで、宣言欠落時に未検証skillを許可しない。
 package skill
 
 import (

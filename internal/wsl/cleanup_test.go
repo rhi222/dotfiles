@@ -1,3 +1,5 @@
+// WSL cleanupはdry-run既定で、現行pnpm storeと開発環境を決して削除対象にしない。
+// execute時も選択済みの不要pathだけを削除し、欠落pathを安全にskipする。
 package wsl
 
 import (

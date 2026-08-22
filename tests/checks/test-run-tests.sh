@@ -1,6 +1,6 @@
 #!/bin/bash
-# serial: 並列化と打ち切りの検証で自分が経過時間を測るので、隣に負荷があると落ちる
-# run-tests.sh のテスト。偽のテスト群を作った一時ディレクトリを対象にする
+# run-tests.sh は失敗を取りこぼさず全件を続行し、並列でも出力順と隔離を保つ。
+# 偽のテスト群を一時ディレクトリに作り、実 tests/ や実 HOME は変更しない。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,18 +91,29 @@ rm -f "$tmp/test-hang.sh"
 # 直列だと 79本で47秒かかっていた。個々は独立（各テストが mktemp で自分の作業場を
 # 作る）なので並列化できる。ただし出力が混ざると読めないので、順序と体裁は
 # 直列時と同じでなければならない。
-make_test test-slow1.sh 'sleep 1; exit 0'
-make_test test-slow2.sh 'sleep 1; exit 0'
-make_test test-slow3.sh 'sleep 1; exit 0'
-make_test test-slow4.sh 'sleep 1; exit 0'
+#
+# 並列に走っていることをバリアで証明する。偽テスト4本が「4本ぶんのマーカーが
+# 揃うまで待つ」ので、直列だと1本目が他3本のマーカーを待ち続け、上限に達して
+# 落ちる。exit 0 が並列性の証明になり、経過時間を測らずに済む（隣の負荷に
+# 左右されない）。上限の 100×0.1秒=10秒は実待ち（1秒未満）より十分大きく、
+# 直列時に無限にハングさせないための保険。
+for i in 1 2 3 4; do
+  make_test "test-slow$i.sh" 'touch "'"$tmp"'/barrier-'"$i"'"
+for _ in $(seq 1 100); do
+  [ "$(ls "'"$tmp"'"/barrier-* 2>/dev/null | wc -l)" -ge 4 ] && exit 0
+  sleep 0.1
+done
+exit 1'
+done
 
-start=$(date +%s)
+rm -f "$tmp"/barrier-*
 out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" 2>&1)
 rc=$?
-elapsed=$(($(date +%s) - start))
-check "並列なら 1秒テスト4本が直列より速い" test "$elapsed" -lt 4
-check "並列でも exit 0" test "$rc" -eq 0
-check "並列でも全件数える" grep -qE 'pass: 6' <<<"$out"
+check "並列なら4本のバリアが成立する" test "$rc" -eq 0
+# 件数はハードコードせずファイル数から出す（前のケースの残りに左右されないように）
+expected_pass=$(find "$tmp" -maxdepth 1 -name 'test-*.sh' | wc -l)
+check "並列でも全件数える" grep -qE "pass: $expected_pass 件" <<<"$out"
+rm -f "$tmp"/barrier-*
 
 # 出力はテスト名の昇順で、1本1行。並列で混ざらないこと
 names=$(grep -oE 'test-[a-z0-9]+\.sh' <<<"$out" | head -6)
@@ -149,36 +160,39 @@ rm -f "$tmp/test-skipme.sh" "$tmp/skipme-ran"
 # 並列にすると落ちるテストがある。実 nvim を起動して 5000ms のデバウンスを待つもの、
 # 実 $HOME の設定で対話シェルを起動するものなど、負荷で結果が変わる種類。
 # ci-skip と同じ形で、テストファイル側が `# serial: <理由>` と宣言する。
+# serial なテストは実行中マーカー（ser-live-<pid>）を置いて短く待ち、その間に
+# 別の serial テストのマーカーが同時に見えたら ser-overlap を残す。直列で走る
+# 限りマーカーは常に1つなので ser-overlap は生まれない。並列に漏れたら同時存在
+# が検出される。経過時間ではなくオーバーラップの有無で直列性を証明する。
+make_serial_test() { # $1=ファイル名
+  make_test "$1" '# serial: 検証用
+touch "'"$tmp"'/ser-live-$$"
+sleep 0.3
+if [ "$(ls "'"$tmp"'"/ser-live-* 2>/dev/null | wc -l)" -gt 1 ]; then
+  touch "'"$tmp"'/ser-overlap"
+fi
+rm -f "'"$tmp"'/ser-live-$$"
+exit 0'
+}
 make_test test-par1.sh 'exit 0'
 make_test test-par2.sh 'exit 0'
-make_test test-ser1.sh '# serial: 実nvimの起動時間に依存する
-echo "$$" >>"'"$tmp"'/ser.log"
-sleep 1
-exit 0'
-make_test test-ser2.sh '# serial: 実シェルの起動時間に依存する
-echo "$$" >>"'"$tmp"'/ser.log"
-sleep 1
-exit 0'
+make_serial_test test-ser1.sh
+make_serial_test test-ser2.sh
 
-: >"$tmp/ser.log"
-start=$(date +%s)
+rm -f "$tmp"/ser-overlap "$tmp"/ser-live-*
 out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" 2>&1)
 rc=$?
-elapsed=$(($(date +%s) - start))
 check "serial 宣言があっても exit 0" test "$rc" -eq 0
 check "serial なテストも実行する" grep -q "test-ser1.sh" <<<"$out"
-# 2本が直列なので合計2秒以上かかる（並列なら1秒で終わってしまう）
-check "serial なテストは同時に走らない" test "$elapsed" -ge 2
+check "serial なテストは同時に走らない" test ! -f "$tmp/ser-overlap"
 # 件数はハードコードせずファイル数から出す（前のケースの残りに左右されないように）
 expected_pass=$(find "$tmp" -maxdepth 1 -name 'test-*.sh' | wc -l)
 check "serial なテストも件数に入る" grep -qE "pass: $expected_pass 件" <<<"$out"
 
 # serial 宣言は --ci でも効く（ci-skip とは独立した軸）
-: >"$tmp/ser.log"
-start=$(date +%s)
+rm -f "$tmp"/ser-overlap "$tmp"/ser-live-*
 out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" --ci 2>&1)
-elapsed=$(($(date +%s) - start))
-check "--ci でも serial は直列で走る" test "$elapsed" -ge 2
+check "--ci でも serial は直列で走る" test ! -f "$tmp/ser-overlap"
 
 # 出力順は serial かどうかに関わらずテスト名の昇順
 names=$(grep -oE 'test-(par|ser)[0-9]\.sh' <<<"$out")
@@ -202,7 +216,7 @@ rm -f "$tmp/ser4-ran"
 out=$(TEST_DIR="$tmp" TEST_JOBS=4 bash "$RUNNER" --ci 2>&1)
 check "ci-skip と serial 併記なら --ci ではスキップ" test ! -f "$tmp/ser4-ran"
 
-rm -f "$tmp"/test-par*.sh "$tmp"/test-ser*.sh "$tmp/ser.log" "$tmp/ser4-ran"
+rm -f "$tmp"/test-par*.sh "$tmp"/test-ser*.sh "$tmp"/ser-overlap "$tmp"/ser-live-* "$tmp/ser4-ran"
 
 # --- 自分自身を対象にしない ---
 # run-tests.sh は test-*.sh に一致しない名前でなければ自分を再帰実行してしまう

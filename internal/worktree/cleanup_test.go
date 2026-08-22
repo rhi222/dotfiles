@@ -1,3 +1,5 @@
+// worktree cleanupは計画でDELETEになった対象だけを削除し、KEEP/SKIPには触れない。
+// 個別削除の失敗後も続行し、pruneと失敗結果を呼び出し側へ返す。
 package worktree
 
 import (

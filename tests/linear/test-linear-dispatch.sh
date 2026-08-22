@@ -1,5 +1,6 @@
 #!/bin/bash
-# linear-dispatch-cron.sh のテスト。curl/claude/ghq/gitをstubにする
+# dispatchは権限・WIP・成果を確認してからpushとdraft PRを行い、失敗時は安全なstateへ戻す。
+# curl/claude/ghq/gitをstubにし、実repositoryや共有systemは変更しない。
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -23,9 +24,14 @@ check() {
 tmp=$(mktemp -d)
 mkdir -p "$tmp/home/.config/linear" "$tmp/bin" "$tmp/ghq/github.com/example-org/repo1"
 echo "lin_api_test" >"$tmp/home/.config/linear/api-key"
-cat >"$tmp/home/.config/linear/config.json" <<'EOF'
+# fixture とアサーションで同じ state ID を別々に書かない（単一ソース）。
+# 下の config.json（heredoc 展開で埋め込む）・curl スタブ（実行時に env 経由で読む）・
+# アサーション（テストシェルで直接参照）の3箇所が、この定義だけを参照する。
+export STATE_TRIAGE="s1" STATE_TODO="s2" STATE_AI_QUEUED="s3" STATE_AI_RUNNING="s4"
+export STATE_MY_REVIEW="s5" STATE_DONE="s6" STATE_IN_PROGRESS="s7" STATE_WAITING="s8"
+cat >"$tmp/home/.config/linear/config.json" <<EOF
 {"team_id": "t1",
- "states": {"Triage": "s1", "Todo": "s2", "AI Queued": "s3", "AI Running": "s4", "My Review": "s5", "Done": "s6", "In Progress": "s7", "Waiting": "s8"},
+ "states": {"Triage": "$STATE_TRIAGE", "Todo": "$STATE_TODO", "AI Queued": "$STATE_AI_QUEUED", "AI Running": "$STATE_AI_RUNNING", "My Review": "$STATE_MY_REVIEW", "Done": "$STATE_DONE", "In Progress": "$STATE_IN_PROGRESS", "Waiting": "$STATE_WAITING"},
  "labels": {"src:jira": "l3", "src:slack": "l4", "src:github": "l5", "src:mtg": "l6"}}
 EOF
 
@@ -55,7 +61,7 @@ while [[ $# -gt 0 ]]; do
 done
 if grep -q 'viewer' <<<"$data"; then
   echo '{"data": {"viewer": {"id": "user-me"}}}'
-elif grep -q '\\"s5\\"' <<<"$data" || grep -q '"s5"' <<<"$data"; then
+elif grep -q "\\\\\"${STATE_MY_REVIEW:?}\\\\\"" <<<"$data" || grep -q "\"${STATE_MY_REVIEW:?}\"" <<<"$data"; then
   cat "${WIP_RESPONSE:?}"        # My Review一覧（WIPチェック用）
 elif grep -q 'issues(' <<<"$data"; then
   cat "${READY_RESPONSE:?}"      # AI Queued一覧
@@ -252,7 +258,7 @@ check "claudeが実行される" test -s "$CLAUDE_LOG"
 check "スクリプトがpushする" grep -q "push" "$GIT_LOG"
 check "スクリプトがgh pr create --draftする" bash -c "grep -q 'pr create' '$GH_LOG' && grep -q -- '--draft' '$GH_LOG'"
 check "PR URLがコメントされる" grep -q "pull/99" "$CURL_LOG"
-check "My Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
+check "My Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_MY_REVIEW\"'"
 check "プロンプトにLinear識別子を書かせない" grep -q "identifierを書かない\|NSY-xx" "$CLAUDE_LOG"
 check "agentにpushさせない指示が入る" grep -q "pushしない\|push・PR作成はしない" "$CLAUDE_LOG"
 check "agentのallowedToolsにgh/pushを渡さない" bash -c "! grep -qE 'Bash\\(gh:|git push' '$CLAUDE_LOG'"
@@ -264,7 +270,7 @@ check "agentのallowedToolsにgh/pushを渡さない" bash -c "! grep -qE 'Bash\
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   CLAUDE_NO_COMMIT=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "コミット0件ならpushしない" bash -c "! grep -q 'push' '$GIT_LOG'"
-check "コミット0件ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "コミット0件ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
 # 3-3. push失敗 → PR作成せずTodoへ差し戻す
 : >"$CURL_LOG"
@@ -273,7 +279,7 @@ check "コミット0件ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GIT_PUSH_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "push失敗ならPRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
-check "push失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "push失敗ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 check "push失敗コメントにブランチ名が入る" grep -q 'linear/NSY-5' "$CURL_LOG"
 
 # 3-4. PR作成失敗 → Todoへ差し戻す
@@ -282,7 +288,7 @@ check "push失敗コメントにブランチ名が入る" grep -q 'linear/NSY-5'
 : >"$GH_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   GH_PR_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
-check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "PR作成失敗ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
 # 3-7. 継続モード: 本文にPR URLがあれば既存ブランチで作業し、新規PRを作らない
 : >"$CURL_LOG"
@@ -298,7 +304,7 @@ check "継続モードはlinear/NSY-7ブランチを作らない" bash -c "! gre
 check "継続モードもpushする" grep -q "push" "$GIT_LOG"
 check "継続モードは新規PRを作らない" bash -c "! grep -q 'pr create' '$GH_LOG'"
 check "継続モードは既存PR URLをコメントする" grep -q "pull/42" "$CURL_LOG"
-check "継続モードもMy Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"s5\"'"
+check "継続モードもMy Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_MY_REVIEW\"'"
 
 # 3-8. 継続モード: PRがOPENでなければ実行しない
 : >"$CURL_LOG"
@@ -309,7 +315,7 @@ echo base >"$HEAD_FILE"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-existing-pr.json" \
   GH_PR_STATE=MERGED LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "PRがOPENでなければclaudeを実行しない" test ! -s "$CLAUDE_LOG"
-check "PRがOPENでなければTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "PRがOPENでなければTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
 # 3-5. PR作成権限が無い → agentを走らせる前に弾く
 : >"$CURL_LOG"
@@ -321,7 +327,7 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-o
   GH_PERM=READ LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "権限不足ならclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 check "権限不足ならworktreeも作らない" bash -c "! grep -q 'worktree add' '$GIT_LOG'"
-check "権限不足ならTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "権限不足ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
 # 3-6. 権限確認そのものが失敗 → 判定不能なので実行しない（安全側に倒す）
 : >"$CURL_LOG"
@@ -410,7 +416,7 @@ check "継続モードの成功時は既存PRブランチを削除しない" bas
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-norepo.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
 check "repo行が無ければclaudeを実行しない" test ! -s "$CLAUDE_LOG"
-check "repo行が無ければTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "repo行が無ければTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
 # 5. claude失敗 → エラーコメント＋Todoへ差し戻し
 cat >"$tmp/bin/claude" <<'EOF'
@@ -424,7 +430,7 @@ chmod +x "$tmp/bin/claude"
 : >"$CLAUDE_LOG"
 HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-one.json" \
   LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
-check "失敗時はTodo(s2)へ差し戻す" grep -q '"s2"' "$CURL_LOG"
+check "失敗時はTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 check "失敗ログがコメントされる" grep -q "went wrong" "$CURL_LOG"
 
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"

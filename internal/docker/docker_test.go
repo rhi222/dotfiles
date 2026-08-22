@@ -1,3 +1,5 @@
+// Docker掃除は稼働containerとnamed volumeを対象にせず、dry-runで実行計画だけを返す。
+// 個別commandが失敗しても後続を続け、回収量と失敗を集約する。
 package docker
 
 import (

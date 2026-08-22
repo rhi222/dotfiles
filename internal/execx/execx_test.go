@@ -1,3 +1,4 @@
+// command runnerはstdout・stderr・終了コード・cwdを保持し、cancelと予期しないstub呼出を隠さない。
 package execx
 
 import (

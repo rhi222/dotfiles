@@ -1,3 +1,4 @@
+// worktree分類はlockedを最優先し、dirty・untracked・PR状態から安全側の処置を一意に選ぶ。
 package worktree
 
 import "testing"

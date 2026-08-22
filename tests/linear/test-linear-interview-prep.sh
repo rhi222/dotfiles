@@ -38,6 +38,14 @@ EOF
 export LINEAR_CONFIG_DIR="$tmp/home/.config/linear"
 export LINEAR_INTERVIEW_PREP_SEEN="$tmp/state/seen.txt"
 export LINEAR_INTERVIEW_PREP_LOCK="$tmp/state/prep.lock"
+TODO_STATE_ID=$(jq -r '.states.Todo' "$LINEAR_CONFIG_DIR/config.json")
+TRIAGE_STATE_ID=$(jq -r '.states.Triage' "$LINEAR_CONFIG_DIR/config.json")
+MEETING_LABEL_ID=$(jq -r '.labels["src:mtg"]' "$LINEAR_CONFIG_DIR/config.json")
+MANAGER_LABEL_ID=$(jq -r '.labels["role:manager"]' "$LINEAR_CONFIG_DIR/config.json")
+PEOPLE_LABEL_ID=$(jq -r '.labels["em:people"]' "$LINEAR_CONFIG_DIR/config.json")
+SLACK_LABEL_ID=$(jq -r '.labels["src:slack"]' "$LINEAR_CONFIG_DIR/config.json")
+export CREATED_IDENTIFIER="NSY-200"
+export EXISTING_IDENTIFIER="NSY-42"
 
 EVT="evt0example000000000000001"
 EVT_URL="https://www.google.com/calendar/event?eid=EXAMPLE"
@@ -74,9 +82,7 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-echo '{"data": {"viewer": {"id": "user-me"},
-                "issues": {"nodes": []},
-                "issueCreate": {"success": true, "issue": {"id": "i1", "identifier": "NSY-200", "url": "u"}}}}'
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[]},"issueCreate":{"success":true,"issue":{"id":"i1","identifier":"%s","url":"u"}}}}\n' "${CREATED_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 export PATH="$tmp/bin:$PATH"
@@ -87,15 +93,15 @@ export CURL_LOG="$tmp/curl.log"
 : >"$CURL_LOG"
 out6=$(bash "$SCRIPT" create "$EVT" "面談準備: 候補者A (08/17 18:00)" \
   "2026-08-17 18:00" "$EVT_URL" "$PREP" "role:manager" "em:people" 2>&1)
-check "createがcreatedを返す" grep -q "^created NSY-200$" <<<"$out6"
+check "createがcreatedを返す" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6"
 check "seenにevent idが追記される" grep -qxF "$EVT" "$LINEAR_INTERVIEW_PREP_SEEN"
 check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
 # Triage ではなく Todo。予定は確定済みで「やるか判断する」対象ではない
-check "Todoに起票する" grep -q "st-todo" "$CURL_LOG"
-check "Triageには入れない" test "$(grep -c 'st-triage' "$CURL_LOG")" -eq 0
-check "src:mtgラベルが付く" grep -q "lb-m" "$CURL_LOG"
-check "推定したroleラベルが付く" grep -q "lb-rm" "$CURL_LOG"
-check "推定したemラベルが付く" grep -q "lb-ep" "$CURL_LOG"
+check "Todoに起票する" grep -q "$TODO_STATE_ID" "$CURL_LOG"
+check "Triageには入れない" test "$(grep -c "$TRIAGE_STATE_ID" "$CURL_LOG")" -eq 0
+check "src:mtgラベルが付く" grep -q "$MEETING_LABEL_ID" "$CURL_LOG"
+check "推定したroleラベルが付く" grep -q "$MANAGER_LABEL_ID" "$CURL_LOG"
+check "推定したemラベルが付く" grep -q "$PEOPLE_LABEL_ID" "$CURL_LOG"
 # event id は二重防壁の2層目（Linear 側検索）のキーなので本文に必ず残す
 check "本文にevent idが入る" grep -q "$EVT" "$CURL_LOG"
 check "本文に予定URLが入る" grep -q "calendar" "$CURL_LOG"
@@ -105,21 +111,21 @@ check "本文に準備内容が入る" grep -q "逆質問" "$CURL_LOG"
 # --- create（ラベル省略） ---
 : >"$CURL_LOG"
 out6b=$(bash "$SCRIPT" create "evt0example000000000000003" "t" "2026-08-18 10:00" "$EVT_URL" "$PREP" 2>&1)
-check "ラベル省略でも起票できる" grep -q "^created NSY-200$" <<<"$out6b"
-check "ラベル省略時もsrc:mtgは付く" grep -q "lb-m" "$CURL_LOG"
+check "ラベル省略でも起票できる" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6b"
+check "ラベル省略時もsrc:mtgは付く" grep -q "$MEETING_LABEL_ID" "$CURL_LOG"
 
 # --- create（未知のラベル名） ---
 : >"$CURL_LOG"
 out6c=$(bash "$SCRIPT" create "evt0example000000000000004" "t" "2026-08-18 10:00" "$EVT_URL" "$PREP" \
   "em:hiring" "role:manager" 2>&1)
-check "未知のラベルがあっても起票は成功する" grep -q "^created NSY-200$" <<<"$out6c"
-check "未知のラベルは無視して残りは付ける" grep -q "lb-rm" "$CURL_LOG"
+check "未知のラベルがあっても起票は成功する" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6c"
+check "未知のラベルは無視して残りは付ける" grep -q "$MANAGER_LABEL_ID" "$CURL_LOG"
 check "未知のラベルを警告に出す" grep -q "em:hiring" <<<"$out6c"
 
 # --- create（src:* は引数で受け付けない） ---
 : >"$CURL_LOG"
 bash "$SCRIPT" create "evt0example000000000000005" "t" "2026-08-18 10:00" "$EVT_URL" "$PREP" "src:slack" >/dev/null 2>&1
-check "src:*を引数から付けない" test "$(grep -c 'lb-s' "$CURL_LOG")" -eq 0
+check "src:*を引数から付けない" test "$(grep -c "$SLACK_LABEL_ID" "$CURL_LOG")" -eq 0
 
 # --- create（seen済みなら何もしない） ---
 : >"$CURL_LOG"
@@ -136,16 +142,15 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-echo '{"data": {"viewer": {"id": "user-me"},
-                "issues": {"nodes": [{"id": "i-old", "identifier": "NSY-42"}]},
-                "commentCreate": {"success": true}}}'
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[{"id":"i-old","identifier":"%s"}]},"commentCreate":{"success":true}}}\n' "${EXISTING_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 
 : >"$LINEAR_INTERVIEW_PREP_SEEN"
 : >"$CURL_LOG"
 out8=$(bash "$SCRIPT" create "$EVT" "t" "2026-08-17 18:00" "$EVT_URL" "$PREP" "role:manager" 2>&1)
-check "Linear側に既存ならskipped(exists)を返す" grep -q "^skipped(exists) NSY-42$" <<<"$out8"
+check "Linear側に既存ならskipped(exists)を返す" \
+  grep -q "^skipped(exists) $EXISTING_IDENTIFIER$" <<<"$out8"
 check "既存があればissueCreateを呼ばない" test "$(grep -c 'issueCreate' "$CURL_LOG")" -eq 0
 # 同じ予定を当日と前日で2回見ているだけなので、slack-sweep と違いコメントは付けない。
 # 付けると毎朝コメントが増える

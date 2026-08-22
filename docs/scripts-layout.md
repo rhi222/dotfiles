@@ -4,19 +4,33 @@
 **移動する前に「誰が何を呼んでいるか」を固定するための文書**で、日々の使い方は
 [AGENTS.md](../AGENTS.md) の各機能の表を見る。
 
-## 何が混ざっているか
+## ドメイン境界と公開入口
 
-`scripts/` 直下には次の4種類が同じ階層に並んでいて、責務と公開範囲が見分けにくい。
+機能固有の実装は `domains/<domain>/` にまとめ、`scripts/` 直下はcron、hook、skill、
+手動操作から呼ぶ互換entrypointとして維持する。テストは既存どおり
+`tests/<domain>/`、詳細仕様は `docs/` に置く。配置規約のため `.config/<tool>/` に
+置く必要がある設定は無理に移さず、domain READMEから参照する。
 
-| 種類                 | 例                                       | 実測         |
-| -------------------- | ---------------------------------------- | ------------ |
-| 公開エントリポイント | `daily-update.sh`, `setup-dotctl.sh`     | 35本 5,320行 |
-| `source` される内部  | `lib/linear-api.sh`, `lib/nippo-paths.sh`| 8本 1,029行 |
-| 宣言・テンプレート   | `apt-packages.txt`, `doc-budget.txt`     | 7本          |
-| 回帰テスト           | `test-*.sh`                              | 55本13,280行 |
+適用先は `domains/linear/` と `domains/nippo/`。`scripts/linear-*.sh`、
+`scripts/nippo-*.sh`、`scripts/lib/{linear-api,nippo-paths}.sh` は公開APIなので残し、
+実装パスを外部から直接呼ばない。
+新しいdomainを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
+ファイル数が増えただけの設定toolごとには作らない。
 
-**直下97エントリのうち55がテスト。** 「見づらい」の過半はここが原因で、テストを
-別階層へ出すだけで直下は40台に落ちる。
+## 現在の層
+
+公開pathの安定性と実装のまとまりを両立するため、次の層に分ける。
+
+| 層                     | 例                                        | 実測         |
+| ---------------------- | ----------------------------------------- | ------------ |
+| 公開entrypoint         | `daily-update.sh`, `linear-sweep.sh`      | 35本 2,549行 |
+| 共有・互換Shell API    | `lib/cron-claude.sh`, `lib/nippo-paths.sh`| 8本 796行    |
+| domain実装             | `domains/{linear,nippo}/`                 | 13本 1,490行 |
+| 宣言・template         | `apt-packages.txt`, `doc-budget.txt`      | 7本          |
+| 回帰test               | `tests/<domain>/test-*.sh`                | 56本         |
+
+`scripts/` 直下は45entry。ここをdomain別に見せるために公開pathまで移すとcronやskillを
+壊すため、直下はコマンド索引、`domains/` は実装を読む入口、と役割を分ける。
 
 ## 公開入口の一覧
 
@@ -105,7 +119,7 @@
 
 | スクリプト               | 行数 | 引数 | 呼び出し元           |
 | ------------------------ | ---- | ---- | -------------------- |
-| `nippo-check.sh`         | 129  | なし | doc hook link cron   |
+| `nippo-check.sh`         | 140  | なし | doc hook link cron   |
 | `nippo-cron.sh`          | 54   | なし | doc link cron        |
 | `nippo-create-cron.sh`   | 59   | なし | doc cron             |
 | `nippo-draft-cron.sh`    | 44   | なし | doc cron             |

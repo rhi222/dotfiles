@@ -1,6 +1,6 @@
 #!/bin/bash
-# serial: ccstatusline の実行時間に依存するので、並列の負荷で結果が変わる
-# .config/claude/scripts/statusline-model.sh のユニットテスト
+# statusline は入力JSONだけからモデル表示を決め、壊れた入力や jq 不在でも
+# 1行の安全な表示を返して他のウィジェットを壊さない。
 #
 # ccstatusline の custom-command ウィジェットは stdin に Claude Code の
 # statusline JSON を渡し、stdout をそのまま表示する（preserveColors 時は ANSI 保持）。

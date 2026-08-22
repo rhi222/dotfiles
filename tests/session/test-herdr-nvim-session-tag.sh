@@ -1,8 +1,8 @@
 #!/bin/bash
 # auto-session のセッションが herdr のペイン単位に分かれることの検証
 #
-# XDG_DATA_HOME を差し替えるとプラグイン(lazy)の置き場ごと変わってしまうため、
-# 実際のセッションディレクトリを使い、一時 cwd 由来のセッションだけを後始末する。
+# XDG_DATA_HOME はプラグイン(lazy)の置き場ごと変えるため、実 nvim 設定を使いながら
+# auto-session の保存先だけを一時ディレクトリへ隔離する。
 #
 # ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
@@ -11,8 +11,10 @@ PASS=0
 FAIL=0
 TOTAL=0
 
-SESSION_DIR="$HOME/.local/share/nvim/sessions"
 WORK=$(mktemp -d)
+SESSION_DIR="$WORK/sessions"
+mkdir -p "$SESSION_DIR"
+export MY_AUTOSESSION_ROOT_DIR="$SESSION_DIR"
 
 # auto-session はセッション名をエスケープしてファイル名にする。
 # 一時ディレクトリのパスに含まれる / と . が %2F / %2E になる。
@@ -21,8 +23,6 @@ session_key() {
 }
 
 cleanup() {
-  # 一時 cwd 由来のセッションだけを消す（ディレクトリ名がファイル名にエンコードされている）
-  find "$SESSION_DIR" -maxdepth 1 -name "*$(session_key)*" -delete 2>/dev/null
   rm -rf "$WORK"
 }
 trap cleanup EXIT
