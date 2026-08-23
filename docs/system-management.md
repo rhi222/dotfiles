@@ -86,6 +86,7 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 
 - 1ステップの失敗で止めず、最後に失敗名を集約する
 - worktree、vendored skill、環境残骸は情報提供なので `run_step_soft` で全体をFAILEDにしない
+- worktree cleanupの内部出力は字下げし、daily-updateのステップ境界と階層を分ける
 - 失敗時のWindows通知はWSL2以外ではskipする
 - `~/.daily-update/` の30日より古いログを起動時に削除する
 - miseのshimをPATH前方へ戻してから更新する

@@ -160,7 +160,10 @@ worktree_cleanup_check() {
 
   local out count
   out=$(bash "$script" 2>&1)
-  echo "$out"
+  # daily-update の `=== step ===` と cleanup 内部の `== section ==` を
+  # 同じ左端に並べると階層が潰れる。単独実行時の cleanup の体裁は変えず、
+  # 埋め込むここだけ2スペース字下げして子コマンドの出力だと分かるようにする。
+  printf '%s\n' "$out" | sed 's/^/  /'
 
   # 表示行ではなく機械可読サマリ行から件数を取る（表示の体裁変更で壊れないように）。
   # `^worktree-cleanup:` で行頭アンカーする。dry-run ではこの行の後ろに人間向けの

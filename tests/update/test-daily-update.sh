@@ -289,6 +289,9 @@ FAKE_SCRIPTS="$(mktemp -d)"
 FAKE_SCRIPT="$FAKE_SCRIPTS/worktree-cleanup.sh"
 cat >"$FAKE_SCRIPT" <<'EOF'
 #!/bin/bash
+echo "worktree cleanup  mode: DRY-RUN"
+echo ""
+echo "== サマリ =="
 echo "worktree-cleanup: DELETE_CANDIDATES=3 PRUNE=0 SKIP=0 KEEP=0"
 EOF
 
@@ -298,6 +301,11 @@ output=$(PATH="$STUB_BIN:$PATH" \
   WORKTREE_CLEANUP_NOTIFY_THRESHOLD=5 \
   worktree_cleanup_check 2>&1)
 assert_output_contains "候補: 3 件" "$output" "候補件数をログに出す"
+assert_output_contains "  worktree cleanup  mode: DRY-RUN" "$output" "cleanup の出力を字下げする"
+assert_output_contains "  == サマリ ==" "$output" "cleanup 内部の見出しを字下げする"
+assert_eq 0 \
+  "$(printf '%s\n' "$output" | grep -c '^== サマリ ==$')" \
+  "cleanup 内部の見出しを daily-update の左端に出さない"
 assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "閾値未満では通知しない"
 
 : >"$WT_TEST_DIR/toast.log"
