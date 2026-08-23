@@ -14,8 +14,4 @@ if vim.fn.has("wsl") == 1 then
 		local url = vim.fn.expand("<cfile>")
 		vim.fn.jobstart({ "wslview", url }, { detach = true })
 	end, { silent = true, desc = "Open URL with wslview" })
-
-	-- wslで貼り付けにC-vを割り当てたためremap
-	-- Ctrl+Shift+VでVisual Blockモードに入る
-	vim.keymap.set({ "n", "v" }, "<C-S-v>", "<C-v>", { silent = true })
 end

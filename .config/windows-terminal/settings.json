@@ -58,7 +58,7 @@
       "keys": "shift+insert"
     },
     {
-      "id": null,
+      "id": "User.paste",
       "keys": "ctrl+shift+v"
     },
     {
