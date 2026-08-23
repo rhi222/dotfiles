@@ -481,40 +481,15 @@ assert_output_contains "setup-fish-plugins.sh" "$output" "追加の導線を案�
 
 rm -rf "$FISHER_TEST_DIR"
 
-echo ""
-echo "[6c] env_residue_check"
-
-RES_TEST_DIR="$(mktemp -d)"
-RES_FAKE_SCRIPTS="$RES_TEST_DIR/scripts"
-mkdir -p "$RES_FAKE_SCRIPTS"
-
-# env-residue.sh のスタブ。件数だけ差し替える
-cat >"$RES_FAKE_SCRIPTS/env-residue.sh" <<'EOF'
-#!/bin/bash
-echo "  追跡外の fish 関数: ~/.config/fish/functions/x.fish"
-echo "env-residue: FOUND=${RESIDUE_COUNT:-0}"
-exit 0
-EOF
-chmod +x "$RES_FAKE_SCRIPTS/env-residue.sh"
-
-exit_code=0
-output=$(SCRIPT_DIR="$RES_FAKE_SCRIPTS" RESIDUE_COUNT=3 env_residue_check 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "残骸があっても成功扱い"
-assert_output_contains "環境の残骸: 3 件" "$output" "サマリ行から件数を取る"
-assert_output_contains "x.fish" "$output" "本文もそのまま見せる"
-
-exit_code=0
-output=$(SCRIPT_DIR="$RES_FAKE_SCRIPTS" RESIDUE_COUNT=0 env_residue_check 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "0件でも成功"
-assert_output_contains "環境の残骸: 0 件" "$output" "0件と報告する"
-
-# スクリプトが無い端末でも落とさない
-exit_code=0
-output=$(SCRIPT_DIR="$RES_TEST_DIR/nope" env_residue_check 2>&1) || exit_code=$?
-assert_eq 0 "$exit_code" "env-residue.sh が無くても成功扱い"
-assert_output_contains "スキップ" "$output" "スキップの理由を出す"
-
-rm -rf "$RES_TEST_DIR"
+# env-residueは端末移行時に手動実行する診断で、日次更新には含めない。
+TOTAL=$((TOTAL + 1))
+if grep -qE 'env_residue_check|環境の残骸チェック' "$DAILY_UPDATE"; then
+  FAIL=$((FAIL + 1))
+  echo "  FAIL: env-residueをdaily-updateから実行しない"
+else
+  PASS=$((PASS + 1))
+  echo "  PASS: env-residueをdaily-updateから実行しない"
+fi
 
 echo ""
 echo "[7] cargo_install_update"

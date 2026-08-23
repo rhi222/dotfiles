@@ -131,7 +131,7 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 | Codex自作skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
 
 `daily-update.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
-最後に失敗を集約する。worktreeや環境残骸などの情報提供checkは全体をFAILEDにしない。
+最後に失敗を集約する。worktreeやvendored skillなどの情報提供checkは全体をFAILEDにしない。
 
 ### Claude skillの信頼境界
 

@@ -7,7 +7,7 @@
 # すべてそちら。
 #
 # ここは wrapper の転送と、**見つかっても exit 0 であること**を見る。
-# 非0になると daily-update.sh から毎日 FAILED 通知が飛ぶ。
+# 終了コードは残骸の有無ではなく、診断を実行できたかどうかを表す。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -74,7 +74,7 @@ check "機械可読サマリを出す" "yes" "$(has 'env-residue: FOUND=0' "$out
 mkdir -p "$FAKE_HOME/.fzf"
 out=$(run)
 rc=$?
-# **見つかっても 0。** 非0だと daily-update から毎日 FAILED 通知が飛ぶ
+# **見つかっても 0。** 終了コードは診断自体の成否を表す
 check "残骸があっても 0 で返す" "0" "$rc"
 # 報告文の中の ~ は表示用のリテラル（展開させない）
 # shellcheck disable=SC2088
@@ -82,7 +82,7 @@ check "残骸を報告する" "yes" "$(has '~/.fzf/ が残っています' "$out
 check "件数をサマリに出す" "yes" "$(has 'env-residue: FOUND=1' "$out")"
 check "撤去手順を出す" "yes" "$(has 'rm -rf ~/.fzf' "$out")"
 
-echo "== daily-update.sh が件数を読める形か =="
+echo "== 機械可読サマリから件数を読めるか =="
 
 count=$(run | sed -nE 's/^env-residue: FOUND=([0-9]+)$/\1/p')
 check "サマリ行から件数を取れる" "1" "$count"

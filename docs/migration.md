@@ -49,6 +49,19 @@ remote無し・未push・stash・dirty・worktree の5項目を全リポジト�
 
 動作確認は `bash tests/doctor/test-migration.sh`。
 
+### 端末環境の残骸を確認する
+
+リポジトリの作業状態とは別に、移行時は宣言外の旧設定が残っていないか確認する。
+
+```fish
+bash scripts/env-residue.sh
+```
+
+`~/.fzf`、追跡外のfish関数、宣言にないskillを報告する。
+これは移行時に明示実行する診断で、`daily-update.sh` からは実行しない。
+残骸が見つかっても診断自体は成功しているため終了コードは0とし、件数は
+`env-residue: FOUND=N` に出す。
+
 ## ① tar で運ぶ
 
 ```fish

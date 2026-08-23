@@ -4,11 +4,11 @@
 #   bash scripts/env-residue.sh
 #
 # 実装は Go 側（internal/doctor）にある。**この入口を残しているのは AGENTS.md と
-# daily-update.sh がこのパスで呼んでいるため。**
+# docs/migration.md が移行時の診断入口として案内しているため。**
 #
 # **見つかっても exit 0 する。** 残骸があること自体は壊れている状態ではなく、
-# 放置すると事故になりうる状態。daily-update.sh からは run_step_soft で呼ぶので、
-# ここで非0を返すと毎日 FAILED 通知が飛び、やがて無視されるようになる。
+# 放置すると事故になりうる状態。終了コードは診断を実行できたかどうかに使い、
+# 残骸の有無は出力で伝える。
 #
 # 件数は機械可読サマリ行（env-residue: FOUND=N）から取る。
 set -uo pipefail

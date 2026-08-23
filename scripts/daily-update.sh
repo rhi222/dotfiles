@@ -60,26 +60,6 @@ run_step_soft() {
 # 飛ぶと無視されるようになるため。テストから差し替えられるようにパスを変数に持つ。
 YAZI_PACKAGE_FILE="${YAZI_PACKAGE_FILE:-$HOME/.config/yazi/package.toml}"
 
-# 宣言のどこにも属さない残骸の検知。実体は env-residue.sh にある。
-#
-# 情報提供なので run_step_soft で呼び、見つかっても FAILED にしない。
-# 残骸があること自体は壊れている状態ではなく、放置すると事故になりうる状態。
-env_residue_check() {
-  local script="$SCRIPT_DIR/env-residue.sh"
-  if [ ! -f "$script" ]; then
-    echo "env-residue.sh が無いためスキップ: $script"
-    return 0
-  fi
-  local out count
-  out=$(bash "$script" 2>&1)
-  echo "$out"
-  # 表示行ではなく機械可読サマリ行から件数を取る（worktree チェックと同じ理由）
-  count=$(printf '%s\n' "$out" | sed -n 's/^env-residue: FOUND=\([0-9]\{1,\}\).*/\1/p' | head -1)
-  count="${count:-0}"
-  echo "環境の残骸: $count 件"
-  return 0
-}
-
 # dotctl の再ビルド。**git pull 後に再ビルドしないと、cron と hook は古い
 # バイナリを黙って実行し続ける**（このスクリプト自身が古い installs/<tool>/ の
 # gh を掴んで gh skill を失った事故と同型）。日次で追随させる。
@@ -295,8 +275,6 @@ main() {
   # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
   # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
   run_step_soft "vendored skill 更新チェック" vendored_skill_check
-  # 宣言のどこにも属さない残骸の検知。これも情報提供なので soft。
-  run_step_soft "環境の残骸チェック" env_residue_check
   # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
   # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
   run_step "claude settings pull" bash "$SCRIPT_DIR/sync-claude-settings.sh" pull

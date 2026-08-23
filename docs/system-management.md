@@ -85,7 +85,7 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後にsoft checkと設定同期を行う。
 
 - 1ステップの失敗で止めず、最後に失敗名を集約する
-- worktree、vendored skill、環境残骸は情報提供なので `run_step_soft` で全体をFAILEDにしない
+- worktreeとvendored skillは情報提供なので `run_step_soft` で全体をFAILEDにしない
 - worktree cleanupの内部出力は字下げし、daily-updateのステップ境界と階層を分ける
 - 失敗時のWindows通知はWSL2以外ではskipする
 - `~/.daily-update/` の30日より古いログを起動時に削除する
@@ -96,10 +96,8 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 - fisherはremote commit SHAを `~/.cache/dotfiles/fisher-update.refs` に記録し、
   宣言またはSHAが変わったときだけfull reconcileする。cache削除時は次回full updateする
 - dotctlはmiseによるGo更新の直後に再buildする。HEAD・build時のGo version・Go sourceが
-  すべて現在値と一致すればtest/buildをskipする
-
-`env-residue.sh` は宣言外の `~/.fzf`、fish関数、skillを報告する。情報提供なので発見時も
-exit 0とし、件数は `env-residue: FOUND=N` から取得する。
+  すべて現在値と一致すればtest/buildをskipする。test中にGo sourceが変わった場合は
+  build直前にfingerprintを取り直し、build中にも変わった場合は不整合なバイナリを採用しない
 
 ## パッケージとプラグイン
 
