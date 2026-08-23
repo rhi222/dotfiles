@@ -206,6 +206,44 @@ check "skipしたことを伝える" "yes" "$(has 'skipping' "$out")"
 teardown
 
 setup
+# test中にsourceが変わった場合は、buildへ渡すhashを取り直す。古いhashを埋めると
+# 次回起動時に同じ内容でも再buildされるため、今回の不安定化を検知する回帰。
+printf 'package before\n' >"$FAKE_REPO/changing.go"
+cat >"$STUB/go" <<'EOF'
+#!/bin/bash
+case "$1" in
+  version)
+    if [ "${2:-}" = -m ]; then
+      printf '%s: go1.27.0\n' "$3"
+    else
+      echo 'go version go1.27.0 linux/amd64'
+    fi
+    ;;
+  test)
+    printf 'package after\n' >"$SOURCE_TO_CHANGE"
+    ;;
+  build)
+    printf '%s\n' "$@" >"$LDFLAG_LOG"
+    while [ $# -gt 0 ]; do
+      [ "$1" = -o ] && { out="$2"; shift; }
+      shift
+    done
+    printf '#!/bin/bash\nexit 0\n' >"$out"
+    chmod +x "$out"
+    ;;
+esac
+EOF
+chmod +x "$STUB/go"
+SOURCE_TO_CHANGE="$FAKE_REPO/changing.go" LDFLAG_LOG="$TEST_DIR/ldflags" run_setup >/dev/null
+source_hash=$(cd "$FAKE_REPO" && git ls-files -co --exclude-standard -- '*.go' go.mod go.sum | LC_ALL=C sort | while IFS= read -r file; do
+  printf '%s\0' "$file"
+  git hash-object "$file"
+done | git hash-object --stdin)
+check "test中にsourceが変わっても最新hashを埋める" "yes" \
+  "$(has ".SourceHash=$source_hash" "$(cat "$TEST_DIR/ldflags")")"
+teardown
+
+setup
 head=$(git -C "$FAKE_REPO" rev-parse HEAD)
 source_hash=$(cd "$FAKE_REPO" && git ls-files -co --exclude-standard -- '*.go' go.mod go.sum | LC_ALL=C sort | while IFS= read -r file; do
   printf '%s\0' "$file"

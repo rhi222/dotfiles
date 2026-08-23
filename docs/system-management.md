@@ -90,7 +90,8 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 - `~/.daily-update/` の30日より古いログを起動時に削除する
 - miseのshimをPATH前方へ戻してから更新する
 - 新規追加は担当の宣言ファイル・setupコマンドで行い、daily-updateは更新だけを担う
-- yaziの `package.toml` が無い環境は成功扱いでskipする
+- yaziは `package.toml` のrevとremote HEADを比較し、全packageが同じならupgradeをskipする。
+  `package.toml` が無い環境も成功扱いでskipする
 - fisherはremote commit SHAを `~/.cache/dotfiles/fisher-update.refs` に記録し、
   宣言またはSHAが変わったときだけfull reconcileする。cache削除時は次回full updateする
 - dotctlはmiseによるGo更新の直後に再buildする。HEAD・build時のGo version・Go sourceが

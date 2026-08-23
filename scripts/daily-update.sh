@@ -115,7 +115,12 @@ yazi_pkg_upgrade() {
     echo "no package.toml at $YAZI_PACKAGE_FILE, skipping"
     return 0
   fi
-  ya pkg upgrade
+  if ! command -v dotctl >/dev/null 2>&1; then
+    echo "dotctl not found, running ya pkg upgrade without update check"
+    ya pkg upgrade
+    return
+  fi
+  dotctl yazi-update
 }
 
 # cargo でインストールしたバイナリの更新。`cargo install-update` は cargo 本体では

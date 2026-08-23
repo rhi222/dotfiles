@@ -345,18 +345,36 @@ echo "YA_CALLED args=[\$*]" >>"$YAZI_TEST_DIR/ya.log"
 exit "\${YA_EXIT:-0}"
 EOF
 chmod +x "$YAZI_STUB_BIN/ya"
+cat >"$YAZI_STUB_BIN/dotctl" <<EOF
+#!/bin/bash
+echo "DOTCTL_CALLED args=[\$*]" >>"$YAZI_TEST_DIR/dotctl.log"
+exit "\${YAZI_UPDATE_EXIT:-0}"
+EOF
+chmod +x "$YAZI_STUB_BIN/dotctl"
+YAZI_ONLY_BIN="$YAZI_TEST_DIR/bin-no-dotctl"
+mkdir -p "$YAZI_ONLY_BIN"
+cp "$YAZI_STUB_BIN/ya" "$YAZI_ONLY_BIN/ya"
 touch "$YAZI_TEST_DIR/package.toml"
 
-# present=宣言あり / absent=package.toml 無し（yazi 未導入相当）/ fail=ya が失敗
+# present=宣言あり / absent=package.toml 無し（yazi 未導入相当）/
+# fail=dotctl yazi-update が失敗
 run_yazi_case() { # present|absent|fail
   local toml="$YAZI_TEST_DIR/package.toml"
   [[ "$1" == absent ]] && toml="$YAZI_TEST_DIR/does-not-exist.toml"
-  local ya_exit=0
-  [[ "$1" == fail ]] && ya_exit=1
-  PATH="$YAZI_STUB_BIN:$PATH" YAZI_PACKAGE_FILE="$toml" YA_EXIT="$ya_exit" \
+  local update_exit=0
+  [[ "$1" == fail ]] && update_exit=1
+  PATH="$YAZI_STUB_BIN:$PATH" YAZI_PACKAGE_FILE="$toml" YAZI_UPDATE_EXIT="$update_exit" \
     yazi_pkg_upgrade
 }
-assert_tool_triad "yazi" run_yazi_case "$YAZI_TEST_DIR/ya.log" "pkg upgrade"
+assert_tool_triad "yazi" run_yazi_case "$YAZI_TEST_DIR/dotctl.log" "yazi-update"
+
+# dotctlがまだ無い端末では従来どおりyaを直接呼び、更新自体を失わない。
+: >"$YAZI_TEST_DIR/ya.log"
+exit_code=0
+output=$(PATH="$YAZI_ONLY_BIN:/usr/bin:/bin" YAZI_PACKAGE_FILE="$YAZI_TEST_DIR/package.toml" \
+  yazi_pkg_upgrade 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "dotctlが無ければyaへfallbackして成功する"
+assert_output_contains "pkg upgrade" "$(cat "$YAZI_TEST_DIR/ya.log")" "fallbackでyaを呼ぶ"
 
 rm -rf "$YAZI_TEST_DIR"
 

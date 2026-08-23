@@ -54,16 +54,21 @@ fi
 # あっても、一度その内容をbuild済みなら次回はskipできる。
 commit="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
 current_go="$("$GO" version 2>/dev/null | awk '{print $3}')"
-if ! source_hash="$({
-  cd "$REPO" || exit 1
-  git ls-files -co --exclude-standard -- '*.go' go.mod go.sum |
-    LC_ALL=C sort |
-    while IFS= read -r file; do
-      printf '%s\0' "$file"
-      git hash-object "$file"
-    done |
-    git hash-object --stdin
-})"; then
+
+source_fingerprint() {
+  (
+    cd "$REPO" || exit 1
+    git ls-files -co --exclude-standard -- '*.go' go.mod go.sum |
+      LC_ALL=C sort |
+      while IFS= read -r file; do
+        printf '%s\0' "$file"
+        git hash-object "$file"
+      done |
+      git hash-object --stdin
+  )
+}
+
+if ! source_hash="$(source_fingerprint)"; then
   echo "setup-dotctl: Go sourceのfingerprintを計算できない" >&2
   exit 1
 fi
@@ -92,6 +97,14 @@ else
   fi
 fi
 
+# test中にgo.sumやGo sourceが変わる場合がある。特に別agentが同じworktreeを
+# 編集していると、test前のhashを埋めてtest後の内容をbuildし、次回また必ず
+# rebuildするバイナリができる。build入力を確定する直前に取り直す。
+if ! source_hash="$(source_fingerprint)"; then
+  echo "setup-dotctl: Go sourceのfingerprintを再計算できない" >&2
+  exit 1
+fi
+
 BIN_DIR="$(dirname "$BIN")"
 mkdir -p "$BIN_DIR" || {
   echo "setup-dotctl: 出力先を作れない: $BIN_DIR" >&2
@@ -109,6 +122,13 @@ if ! (cd "$REPO" && "$GO" build \
   -ldflags "-X $pkg.Commit=$commit -X $pkg.Repo=$REPO -X $pkg.SourceHash=$source_hash" \
   -o "$tmp" ./cmd/dotctl); then
   echo "setup-dotctl: ビルドが落ちた（既存バイナリはそのまま）" >&2
+  exit 1
+fi
+
+# build中にも入力が変わったなら、埋め込んだhashと実際の内容が一致しない。
+# そのバイナリを配らず、既存を保ったまま次回の再実行へ倒す。
+if ! final_source_hash="$(source_fingerprint)" || [ "$final_source_hash" != "$source_hash" ]; then
+  echo "setup-dotctl: build中にGo sourceが変わったため更新しない。再実行してください" >&2
   exit 1
 fi
 

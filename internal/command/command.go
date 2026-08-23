@@ -72,6 +72,9 @@ type Env struct {
 	// FisherPluginFile / FisherCacheFile はfisher-updateの宣言と前回成功state。
 	FisherPluginFile string
 	FisherCacheFile  string
+	// YaziPackageFile / YaziBin はyazi-updateの宣言と実行command。
+	YaziPackageFile string
+	YaziBin         string
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
@@ -89,6 +92,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   docker clean       docker の不要リソースを掃除する
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
   fisher-update      変更があるときだけfish pluginを更新する
+  yazi-update        変更があるときだけyazi packageを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする
   version            バイナリのビルド情報を出す
   help               この使い方を出す
@@ -132,6 +136,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runAgentUsage(ctx, args[1:], env)
 	case "fisher-update":
 		return runFisherUpdate(ctx, args[1:], env)
+	case "yazi-update":
+		return runYaziUpdate(ctx, args[1:], env)
 	case "rebuild":
 		return runRebuild(ctx, args[1:], env)
 	case "help", "-h", "--help":

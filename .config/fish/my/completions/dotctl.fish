@@ -10,6 +10,7 @@ set -l dotctl_commands \
     docker \
     agent-usage \
     fisher-update \
+    yazi-update \
     rebuild \
     version \
     help
@@ -25,6 +26,7 @@ complete -c dotctl -f -n "$dotctl_needs_command" -a doctor -d 環境の残骸と
 complete -c dotctl -f -n "$dotctl_needs_command" -a docker -d 'Docker の不要リソースを掃除'
 complete -c dotctl -f -n "$dotctl_needs_command" -a agent-usage -d 'AI agent のレート上限を表示'
 complete -c dotctl -f -n "$dotctl_needs_command" -a fisher-update -d '変更時だけ fish plugin を更新'
+complete -c dotctl -f -n "$dotctl_needs_command" -a yazi-update -d '変更時だけ yazi package を更新'
 complete -c dotctl -f -n "$dotctl_needs_command" -a rebuild -d 'dotctl を再ビルド'
 complete -c dotctl -f -n "$dotctl_needs_command" -a version -d ビルド情報を表示
 complete -c dotctl -f -n "$dotctl_needs_command" -a help -d 使い方を表示

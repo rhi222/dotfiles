@@ -281,6 +281,8 @@ func main() {
 		AgentUsageSelfExe: selfExe,
 		FisherPluginFile:  fisherPluginFile,
 		FisherCacheFile:   fisherCacheFile,
+		YaziPackageFile:   envOr("YAZI_PACKAGE_FILE", filepath.Join(homeDir(), ".config", "yazi", "package.toml")),
+		YaziBin:           envOr("YAZI_BIN", "ya"),
 
 		Color: isTerminal(os.Stdout),
 	}))
