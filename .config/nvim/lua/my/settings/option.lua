@@ -55,5 +55,9 @@ vim.opt.termguicolors = true
 vim.opt.fixendofline = false
 -- folding: nvim-treesitterに統合（デフォルトは無効）
 vim.o.foldenable = false
--- auto-session: ensure multiple buffers are persisted
+-- セッションに載せる項目。消費者は2つある。
+--   1. auto-session（buffers を含めて複数バッファを持たせる）
+--   2. nvim 0.12.5 以降の :restart / ZR。`:h :restart` の
+--      "To adjust what `:restart` restores, set 'sessionoptions'"
+-- terminal を含めないので、どちらの復元でも terminal バッファは戻らない。
 vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
