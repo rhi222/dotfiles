@@ -37,6 +37,9 @@ func FetchClaude(ctx context.Context, credentialsFile, endpoint string, client *
 	if resp.StatusCode != http.StatusOK {
 		// 本文は token の失効理由などを含みうるので読み捨てる
 		io.Copy(io.Discard, resp.Body)
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, fmt.Errorf("Claude Code の認証が失効している可能性がある。`claude` を起動して認証を更新後、`dotctl agent-usage refresh` を再実行する。続く場合は `claude auth login` で再ログインする（usage エンドポイント: 401）")
+		}
 		return nil, fmt.Errorf("usage エンドポイントが %d を返した", resp.StatusCode)
 	}
 

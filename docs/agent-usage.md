@@ -32,7 +32,8 @@ AGENTS.md の一覧から参照される設計記録。
 - Claude: `api.anthropic.com/api/oauth/usage` を `~/.claude/.credentials.json` の accessToken で GET（ヘッダ `anthropic-beta: oauth-2025-04-20`）。
   **非公式エンドポイント**（Claude Code の /usage と同じもの）で、`limits[]` の `kind: session / weekly_all / weekly_scoped` を読む。
   仕様変更・401 では fetch を err にして旧値温存 → 15分の stale 閾値を超えれば ? 表示に倒れる（それ以前に Claude Code が再起動して token が更新されれば ? は出ない）。
-  token は Claude Code の起動で更新されるので、失効からも自然回復する
+  access token は短命で、Claude Code をしばらく起動していない間は更新されないため、定期 refresh だけが401になることがある。
+  401 の警告は `claude` の起動、再実行、解消しなければ `claude auth login` という復旧手順を出す
 - Codex: `codex app-server` を stdio JSON-RPC で1往復させ、`account/rateLimits/read` の
   `rateLimits` から weekly 窓（`windowDurationMins >= 10080`）を読む。
   binary は `AGENT_USAGE_CODEX_BIN`（既定 `codex`）、timeout は20秒。

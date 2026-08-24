@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -93,8 +94,16 @@ func TestFetchClaudeHTTPError(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer srv.Close()
-	if _, err := FetchClaude(context.Background(), writeCredentials(t, "expired"), srv.URL, srv.Client(), time.Now()); err == nil {
-		t.Error("401 で err が nil")
+	_, err := FetchClaude(context.Background(), writeCredentials(t, "expired"), srv.URL, srv.Client(), time.Now())
+	if err == nil {
+		t.Fatal("401 で err が nil")
+	}
+	// Claude Code を長期間起動しないと access token が更新されず、定期 refresh だけが
+	// 401 になる。警告だけで利用者が復旧できる案内を維持するための回帰テスト。
+	for _, want := range []string{"claude", "dotctl agent-usage refresh", "claude auth login"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("401 の案内に %q が無い: %q", want, err)
+		}
 	}
 }
 
