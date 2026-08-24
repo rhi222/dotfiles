@@ -82,9 +82,10 @@ func cacheAge(c agentusage.Cache, cfg agentusage.Config) time.Duration {
 
 // spawnRefresh は自分自身を refresh で detached 起動する。
 //
-// tab bar の timeout は 2秒なので、ネットワークを line の中で待てない。
+// tab bar の timeout は 2秒なので、取得を line の中で待てない。
 // 起動失敗は握りつぶす（次の呼び出しでまた試みる）。ロックは持たない —
-// 呼び出し間隔が 60秒で HTTP timeout が 10秒なので、多重起動しても
+// 呼び出し間隔が 60秒に対し1回の refresh は最長20秒（Claude の HTTP 10秒と
+// Codex の app-server 20秒のうち遅い方）なので、多重起動しても
 // 原子書き込みが壊れることはなく、プロセス数も高々1〜2で済む。
 func spawnRefresh(env Env) {
 	if env.AgentUsageNoSpawn || env.AgentUsageSelfExe == "" {

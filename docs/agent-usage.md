@@ -22,7 +22,7 @@ AGENTS.md の一覧から参照される設計記録。
 - 実体は `dotctl agent-usage <line|detail|refresh>`（`internal/agentusage/`）
 - `line` はキャッシュ表示専用。
   5分より古ければ自分を `refresh` で detached 起動する（tab bar の timeout 2秒内にネットワークを待たないため）。
-  ロックは持たない — 60秒間隔 × HTTP timeout 10秒では多重起動しても原子書き込みが壊れないため
+  ロックは持たない — 60秒間隔に対し1回の refresh は最長でも20秒（Claude 10秒 + Codex 20秒のうち遅い方）なので、多重起動しても原子書き込みが壊れないため
 - キャッシュは `~/.cache/agent-usage/usage.json`。
   **%と resets_at と fetched_at のみ**。
   token・生レスポンスはファイルにもログにも残さない
@@ -33,10 +33,19 @@ AGENTS.md の一覧から参照される設計記録。
   **非公式エンドポイント**（Claude Code の /usage と同じもの）で、`limits[]` の `kind: session / weekly_all / weekly_scoped` を読む。
   仕様変更・401 では fetch を err にして旧値温存 → 15分の stale 閾値を超えれば ? 表示に倒れる（それ以前に Claude Code が再起動して token が更新されれば ? は出ない）。
   token は Claude Code の起動で更新されるので、失効からも自然回復する
-- Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` の最後の `rate_limits` （`window_minutes >= 10080` の窓）。
-  ネットワーク不要。
-  鮮度は最後に codex を使った時点だが、使っていなければ%も動かないので実用上は正確。
-  直近3日に rollout が無ければ欄ごと消える
+- Codex: `codex app-server` を stdio JSON-RPC で1往復させ、`account/rateLimits/read` の
+  `rateLimits` から weekly 窓（`windowDurationMins >= 10080`）を読む。
+  binary は `AGENT_USAGE_CODEX_BIN`（既定 `codex`）、timeout は20秒。
+  未ログインなら JSON-RPC error になり、その側だけ旧値温存に倒れる
+- Codex 側は codex の実装詳細に乗っているので、壊れ方を3つ埋めてある。
+  ①**応答を読み終えるまで stdin を閉じない** — app-server は stdin の EOF を終了要求として扱い、処理前に落ちる。
+  ②読み出しは goroutine に逃がし、timeout を pipe の EOF に任せない — 孫プロセスが stdout を持つと親を殺しても読み出しが返らない。
+  ③自前のプロセスグループにして抜けるときに孫まで殺す
+- `~/.codex/sessions/**/rollout-*.jsonl` を読んでいた旧実装は codex-cli 0.149 で使えなくなった
+  （`codex migrate-rollouts` が legacy 扱い、sessions/ ごと消える）。
+  **このとき Refresh が片側失敗を握りつぶしていたため、exit 0・無出力のまま Codex 欄だけが消えた。**
+  今は片側失敗を stderr に出す（`agent-usage refresh: codex: ...（この側は前回値のまま）`）。
+  両側失敗のときだけ exit 1 でキャッシュを書かない
 - 既製ツールを使わなかった理由: herdr-usage（herdr プラグイン）は sidebar 表示・ statusline hook 前提で Fable の weekly_scoped を取らない。
   ccusage はトークン集計のみでクォータ%を持たない（2026-08 調査）
 
