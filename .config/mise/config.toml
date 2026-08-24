@@ -66,8 +66,9 @@ lockfile = true
 minimum_release_age = "48h"
 
 # idiomatic version files を尊重（repo 単位で pin できる）
+# go は除外する。mise 2026.11.0 で go.mod の `go` ディレクティブ読み取りが廃止され、
+# 残すと deprecation 警告が出るため。Go を pin したい repo は .go-version を置く。
 idiomatic_version_file_enable_tools = [
   "node",
   "python",
-  "go",
 ]
