@@ -134,6 +134,12 @@ func Audit(ctx context.Context, r execx.Runner, root string) (AuditResult, error
 	if err != nil || !st.IsDir() {
 		return AuditResult{}, fmt.Errorf("ディレクトリが見つかりません: %s", root)
 	}
+	// **private skill は private-bundle 配下への symlink で置かれる。** 実体へ
+	// 寄せておかないと WalkDir が symlink 自身を1ファイルとして返し、中身を
+	// 見ないまま非テキスト判定になる（path も相対化されず絶対パスで漏れる）。
+	if resolved, err := filepath.EvalSymlinks(root); err == nil {
+		root = resolved
+	}
 
 	all := allFiles(root)
 	var texts []string
