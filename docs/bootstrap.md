@@ -220,10 +220,13 @@ tar xzf claude-memory.tar.gz -C ~
   同期するのは `settings.json` だけで、このファイルは対象外
 - **コピー** `.config/AutoHotkey/ahk-snippets/passwords/` 配下5件
   — AWS・オペレータ・RDP の ID とパスワード。`README.md` と `.gitkeep` だけが追跡対象
-- **再ログイン** Claude Code（初回起動時にログイン）・Codex CLI（`codex login`。
-  `~/.codex/auth.json` のコピーでも可）・gh（`gh auth login`）
+- **再ログイン** Claude Code（初回起動時にログイン）・Codex CLI・gh（`gh auth login`）。
+  Codexは個人PCでは通常homeへprivate account、会社PCでは通常homeへ社用account、指定repository用の
+  private homeへprivate accountでそれぞれ `codex login` する。`auth.json` はコピー・同期しない
 - **手書き** `.config/fish/my/conf.d/99-local.fish`
-  — esa の API トークンと `docker_clean_ignore_patterns`
+  — esa の API トークンと `docker_clean_ignore_patterns`。会社PCではprivate Codex accountを使う
+  repository rootの `codex_alt_repo_roots` と、専用homeの `codex_alt_home` も設定する。
+  個人PCではCodex用の2変数を設定しない
 - **手書き** `~/.config/linear/api-key`
   — Linear の API キー。作成後に `chmod 600 ~/.config/linear/api-key` を実行する
 - **自動** `~/.claude/settings.json`

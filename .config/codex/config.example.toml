@@ -7,6 +7,9 @@ personality = "pragmatic"
 # show_raw_agent_reasoning = true
 web_search = "cached"
 
+# CODEX_HOMEごとにauth.jsonを分離し、account切り替えを成立させる。
+cli_auth_credentials_store = "file"
+
 ###########################
 # Sandbox & Network Rules #
 ###########################

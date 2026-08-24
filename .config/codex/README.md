@@ -14,6 +14,55 @@ profile file が優先されます。
 skill はディレクトリ全体ではなく1件ずつリンクする。`~/.agents/skills/` には外部から導入した
 skill も同居するためで、セットアップ時に削除するのはリンク切れの symlink だけとする。
 
+## CLI account の端末・repository別切り替え
+
+Fish の `codex` wrapper は、ローカル設定で登録したrepositoryだけ別の `CODEX_HOME` で
+Codex CLIを起動する。`CODEX_HOME` は認証だけでなくsession、history、log、cacheも分ける。
+両homeの `config.toml` では `cli_auth_credentials_store = "file"` を使い、認証情報を
+それぞれの `auth.json` に物理的に分離する。`auth.json` はtokenを含むため、repository、
+private bundle、チャットへ入れない。
+
+端末ごとの使い分けは次のとおり。
+
+- 個人PC: ローカル変数を設定せず、通常の `~/.codex` をprivate accountとして使う
+- 会社PC: 通常の `~/.codex` を社用accountとし、指定repositoryだけprivate用homeへ切り替える
+
+会社PCでは、gitignore済みの `.config/fish/my/conf.d/99-local.fish` に実値を設定する。
+repository rootは完全一致で判定するため、切り替えたいworktreeも個別に登録する。
+
+```fish
+set -g codex_alt_repo_roots \
+    $HOME/path/to/example-org/example-repo \
+    $HOME/path/to/worktrees/example-repo-topic
+set -g codex_alt_home $HOME/.codex-private
+```
+
+private用homeは所有者限定で作り、共通設定と共有ruleだけを個別にlinkする。home全体や
+`auth.json` をlinkしてはならない。端末固有の `default.rules` は共有しない。
+
+```fish
+mkdir -m 700 $codex_alt_home
+ln -s ~/.codex/config.toml $codex_alt_home/config.toml
+mkdir -p $codex_alt_home/rules
+ln -s ~/.codex/rules/dotfiles.rules $codex_alt_home/rules/dotfiles.rules
+```
+
+既存fileがある場合は上書きせず、内容を確認して退避する。対象外repositoryで社用account、
+対象repositoryでprivate accountへそれぞれログインする。
+
+```fish
+codex login status
+cd $codex_alt_repo_roots[1]
+codex login
+codex login status
+```
+
+`codex login status` は認証方式とログイン有無だけを表示し、CLIにはaccountやworkspaceの
+識別情報を確認するprofile表示が無い。`codex login` のブラウザフロー中にChatGPTのprofile
+menuで選択中accountとworkspaceを確認する。誤選択を避けるには社用・privateでbrowser profileを
+分ける。対象repositoryなのに `codex_alt_home` が空なら、wrapperは通常accountへのfallbackを
+拒否する。`exec`、`resume`、`login`、`logout` を含む全subcommandに同じ選択が適用される。
+
 ## 運用フロー（最小・安全）
 
 1. テンプレートから実体を作成（初回のみ）
