@@ -3,6 +3,10 @@
 -- setup() の中で argv を控えており、ここは同じタイミングになる。
 local launch_argc = #vim.fn.argv()
 
+-- `:restart` / `ZR` 由来の起動では nvim 本体がセッションを復元するため、
+-- auto-session 側の復元を止めて二重復元を防ぐ。理由の詳細は session-start.lua。
+local is_normal_start = require("my.plugins.tools.session-start").is_normal_start()
+
 -- auto-session の headless 判定（init.lua の in_headless_mode）に合わせる。
 -- テスト用の解除フラグまで含めて揃えないと、headless で駆動しているテストから
 -- フォールバックの挙動を確認できなくなる。
@@ -61,7 +65,7 @@ end
 require("auto-session").setup({
 	enabled = true,
 	auto_save = true,
-	auto_restore = true,
+	auto_restore = is_normal_start,
 	show_auto_restore_notif = true,
 	-- headlessテストではLazy画面の終了順が通常起動と異なり、復元待ちのままwqaすると
 	-- セッションが保存されない。テスト時だけ待機を外し、VimEnterを直接検査する。
@@ -114,6 +118,12 @@ require("auto-session").setup({
 			-- 単一ディレクトリ引数（`nvim .`）は auto-session 自身が cwd 単位の
 			-- セッションを読むので、こちらで拾う必要はない。
 			if launch_argc > 0 then
+				return
+			end
+
+			-- auto_restore = false でも auto-session は no_restore を発火するため、
+			-- ここも塞がないと restart 由来の起動でフォールバック側から二重復元が復活する。
+			if not is_normal_start then
 				return
 			end
 
