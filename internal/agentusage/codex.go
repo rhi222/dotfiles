@@ -2,6 +2,7 @@ package agentusage
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -24,19 +25,8 @@ const codexRecentDays = 3
 // rollout には API レスポンス由来の rate_limits スナップショットが残るので、
 // ネットワークを叩かずに済む。鮮度は「最後に codex を使った時点」だが、
 // 使っていなければ%も動かないので実用上は正確なまま。
-func FetchCodex(sessionsDir string, now time.Time) (*Side, error) {
-	files, err := recentRollouts(sessionsDir)
-	if err != nil {
-		return nil, err
-	}
-	for _, path := range files {
-		w, ok := lastRateLimits(path)
-		if !ok {
-			continue
-		}
-		return &Side{FetchedAt: now.Unix(), Weekly: w}, nil
-	}
-	return nil, fmt.Errorf("直近 %d 日の rollout に rate_limits が無い", codexRecentDays)
+func FetchCodex(ctx context.Context, bin string, timeout time.Duration, now time.Time) (*Side, error) {
+	return nil, fmt.Errorf("未実装")
 }
 
 // recentRollouts は直近の日付ディレクトリから rollout を mtime 降順で集める。

@@ -46,7 +46,7 @@ func runAgentUsage(ctx context.Context, args []string, env Env) int {
 		}
 		return 0
 	case "refresh":
-		if err := agentusage.Refresh(ctx, cfg); err != nil {
+		if _, err := agentusage.Refresh(ctx, cfg); err != nil {
 			fmt.Fprintf(env.Stderr, "agent-usage refresh: %v\n", err)
 			return 1
 		}

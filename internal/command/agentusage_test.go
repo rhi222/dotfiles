@@ -3,6 +3,9 @@ package command
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -97,5 +100,43 @@ func TestAgentUsageUnknown(t *testing.T) {
 	env, _ := agentUsageEnv(t, filepath.Join(t.TempDir(), "u.json"))
 	if code := Run(context.Background(), []string{"agent-usage", "bogus"}, env); code != 2 {
 		t.Errorf("exit = %d, want 2", code)
+	}
+}
+
+// 片側だけ失敗したとき、refresh は exit 0 のまま stderr に警告を出す。
+// 黙って成功扱いにすると、データ源が消えても「欄が消えた」以外の手がかりが無くなる。
+func TestAgentUsageRefreshWarnsOnPartialFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"limits":[{"kind":"session","percent":45,"resets_at":"2026-08-22T04:00:00Z"},` +
+			`{"kind":"weekly_all","percent":50,"resets_at":"2026-08-25T12:00:00Z"}]}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	creds := filepath.Join(dir, ".credentials.json")
+	if err := os.WriteFile(creds, []byte(`{"claudeAiOauth":{"accessToken":"tok"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errBuf bytes.Buffer
+	env := Env{
+		Stdout: &out,
+		Stderr: &errBuf,
+		AgentUsage: agentusage.Config{
+			CacheFile:       filepath.Join(dir, "usage.json"),
+			CredentialsFile: creds,
+			CodexBin:        filepath.Join(dir, "no-such-codex"),
+			Endpoint:        srv.URL,
+			TTL:             5 * time.Minute,
+			StaleAfter:      15 * time.Minute,
+			HTTPTimeout:     2 * time.Second,
+			CodexTimeout:    2 * time.Second,
+		},
+		AgentUsageNoSpawn: true,
+	}
+	if code := Run(context.Background(), []string{"agent-usage", "refresh"}, env); code != 0 {
+		t.Fatalf("exit = %d, want 0（片側成功は成功扱い）", code)
+	}
+	if !strings.Contains(errBuf.String(), "codex") {
+		t.Errorf("stderr に codex の失敗が出ていない: %q", errBuf.String())
 	}
 }

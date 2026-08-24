@@ -13,7 +13,8 @@ import (
 type Config struct {
 	CacheFile        string
 	CredentialsFile  string
-	CodexSessionsDir string
+	CodexBin         string
+	CodexTimeout     time.Duration
 	Endpoint         string
 	TTL              time.Duration // これより古ければバックグラウンド再取得
 	StaleAfter       time.Duration // これより古ければ ? 付き表示
@@ -36,7 +37,7 @@ func (c Config) NowOrDefault() time.Time {
 //
 // **片側失敗はその側の旧値を温存する。** Claude の 401 で Codex の表示まで
 // 消すのは害が大きい。両側とも失敗したときだけ err（キャッシュは書かない）。
-func Refresh(ctx context.Context, cfg Config) error {
+func Refresh(ctx context.Context, cfg Config) ([]error, error) {
 	old, _ := LoadCache(cfg.CacheFile) // 無くても空でよい
 	merged := old
 	now := cfg.NowOrDefault()
@@ -48,14 +49,14 @@ func Refresh(ctx context.Context, cfg Config) error {
 	} else {
 		merged.Claude = cl
 	}
-	if cx, err := FetchCodex(cfg.CodexSessionsDir, now); err != nil {
+	if cx, err := FetchCodex(ctx, cfg.CodexBin, cfg.CodexTimeout, now); err != nil {
 		errs = append(errs, fmt.Errorf("codex: %w", err))
 	} else {
 		merged.Codex = cx
 	}
 
 	if len(errs) == 2 {
-		return errors.Join(errs...)
+		return nil, errors.Join(errs...)
 	}
-	return WriteCache(cfg.CacheFile, merged)
+	return nil, WriteCache(cfg.CacheFile, merged)
 }
