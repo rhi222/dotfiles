@@ -11,15 +11,15 @@ import (
 // Config は agent-usage の参照先。パスの既定値と環境変数の対応は
 // cmd/dotctl 側（agentUsageConfig）が持つ。
 type Config struct {
-	CacheFile        string
-	CredentialsFile  string
-	CodexBin         string
-	CodexTimeout     time.Duration
-	Endpoint         string
-	TTL              time.Duration // これより古ければバックグラウンド再取得
-	StaleAfter       time.Duration // これより古ければ ? 付き表示
-	HTTPTimeout      time.Duration
-	Now              func() time.Time // テストで固定する。nil なら time.Now
+	CacheFile       string
+	CredentialsFile string
+	CodexBin        string
+	CodexTimeout    time.Duration
+	Endpoint        string
+	TTL             time.Duration // これより古ければバックグラウンド再取得
+	StaleAfter      time.Duration // これより古ければ ? 付き表示
+	HTTPTimeout     time.Duration
+	Now             func() time.Time // テストで固定する。nil なら time.Now
 }
 
 // NowOrDefault は設定された時刻源を返す。テストは Now を固定し、
@@ -37,6 +37,9 @@ func (c Config) NowOrDefault() time.Time {
 //
 // **片側失敗はその側の旧値を温存する。** Claude の 401 で Codex の表示まで
 // 消すのは害が大きい。両側とも失敗したときだけ err（キャッシュは書かない）。
+//
+// 片側失敗は warnings で返す。**握りつぶさない** — データ源が消えたときに
+// 「欄が黙って消える」だけだと、原因に辿り着く手がかりが残らない。
 func Refresh(ctx context.Context, cfg Config) ([]error, error) {
 	old, _ := LoadCache(cfg.CacheFile) // 無くても空でよい
 	merged := old
@@ -58,5 +61,5 @@ func Refresh(ctx context.Context, cfg Config) ([]error, error) {
 	if len(errs) == 2 {
 		return nil, errors.Join(errs...)
 	}
-	return nil, WriteCache(cfg.CacheFile, merged)
+	return errs, WriteCache(cfg.CacheFile, merged)
 }

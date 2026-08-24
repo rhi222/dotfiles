@@ -46,7 +46,12 @@ func runAgentUsage(ctx context.Context, args []string, env Env) int {
 		}
 		return 0
 	case "refresh":
-		if _, err := agentusage.Refresh(ctx, cfg); err != nil {
+		warns, err := agentusage.Refresh(ctx, cfg)
+		// 片側だけの失敗は成功扱い（旧値温存）だが、黙らせない
+		for _, w := range warns {
+			fmt.Fprintf(env.Stderr, "agent-usage refresh: %v（この側は前回値のまま）\n", w)
+		}
+		if err != nil {
 			fmt.Fprintf(env.Stderr, "agent-usage refresh: %v\n", err)
 			return 1
 		}

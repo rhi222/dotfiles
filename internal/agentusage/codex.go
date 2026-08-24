@@ -5,147 +5,169 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
+	"os/exec"
+	"syscall"
 	"time"
 )
 
 // weeklyWindowMinutes 以上の窓を「weekly」とみなす（10080分 = 7日）。
 const weeklyWindowMinutes = 10080
 
-// codexRecentDays は rollout を遡る日数。codex を数日使っていなければ
-// %も動いていないので、深追いせずキャッシュ無し（欄ごと非表示）に倒す。
-const codexRecentDays = 3
+// codexRateLimitsID は account/rateLimits/read に付ける JSON-RPC id。
+// app-server は通知やサーバ→クライアント要求も同じ stdout に流すので、
+// この id の応答だけを拾う。
+const codexRateLimitsID = 2
 
-// FetchCodex は ~/.codex/sessions の rollout JSONL から weekly レート上限を取る。
+// FetchCodex は codex app-server の account/rateLimits/read から weekly を取る。
 //
-// rollout には API レスポンス由来の rate_limits スナップショットが残るので、
-// ネットワークを叩かずに済む。鮮度は「最後に codex を使った時点」だが、
-// 使っていなければ%も動かないので実用上は正確なまま。
+// codex-cli 0.149 で `~/.codex/sessions/**/rollout-*.jsonl` は legacy になり
+// （`codex migrate-rollouts` 参照）、ファイルからは rate_limits を拾えなくなった。
+// 代わりに app-server を stdio JSON-RPC で1往復させる。
+// **ここは codex 側の実装詳細に乗っている。** 壊れたときは err を返して
+// 旧キャッシュ温存（stale 表示）に倒れる。
 func FetchCodex(ctx context.Context, bin string, timeout time.Duration, now time.Time) (*Side, error) {
-	return nil, fmt.Errorf("未実装")
-}
-
-// recentRollouts は直近の日付ディレクトリから rollout を mtime 降順で集める。
-// sessions/ は YYYY/MM/DD 構造なので、全走査せず日付ディレクトリを数個に絞る。
-func recentRollouts(root string) ([]string, error) {
-	var days []string // "YYYY/MM/DD" 相対パス
-	years, err := sortedDirNames(root)
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	result, err := codexRateLimits(ctx, bin)
 	if err != nil {
 		return nil, err
 	}
-	// 新しい順に辿り、日付ディレクトリを codexRecentDays 個だけ集める
-	for i := len(years) - 1; i >= 0 && len(days) < codexRecentDays; i-- {
-		months, _ := sortedDirNames(filepath.Join(root, years[i]))
-		for j := len(months) - 1; j >= 0 && len(days) < codexRecentDays; j-- {
-			dayNames, _ := sortedDirNames(filepath.Join(root, years[i], months[j]))
-			for k := len(dayNames) - 1; k >= 0 && len(days) < codexRecentDays; k-- {
-				days = append(days, filepath.Join(years[i], months[j], dayNames[k]))
-			}
+	w, err := weeklyFromRateLimits(result)
+	if err != nil {
+		return nil, err
+	}
+	return &Side{FetchedAt: now.Unix(), Weekly: w}, nil
+}
+
+// codexRateLimits は app-server を起動して account/rateLimits/read の result を返す。
+//
+// initialize → initialized → rateLimits を待たずに続けて書く。
+// app-server は要求を順に処理するので往復を減らせる。
+func codexRateLimits(ctx context.Context, bin string) (json.RawMessage, error) {
+	cmd := exec.CommandContext(ctx, bin, "app-server")
+	// 自前のプロセスグループにして、抜けるときに孫まで確実に殺す。
+	// app-server が子を残すと stdout の書き手が残り、読み出しが返らない
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	// stderr は捨てる。アカウント情報や token が載りうるので残さない
+	cmd.Stderr = nil
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("codex app-server の起動に失敗: %w", err)
+	}
+	defer func() {
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		_ = cmd.Wait()
+	}()
+
+	// **応答を読み終えるまで stdin を閉じない。** app-server は stdin の EOF を
+	// 終了要求として扱い、要求を処理し終える前に落ちる。
+	// 書き込みエラーはここでは返さない。app-server が先に死んでいれば
+	// 読み出し側で EOF になり、そちらの方が原因を説明できる
+	defer stdin.Close()
+	enc := json.NewEncoder(stdin)
+	for _, msg := range codexHandshake() {
+		if err := enc.Encode(msg); err != nil {
+			break
 		}
 	}
-	type fileInfo struct {
-		path  string
-		mtime time.Time
+
+	// 読み出しは goroutine に逃がす。**pipe の EOF に timeout を任せない** —
+	// app-server が孫プロセスへ stdout を渡していると、親を殺しても
+	// 書き手が残って Scan が返らない
+	type readResult struct {
+		raw json.RawMessage
+		err error
 	}
-	var files []fileInfo
-	for _, d := range days {
-		entries, err := os.ReadDir(filepath.Join(root, d))
-		if err != nil {
+	done := make(chan readResult, 1)
+	go func() {
+		raw, err := readCodexResult(stdout)
+		done <- readResult{raw, err}
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("codex app-server が応答しない: %w", ctx.Err())
+	case r := <-done:
+		return r.raw, r.err
+	}
+}
+
+func codexHandshake() []any {
+	return []any{
+		map[string]any{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": map[string]any{
+			"clientInfo": map[string]any{"name": "dotctl", "title": "dotctl agent-usage", "version": "1"},
+		}},
+		map[string]any{"jsonrpc": "2.0", "method": "initialized", "params": map[string]any{}},
+		map[string]any{"jsonrpc": "2.0", "id": codexRateLimitsID, "method": "account/rateLimits/read", "params": map[string]any{}},
+	}
+}
+
+// readCodexResult は codexRateLimitsID の応答が来るまで stdout を読み飛ばす。
+// パースできない行・別 id の行は無視する（app-server は通知も混ぜてくる）。
+func readCodexResult(r io.Reader) (json.RawMessage, error) {
+	sc := bufio.NewScanner(r)
+	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	for sc.Scan() {
+		var m struct {
+			ID     *int            `json:"id"`
+			Result json.RawMessage `json:"result"`
+			Error  *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(sc.Bytes(), &m); err != nil {
 			continue
 		}
-		for _, e := range entries {
-			if e.IsDir() || !strings.HasPrefix(e.Name(), "rollout-") || !strings.HasSuffix(e.Name(), ".jsonl") {
-				continue
-			}
-			info, err := e.Info()
-			if err != nil {
-				continue
-			}
-			files = append(files, fileInfo{filepath.Join(root, d, e.Name()), info.ModTime()})
+		if m.ID == nil || *m.ID != codexRateLimitsID {
+			continue
 		}
+		if m.Error != nil {
+			return nil, fmt.Errorf("account/rateLimits/read が error を返した: %s", m.Error.Message)
+		}
+		return m.Result, nil
 	}
-	if len(files) == 0 {
-		return nil, fmt.Errorf("rollout ファイルが見つからない: %s", root)
+	if err := sc.Err(); err != nil {
+		return nil, fmt.Errorf("app-server の応答の読み出しに失敗: %w", err)
 	}
-	sort.Slice(files, func(i, j int) bool { return files[i].mtime.After(files[j].mtime) })
-	paths := make([]string, len(files))
-	for i, f := range files {
-		paths[i] = f.path
-	}
-	return paths, nil
+	return nil, fmt.Errorf("app-server が account/rateLimits/read に応答しなかった")
 }
 
-func sortedDirNames(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
+// weeklyFromRateLimits は result から weekly 窓を取り出す。
+func weeklyFromRateLimits(result json.RawMessage) (*Window, error) {
+	var body struct {
+		RateLimits *struct {
+			Primary   *codexWindow `json:"primary"`
+			Secondary *codexWindow `json:"secondary"`
+		} `json:"rateLimits"`
 	}
-	var names []string
-	for _, e := range entries {
-		if e.IsDir() {
-			names = append(names, e.Name())
-		}
+	if err := json.Unmarshal(result, &body); err != nil {
+		return nil, fmt.Errorf("rateLimits のパースに失敗: %w", err)
 	}
-	sort.Strings(names) // "2026" や "08" はゼロ埋めなので文字列順 = 時系列順
-	return names, nil
-}
-
-// lastRateLimits はファイル内の最後の rate_limits を読む。
-// 行の外側の構造（event の種類や入れ子）は codex のバージョンで動くので、
-// 「行のどこかに rate_limits オブジェクトがある」ことだけに依存する。
-func lastRateLimits(path string) (*Window, bool) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, false
+	if body.RateLimits == nil {
+		return nil, fmt.Errorf("応答に rateLimits が無い")
 	}
-	defer f.Close()
-
-	var lastLine string
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 0, 1024*1024), 16*1024*1024) // rollout の1行は長い
-	for sc.Scan() {
-		if strings.Contains(sc.Text(), `"rate_limits"`) {
-			lastLine = sc.Text()
-		}
-	}
-	if lastLine == "" {
-		return nil, false
-	}
-
-	var raw map[string]any
-	if err := json.Unmarshal([]byte(lastLine), &raw); err != nil {
-		return nil, false
-	}
-	rl := findRateLimits(raw)
-	if rl == nil {
-		return nil, false
-	}
-	b, err := json.Marshal(rl)
-	if err != nil {
-		return nil, false
-	}
-	var parsed struct {
-		Primary   *codexWindow `json:"primary"`
-		Secondary *codexWindow `json:"secondary"`
-	}
-	if err := json.Unmarshal(b, &parsed); err != nil {
-		return nil, false
-	}
-	w := pickWeekly(parsed.Primary, parsed.Secondary)
+	w := pickWeekly(body.RateLimits.Primary, body.RateLimits.Secondary)
 	if w == nil {
-		return nil, false
+		return nil, fmt.Errorf("rateLimits に窓が1つも無い")
 	}
-	return &Window{Percent: int(math.Round(w.UsedPercent)), ResetsAt: w.ResetsAt}, true
+	return &Window{Percent: int(math.Round(w.UsedPercent)), ResetsAt: w.ResetsAt}, nil
 }
 
 type codexWindow struct {
-	UsedPercent   float64 `json:"used_percent"`
-	WindowMinutes int     `json:"window_minutes"`
-	ResetsAt      int64   `json:"resets_at"`
+	UsedPercent   float64 `json:"usedPercent"`
+	WindowMinutes int     `json:"windowDurationMins"`
+	ResetsAt      int64   `json:"resetsAt"`
 }
 
 // pickWeekly は weekly 窓（>= 10080 分）を選ぶ。無ければ primary に倒す。
@@ -156,19 +178,4 @@ func pickWeekly(primary, secondary *codexWindow) *codexWindow {
 		}
 	}
 	return primary
-}
-
-// findRateLimits は入れ子の map から "rate_limits" キーを探す。
-func findRateLimits(m map[string]any) map[string]any {
-	if v, ok := m["rate_limits"].(map[string]any); ok {
-		return v
-	}
-	for _, v := range m {
-		if child, ok := v.(map[string]any); ok {
-			if found := findRateLimits(child); found != nil {
-				return found
-			}
-		}
-	}
-	return nil
 }

@@ -165,3 +165,28 @@ func TestFetchCodexTimeout(t *testing.T) {
 		t.Errorf("timeout が効いていない: %v", elapsed)
 	}
 }
+
+// 実 app-server は stdin が閉じると応答前に終了する。
+// 送信後に閉じてしまうと「応答しなかった」で毎回失敗するので、
+// 応答を読み終えるまで stdin を開けておく。
+func TestFetchCodexKeepsStdinOpenUntilResponse(t *testing.T) {
+	bin := writeExecutable(t, t.TempDir(), `#!/bin/bash
+while IFS= read -r line; do
+  case "$line" in
+    *'account/rateLimits/read'*)
+      # stdin が閉じていれば即 EOF（rc=1）、開いていれば timeout（rc>128）
+      read -t 0.5 -r _extra
+      [ "$?" -eq 1 ] && exit 0
+      echo '{"jsonrpc":"2.0","id":2,"result":{"rateLimits":{"primary":{"usedPercent":11,"windowDurationMins":10080,"resetsAt":99}}}}'
+      exit 0 ;;
+  esac
+done
+`)
+	s, err := FetchCodex(context.Background(), bin, 10*time.Second, time.Now())
+	if err != nil {
+		t.Fatalf("FetchCodex: %v", err)
+	}
+	if s.Weekly.Percent != 11 {
+		t.Errorf("Weekly.Percent = %d, want 11", s.Weekly.Percent)
+	}
+}
