@@ -1,4 +1,7 @@
--- require nvim v0.9.0 or later
+-- require nvim v0.12.0 or later
+-- 0.12 未満で動かない主なもの: vim.lsp.config と lsp/*.lua（0.11+）、
+-- vim.lsp.codelens.enable と vim.lsp.document_color（0.12）、
+-- nvim-treesitter の main ブランチ、noice.nvim の 0.12 対応fork
 vim.loader.enable()
 
 require("my/settings/option")
