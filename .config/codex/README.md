@@ -53,6 +53,12 @@ command allowlist は `config.toml` ではなく `.rules` に置く。共有rule
 GitHubは `gh pr view` / `gh pr diff` / `gh pr review` / `gh pr checkout` を自動許可する。
 method次第で任意のAPI書き込みができる `gh api` は都度確認する。
 
+`config.example.toml` はGitHub pluginの有効状態も共有するが、plugin本体のinstallは行わない。
+新環境ではCodexのplugin管理画面またはCLIから別途installする。
+
+`notice.*` と `tui.model_availability_nux` はCodexが書き込む確認済み状態なので、
+ローカルの実体だけに残し、共有テンプレートへは取り込まない。
+
 ## 更新フロー（テンプレート反映）
 
 ローカル設定は手元の裁量で変わるため、テンプレートの差分だけを安全に取り込みます。
