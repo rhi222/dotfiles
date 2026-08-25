@@ -14,17 +14,20 @@
 #   3. ファイル引数付き起動では保存されない（args_allow_files_auto_save=false の維持）
 #   4. 全プロジェクト共有のスクラッチパッドを表示中は保存しない
 #   5. スクラッチパッドを閉じれば保存が再開する（4がやりすぎでないこと）
+#   6. :checkhealth の結果を定期保存が閉じない（今回の障害の回帰テスト）
 #
 # ci-skip: 実 nvim 設定と auto-session プラグインの導入済み環境が要る
 set -uo pipefail
 
 TEST_ROOT=$(mktemp -d)
 SESSION_DIR="$TEST_ROOT/sessions"
-mkdir -p "$SESSION_DIR" "$TEST_ROOT/cache" "$TEST_ROOT/state"
+mkdir -p "$SESSION_DIR" "$TEST_ROOT/cache" "$TEST_ROOT/state" "$TEST_ROOT/runtime"
+chmod 700 "$TEST_ROOT/runtime"
 export MY_AUTOSESSION_ROOT_DIR="$SESSION_DIR"
 # 実設定を読み込んでもLua cache・ShaDa・logを実HOMEへ書かない。
 export XDG_CACHE_HOME="$TEST_ROOT/cache"
 export XDG_STATE_HOME="$TEST_ROOT/state"
+export XDG_RUNTIME_DIR="$TEST_ROOT/runtime"
 
 # 定期保存のデバウンス。テスト中だけ短縮する（auto-session.lua が
 # MY_AUTOSESSION_SAVE_DEBOUNCE_MS で上書きを受け付ける）。
@@ -325,6 +328,40 @@ test_saved_after_scratchpad_closed() {
   fi
 }
 
+# --- ケース6: checkhealth 表示中は保存せず、結果画面を閉じない ---
+# auto-session は session 保存前に filetype=checkhealth のバッファを削除する。
+# 定期保存からそれを呼ぶと、結果画面がデバウンス後に勝手に閉じていた。
+test_checkhealth_stays_open() {
+  echo "ケース6: checkhealth の結果画面を定期保存が閉じない"
+  local workdir sock pid health_count
+  workdir=$(make_workdir)
+  sock="$workdir/nvim.sock"
+
+  if ! start_nvim "$workdir" "$sock"; then
+    ng "nvim が起動しなかった"
+    return
+  fi
+  pid=$NVIM_PID
+
+  edit_file "$sock" "$workdir/alpha.txt"
+  wait_for_session_file "$workdir"
+  nvim --server "$sock" --remote-expr "execute('checkhealth')" >/dev/null 2>&1
+
+  # checkhealth の BufEnter で予約された定期保存が発火する時刻を越える。
+  settle_debounce
+  health_count=$(nvim --server "$sock" --remote-expr \
+    "len(filter(getbufinfo(), {_, v -> getbufvar(v.bufnr, '&filetype') ==# 'checkhealth'}))" 2>/dev/null)
+
+  if [[ "$health_count" =~ ^[1-9][0-9]*$ ]]; then
+    ok "checkhealth の結果バッファが表示されたまま"
+  else
+    ng "checkhealth の結果バッファが定期保存で閉じられた"
+  fi
+
+  kill -TERM "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+}
+
 # --- ケース0: 本番のデバウンス既定値が下がっていない ---
 # テストは短縮した値で走るので、本番値の退行をここで止める。
 test_production_debounce_default() {
@@ -347,6 +384,7 @@ test_saved_on_clean_quit
 test_not_saved_with_file_args
 test_not_saved_while_scratchpad_visible
 test_saved_after_scratchpad_closed
+test_checkhealth_stays_open
 
 echo
 echo "結果: PASS=$PASS FAIL=$FAIL"

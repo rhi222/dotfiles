@@ -68,6 +68,19 @@ local function scratchpad_is_visible()
 	return false
 end
 
+-- auto-session は保存前に checkhealth buffer を削除する。終了時の保存では問題ないが、
+-- 稼働中の定期保存で同じ処理を呼ぶと :checkhealth の結果が5秒後に勝手に閉じる。
+-- 一時画面を session に含めず、かつ表示自体も壊さないため、見えている間だけ定期保存を見送る。
+local function transient_view_is_visible()
+	for _, win in ipairs(vim.api.nvim_list_wins()) do
+		local buf = vim.api.nvim_win_get_buf(win)
+		if vim.bo[buf].filetype == "checkhealth" then
+			return true
+		end
+	end
+	return false
+end
+
 require("auto-session").setup({
 	enabled = true,
 	auto_save = true,
@@ -215,6 +228,9 @@ local function schedule_auto_save()
 		0,
 		vim.schedule_wrap(function()
 			if vim.v.dying > 0 then
+				return
+			end
+			if transient_view_is_visible() then
 				return
 			end
 			-- 復元前や素の起動直後に空セッションで上書きしないよう、
