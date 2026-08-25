@@ -42,9 +42,11 @@ if vim.fn.has("wsl") == 1 then
 			["+"] = "win32yank.exe -i --crlf",
 			["*"] = "win32yank.exe -i --crlf",
 		},
+		-- 読み出しのフラグは --lf。`-o` に --crlf は無く、書くと exit 1 で落ちて
+		-- unnamedplus 経由の貼り付けが丸ごと空になる（tests/nvim/test-clipboard.sh）
 		paste = {
-			["+"] = "win32yank.exe -o --crlf",
-			["*"] = "win32yank.exe -o --crlf",
+			["+"] = "win32yank.exe -o --lf",
+			["*"] = "win32yank.exe -o --lf",
 		},
 		cache_enable = 0,
 	}
