@@ -19,8 +19,15 @@ function unwrap-paste --description 折返し由来の改行を畳んでコマ�
         return 1
     end
 
-    set -l text ($reader 2>/dev/null | __unwrap_wrapped_text | string collect)
+    # **関数をパイプラインの要素にしないこと。** `$reader | __unwrap_wrapped_text` の形は
+    # fishがパイプのwrite端を握ったままにするため関数内の読み取りにEOFが届かず、
+    # key binding経由の呼び出しでshellごとデッドロックする（実機で発生）。
+    # 読み出しを先に完結させ、結果は引数で渡す。
+    set -l raw ($reader 2>/dev/null | string collect)
+    test -z "$raw"; and return 0
+
+    set -l text (__unwrap_wrapped_text "$raw")
     test -z "$text"; and return 0
 
-    commandline --insert -- $text
+    commandline --insert -- "$text"
 end
