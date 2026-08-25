@@ -1,5 +1,20 @@
-# GitHubで日常的に使うPR操作をsandbox外で自動許可する。
+# GitとGitHubで日常的に使う操作をsandbox外で自動許可する。
 # `gh api` はmethod次第で書き込めるため、包括的に許可しない。
+prefix_rule(
+    pattern = ["git", "commit"],
+    decision = "allow",
+    justification = "ユーザーがGit commitの常時実行を承認している",
+    match = [
+        "git commit -m subject",
+        "git commit --amend --no-edit",
+    ],
+    not_match = [
+        "git add .",
+        "git push origin main",
+        "git -C /tmp/example commit -m subject",
+    ],
+)
+
 prefix_rule(
     pattern = ["gh", "pr", "view"],
     decision = "allow",
