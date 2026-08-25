@@ -9,7 +9,10 @@ import (
 func TestCacheRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "sub", "usage.json") // 親ディレクトリも作られること
-	c := Cache{Claude: &Side{FetchedAt: 100, Session: &Window{Percent: 45, ResetsAt: 200}}}
+	c := Cache{
+		Claude:        &Side{FetchedAt: 100, Session: &Window{Percent: 45, ResetsAt: 200}},
+		CodexOverride: &Side{FetchedAt: 101, Weekly: &Window{Percent: 12, ResetsAt: 300}},
+	}
 	if err := WriteCache(path, c); err != nil {
 		t.Fatalf("WriteCache: %v", err)
 	}
@@ -19,6 +22,9 @@ func TestCacheRoundTrip(t *testing.T) {
 	}
 	if got.Claude == nil || got.Claude.Session == nil || got.Claude.Session.Percent != 45 {
 		t.Errorf("round trip 失敗: %+v", got)
+	}
+	if got.CodexOverride == nil || got.CodexOverride.Weekly.Percent != 12 {
+		t.Errorf("override の round trip 失敗: %+v", got.CodexOverride)
 	}
 }
 

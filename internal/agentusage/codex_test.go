@@ -78,6 +78,33 @@ func TestFetchCodex(t *testing.T) {
 	}
 }
 
+func TestFetchCodexHomeSetsEnvironment(t *testing.T) {
+	dir := t.TempDir()
+	logFile := filepath.Join(dir, "codex-home.log")
+	home := filepath.Join(dir, "override home")
+	t.Setenv("CODEX_HOME", filepath.Join(dir, "inherited home"))
+	bin := writeExecutable(t, dir, `#!/bin/sh
+while IFS= read -r line; do
+  case "$line" in
+    *'account/rateLimits/read'*)
+      printf '%s' "$CODEX_HOME" >"`+logFile+`"
+      echo '{"jsonrpc":"2.0","id":2,"result":{"rateLimits":{"primary":{"usedPercent":8,"windowDurationMins":10080,"resetsAt":99}}}}'
+      exit 0 ;;
+  esac
+done
+`)
+	if _, err := FetchCodexHome(context.Background(), bin, home, 10*time.Second, time.Now()); err != nil {
+		t.Fatalf("FetchCodexHome: %v", err)
+	}
+	got, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != home {
+		t.Errorf("CODEX_HOME = %q, want %q", got, home)
+	}
+}
+
 func TestFetchCodexSecondaryWeekly(t *testing.T) {
 	// primary が 5h 窓・secondary が weekly のアカウント → secondary を採る
 	bin := fakeCodex(t, rateLimitsResult(

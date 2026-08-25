@@ -74,6 +74,9 @@ func cacheAge(c agentusage.Cache, cfg agentusage.Config) time.Duration {
 	if c.Codex != nil && c.Codex.FetchedAt > latest {
 		latest = c.Codex.FetchedAt
 	}
+	if c.CodexOverride != nil && c.CodexOverride.FetchedAt > latest {
+		latest = c.CodexOverride.FetchedAt
+	}
 	if latest == 0 {
 		return time.Duration(1<<62 - 1)
 	}

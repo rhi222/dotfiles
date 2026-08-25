@@ -53,6 +53,20 @@ func TestRenderLineFresh(t *testing.T) {
 	}
 }
 
+func TestRenderLineMultipleCodexAccounts(t *testing.T) {
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.CodexOverride = &Side{
+		FetchedAt: now.Add(-1 * time.Minute).Unix(),
+		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
+	}
+	got := RenderLine(c, now, 15*time.Minute)
+	want := "CC s45% w50% f29% · CX d2% o12%"
+	if got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+}
+
 func TestRenderLineStale(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	c := fixtureCache(now)
@@ -124,6 +138,21 @@ func TestRenderDetail(t *testing.T) {
 	}
 	if strings.Contains(got, "\x1b[") {
 		t.Errorf("色なし detail に ANSI escape がある: %q", got)
+	}
+}
+
+func TestRenderDetailMultipleCodexAccounts(t *testing.T) {
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.CodexOverride = &Side{
+		FetchedAt: now.Add(-2 * time.Minute).Unix(),
+		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
+	}
+	got := RenderDetail(c, now, 15*time.Minute)
+	for _, want := range []string{"Codex default", "Codex override", "2%", "12%", "codex override 2m前"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderDetail に %q が無い:\n%s", want, got)
+		}
 	}
 }
 

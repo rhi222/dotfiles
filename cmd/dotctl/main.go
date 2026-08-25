@@ -153,14 +153,15 @@ func agentUsageConfig() agentusage.Config {
 		cacheDir = v
 	}
 	return agentusage.Config{
-		CacheFile:       envOr("AGENT_USAGE_CACHE", filepath.Join(cacheDir, "agent-usage", "usage.json")),
-		CredentialsFile: envOr("AGENT_USAGE_CLAUDE_CREDENTIALS", filepath.Join(home, ".claude", ".credentials.json")),
-		CodexBin:        envOr("AGENT_USAGE_CODEX_BIN", "codex"),
-		Endpoint:        envOr("AGENT_USAGE_ENDPOINT", "https://api.anthropic.com/api/oauth/usage"),
-		TTL:             5 * time.Minute,
-		StaleAfter:      15 * time.Minute,
-		HTTPTimeout:     10 * time.Second,
-		CodexTimeout:    20 * time.Second, // app-server の起動を含むので HTTP より長く取る
+		CacheFile:         envOr("AGENT_USAGE_CACHE", filepath.Join(cacheDir, "agent-usage", "usage.json")),
+		CredentialsFile:   envOr("AGENT_USAGE_CLAUDE_CREDENTIALS", filepath.Join(home, ".claude", ".credentials.json")),
+		CodexBin:          envOr("AGENT_USAGE_CODEX_BIN", "codex"),
+		CodexOverrideHome: os.Getenv("AGENT_USAGE_CODEX_OVERRIDE_HOME"),
+		Endpoint:          envOr("AGENT_USAGE_ENDPOINT", "https://api.anthropic.com/api/oauth/usage"),
+		TTL:               5 * time.Minute,
+		StaleAfter:        15 * time.Minute,
+		HTTPTimeout:       10 * time.Second,
+		CodexTimeout:      20 * time.Second, // app-server の起動を含むので HTTP より長く取る
 	}
 }
 

@@ -26,10 +26,11 @@ type Side struct {
 	Fable     *Window `json:"fable,omitempty"`
 }
 
-// Cache はキャッシュファイル全体。片側だけの更新を許すため個別に持つ。
+// Cache はキャッシュファイル全体。データ源ごとの更新と旧値温存を許すため個別に持つ。
 type Cache struct {
-	Claude *Side `json:"claude,omitempty"`
-	Codex  *Side `json:"codex,omitempty"`
+	Claude        *Side `json:"claude,omitempty"`
+	Codex         *Side `json:"codex,omitempty"`
+	CodexOverride *Side `json:"codex_override,omitempty"`
 }
 
 // LoadCache はキャッシュを読む。無い・壊れているは err で返し、

@@ -28,12 +28,18 @@ const codexRateLimitsID = 2
 // **ここは codex 側の実装詳細に乗っている。** 壊れたときは err を返して
 // 旧キャッシュ温存（stale 表示）に倒れる。
 func FetchCodex(ctx context.Context, bin string, timeout time.Duration, now time.Time) (*Side, error) {
+	return FetchCodexHome(ctx, bin, "", timeout, now)
+}
+
+// FetchCodexHome は指定した CODEX_HOME の認証で weekly 上限を取る。
+// codexHome が空なら呼び出し元の環境をそのまま継承する。
+func FetchCodexHome(ctx context.Context, bin, codexHome string, timeout time.Duration, now time.Time) (*Side, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
-	result, err := codexRateLimits(ctx, bin)
+	result, err := codexRateLimits(ctx, bin, codexHome)
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +54,11 @@ func FetchCodex(ctx context.Context, bin string, timeout time.Duration, now time
 //
 // initialize → initialized → rateLimits を待たずに続けて書く。
 // app-server は要求を順に処理するので往復を減らせる。
-func codexRateLimits(ctx context.Context, bin string) (json.RawMessage, error) {
+func codexRateLimits(ctx context.Context, bin, codexHome string) (json.RawMessage, error) {
 	cmd := exec.CommandContext(ctx, bin, "app-server")
+	if codexHome != "" {
+		cmd.Env = append(cmd.Environ(), "CODEX_HOME="+codexHome)
+	}
 	// 自前のプロセスグループにして、抜けるときに孫まで確実に殺す。
 	// app-server が子を残すと stdout の書き手が残り、読み出しが返らない
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

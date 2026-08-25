@@ -35,7 +35,12 @@ set -g codex_alt_repo_roots \
     $HOME/path/to/example-org/example-repo \
     $HOME/path/to/worktrees/example-repo-topic
 set -g codex_alt_home $HOME/.codex-private
+set -gx AGENT_USAGE_CODEX_OVERRIDE_HOME $codex_alt_home
 ```
+
+`AGENT_USAGE_CODEX_OVERRIDE_HOME` は `dotctl agent-usage` がdefaultとprivate両方のweekly上限を
+取得するためのexport値。設定後は新しいFishからHerdrを起動し直し、server processにも反映する。
+個人PCでは設定せず、従来どおりdefault accountだけを表示する。
 
 private用homeは所有者限定で作り、共通設定と共有ruleだけを個別にlinkする。home全体や
 `auth.json` をlinkしてはならない。端末固有の `default.rules` は共有しない。

@@ -57,9 +57,24 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 		}
 		parts = append(parts, p)
 	}
-	if s := c.Codex; s != nil && s.Weekly != nil {
-		p := fmt.Sprintf("CX w%d%%", s.Weekly.Percent)
-		if sideStale(s, now, staleAfter) {
+	defaultCodex := c.Codex != nil && c.Codex.Weekly != nil
+	overrideCodex := c.CodexOverride != nil && c.CodexOverride.Weekly != nil
+	if defaultCodex || overrideCodex {
+		p := "CX"
+		stale := false
+		if defaultCodex {
+			label := "w"
+			if overrideCodex {
+				label = "d"
+			}
+			p += fmt.Sprintf(" %s%d%%", label, c.Codex.Weekly.Percent)
+			stale = sideStale(c.Codex, now, staleAfter)
+		}
+		if overrideCodex {
+			p += fmt.Sprintf(" o%d%%", c.CodexOverride.Weekly.Percent)
+			stale = stale || sideStale(c.CodexOverride, now, staleAfter)
+		}
+		if stale {
 			p += " [stale]"
 		}
 		parts = append(parts, p)
@@ -145,7 +160,7 @@ func RenderDetailColor(c Cache, now time.Time, staleAfter time.Duration) string 
 }
 
 func renderDetail(c Cache, now time.Time, staleAfter time.Duration, color bool) string {
-	if c.Claude == nil && c.Codex == nil {
+	if c.Claude == nil && c.Codex == nil && c.CodexOverride == nil {
 		return styled(color, ansiBoldYellow,
 			"キャッシュがまだ無い。dotctl agent-usage refresh を実行するか、しばらく待つ。")
 	}
@@ -168,10 +183,29 @@ func renderDetail(c Cache, now time.Time, staleAfter time.Duration, color bool) 
 		}
 		fetched = append(fetched, fetchedText)
 	}
-	if s := c.Codex; s != nil && s.Weekly != nil {
-		b.WriteString(styled(color, ansiBoldCyan, "Codex") + "\n")
+	defaultCodex := c.Codex != nil && c.Codex.Weekly != nil
+	overrideCodex := c.CodexOverride != nil && c.CodexOverride.Weekly != nil
+	if defaultCodex {
+		heading := "Codex"
+		fetchedLabel := "codex"
+		if overrideCodex {
+			heading = "Codex default"
+			fetchedLabel = "codex default"
+		}
+		s := c.Codex
+		b.WriteString(styled(color, ansiBoldCyan, heading) + "\n")
 		b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
-		fetchedText := styled(color, ansiDim, fmt.Sprintf("codex %s前", fetchedAgo(s, now)))
+		fetchedText := styled(color, ansiDim, fmt.Sprintf("%s %s前", fetchedLabel, fetchedAgo(s, now)))
+		if sideStale(s, now, staleAfter) {
+			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")
+		}
+		fetched = append(fetched, fetchedText)
+	}
+	if overrideCodex {
+		s := c.CodexOverride
+		b.WriteString(styled(color, ansiBoldCyan, "Codex override") + "\n")
+		b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
+		fetchedText := styled(color, ansiDim, fmt.Sprintf("codex override %s前", fetchedAgo(s, now)))
 		if sideStale(s, now, staleAfter) {
 			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")
 		}
