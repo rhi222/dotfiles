@@ -15,71 +15,23 @@ herdr_restore_workspace_of() {
   printf '%s\n' "${1%%:*}"
 }
 
-# claude マーカーから起動コマンドを組み立てる。
-# マーカーは3行: session_id / cwd / transcript_path
-# transcript が実在するときだけ --resume する。会話が消えていても
-# プロセスは立てたいので、その場合は素の claude を返す。
-#
-# cwd はマーカーから戻す。herdr の session.json が持つペインの cwd は
-# シェルのものなので、claude がセッション中に自分で移した cwd（worktree へ
-# 入った場合など）は復元できない。マーカー側には SessionStart 時点の cwd が
-# 入っているので、そちらを使う。
-#
-# cwd が実在するときだけ前置する。worktree が既に消えている場合に `&&` で
-# 止まって claude が全く立たないのを避ける。
-herdr_restore_claude_command() {
-  local marker="$1"
-  local session_id cwd transcript cmd
-  session_id=$(awk 'NR==1' "$marker" 2>/dev/null)
-  cwd=$(awk 'NR==2' "$marker" 2>/dev/null)
-  transcript=$(awk 'NR==3' "$marker" 2>/dev/null)
-
-  if [[ -n "$session_id" && -n "$transcript" && -f "$transcript" ]]; then
-    cmd="claude --resume $session_id"
-  else
-    cmd="claude"
-  fi
-
-  if [[ -n "$cwd" && -d "$cwd" ]]; then
-    printf 'cd %q && %s\n' "$cwd" "$cmd"
-    return 0
-  fi
-  printf '%s\n' "$cmd"
-}
-
 # 復元プランを実行順に出力する。1行 = "<kind>\t<pane_id>\t<command>"
 #
-# 順序: nvim を全部流してから claude。各種別の中はフォーカス中 workspace が先。
-# nvim は軽いので先に流しても claude の開始をほとんど遅らせず、目に入るペインが
-# 先に埋まる。同一グループ内は pane_id の辞書順にして順序を決定的にする。
+# フォーカス中 workspace を先にし、同一グループ内は pane_id の辞書順にする。
 herdr_restore_plan() {
-  local nvim_dir="$1" claude_dir="$2" alive_file="$3" focused_ws="$4"
-  local group kind dir want_focused marker pane ws is_focused cmd
+  local nvim_dir="$1" alive_file="$2" focused_ws="$3"
+  local group want_focused marker pane ws is_focused
 
-  for group in nvim-focused nvim-other claude-focused claude-other; do
+  for group in nvim-focused nvim-other; do
     case "$group" in
       nvim-focused)
-        kind=nvim
-        dir="$nvim_dir"
         want_focused=1
         ;;
       nvim-other)
-        kind=nvim
-        dir="$nvim_dir"
-        want_focused=0
-        ;;
-      claude-focused)
-        kind=claude
-        dir="$claude_dir"
-        want_focused=1
-        ;;
-      claude-other)
-        kind=claude
-        dir="$claude_dir"
         want_focused=0
         ;;
     esac
-    [[ -d "$dir" ]] || continue
+    [[ -d "$nvim_dir" ]] || continue
 
     while IFS= read -r marker; do
       [[ -n "$marker" ]] || continue
@@ -89,13 +41,8 @@ herdr_restore_plan() {
       is_focused=0
       [[ "$ws" == "$focused_ws" ]] && is_focused=1
       [[ "$is_focused" == "$want_focused" ]] || continue
-      if [[ "$kind" == "nvim" ]]; then
-        cmd="nvim"
-      else
-        cmd=$(herdr_restore_claude_command "$marker")
-      fi
-      printf '%s\t%s\t%s\n' "$kind" "$pane" "$cmd"
-    done < <(find "$dir" -maxdepth 1 -type f 2>/dev/null | sort)
+      printf 'nvim\t%s\tnvim\n' "$pane"
+    done < <(find "$nvim_dir" -maxdepth 1 -type f 2>/dev/null | sort)
   done
 }
 
@@ -126,7 +73,7 @@ herdr_restore_prune_markers() {
 
 # 状態ファイルを初期値で作る。
 herdr_restore_status_init() {
-  local file="$1" pid="$2" started_at="$3" nvim_total="$4" claude_total="$5"
+  local file="$1" pid="$2" started_at="$3" nvim_total="$4"
   local tmp="$file.$$.tmp"
   mkdir -p "$(dirname "$file")"
   {
@@ -138,9 +85,6 @@ herdr_restore_status_init() {
     printf 'nvim_total=%s\n' "$nvim_total"
     printf 'nvim_done=0\n'
     printf 'nvim_skipped=0\n'
-    printf 'claude_total=%s\n' "$claude_total"
-    printf 'claude_done=0\n'
-    printf 'claude_skipped=0\n'
   } >"$tmp"
   mv -f "$tmp" "$file"
 }
@@ -225,18 +169,14 @@ herdr_restore_format_duration() {
 }
 
 # 件数を1行にまとめる。
-# スキップ（ペインが使用中で触らなかった分）は種別をまたいで合算する。
 # done と total が食い違う理由がその場でわかるようにするため。
 herdr_restore_counts_summary() {
   local nvim_done="$1" nvim_total="$2" nvim_skipped="$3"
-  local claude_done="$4" claude_total="$5" claude_skipped="$6"
-  local skipped=$((nvim_skipped + claude_skipped))
   local out
 
-  out=$(printf 'nvim %s/%s, claude %s/%s' \
-    "$nvim_done" "$nvim_total" "$claude_done" "$claude_total")
-  if ((skipped > 0)); then
-    out=$(printf '%s (%d件は使用中でスキップ)' "$out" "$skipped")
+  out=$(printf 'nvim %s/%s' "$nvim_done" "$nvim_total")
+  if ((nvim_skipped > 0)); then
+    out=$(printf '%s (%d件は使用中でスキップ)' "$out" "$nvim_skipped")
   fi
   printf '%s\n' "$out"
 }
@@ -277,10 +217,7 @@ herdr_restore_status_render() {
   counts=$(herdr_restore_counts_summary \
     "$(herdr_restore_status_get "$file" nvim_done)" \
     "$(herdr_restore_status_get "$file" nvim_total)" \
-    "$(herdr_restore_status_get "$file" nvim_skipped)" \
-    "$(herdr_restore_status_get "$file" claude_done)" \
-    "$(herdr_restore_status_get "$file" claude_total)" \
-    "$(herdr_restore_status_get "$file" claude_skipped)")
+    "$(herdr_restore_status_get "$file" nvim_skipped)")
 
   if [[ "$state" == "done" ]]; then
     elapsed=$(herdr_restore_format_duration "$((finished_at - started_at))")
@@ -297,13 +234,13 @@ herdr_restore_status_render() {
 }
 
 herdr_restore_toast_start_body() {
-  printf 'nvim %s, claude %s を順に起動します\n' "$1" "$2"
+  printf 'nvim %s件を順に起動します\n' "$1"
 }
 
 herdr_restore_toast_done_body() {
   local counts elapsed
-  counts=$(herdr_restore_counts_summary "$1" "$2" "$3" "$4" "$5" "$6")
-  elapsed=$(herdr_restore_format_duration "$7")
+  counts=$(herdr_restore_counts_summary "$1" "$2" "$3")
+  elapsed=$(herdr_restore_format_duration "$4")
   printf '%s / 所要 %s\n' "$counts" "$elapsed"
 }
 

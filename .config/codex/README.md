@@ -9,6 +9,7 @@ profile file が優先されます。
 - `config.example.toml`: 共有テンプレート（コミット対象）
 - `~/.codex/config.toml`: ローカルの実体（コミットしない）
 - `rules/dotfiles.rules`: 共有するcommand rule（`~/.codex/rules/` へリンク）
+- `hooks.json` / `hooks/herdr-agent-session.sh`: Herdr native restore 用の session report
 - `skills/`: 自作 skill の実体（`dotfilesLink.sh` が `~/.agents/skills/` へ個別リンク）
 
 skill はディレクトリ全体ではなく1件ずつリンクする。`~/.agents/skills/` には外部から導入した
@@ -48,6 +49,7 @@ private用homeは所有者限定で作り、共通設定と共有ruleだけを�
 ```fish
 mkdir -m 700 $codex_alt_home
 ln -s ~/.codex/config.toml $codex_alt_home/config.toml
+ln -s ~/.codex/hooks.json $codex_alt_home/hooks.json
 mkdir -p $codex_alt_home/rules
 ln -s ~/.codex/rules/dotfiles.rules $codex_alt_home/rules/dotfiles.rules
 ```

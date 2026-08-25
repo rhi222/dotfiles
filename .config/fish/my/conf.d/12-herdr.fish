@@ -1,15 +1,14 @@
 # herdr 起動ラッパー
 #
-# reboot 後の `he` 起動で「レイアウト + nvim + claude」を復元する。
+# reboot 後の `he` 起動で「レイアウト + nvim + AI agent」を復元する。
 # tmux の continuum(自動復元) + resurrect(@resurrect-processes で nvim 再起動) に相当。
 #
 # - レイアウト / タブ名 / ペイン label / cwd : herdr の session.json が復元する（native）
-# - nvim / claude                            : herdr は前面プロセスを保存しないため、
-#                                              各プロセスが自分でマーカーを残す。
+# - Claude / Codex                           : session hook + Herdr native agent restore
+# - nvim                                     : herdr は前面プロセスを保存しないため、
+#                                              nvim が自分でマーカーを残す。
 #                                              nvim   -> ~/.local/state/herdr-nvim/<pane_id>
 #                                                        (.config/nvim/lua/my/settings/autocmd.lua)
-#                                              claude -> ~/.local/state/herdr-claude/<pane_id>
-#                                                        (.config/claude/hooks/herdr-claude-marker.sh)
 #                                              復元は ~/scripts/herdr-restore.sh が行う。
 #                                              一斉起動を避けるため種別ごとに投入数と間隔を絞る。
 #                                              nvim 側のバッファは auto-session がペイン単位で復元する。
@@ -18,7 +17,7 @@
 # 投入は数分に散るため、進み具合は `he --status` で見る（開始と完了は
 # Windows トーストでも通知する）。
 
-function he --description 'herdr 起動: コールドスタート時に nvim / claude を段階的に復元する'
+function he --description 'herdr 起動: native agent restore + nvim の段階復元'
     # 状態表示だけ。サーバー起動もアタッチもしない。
     # 表示の組み立ては herdr-restore.sh に寄せ、ここではパースしない。
     if contains -- --status $argv

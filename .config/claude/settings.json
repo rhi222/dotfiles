@@ -59,23 +59,12 @@
         "matcher": "Bash"
       }
     ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "command": "$HOME/.config/claude/hooks/herdr-claude-marker.sh end",
-            "timeout": 5,
-            "type": "command"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
           {
-            "command": "$HOME/.config/claude/hooks/herdr-claude-marker.sh start",
-            "timeout": 5,
+            "command": "$HOME/.config/claude/hooks/herdr-agent-session.sh",
+            "timeout": 10,
             "type": "command"
           }
         ],

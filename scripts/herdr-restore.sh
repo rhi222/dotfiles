@@ -1,5 +1,5 @@
 #!/bin/bash
-# herdr のコールドスタート後に nvim / claude を段階的に復元する。
+# herdr のコールドスタート後に nvim を段階的に復元する。
 #
 # fish の `he` から setsid でバックグラウンド起動される想定。一斉起動による
 # 負荷スパイクを避けるため、種別ごとに同時投入数と間隔を絞る。
@@ -14,8 +14,7 @@
 # 調整用の環境変数:
 #   HERDR_RESTORE_NVIM_BATCH      (既定 3)  nvim の同時投入数
 #   HERDR_RESTORE_NVIM_INTERVAL   (既定 2)  nvim の次バッチまでの秒数
-#   HERDR_RESTORE_CLAUDE_BATCH    (既定 1)  claude の同時投入数
-#   HERDR_RESTORE_CLAUDE_INTERVAL (既定 8)  claude の次バッチまでの秒数
+# Claude / Codex の conversation は Herdr 本体の native agent restore が担当する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,12 +55,9 @@ herdr_cli() {
 }
 
 NVIM_DIR="$(herdr_restore_state_dir herdr-nvim)"
-CLAUDE_DIR="$(herdr_restore_state_dir herdr-claude)"
 STATUS="$(herdr_restore_state_dir herdr-restore.status)"
 NVIM_BATCH="${HERDR_RESTORE_NVIM_BATCH:-3}"
 NVIM_INTERVAL="${HERDR_RESTORE_NVIM_INTERVAL:-2}"
-CLAUDE_BATCH="${HERDR_RESTORE_CLAUDE_BATCH:-1}"
-CLAUDE_INTERVAL="${HERDR_RESTORE_CLAUDE_INTERVAL:-8}"
 
 # WSL2 以外（powershell.exe が無い環境）では通知しない。
 #
@@ -118,13 +114,12 @@ focused_ws=$(herdr_cli api snapshot 2>/dev/null | jq -r '.result.snapshot.focuse
 # 誤判定して全部消してしまう。掃除は既定セッションのときだけ行う。
 if [[ "$DRY_RUN" -eq 0 && -z "$SESSION" ]]; then
   herdr_restore_prune_markers "$NVIM_DIR" "$ALIVE"
-  herdr_restore_prune_markers "$CLAUDE_DIR" "$ALIVE"
 fi
 
 PLAN=()
 while IFS= read -r line; do
   [[ -n "$line" ]] && PLAN+=("$line")
-done < <(herdr_restore_plan "$NVIM_DIR" "$CLAUDE_DIR" "$ALIVE" "$focused_ws")
+done < <(herdr_restore_plan "$NVIM_DIR" "$ALIVE" "$focused_ws")
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   for line in "${PLAN[@]}"; do
@@ -134,21 +129,19 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
 fi
 
 NVIM_TOTAL=0
-CLAUDE_TOTAL=0
 for line in "${PLAN[@]}"; do
   case "${line%%$'\t'*}" in
     nvim) NVIM_TOTAL=$((NVIM_TOTAL + 1)) ;;
-    claude) CLAUDE_TOTAL=$((CLAUDE_TOTAL + 1)) ;;
   esac
 done
 
 # 復元するものが無ければ、前回の記録を残したまま黙って終わる。
 # 既にサーバーが動いている状態の `he` で通知が飛ぶのを避ける。
-((NVIM_TOTAL + CLAUDE_TOTAL > 0)) || exit 0
+((NVIM_TOTAL > 0)) || exit 0
 
 STARTED_AT=$(date +%s)
-herdr_restore_status_init "$STATUS" "$$" "$STARTED_AT" "$NVIM_TOTAL" "$CLAUDE_TOTAL"
-notify "🔄 herdr 復元開始" "$(herdr_restore_toast_start_body "$NVIM_TOTAL" "$CLAUDE_TOTAL")"
+herdr_restore_status_init "$STATUS" "$$" "$STARTED_AT" "$NVIM_TOTAL"
+notify "🔄 herdr 復元開始" "$(herdr_restore_toast_start_body "$NVIM_TOTAL")"
 
 # 投入は数分に散るため、その間にユーザーが手でペインを使い始めうる。
 # 直前に素のシェルかを確認し、何か動いていれば触らない。
@@ -197,7 +190,6 @@ run_group() {
 }
 
 run_group nvim "$NVIM_BATCH" "$NVIM_INTERVAL"
-run_group claude "$CLAUDE_BATCH" "$CLAUDE_INTERVAL"
 
 FINISHED_AT=$(date +%s)
 herdr_restore_status_finish "$STATUS" "done" "$FINISHED_AT" ""
@@ -205,7 +197,4 @@ notify "✅ herdr 復元完了" "$(herdr_restore_toast_done_body \
   "$(herdr_restore_status_get "$STATUS" nvim_done)" \
   "$NVIM_TOTAL" \
   "$(herdr_restore_status_get "$STATUS" nvim_skipped)" \
-  "$(herdr_restore_status_get "$STATUS" claude_done)" \
-  "$CLAUDE_TOTAL" \
-  "$(herdr_restore_status_get "$STATUS" claude_skipped)" \
   "$((FINISHED_AT - STARTED_AT))")"

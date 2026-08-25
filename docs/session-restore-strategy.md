@@ -1,6 +1,6 @@
 # セッション復元戦略
 
-reboot 後に `he` を叩くと、ターミナルのレイアウトだけでなく **nvim と claude のプロセス、
+reboot 後に `he` を叩くと、ターミナルのレイアウトだけでなく **nvim と Claude / Codex のプロセス、
 さらに nvim のバッファまで**復活する。その仕組みと、そう作った理由。
 
 運用側の入口（コマンド、環境変数、`--status` の読み方）は AGENTS.md の
@@ -13,11 +13,11 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 | 何を | 誰が | どこに保存されるか |
 | --- | --- | --- |
 | レイアウト / タブ名 / ペイン label / cwd | herdr 本体 | `~/.config/herdr/session.json` |
-| nvim / claude のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-{nvim,claude}/<pane_id>` |
+| Claude / Codex のプロセスと会話 | Herdr native agent restore | Herdr session snapshot |
+| nvim のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-nvim/<pane_id>` |
 | nvim のバッファ・カーソル位置 | auto-session | `~/.local/share/nvim/sessions/` |
 
-**herdr は前面プロセスを保存しない。** ここが設計の起点になっている。レイアウトを復元しても
-ペインは素のシェルで開くので、「このペインでは nvim が動いていた」を別のどこかに残す必要がある。
+**Herdr は任意の前面プロセスを保存しない。** ただし公式 integration が session identity を報告した AI agent は、Herdr 本体が復元コマンドを組み立てられる。Claude / Codex はこちらに任せ、native restore の無い nvim だけマーカーを使う。
 
 ## マーカー方式
 
@@ -26,49 +26,24 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 | プロセス | マーカー | 中身 | 書く場所 |
 | --- | --- | --- | --- |
 | nvim | `~/.local/state/herdr-nvim/<pane_id>` | cwd（デバッグ用） | `.config/nvim/lua/my/settings/autocmd.lua` の `VimEnter` |
-| claude | `~/.local/state/herdr-claude/<pane_id>` | session_id / cwd / transcript_path | `.config/claude/hooks/herdr-claude-marker.sh`（`SessionStart` hook） |
 
-- **ファイル名がペイン ID、1ペイン=1ファイル。** 一覧を1ファイルに持つと、複数の nvim と claude が
-  同時に書いて壊す。ファイルを分ければ排他がいらない
-- **正常終了ではマーカーを消す。** nvim は `VimLeavePre` で `v:dying == 0` のときだけ、claude は
-  `SessionEnd` hook で削除する
-- **異常終了ではマーカーが残る。** OS shutdown では `VimLeavePre` も `SessionEnd` も走らない。
+- **ファイル名がペイン ID、1ペイン=1ファイル。** 複数の nvim が同時に書いても排他がいらない
+- **正常終了ではマーカーを消す。** `VimLeavePre` で `v:dying == 0` のときだけ削除する
+- **異常終了ではマーカーが残る。** OS shutdown では `VimLeavePre` が走らない。
   つまり**残っているマーカー = 落ちる直前に動いていたペイン**になり、これがそのまま復元対象の一覧になる
-- `HERDR_PANE_ID` が無い環境（herdr の外で起動した nvim / claude）は何も書かない
+- `HERDR_PANE_ID` が無い環境（herdr の外で起動した nvim）は何も書かない
 
-claude のマーカーが session_id を持つのは、`claude --resume <session_id>` で会話ごと復元するため。
-nvim は cwd さえ合っていれば auto-session がバッファを戻すので、中身はデバッグ用にすぎない。
+nvim は cwd さえ合っていれば auto-session がバッファを戻すので、マーカーの中身はデバッグ用にすぎない。
 
-### claude の cwd はマーカーから戻す
+### AI agent の session report
 
-**herdr の `session.json` が持つペインの cwd はシェルのもの。** claude がセッション中に自分で
-cwd を移す（worktree に入る）と、シェルは動かないので herdr には元の cwd が残る。そのまま
-復元すると worktree のセッションが repo root で立ち上がる。
-
-マーカーの2行目には `SessionStart` 時点の cwd が入っているので、復元コマンドに
-`cd <cwd> && claude --resume <id>` として前置する。
-
-- **cwd が実在するときだけ前置する。** worktree が既に消えていると `&&` で止まって claude が
-  全く立たなくなる。プロセスは立てたいので、その場合は cd を諦めてペインの cwd で起動する
-- `--resume` 自体は cwd に依存しない（別ディレクトリからでも session_id で解決できるし、
-  セッションの JSONL は元の project dir に残る）。cd は**起動後の作業ディレクトリを合わせる**ため
-
-### マーカーの削除は session_id で照合する
-
-`SessionEnd` は**自分が書いたマーカーだけ**消す。
-
-1ペインで旧セッションが終わって新セッションが始まることがある。worktree に入ると session_id も
-project dir も変わるので、これは正常な流れ。ここで end が無条件に消すと、新セッションが書いた
-マーカーを旧セッションの end が持っていき、**そのペインは復元対象から丸ごと外れる**。
-
-session_id が読めないときは判定材料が無いので消す。残すと死んだセッションのマーカーが溜まり、
-復元で余計な claude が立つ。
+Claude と Codex の `SessionStart` hook は `pane report-agent-session` で session ID を Herdr へ報告する。Herdr は session snapshot にそれを保存し、server 再起動後に `claude --resume <id>` / `codex resume <id>` を使う。マーカーの残存や外部 script の投入タイミングに依存しない。
 
 ## 復元フロー
 
 ### 保存時
 
-1. nvim / claude が起動した時点でマーカーを書く（以後は触らない）
+1. nvim が起動した時点でマーカーを書き、Claude / Codex は Herdr へ session ID を報告する
 2. nvim のバッファは auto-session が**稼働中に定期保存**する（後述）
 3. herdr のレイアウトは herdr 本体が `session.json` に持つ
 
@@ -77,27 +52,21 @@ session_id が読めないときは判定材料が無いので消す。残すと
 1. `he` が flock を取り、サーバーが動いていなければ `herdr server` を headless で起動する
 2. herdr が `session.json` からレイアウトを復元する
 3. `he` が `herdr-restore.sh` を切り離して起動し、自分は TUI にアタッチする
-4. `herdr-restore.sh` がマーカーを読み、**生存しているペインのぶんだけ**を復元プランにする
-5. プランを種別ごとに間隔をあけて投入する
-6. 各ペインで nvim が起動し、auto-session がバッファを復元する
+4. client attach 後、Herdr が報告済みの Claude / Codex session を native resume する
+5. `herdr-restore.sh` が nvim マーカーを読み、**生存しているペインのぶんだけ**を間隔をあけて投入する
+6. 各 nvim で auto-session がバッファを復元する
 
 **アタッチは復元完了を待たない。** 投入は数分に散るので、待つと端末が数分沈黙する。
 
 ## 一斉起動を避ける
 
-**種別ごとに同時投入数と間隔を絞る。**
+**nvim の同時投入数と間隔を絞る。**
 
 | 種別 | 同時投入数 | 間隔 | 環境変数 |
 | --- | --- | --- | --- |
 | nvim | 3 | 2秒 | `HERDR_RESTORE_NVIM_{BATCH,INTERVAL}` |
-| claude | 1 | 8秒 | `HERDR_RESTORE_CLAUDE_{BATCH,INTERVAL}` |
 
-reboot 直後に数十個の nvim と claude が同時に立ち上がると負荷スパイクで固まる。claude のほうが
-重いので、より強く絞っている。
-
-投入順は **nvim を全部流してから claude**、各種別の中は**フォーカス中の workspace が先**。
-nvim は軽いので先に流しても claude の開始をほとんど遅らせず、そのぶん目に入るペインが先に埋まる。
-同一グループ内はペイン ID の辞書順で、順序を決定的にしてある（`--dry-run` の出力が毎回同じになる）。
+独自 wrapper の投入はフォーカス中の workspace を先にし、同一グループ内はペイン ID の辞書順にする。AI agent は Herdr 本体が attach 後に復元する。native restore には投入間隔の調整項目がないため、負荷制御より取りこぼし防止を優先した選択である。
 
 **`he` と `herdr-restore.sh` の両方が flock を持つ。** 複数端末から同時に `he` を叩いても、
 サーバー起動と復元キューはそれぞれ1プロセスだけが行う。
@@ -211,8 +180,6 @@ resurrect は `ps` の出力からプロセスを拾う方式で、そこが弱�
 - `default-command` を設定すると `fish -c /usr/bin/fish` の2段階起動になり、resurrect が nvim を
   検出できなくなる。そのためコメントアウトしたままにしていた
 
-herdr にはこの検出機構自体が無いので、代わりに**プロセス側が自分でマーカーを残す**方式にした。
-`ps` の出力に依存しないので、zombie もフルパスも問題にならない。claude のように `ps` からは
-セッション ID を復元しようがないプロセスも同じ枠組みで扱える。
+herdr には nvim の検出機構が無いので、代わりに**プロセス側が自分でマーカーを残す**方式にした。`ps` の出力に依存しないので、zombie もフルパスも問題にならない。Claude / Codex はさらに Herdr native restore へ移し、session ID の保存と復元コマンドの組み立ても wrapper から外した。
 
 resurrect / continuum の設定は `.config/tmux/tmux.conf` から撤去済み。

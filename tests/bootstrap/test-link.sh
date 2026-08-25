@@ -243,19 +243,32 @@ check "新しいlinkをLINKEDへ数える" test "$LINKED" -eq 1
 # repository管理ruleはTUIが書くdefault.rulesと別名で配置し、
 # 端末で蓄積したapprovalを上書きしない。
 codex_case="$tmp/codex"
-mkdir -p "$codex_case/dc/codex/rules" "$codex_case/home/.codex/rules" \
+mkdir -p "$codex_case/dc/codex/rules" "$codex_case/dc/codex/hooks" "$codex_case/home/.codex/rules" \
   "$codex_case/home/.agents/skills"
 echo config >"$codex_case/dc/codex/config.toml"
 echo example >"$codex_case/dc/codex/config.example.toml"
 echo shared >"$codex_case/dc/codex/rules/dotfiles.rules"
+echo '{}' >"$codex_case/dc/codex/hooks.json"
 echo local >"$codex_case/home/.codex/rules/default.rules"
 
-HOME="$codex_case/home" DC="$codex_case/dc" link_codex_config >/dev/null
+override_home="$codex_case/home/.codex-private"
+HOME="$codex_case/home" DC="$codex_case/dc" \
+  AGENT_USAGE_CODEX_OVERRIDE_HOME="$override_home" link_codex_config >/dev/null
 
 check "Codex configをリンクする" test -L "$codex_case/home/.codex/config.toml"
 check "共有Codex ruleを別fileでリンクする" test -L "$codex_case/home/.codex/rules/dotfiles.rules"
 check "TUIが書いたdefault.rulesを残す" \
   grep -qx local "$codex_case/home/.codex/rules/default.rules"
+check "default CODEX_HOME へ復元 hook 宣言をリンクする" \
+  test -L "$codex_case/home/.codex/hooks.json"
+check "account 切り替え用 CODEX_HOME へもリンクする" \
+  test -L "$override_home/hooks.json"
+
+# 偽 HOME のテストから実 HOME の override 値へ逃げない。
+outside_override="$tmp/outside-codex-home"
+HOME="$codex_case/home" DC="$codex_case/dc" \
+  AGENT_USAGE_CODEX_OVERRIDE_HOME="$outside_override" link_codex_config >/dev/null 2>&1
+check "現在の HOME 外の override は変更しない" test ! -e "$outside_override"
 
 # migration先のrepo configが無い場合、既存live設定をexampleより優先して取り込む。
 codex_migration="$tmp/codex-migration"
@@ -281,6 +294,7 @@ mkdir -p "$codex_reconcile/dc/codex/rules" "$codex_reconcile/dc/codex/skills" \
   "$codex_reconcile/home/.agents/skills"
 echo live >"$codex_reconcile/home/.codex/config.toml"
 echo shared >"$codex_reconcile/dc/codex/rules/dotfiles.rules"
+echo '{}' >"$codex_reconcile/dc/codex/hooks.json"
 HOME="$codex_reconcile/home" DC="$codex_reconcile/dc" link_codex_config >/dev/null 2>&1
 check "reconcileはCodex live設定をdefaultへ戻さない" \
   grep -qx live "$codex_reconcile/home/.codex/config.toml"

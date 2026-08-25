@@ -20,7 +20,7 @@ dotfilesリポジトリ。
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linearの起票規約、state、Cycle、dispatchを触る |
 | [docs/development-workflows.md](docs/development-workflows.md)       | Git hook、gf、設定構造、文書予算を触る         |
 | [docs/worktree.md](docs/worktree.md)                                 | `git wt`、初期化、一覧、掃除を触る             |
-| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` のherdr/nvim/claude復元を触る             |
+| [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` のherdr/nvim/agent復元を触る              |
 | [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdrのtab statusとkeybindingを変える          |
 | [docs/notifications.md](docs/notifications.md)                       | Windows toastの内容・抑止条件を変える          |
 | [docs/agent-usage.md](docs/agent-usage.md)                           | tab barのusage表示・取得・キャッシュを触る     |
@@ -222,8 +222,8 @@ cleanupはdry-runが既定。`locked` を最優先でSKIPし、作業中のClaud
 
 ### herdr
 
-`he` はherdr layoutに加えてnvim/claude processを復元する。herdrは前面processを保存しないため、
-各processがpane単位のmarkerを残す。負荷spikeを避けるため一斉起動しない。
+`he` はherdr layoutに加えてnvim/Claude/Codex processを復元する。Claude/Codexは
+session hookとherdr native restore、nvimはpane単位のmarkerと段階起動を使う。
 
 | 操作         | コマンド                                  |
 | ------------ | ----------------------------------------- |

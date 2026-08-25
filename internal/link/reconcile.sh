@@ -129,7 +129,7 @@ link_private_files() {
 # 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
   mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.codex/rules ~/.agents/skills \
-    ~/.config/dotfiles ~/.config/linear ~/.config/psql
+    ~/.config/codex ~/.config/dotfiles ~/.config/linear ~/.config/psql
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
@@ -143,6 +143,7 @@ link_configs() {
     "$DC/tmux|$HOME/.config/tmux"
     "$DC/tmux/tmux.conf|$HOME/.tmux.conf"
     "$DC/psql/psqlrc|$HOME/.psqlrc"
+    "$DC/codex/hooks|$HOME/.config/codex/hooks"
 
     # Claude Code configuration
     # settings.json は symlink にできないため setup_claude_settings で別途同期する
@@ -295,6 +296,23 @@ link_codex_config() {
   mkdir -p ~/.codex/rules
   backup_real_file ~/.codex/rules/dotfiles.rules
   safe_link "$DC/codex/rules/dotfiles.rules" ~/.codex/rules/dotfiles.rules
+  backup_real_file ~/.codex/hooks.json
+  safe_link "$DC/codex/hooks.json" ~/.codex/hooks.json
+
+  # account 切り替え用 CODEX_HOME も hooks.json を別に読む。
+  # 認証情報は共有せず、復元 hook の宣言だけを同じ実体へ向ける。
+  if [ -n "${AGENT_USAGE_CODEX_OVERRIDE_HOME:-}" ]; then
+    case "$AGENT_USAGE_CODEX_OVERRIDE_HOME" in
+      "$HOME"/*)
+        mkdir -p "$AGENT_USAGE_CODEX_OVERRIDE_HOME"
+        backup_real_file "$AGENT_USAGE_CODEX_OVERRIDE_HOME/hooks.json"
+        safe_link "$DC/codex/hooks.json" "$AGENT_USAGE_CODEX_OVERRIDE_HOME/hooks.json"
+        ;;
+      *)
+        echo "[WARN] Codex override home が現在の HOME 配下でないため hooks.json を変更しません" >&2
+        ;;
+    esac
+  fi
   link_codex_skills
 }
 
