@@ -132,4 +132,3 @@ CI で動かせないものはテストファイル側の `# ci-skip:` で宣言
 | ---- | ---- |
 | 公開スクリプトの引数と呼び出し元 | [scripts-command-index.md](scripts-command-index.md) |
 | Go移植の評価とShellに残すAPI | [scripts-go-migration.md](scripts-go-migration.md) |
-| env-residueとdcleanの実装判断 | [scripts-environment-decisions.md](scripts-environment-decisions.md) |

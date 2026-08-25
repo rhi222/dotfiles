@@ -54,7 +54,6 @@ bash scripts/secret-scan.sh --tree
 | -------------------------------------------------------------------- | -------------------------------------------------------- |
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新環境の立ち上げ手順と、gitignore しているファイルの台帳 |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linear へのタスク集約とAI夜間ディスパッチ                |
-| [docs/worktree.md](docs/worktree.md)                                 | git worktree の初期化・一覧・掃除                        |
+| [docs/worktree.md](docs/worktree.md)                                 | `git wt` とworktreeの初期化・一覧・掃除                  |
 | [docs/docker-clean.md](docs/docker-clean.md)                         | `dclean` の判定と閾値                                    |
-| [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` 自体の使い方                                    |
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | reboot 後のセッション復元の設計経緯                      |

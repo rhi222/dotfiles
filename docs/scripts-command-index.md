@@ -36,6 +36,7 @@
 | ------------------------ | ------------- | ---------- |
 | `bootstrap.sh`           | なし          | doc        |
 | `apt-setup.sh`           | なし          | doc boot   |
+| `setup-dotctl.sh`        | なし          | doc boot   |
 | `setup-claude-skills.sh` | `[--dry-run]` | doc        |
 | `setup-fish-plugins.sh`  | `[--dry-run]` | doc        |
 | `setup-gh-extensions.sh` | `[--dry-run]` | doc        |

@@ -1,6 +1,8 @@
 # Docker の掃除（dclean）
 
 `dclean`（fish関数）で不要な Docker リソースを掃除する。fish起動時に溜まり具合を1行で通知する。
+複数状態の判定は `dotctl docker clean|notice|stale|refresh` が担い、fish側には
+`dclean` の名前・補完・設定変数を渡す薄いwrapperだけを残す。
 
 | やりたいこと | コマンド                                                                     |
 | ------------ | ---------------------------------------------------------------------------- |
@@ -48,6 +50,13 @@
 
 **既定は buildx のビルダーだけにしている。** 常駐させている個別のコンテナは環境ごとに違うので、
 除外したいものは `99-local.fish`（gitignore）で `docker_clean_ignore_patterns` に足す。
+
+## fish wrapper の実装上の注意
+
+- 日本語ラベルの桁揃えはfishの `string pad` と同じ表示幅で計算する。
+  Goの `fmt` はルーン数、bashの `printf` はバイト数なので、そのままでは表示が揃わない
+- 改行区切りの除外パターンを環境変数へ渡すときは `string collect` を使う。
+  fishのコマンド置換による分割で、2要素目が `env` のコマンド名として解釈されるのを防ぐ
 
 ---
 

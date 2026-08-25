@@ -9,6 +9,7 @@ herdr 0.8.2 時点の話。
 - **時刻・agent usage・マシンリソースを別々の command にしている。**
   表示順を時刻 → usage → リソースに固定し、グループ間は `  │  `、リソース内は ` · ` で区切る。
   native の `datetime` は更新間隔を持たないので秒を出せず、時計も command にする
+- agent usage固有の表示、取得、キャッシュ、障害時の挙動は [agent-usage.md](agent-usage.md) を参照する
 
 ### 色の制約
 

@@ -19,8 +19,7 @@ dotfilesリポジトリ。
 | [docs/nippo-automation.md](docs/nippo-automation.md)                 | 日報、面談準備、esa、cronを触る                |
 | [docs/linear-command-layer.md](docs/linear-command-layer.md)         | Linearの起票規約、state、Cycle、dispatchを触る |
 | [docs/development-workflows.md](docs/development-workflows.md)       | Git hook、gf、設定構造、文書予算を触る         |
-| [docs/worktree.md](docs/worktree.md)                                 | worktreeの初期化・掃除の判定を変える           |
-| [docs/git-worktree-tool.md](docs/git-worktree-tool.md)               | `git wt` 自体の使い方を調べる                  |
+| [docs/worktree.md](docs/worktree.md)                                 | `git wt`、初期化、一覧、掃除を触る             |
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` のherdr/nvim/claude復元を触る             |
 | [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdrのtab statusとkeybindingを変える          |
 | [docs/notifications.md](docs/notifications.md)                       | Windows toastの内容・抑止条件を変える          |

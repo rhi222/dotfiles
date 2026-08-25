@@ -1,7 +1,38 @@
 # git worktree の運用
 
-`git wt` で作った worktree の初期化・一覧表示・掃除。
-`git wt` 自体の使い方と設定は [git-worktree-tool.md](git-worktree-tool.md)。
+worktree管理は **git-wt**（github.com/k1LoW/git-wt）に一本化している。
+gwq は2026-07に廃止した（設定はあったが実運用されていなかったため）。
+
+## git wt の基本操作と設定
+
+```bash
+git wt                     # worktree一覧表示
+git wt <branch>            # worktree作成 or 切り替え（切り替え時は自動cd）
+git wt <branch> <start>    # start-pointからworktree作成
+git wt -d <branch>         # 安全な削除（マージ済みチェック）
+git wt -D <branch>         # 強制削除
+git wt --json              # JSON形式で一覧出力
+```
+
+このリポジトリでは次の設定とシェル統合を使う。
+
+- `09-git-wt.fish` が `git wt --init fish` の出力をキャッシュしてsourceする
+- `wt` / `wtd` がfzfでworktreeの切り替え・削除を行い、`__wt_select` を共通ヘルパーとして使う
+- 保存先はリポジトリ内の `.wt/`
+- `08-prompt-override.fish` がメインリポジトリを `🏠`、worktreeを `🌿`、Git管理外を `📂` で表示する
+
+`.gitconfig` の `[wt]` は次の形にする。
+
+```ini
+[wt]
+    relative = true
+    copy = CLAUDE.md
+    hook = "bash \"$HOME/scripts/worktree-init.sh\""
+```
+
+作成時はhookによる初期化後、新worktreeへ自動cdする。
+`nocd = create` は作成後すぐ作業へ入る運用に合わせて2026-07に廃止した。
+tmux + Claude Codeの自動起動hookもherdr移行時に廃止し、hookは初期化だけを担当する。
 
 ## worktree-init.sh（作成後の初期化）
 
