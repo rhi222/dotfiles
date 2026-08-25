@@ -16,6 +16,12 @@
 # 見分けるのは「継続行が空白で始まるか」だけで足りる。①は必ず始まり、②は必ず始まらない。
 # ペイン幅を知らなくても判定できるので、コピー元の端末幅に依存しない。
 #
+# **入力は引数で渡す。stdinは読まない。** 初版はstdinを `cat` で読む設計で、
+# `win32yank | __unwrap_wrapped_text` のパイプライン要素にすると、fishがパイプの
+# write端を握ったままにするためcatにEOFが届かず、key binding経由の呼び出しで
+# shellごとデッドロックした（実機で発生）。全ケースでstdinに番兵を流し、
+# 実装がstdinへ後戻りしたら値の不一致で即座に落ちるようにする。
+#
 # 既知の限界: ②で折返し位置がちょうど空白に当たった場合、その空白は端末側の
 # 行末トリムで失われるため復元できない（連結子なしで詰まる）。専用キー経由で
 # コマンドラインに挿入するだけなので、実行前に目視で直せる範囲に留める。
@@ -53,16 +59,17 @@ ng() {
   echo "    actual:   [$3]"
 }
 
-# stdin のテキストを __unwrap_wrapped_text に通し、結果を返す。
-# 関数定義だけを source し、対話セッションや設定ファイルには依存させない。
+# 入力は第1引数。stdinには番兵を流し、stdinを読む実装を検出する。
+# timeoutはデッドロック回帰の保険（正常系では踏まない）。
 run_unwrap() {
-  fish --no-config -c "source $UNWRAP; __unwrap_wrapped_text"
+  printf 'SENTINEL_STDIN\n' | timeout 10 fish --no-config \
+    -c "source $UNWRAP; __unwrap_wrapped_text \$argv[1]" "$1"
 }
 
 assert_unwrap() {
   local name="$1" input="$2" expected="$3"
   local actual
-  actual="$(printf '%s' "$input" | run_unwrap)"
+  actual="$(run_unwrap "$input")"
   if [[ "$actual" == "$expected" ]]; then
     ok "$name"
   else
@@ -142,6 +149,15 @@ assert_unwrap "空白のみの入力は空文字を返す" \
 assert_unwrap "CRLFのCRを残さない" \
   "$(printf 'echo foo\r\n  bar\r\n')" \
   'echo foo bar'
+
+# 引数なしでもstdinへ後戻りせず空を返す（binding文脈のデッドロック回帰）
+no_arg_actual="$(printf 'SENTINEL_STDIN\n' | timeout 10 fish --no-config \
+  -c "source $UNWRAP; __unwrap_wrapped_text")"
+if [[ "$no_arg_actual" == "" ]]; then
+  ok "引数なしはstdinを読まず空を返す"
+else
+  ng "引数なしはstdinを読まず空を返す" "" "$no_arg_actual"
+fi
 
 echo
 echo "PASS=$PASS FAIL=$FAIL TOTAL=$TOTAL"
