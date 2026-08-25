@@ -34,7 +34,7 @@ FIX=0
 # 第三者の .sh が shellcheck / shfmt に掛かって lint.yml が落ちる。
 mapfile -t files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.sh' ':!:.config/claude/skills-vendor/**' |
+    '*.sh' ':!:.config/agents/skills-vendor/**' |
     xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -71,7 +71,7 @@ fi
 # vendored skillはupstreamの書式を保つため除外する。
 mapfile -t markdown_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.md' ':!:.config/claude/skills-vendor/**' |
+    '*.md' ':!:.config/agents/skills-vendor/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -87,7 +87,7 @@ fi
 
 mapfile -t lua_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.lua' ':!:.config/claude/skills-vendor/**' |
+    '*.lua' ':!:.config/agents/skills-vendor/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -129,7 +129,7 @@ fi
 # 対象の集め方は .sh と揃える（追跡 + 未追跡、ignore 済みと skills-vendor は除外）。
 mapfile -t fish_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.fish' ':!:.config/claude/skills-vendor/**' |
+    '*.fish' ':!:.config/agents/skills-vendor/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -175,7 +175,7 @@ echo "=== yaml ==="
 # 見たいのは「構造が壊れていないか」だけ。
 mapfile -t yaml_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.yml' '*.yaml' ':!:.config/claude/skills-vendor/**' |
+    '*.yml' '*.yaml' ':!:.config/agents/skills-vendor/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"

@@ -7,10 +7,10 @@
 #   bash scripts/skill-vendor.sh list
 #
 # 実装は Go 側（internal/skill）にある。**この入口を残しているのは AGENTS.md・
-# docs/claude-skills.md・daily-update.sh がこのパスで呼んでいるため。**
+# docs/agent-skills.md・daily-update.sh がこのパスで呼んでいるため。**
 #
 # 信頼済み owner でない skill をここで取り込む理由（更新のレビュー面を git 差分に
-# 一本化する）は docs/claude-skills.md。
+# 一本化する）は docs/agent-skills.md。
 set -uo pipefail
 
 DOTCTL="$HOME/.local/bin/dotctl"

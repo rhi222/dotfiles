@@ -200,7 +200,7 @@ func TestResidueDetectsVendoredAsRealDirectory(t *testing.T) {
 	// **これが実際に6本起きていた。** vendored は symlink で入るのが正で、
 	// 実ディレクトリなら古い gh 版が読まれ続ける
 	cfg := residueSetup(t)
-	if err := os.MkdirAll(filepath.Join(cfg.Repo, ".config", "claude", "skills-vendor", "herdr"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cfg.Repo, ".config", "agents", "skills-vendor", "herdr"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	live := cfg.LiveSkillDirs[0]
@@ -220,7 +220,7 @@ func TestResidueDetectsVendoredAsRealDirectory(t *testing.T) {
 
 func TestResidueAcceptsVendoredSymlink(t *testing.T) {
 	cfg := residueSetup(t)
-	vendorDir := filepath.Join(cfg.Repo, ".config", "claude", "skills-vendor", "herdr")
+	vendorDir := filepath.Join(cfg.Repo, ".config", "agents", "skills-vendor", "herdr")
 	if err := os.MkdirAll(vendorDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

@@ -187,28 +187,48 @@ link_configs() {
   done
 }
 
-# vendored な外部 skill を張る。自作 skill と同じディレクトリ単位のリンクで、
-# 張り先を引数で受ける（~/.claude/skills と ~/.agents/skills の両方に張るため）。
-#
-# 外部 skill は SKILL_AGENTS の既定で claude-code と codex の両方に入っているので、
-# vendored に移しても見えるものを減らさない。codex 側を ~/.codex/skills ではなく
-# ~/.agents/skills にするのは、後者が Codex のユーザー共通探索先で、自作 codex skill が
-# 既にそこへ張られているため。
-#
-# gh が入れた実ディレクトリを潰さないガードは safe_link 側にあるのでここには要らない。
-link_vendor_skills_into() {
-  local target_base="$1" skill_dir skill_name
-  [ -d "$DC/claude/skills-vendor" ] || return 0
-  for skill_dir in "$DC/claude/skills-vendor"/*/; do
-    [ -d "$skill_dir" ] || continue
+# skill の正本は4箇所に分かれる。同名を複数箇所へ置くとリンク順で有効な内容が
+# 変わるので、どの組み合わせでも拒否する。
+skill_source_count() {
+  local name="$1" root count=0
+  for root in "$DC/agents/skills" "$DC/claude/skills" "$DC/codex/skills" \
+    "$DC/agents/skills-vendor"; do
+    [ -f "$root/$name/SKILL.md" ] && count=$((count + 1))
+  done
+  echo "$count"
+}
+
+link_skills_from() {
+  local source_base="$1" target_base="$2" skill_dir skill_name
+  [ -d "$source_base" ] || return 0
+  for skill_dir in "$source_base"/*/; do
+    [ -f "$skill_dir/SKILL.md" ] || continue
     skill_name="$(basename "$skill_dir")"
-    # 自作と同名だと、後から張った方で上書きされてどちらが有効か分からなくなる
-    if [ -d "$DC/claude/skills/$skill_name" ]; then
-      echo "[SKIP] $skill_name は自作 skill と名前が衝突しています" >&2
+    case "$skill_name" in *-workspace) continue ;; esac
+    if [ "$(skill_source_count "$skill_name")" -gt 1 ]; then
+      echo "[SKIP] $skill_name は skill の正本どうしで名前が衝突しています" >&2
       SKIPPED+=("$target_base/$skill_name")
       continue
     fi
     safe_link "$skill_dir" "$target_base/$skill_name"
+  done
+}
+
+link_shared_skills_into() {
+  link_skills_from "$DC/agents/skills" "$1"
+}
+
+link_vendor_skills_into() {
+  link_skills_from "$DC/agents/skills-vendor" "$1"
+}
+
+prune_broken_skill_links() {
+  local target_base="$1" link
+  for link in "$target_base"/*; do
+    if [ -L "$link" ] && [ ! -e "$link" ]; then
+      rm -f "$link"
+      echo "[PRUNE] $link （リンク切れ）"
+    fi
   done
 }
 
@@ -221,22 +241,9 @@ link_vendor_skills_into() {
 # **刈る対象はリンク切れの symlink だけ。** ~/.claude/skills には gh skill が入れた
 # 外部skillの実ディレクトリが同居しているので、実体や生きたリンクに触れてはいけない。
 link_claude_skills() {
-  local skill_dir skill_name link
-  for link in ~/.claude/skills/*; do
-    # -L かつ -e が偽 == リンク切れ。実ディレクトリは -L で落ちる
-    if [ -L "$link" ] && [ ! -e "$link" ]; then
-      rm -f "$link"
-      echo "[PRUNE] $link （リンク切れ）"
-    fi
-  done
-  for skill_dir in "$DC/claude/skills"/*/; do
-    [ -d "$skill_dir" ] || continue
-    skill_name="$(basename "$skill_dir")"
-    # skill-creator は skill の隣に <name>-workspace/ を作る。skill ではないので
-    # リンクしない（リンクすると、作業場を消したあと亡霊リンクが残る実例があった）
-    case "$skill_name" in *-workspace) continue ;; esac
-    safe_link "$skill_dir" ~/.claude/skills/"$skill_name"
-  done
+  prune_broken_skill_links ~/.claude/skills
+  link_shared_skills_into ~/.claude/skills
+  link_skills_from "$DC/claude/skills" ~/.claude/skills
   link_vendor_skills_into ~/.claude/skills
 }
 
@@ -244,19 +251,9 @@ link_claude_skills() {
 # ディレクトリ全体をリンクしないのは、外部から導入した skill と同居できるようにするため。
 # Claude skills と同じく、実ディレクトリと生きた外部リンクには触れず、リンク切れだけを刈る。
 link_codex_skills() {
-  local skill_dir skill_name link
-  for link in ~/.agents/skills/*; do
-    if [ -L "$link" ] && [ ! -e "$link" ]; then
-      rm -f "$link"
-      echo "[PRUNE] $link （リンク切れ）"
-    fi
-  done
-  for skill_dir in "$DC/codex/skills"/*/; do
-    [ -d "$skill_dir" ] || continue
-    skill_name="$(basename "$skill_dir")"
-    case "$skill_name" in *-workspace) continue ;; esac
-    safe_link "$skill_dir" ~/.agents/skills/"$skill_name"
-  done
+  prune_broken_skill_links ~/.agents/skills
+  link_shared_skills_into ~/.agents/skills
+  link_skills_from "$DC/codex/skills" ~/.agents/skills
   link_vendor_skills_into ~/.agents/skills
 }
 
@@ -363,9 +360,9 @@ link_main() {
   LINKED=0
   UNCHANGED=0
   ensure_dirs
-  # link_configs より先に張る。cross-repo-auto-discover は
-  # 「集約先 → リポジトリ内 → ~/.claude/skills」の二段リンクになるため、
-  # link_claude_skills が走る時点で一段目が済んでいる必要がある
+  # link_configs より先に張る。private bundle の共用 skill は
+  # 「集約先 → リポジトリ内 → agent の探索先」の二段リンクになるため、
+  # skill のリンク処理が走る時点で一段目が済んでいる必要がある。
   link_private_files
   # link_configs が fish_plugins を張る前に、内容の違う実ファイルを退避する
   backup_fish_plugins

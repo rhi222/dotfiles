@@ -28,10 +28,15 @@ func TestAuditRunsOnAllRealSkills(t *testing.T) {
 	}
 	root := repoRoot(t)
 
-	dirs := append(
-		skillDirs(t, filepath.Join(root, ".config", "claude", "skills-vendor")),
-		skillDirs(t, filepath.Join(root, ".config", "claude", "skills"))...,
-	)
+	var dirs []string
+	for _, base := range []string{
+		filepath.Join(root, ".config", "agents", "skills"),
+		filepath.Join(root, ".config", "agents", "skills-vendor"),
+		filepath.Join(root, ".config", "claude", "skills"),
+		filepath.Join(root, ".config", "codex", "skills"),
+	} {
+		dirs = append(dirs, skillDirs(t, base)...)
+	}
 	if len(dirs) == 0 {
 		t.Skip("skill が1つも無い")
 	}
@@ -83,7 +88,7 @@ func TestAuditFindsNoHighInVendoredSkills(t *testing.T) {
 	if testing.Short() {
 		t.Skip("実 skill を走査するので -short では飛ばす")
 	}
-	dirs := skillDirs(t, filepath.Join(repoRoot(t), ".config", "claude", "skills-vendor"))
+	dirs := skillDirs(t, filepath.Join(repoRoot(t), ".config", "agents", "skills-vendor"))
 	if len(dirs) == 0 {
 		t.Skip("vendored skill が無い")
 	}

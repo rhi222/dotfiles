@@ -13,7 +13,7 @@ dotfilesリポジトリ。
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新端末の立ち上げ、機密ファイル台帳、cron登録   |
 | [docs/migration.md](docs/migration.md)                               | PC移行でrepository群と作業状態を運ぶ           |
 | [docs/system-management.md](docs/system-management.md)               | ローカル設定、同期、更新、plugin管理を触る     |
-| [docs/claude-skills.md](docs/claude-skills.md)                       | Claude skillの信頼境界とvendoringを変える      |
+| [docs/agent-skills.md](docs/agent-skills.md)                        | agent skillの配置・信頼境界・vendoringを変える |
 | [docs/scripts-layout.md](docs/scripts-layout.md)                     | scripts、tests、dotctlの構成と公開入口を変える |
 | [docs/testing.md](docs/testing.md)                                   | テストを書く・直す（固定対象・時間依存の禁止） |
 | [docs/nippo-automation.md](docs/nippo-automation.md)                 | 日報、面談準備、esa、cronを触る                |
@@ -125,21 +125,23 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 | gh extension          | `scripts/gh-extensions.txt`            | `bash scripts/setup-gh-extensions.sh`               |
 | fish plugin           | `.config/fish/fish_plugins`            | `bash scripts/setup-fish-plugins.sh`                |
 | yazi plugin           | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup-yazi-plugins.sh` |
-| trusted Claude skill  | `scripts/trusted-skill-owners.txt`     | `bash scripts/skill-add.sh <owner/repo> <skill>`    |
-| vendored Claude skill | `.config/claude/skills-vendor/<name>/` | `bash scripts/skill-vendor.sh add ...`              |
-| Codex自作skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
+| trusted agent skill   | `scripts/trusted-skill-owners.txt`     | `bash scripts/skill-add.sh <owner/repo> <skill>`    |
+| vendored agent skill  | `.config/agents/skills-vendor/<name>/` | `bash scripts/skill-vendor.sh add ...`              |
+| 共用自作skill         | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Claude専用skill       | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Codex専用skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
 
 `daily-update.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
 最後に失敗を集約する。worktreeやvendored skillなどの情報提供checkは全体をFAILEDにしない。
 
-### Claude skillの信頼境界
+### agent skillの信頼境界
 
 - allowlistはdefault-deny。個人accountをtrustedへ入れない
 - allowlist外はvendoringし、codeと `.vendor.json` をcommitして `git diff` でreviewする
-- 未検証skillをClaudeへ読ませない。auditが0件でも人が承認する
+- 未検証skillをagentへ読ませない。auditが0件でも人が承認する
 - `~/.agents/skills` 全体をsymlinkせず、skill単位で外部skillと共存する
 
-コマンドとfail-closed条件は [docs/claude-skills.md](docs/claude-skills.md)。
+コマンドとfail-closed条件は [docs/agent-skills.md](docs/agent-skills.md)。
 
 ## dotctlとscripts
 

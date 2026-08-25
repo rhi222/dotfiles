@@ -118,9 +118,11 @@ yaziは `init.lua` がpluginを `require` するため、実体が無いと起�
 新環境の `scripts/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
 検査する。`package.toml` はrev/hashを持つlockfileであり、upgradeによる差分のcommitは人間が判断する。
 
-## Codex自作skill
+## 自作agent skill
 
-実体は `.config/codex/skills/<name>/`、ユーザー共通探索先は
-`~/.agents/skills/<name>` のsymlink。`~/.agents/skills` 全体はリンクせず、外部skillと共存する。
-setupで削除するのはリンク切れsymlinkだけ。追加後は `./dotfilesLink.sh` を実行し、必要なら
-Codexを再起動する。
+共用skillは `.config/agents/skills/<name>/`、Claude専用は `.config/claude/skills/<name>/`、
+Codex専用は `.config/codex/skills/<name>/` を正本にする。`dotfilesLink.sh` が共用skillを
+`~/.claude/skills` と `~/.agents/skills` の両方へ、専用skillを対応する片方へリンクする。
+
+読み込み口全体はリンクせず、外部skillと共存する。削除するのはリンク切れsymlinkだけで、
+正本どうしの同名衝突は拒否する。追加後は `./dotfilesLink.sh` を実行し、必要ならagentを再起動する。

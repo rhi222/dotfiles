@@ -16,12 +16,14 @@ import (
 
 // VendorConfig は vendoring1回分の設定。
 type VendorConfig struct {
-	// VendorDir は取込先（既定 <repo>/.config/claude/skills-vendor）。
+	// VendorDir は取込先（既定 <repo>/.config/agents/skills-vendor）。
 	VendorDir string
 	// CacheDir は clone のキャッシュ。
 	CacheDir string
-	// SelfSkills は自作 skill の場所（名前衝突の検査に使う）。
+	// SelfSkills は共用の自作 skill の場所（名前衝突の検査に使う）。
 	SelfSkills string
+	// AdditionalSelfSkills は agent 固有の自作 skill の場所。
+	AdditionalSelfSkills []string
 	// LiveDirs は symlink が張られる先（~/.claude/skills など）。
 	LiveDirs []string
 	// Today は vendored_at に入れる日付。
@@ -197,10 +199,12 @@ func Preflight(cfg VendorConfig, src, name string) error {
 		return &PreflightError{Msg: fmt.Sprintf("SKILL.md が見つかりません: %s", src)}
 	}
 
-	if st, err := os.Stat(filepath.Join(cfg.SelfSkills, name)); err == nil && st.IsDir() {
-		return &PreflightError{
-			Msg: fmt.Sprintf("自作 skill と名前が衝突しています: %s",
-				filepath.Join(cfg.SelfSkills, name)),
+	for _, root := range append([]string{cfg.SelfSkills}, cfg.AdditionalSelfSkills...) {
+		if st, err := os.Stat(filepath.Join(root, name)); err == nil && st.IsDir() {
+			return &PreflightError{
+				Msg: fmt.Sprintf("自作 skill と名前が衝突しています: %s",
+					filepath.Join(root, name)),
+			}
 		}
 	}
 

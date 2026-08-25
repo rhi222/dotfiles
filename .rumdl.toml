@@ -15,5 +15,5 @@ enable = [
   "MD055",
   "MD056",
 ]
-exclude = [".config/claude/skills-vendor/**"]
+exclude = [".config/agents/skills-vendor/**"]
 respect-gitignore = true

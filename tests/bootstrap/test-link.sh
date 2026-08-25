@@ -290,7 +290,7 @@ check "fresh環境ではCodex exampleから生成する" \
 # 定期実行するdotfilesLink側はrepo configが無くてもlive設定を書き換えない。
 codex_reconcile="$tmp/codex-reconcile"
 mkdir -p "$codex_reconcile/dc/codex/rules" "$codex_reconcile/dc/codex/skills" \
-  "$codex_reconcile/dc/claude/skills-vendor" "$codex_reconcile/home/.codex/rules" \
+  "$codex_reconcile/dc/agents/skills-vendor" "$codex_reconcile/home/.codex/rules" \
   "$codex_reconcile/home/.agents/skills"
 echo live >"$codex_reconcile/home/.codex/config.toml"
 echo shared >"$codex_reconcile/dc/codex/rules/dotfiles.rules"
@@ -309,7 +309,8 @@ check "reconcileはrepo configを生成しない" \
 # リポジトリから skill を消しても ~/.claude/skills のリンクは残る。Claude Code から
 # 読めない亡霊が溜まり続けるので、リンクを張る側で刈る。
 sk="$tmp/sk"
-mkdir -p "$sk/dc/claude/skills/alive" "$sk/home/.claude/skills"
+mkdir -p "$sk/dc/agents/skills/shared" "$sk/dc/claude/skills/alive" "$sk/home/.claude/skills"
+echo s >"$sk/dc/agents/skills/shared/SKILL.md"
 echo s >"$sk/dc/claude/skills/alive/SKILL.md"
 
 # skill-creator が skill の隣に作る作業ディレクトリ（skill ではないのでリンクしない）
@@ -329,6 +330,7 @@ DC="$sk/dc" HOME="$sk/home" link_claude_skills >/dev/null 2>&1
 
 check "実体のある自作skillをリンクする" test -L "$sk/home/.claude/skills/alive"
 check "リンクした先の中身が読める" test -f "$sk/home/.claude/skills/alive/SKILL.md"
+check "共用skillをClaudeへリンクする" test -L "$sk/home/.claude/skills/shared"
 # -e はリンク切れの symlink でも偽になるため「刈れた」の証拠にならない
 # （エントリが残っていても通ってしまう）。-L で symlink そのものの不在を見る
 check "実体が消えたリンクを刈る" test ! -L "$sk/home/.claude/skills/removed"
@@ -339,7 +341,9 @@ check "*-workspace はリンクしない" test ! -e "$sk/home/.claude/skills/ali
 # --- link_codex_skills ---
 # Codex の自作 skill はユーザー共通の探索先 ~/.agents/skills へ配置する。
 ck="$tmp/ck"
-mkdir -p "$ck/dc/codex/skills/refine-pr-description" "$ck/home/.agents/skills"
+mkdir -p "$ck/dc/agents/skills/shared" "$ck/dc/codex/skills/refine-pr-description" \
+  "$ck/home/.agents/skills"
+echo s >"$ck/dc/agents/skills/shared/SKILL.md"
 echo s >"$ck/dc/codex/skills/refine-pr-description/SKILL.md"
 
 ln -sn "$ck/dc/codex/skills/removed" "$ck/home/.agents/skills/removed"
@@ -352,6 +356,7 @@ check "Codex skillをユーザー共通の探索先へリンクする" \
   test -L "$ck/home/.agents/skills/refine-pr-description"
 check "Codex skillのリンク先が読める" \
   test -f "$ck/home/.agents/skills/refine-pr-description/SKILL.md"
+check "共用skillをCodexへリンクする" test -L "$ck/home/.agents/skills/shared"
 check "Codex skillのリンク切れを刈る" test ! -L "$ck/home/.agents/skills/removed"
 check "外部のCodex skill実ディレクトリは消さない" \
   test -f "$ck/home/.agents/skills/external/SKILL.md"
@@ -360,9 +365,9 @@ check "外部のCodex skill実ディレクトリは消さない" \
 # vendored な外部 skill も自作と同じディレクトリ単位でリンクする。
 # 実体をリポジトリに持つので、更新は git 差分に出る
 vs="$tmp/vs"
-mkdir -p "$vs/dc/claude/skills-vendor/vendored-one" "$vs/dc/claude/skills" \
+mkdir -p "$vs/dc/agents/skills-vendor/vendored-one" "$vs/dc/claude/skills" \
   "$vs/home/.claude/skills" "$vs/home/.agents/skills"
-: >"$vs/dc/claude/skills-vendor/vendored-one/SKILL.md"
+: >"$vs/dc/agents/skills-vendor/vendored-one/SKILL.md"
 
 SKIPPED=()
 DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" >/dev/null 2>&1
@@ -376,8 +381,8 @@ check "vendored skill を ~/.agents/skills へもリンクする" \
 
 # gh が入れた実ディレクトリは潰さない。safe_link のガードがそのまま効く
 mkdir -p "$vs/home/.claude/skills/gh-installed" \
-  "$vs/dc/claude/skills-vendor/gh-installed"
-: >"$vs/dc/claude/skills-vendor/gh-installed/SKILL.md"
+  "$vs/dc/agents/skills-vendor/gh-installed"
+: >"$vs/dc/agents/skills-vendor/gh-installed/SKILL.md"
 : >"$vs/home/.claude/skills/gh-installed/marker"
 SKIPPED=()
 out=$(DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" 2>&1)
@@ -387,8 +392,8 @@ check "潰さなかったことを報告する" grep -q "実ディレクトリ" 
 
 # 自作 skill と名前が衝突したらリンクしない。
 # 両方リンクしようとすると後から張った方で上書きされ、どちらが有効か分からなくなる
-mkdir -p "$vs/dc/claude/skills/dup" "$vs/dc/claude/skills-vendor/dup"
-: >"$vs/dc/claude/skills-vendor/dup/SKILL.md"
+mkdir -p "$vs/dc/claude/skills/dup" "$vs/dc/agents/skills-vendor/dup"
+: >"$vs/dc/agents/skills-vendor/dup/SKILL.md"
 SKIPPED=()
 out=$(DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" 2>&1)
 check "自作 skill と衝突したらリンクしない" \
@@ -401,7 +406,8 @@ check "衝突を報告する" grep -q "衝突" <<<"$out"
 # BASH_SOURCE[0] が一致して dotfilesLink.sh 末尾のガードを通り、main が丸ごと走る
 # （偽の HOME に対して実際にリンク・skill 配置・雛形生成まで実行されてしまう）。
 # 冒頭で source 済みなので、環境だけ差し替えたサブシェルで関数を呼ぶ。
-mkdir -p "$tmp/vs2/dc/claude/skills" "$tmp/vs2/home/.claude/skills"
+mkdir -p "$tmp/vs2/dc/agents/skills" "$tmp/vs2/dc/claude/skills" \
+  "$tmp/vs2/home/.claude/skills"
 # SKIPPED は source した dotfilesLink.sh の関数が読み書きする global。テスト側からは
 # 参照が無いため shellcheck が SC2034 を出すが、ケースごとのリセットは意味があるので無効化する
 # shellcheck disable=SC2034

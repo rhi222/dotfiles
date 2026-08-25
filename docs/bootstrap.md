@@ -239,9 +239,9 @@ tar xzf claude-memory.tar.gz -C ~
 
 旧環境からコピーするもの：
 
-- `.config/claude/skills/cross-repo-investigate/repos.yml`
+- `.config/agents/skills/cross-repo-investigate/repos.yml`
   — 社内リポジトリのパスと日本語エイリアスの対応表
-- `.config/claude/skills/cross-repo-auto-discover/`
+- `.config/agents/skills/cross-repo-auto-discover/`
   — ディレクトリごとコピーする。`repos.yml` は上記ファイルへの symlink
 - `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json`
   — 週次レポート対象の記事番号

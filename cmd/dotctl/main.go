@@ -81,9 +81,13 @@ func windowsSettings() settings.WindowsConfig {
 func vendorConfig() skill.VendorConfig {
 	home, _ := os.UserHomeDir()
 	return skill.VendorConfig{
-		VendorDir:  envOr("SKILL_VENDOR_DIR", repoPath(".config/claude/skills-vendor")),
+		VendorDir:  envOr("SKILL_VENDOR_DIR", repoPath(".config/agents/skills-vendor")),
 		CacheDir:   envOr("SKILL_VENDOR_CACHE", filepath.Join(home, ".cache", "claude-skills-vendor")),
-		SelfSkills: envOr("SKILL_VENDOR_SELF_SKILLS", repoPath(".config/claude/skills")),
+		SelfSkills: envOr("SKILL_VENDOR_SELF_SKILLS", repoPath(".config/agents/skills")),
+		AdditionalSelfSkills: []string{
+			repoPath(".config/claude/skills"),
+			repoPath(".config/codex/skills"),
+		},
 		// symlink が張られる先。**3つ全部を見る**（agent ごとに探索先が違う）
 		LiveDirs: []string{
 			filepath.Join(home, ".claude", "skills"),

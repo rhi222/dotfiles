@@ -125,8 +125,8 @@ gh pr create --base "<移植先>" --title "<title>" --body "<body>"
 
 `--base` は必ず明示する。省略するとデフォルトブランチに向く。
 
-本文の書き方の詳細は `.config/claude/skills/wt-pr/references/pr-body.md`、
-コミットを積み直す場合の分割基準は `.config/claude/skills/wt-pr/references/commit-split.md` を見る。
+本文の書き方の詳細は `.config/agents/skills/wt-pr/references/pr-body.md`、
+コミットを積み直す場合の分割基準は `.config/agents/skills/wt-pr/references/commit-split.md` を見る。
 
 ### 7. 報告する
 

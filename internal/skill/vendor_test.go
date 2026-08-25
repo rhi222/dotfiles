@@ -140,6 +140,19 @@ func TestPreflightRejectsNameClashWithSelfSkill(t *testing.T) {
 	}
 }
 
+func TestPreflightRejectsNameClashWithAgentSpecificSkill(t *testing.T) {
+	cfg, src := preflightSetup(t)
+	agentSpecific := filepath.Join(t.TempDir(), "codex-skills")
+	cfg.AdditionalSelfSkills = []string{agentSpecific}
+	if err := os.MkdirAll(filepath.Join(agentSpecific, "dup"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err := Preflight(cfg, src, "dup")
+	if err == nil || !strings.Contains(err.Error(), "名前が衝突") {
+		t.Errorf("err = %v", err)
+	}
+}
+
 func TestPreflightRejectsRealDirInLive(t *testing.T) {
 	// **gh skill が入れた実体が残っていると symlink が張れず、古い実体が
 	// 読まれ続ける。** 取り込む前に気付けるようにする

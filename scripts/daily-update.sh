@@ -195,7 +195,7 @@ gh_skill_update() {
 # 「更新あり」になる。skill-vendor.sh update 側が実ファイルの diff を取り、
 # 変更が無ければ「変更なし」と言って commit だけ進めるので、ここは粗い信号でよい。
 vendored_skill_check() {
-  local vendor_dir="${SKILL_VENDOR_DIR:-$SCRIPT_DIR/../.config/claude/skills-vendor}"
+  local vendor_dir="${SKILL_VENDOR_DIR:-$SCRIPT_DIR/../.config/agents/skills-vendor}"
   if [ ! -d "$vendor_dir" ]; then
     echo "vendored skill はありません"
     return 0

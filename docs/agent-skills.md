@@ -1,7 +1,24 @@
-# Claude Code skill 管理の設計
+# Agent skill 管理の設計
 
-AGENTS.md の「Claude Code skill管理（信頼境界と vendoring）」の詳細。
-導線の一覧とコマンド表はあちらにあり、ここには**なぜそう決めたか**を置く。
+Claude CodeとCodexで使うskillの配置、信頼境界、vendoringの詳細。
+導線の一覧とコマンド表は `AGENTS.md` に置き、ここには**なぜそう決めたか**を置く。
+
+## 配置と配布
+
+| 正本 | 用途 | 配布先 |
+| ---- | ---- | ------ |
+| `.config/agents/skills/<name>/` | 自作・共用 | `~/.claude/skills` と `~/.agents/skills` |
+| `.config/claude/skills/<name>/` | Claude専用 | `~/.claude/skills` |
+| `.config/codex/skills/<name>/` | Codex専用 | `~/.agents/skills` |
+| `.config/agents/skills-vendor/<name>/` | review済み外部・共用 | 両方 |
+
+正本はskill単位でsymlinkし、読み込み口全体はリンクしない。外部skillの実ディレクトリと共存し、
+リンク切れだけをreconcile時に削除する。同名skillが複数の正本にあれば、リンク順で有効な内容が
+変わるため、どれもリンクせず衝突として報告する。
+
+リポジトリ直下の `.agents/skills` は正本に使わない。Codexがrepository scopeとして自動検出し、
+ユーザー共通の `~/.agents/skills` と二重に見えるため。中立な正本は自動探索されない
+`.config/agents/skills` に置く。
 
 ## 信頼境界の作り方
 
@@ -39,7 +56,7 @@ AGENTS.md の「Claude Code skill管理（信頼境界と vendoring）」の詳�
   無いこと自体は異常ではない（`dotfilesLink.sh` 未実行、その agent を使っていない端末）ので、実ディレクトリと「別の場所を指す symlink」だけを落とす
 - **audit が 0 件でも人の承認を要求する。**
   平文で書かれた指示型の injection （「以前の指示を無視して…」）は grep では拾い切れないので、機械判定を最終判断にしない
-- **未検証の skill を Claude に読ませない。**
+- **未検証の skill をagentに読ませない。**
   レビューの主体は人に置く。
   読ませた時点でペイロードが会話コンテキストに入る。
   `skill-audit.sh` はプロンプトを一切生成しない
@@ -58,7 +75,7 @@ AGENTS.md の「Claude Code skill管理（信頼境界と vendoring）」の詳�
 ### 更新と互換性
 
 - **`daily-update.sh` は検知だけ。**
-  vendored な実体は symlink で `~/.claude/skills` へ生で繋がるので、作業ツリーを書き換えた瞬間に有効になる。
+  vendored な実体はsymlinkで各agentの読み込み口へ生で繋がるので、作業ツリーを書き換えた瞬間に有効になる。
   未レビューのコードが有効になる瞬間を作らない
 - **`local:` 行は廃止した。**
   shallow clone の HEAD を毎回取り直して入れるため pin もレビュー面も無く、3導線のうち最も無制御だった。
@@ -92,5 +109,5 @@ bash tests/setup/test-claude-skills-allowlist.sh
   herdr の場合は本体リポ `herdrdev/herdr` の `skills/herdr` が生きた upstream で、`pi-herdr` の README 自身が「standalone の skill は別途入れよ」と案内していた。
   生きた upstream から取れば `update` も回る
 - **引っ越し先が無ければ持たない。**
-  自作 skill として `.config/claude/skills/` に移すと、第三者コードを「自分が保守するもの」として抱えることになる。
+  自作 skill として `.config/agents/skills/` などへ移すと、第三者コードを「自分が保守するもの」として抱えることになる。
   自作 / vendored の境界を曖昧にするほどの価値がある skill は稀

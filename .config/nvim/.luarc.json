@@ -7,5 +7,5 @@
     "undefined-doc-name"
   ],
   "workspace.checkThirdParty": false,
-  "workspace.ignoreDir": [".config/claude/skills-vendor"]
+  "workspace.ignoreDir": [".config/agents/skills-vendor"]
 }

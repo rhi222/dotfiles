@@ -138,9 +138,9 @@ check "不正なMarkdownがあれば失敗する" "1" "$?"
 teardown
 
 setup
-mkdir -p "$REPO/scripts" "$REPO/.config/claude/skills-vendor/x"
+mkdir -p "$REPO/scripts" "$REPO/.config/agents/skills-vendor/x"
 echo '#!/bin/bash' >"$REPO/scripts/a.sh"
-printf '# BAD_MARKDOWN\n' >"$REPO/.config/claude/skills-vendor/x/vendored.md"
+printf '# BAD_MARKDOWN\n' >"$REPO/.config/agents/skills-vendor/x/vendored.md"
 git -C "$REPO" add -A
 out=$(run_lint)
 check "skills-vendor配下のMarkdownは検査しない" "0" "$?"
@@ -217,9 +217,9 @@ teardown
 echo "== 対象の集め方 =="
 
 setup
-mkdir -p "$REPO/scripts" "$REPO/.config/claude/skills-vendor/x"
+mkdir -p "$REPO/scripts" "$REPO/.config/agents/skills-vendor/x"
 echo '#!/bin/bash' >"$REPO/scripts/a.sh"
-bad_fish >"$REPO/.config/claude/skills-vendor/x/vendored.fish"
+bad_fish >"$REPO/.config/agents/skills-vendor/x/vendored.fish"
 git -C "$REPO" add -A
 out=$(run_lint)
 # vendored は追跡しているが自分は保守しない。.sh と同じ理由で .fish も除外する
@@ -318,9 +318,9 @@ check "落ちたファイル名を出す" "yes" \
 teardown
 
 setup
-mkdir -p "$REPO/scripts" "$REPO/.github/workflows" "$REPO/.config/claude/skills-vendor/x"
+mkdir -p "$REPO/scripts" "$REPO/.github/workflows" "$REPO/.config/agents/skills-vendor/x"
 echo '#!/bin/bash' >"$REPO/scripts/a.sh"
-printf 'a:\n  b: 1\n c: 2\n' >"$REPO/.config/claude/skills-vendor/x/broken.yml"
+printf 'a:\n  b: 1\n c: 2\n' >"$REPO/.config/agents/skills-vendor/x/broken.yml"
 git -C "$REPO" add -A
 out=$(run_lint)
 # .sh / .fish と同じ理由。vendored は追跡しているが自分は保守しない

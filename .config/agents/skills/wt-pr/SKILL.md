@@ -1,10 +1,11 @@
 ---
 name: wt-pr
 description: git worktreeを切って実装し、コミット分割・push・PR作成までを一気通貫で行う。「worktreeで作業して」「worktree切ってPRまで作って」「branch切ってからcommit, push, PR作成して」「PRつくるまでやっていいよ」や、Jira/LinearのチケットURL・番号を渡して実装を頼まれた文脈で使用。実装をブランチに載せてPRにするまでを1回で流したいときは、worktreeという語が出ていなくてもこのスキルを使う。既にPRがあり別ブランチへ同じ変更を持っていく場合は backport-pr を使う。
-argument-hint: "<やること、またはJira/LinearのチケットURL・番号>"
 ---
 
 # worktreeで実装してPRを出すまで
+
+入力形式: `<やること、またはJira/LinearのチケットURL・番号>`
 
 worktreeを切る → 実装する → コミットを分割して積む → push → PR作成、までを1本で流す。
 
@@ -25,8 +26,9 @@ worktree管理は `git wt`（github.com/k1LoW/git-wt）に一本化している�
 gitignore対象の `.env*` のコピーと依存インストール（pnpm/npm/yarn をlockファイルで判定）
 まで済んだ状態で、新しいworktreeへ自動cdする。保存先はリポジトリ内の `.wt/`。
 
-Claude Code の `EnterWorktree` で作った場合も PostToolUse hook で同じ初期化が走る。
-どちらの経路でも初期化は冪等なので、迷ったら `~/scripts/worktree-init.sh` を叩き直してよい。
+Claude Code の `EnterWorktree` を使える環境では、PostToolUse hook から同じ初期化が走る。
+Codexを含むそれ以外の環境では `git wt` を使う。どちらの経路でも初期化は冪等なので、
+迷ったら `~/scripts/worktree-init.sh` を叩き直してよい。
 
 ## 手順
 
@@ -81,7 +83,7 @@ git wt <branch>
 ### 4. 実装する
 
 会話の文脈・チケットの内容に沿って実装する。ここはこのスキルの管轄外なので、
-プロジェクトのCLAUDE.mdやテスト方針（TDDなど）に従う。
+プロジェクトの `AGENTS.md` / `CLAUDE.md` など、そのagent向けの指示とテスト方針に従う。
 
 ### 5. コミットを分割して積む
 
@@ -96,7 +98,7 @@ git add <path>          # ファイル単位
 git diff --staged       # 単一の意図に閉じているか確認してからコミット
 ```
 
-コミットメッセージにClaude Codeの署名（`🤖 Generated with` / `Co-Authored-By: Claude`）は含めない。
+コミットメッセージにagent生成の署名や `Co-Authored-By` を自動追加しない。
 
 ### 6. push する
 

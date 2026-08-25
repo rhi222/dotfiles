@@ -1,13 +1,11 @@
-# Claude Code スキル
+# Claude専用スキル
 
 ## ディレクトリ構成
 
-```
-.config/claude/skills/   → 自作スキル（git管理対象）
-~/.claude/skills/        → 読み込み口。自作スキルへの symlink と、外部スキルの実体が同居する
-```
+共用・Claude専用・Codex専用・vendoredの配置と配布規則は
+`docs/agent-skills.md` を参照する。このディレクトリにはClaude固有のskillだけを置く。
 
-- 自作スキルは `dotfilesLink.sh` が `.config/claude/skills/*/` を `~/.claude/skills/` へ
+- Claude専用スキルは `dotfilesLink.sh` が `.config/claude/skills/*/` を `~/.claude/skills/` へ
   シンボリックリンクする。`<name>-workspace/`（skill-creator の作業ディレクトリ）は
   スキルではないのでリンク対象外・gitignore 対象
 - 外部スキルは `gh skill` で `~/.claude/skills/` に直接インストールする。
@@ -21,7 +19,6 @@
 | accessibility-reviewer | フロントエンドコードのa11yレビュー（WCAG 2.1/2.2 AA基準） |
 | backport-pr            | 既存PRを別ベースブランチ向けPRへ移植          |
 | ci-debug               | GitHub Actionsエラー分析                      |
-| cross-repo-investigate | 複数リポジトリ横断調査                        |
 | difit                  | ステージ差分のブラウザレビュー                |
 | doc-refine             | 文書の論理批評→AIくささ修正パイプライン（humanizeを内部参照） |
 | esa-api                | esa.io API共通ナレッジ (他esa-*から内部参照)  |
@@ -29,7 +26,6 @@
 | esa-weekly-report      | esa週次エグゼクティブレポート生成             |
 | executive-report       | 部長会用の役員報告リライト                    |
 | git-commit             | Conventional Commit形式のコミット作成         |
-| gitlab-url             | GitLab URLの先のリソース読み書き（glab経由）  |
 | humanize               | AI文章の自然化                                |
 | linear-add             | Linear起票（規約の自動適用）                  |
 | linear-recall          | 起票済みLinear issueの検索・想起              |
@@ -44,11 +40,6 @@
 | nippo-\*               | 日報システム（後述）                          |
 | session-patterns       | セッション履歴から繰り返しパターンを抽出      |
 | tech-writing           | 日本語技術文書の文章規範（推敲やリライト）    |
-| tmux-sender            | tmux別ペインへコマンド送信                    |
-| wt-pr                  | worktree作成→実装→コミット分割→push→PR作成    |
-
-このほか、社内システム名で発動する `cross-repo-auto-discover` がある（ディレクトリごと
-gitignore。CLAUDE.md「社内固有情報を入れない運用」を参照）。
 
 ---
 

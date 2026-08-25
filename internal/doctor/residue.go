@@ -188,8 +188,9 @@ func checkUntrackedFishFunctions(ctx context.Context, r execx.Runner, cfg Residu
 
 // checkUndeclaredSkills は宣言に無い skill を見る。
 //
-// 宣言は3つ——trusted（claude-skills.txt / gh が入れた実ディレクトリが正）、
-// vendored（skills-vendor/ → symlink が正）、自作（skills/ → symlink が正）。
+// 宣言は3系統——trusted（claude-skills.txt / gh が入れた実ディレクトリが正）、
+// vendored（agents/skills-vendor/ → symlink が正）、自作（共用またはagent固有の
+// skills/ → symlink が正）。
 //
 // **宣言が読めないときは skill の判定を丸ごと諦める。** 読めないまま
 // 「宣言に無い」と言うと、正しく入っているものまで残骸に見えてしまう。
@@ -220,14 +221,16 @@ func checkUndeclaredSkills(cfg ResidueConfig) ([]Residue, string) {
 	// 自作と vendored のディレクトリ名も宣言として扱う
 	vendored := map[string]bool{}
 	for _, d := range []string{
+		filepath.Join(cfg.Repo, ".config", "agents", "skills"),
 		filepath.Join(cfg.Repo, ".config", "claude", "skills"),
-		filepath.Join(cfg.Repo, ".config", "claude", "skills-vendor"),
+		filepath.Join(cfg.Repo, ".config", "codex", "skills"),
+		filepath.Join(cfg.Repo, ".config", "agents", "skills-vendor"),
 	} {
 		for _, name := range subdirs(d) {
 			declared[name] = true
 		}
 	}
-	for _, name := range subdirs(filepath.Join(cfg.Repo, ".config", "claude", "skills-vendor")) {
+	for _, name := range subdirs(filepath.Join(cfg.Repo, ".config", "agents", "skills-vendor")) {
 		vendored[name] = true
 	}
 

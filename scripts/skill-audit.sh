@@ -4,7 +4,7 @@
 #   bash scripts/skill-audit.sh [--quiet] <skill-dir>
 #
 # 実装は Go 側（internal/skill）にある。**この入口を残しているのは AGENTS.md と
-# docs/claude-skills.md がこのパスで案内しているため。**
+# docs/agent-skills.md がこのパスで案内しているため。**
 #
 # 終了コードは HIGH が1件以上あれば 1、それ以外は 0。**取込の可否はここでは
 # 決めない。** 平文で書かれた指示型の injection は正規表現では拾い切れないので、
