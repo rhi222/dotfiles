@@ -9,7 +9,13 @@
 - runtimeとCLIはmiseで管理し、aptだけにあるものは `scripts/apt-packages.txt` に置く
 
 Fishの主要な順序はPATH → mise → history → environment → tide → alias → abbreviation →
-tool integration。追加時は既存番号の責務へ置き、番号を増やす前に統合できないか確認する。
+tool integration → keybinding。追加時は既存番号の責務へ置き、番号を増やす前に統合できないか
+確認する。
+
+`ctrl-o` は折返し由来の改行を畳んでクリップボードを貼る（one-line pasteのo）。端末に出た
+「本来1行」のコマンドやURLは、コピーすると改行が混入する。既定の `ctrl-v` は改行を保つので、
+複数行のスクリプトやheredocはそちらで貼る。判定の根拠は `15-paste.fish` と
+`__unwrap_wrapped_text.fish` のコメントにある。
 
 ## GitとPR
 
