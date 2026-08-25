@@ -7,8 +7,8 @@
 # - Claude / Codex                           : session hook + Herdr native agent restore
 # - nvim                                     : herdr は前面プロセスを保存しないため、
 #                                              nvim が自分でマーカーを残す。
-#                                              nvim   -> ~/.local/state/herdr-nvim/<pane_id>
-#                                                        (.config/nvim/lua/my/settings/autocmd.lua)
+#                                              nvim   -> ~/.local/state/herdr-nvim/<owner>.json
+#                                                        (my/settings/herdr-registry.lua)
 #                                              復元は ~/scripts/herdr-restore.sh が行う。
 #                                              一斉起動を避けるため種別ごとに投入数と間隔を絞る。
 #                                              nvim 側のバッファは auto-session がペイン単位で復元する。
@@ -58,12 +58,14 @@ function he --description 'herdr 起動: native agent restore + nvim の段階�
             if $ready
                 # 復元直後のシェル初期化を少し待つ
                 sleep 1
-
-                # 復元キューは数分かかりうるので切り離す。アタッチはこれを待たない。
-                # 二重投入の防止はドライバ側の flock が担う。
-                setsid $HOME/scripts/herdr-restore.sh 9>&- >/dev/null 2>&1 &
-                disown
             end
+        end
+
+        # serverが別経路ですでに起動していてもnvim復元は必要。driver側が
+        # idle paneだけへ絞り、flockで二重投入を防ぐ。
+        if herdr workspace list >/dev/null 2>&1
+            setsid $HOME/scripts/herdr-restore.sh 9>&- >/dev/null 2>&1 &
+            disown
         end
     end 9>"$lock"
 

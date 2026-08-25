@@ -14,7 +14,7 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 | --- | --- | --- |
 | レイアウト / タブ名 / ペイン label / cwd | herdr 本体 | `~/.config/herdr/session.json` |
 | Claude / Codex のプロセスと会話 | Herdr native agent restore | Herdr session snapshot |
-| nvim のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-nvim/<pane_id>` |
+| nvim のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-nvim/<owner>.json` |
 | nvim のバッファ・カーソル位置 | auto-session | `~/.local/share/nvim/sessions/` |
 
 **Herdr は任意の前面プロセスを保存しない。** ただし公式 integration が session identity を報告した AI agent は、Herdr 本体が復元コマンドを組み立てられる。Claude / Codex はこちらに任せ、native restore の無い nvim だけマーカーを使う。
@@ -25,15 +25,18 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 
 | プロセス | マーカー | 中身 | 書く場所 |
 | --- | --- | --- | --- |
-| nvim | `~/.local/state/herdr-nvim/<pane_id>` | cwd（デバッグ用） | `.config/nvim/lua/my/settings/autocmd.lua` の `VimEnter` |
+| nvim | `~/.local/state/herdr-nvim/<owner>.json` | pane、Herdr socket、cwd、起動種別・引数、session tag | `.config/nvim/lua/my/settings/herdr-registry.lua` |
 
-- **ファイル名がペイン ID、1ペイン=1ファイル。** 複数の nvim が同時に書いても排他がいらない
-- **正常終了ではマーカーを消す。** `VimLeavePre` で `v:dying == 0` のときだけ削除する
+- **1プロセス=1ファイル。** 同じペインで複数のnvimが動いても、片方の正常終了がもう片方の記録を消さない。復元時はペインごとに最新のownerだけを選ぶ
+- **正常終了では自分のマーカーだけを消す。** `VimLeavePre` で `v:dying == 0` のときだけ削除する
 - **異常終了ではマーカーが残る。** OS shutdown では `VimLeavePre` が走らない。
   つまり**残っているマーカー = 落ちる直前に動いていたペイン**になり、これがそのまま復元対象の一覧になる
 - `HERDR_PANE_ID` が無い環境（herdr の外で起動した nvim）は何も書かない
+- headless / pagerは記録しない。ファイル引数付きのinteractive起動は引数をJSONへ保持し、`nvim -- <args>` として戻す
+- `pane move` はpublic pane IDを変えるため、稼働中に `herdr pane current --current` を問い合わせて記録を更新する。shutdownが更新より先でも、復元時にcwdが一意なら新paneへ対応付ける。候補が複数なら誤投入せず保留する
+- Herdr socketを記録してsessionごとに分離する。名前付きsessionとdefaultの同名paneを混ぜない
 
-nvim は cwd さえ合っていれば auto-session がバッファを戻すので、マーカーの中身はデバッグ用にすぎない。
+nvimの起動種別とsession tagは復元契約である。pane移動後は旧tagのsessionを最初の読込にだけ使い、最初の定期保存から新paneのtagへ移行する。
 
 ### AI agent の session report
 
@@ -43,7 +46,7 @@ Claude と Codex の `SessionStart` hook は `pane report-agent-session` で ses
 
 ### 保存時
 
-1. nvim が起動した時点でマーカーを書き、Claude / Codex は Herdr へ session ID を報告する
+1. interactive nvim が起動した時点でowner別マーカーを書き、Claude / Codex は Herdr へ session ID を報告する
 2. nvim のバッファは auto-session が**稼働中に定期保存**する（後述）
 3. herdr のレイアウトは herdr 本体が `session.json` に持つ
 
@@ -51,9 +54,9 @@ Claude と Codex の `SessionStart` hook は `pane report-agent-session` で ses
 
 1. `he` が flock を取り、サーバーが動いていなければ `herdr server` を headless で起動する
 2. herdr が `session.json` からレイアウトを復元する
-3. `he` が `herdr-restore.sh` を切り離して起動し、自分は TUI にアタッチする
+3. `he` が `herdr-restore.sh` を切り離して起動し、自分は TUI にアタッチする。serverが別経路ですでに起動済みでも毎回driverを呼び、driver側がidle paneだけへ絞る
 4. client attach 後、Herdr が報告済みの Claude / Codex session を native resume する
-5. `herdr-restore.sh` が nvim マーカーを読み、**生存しているペインのぶんだけ**を間隔をあけて投入する
+5. `dotctl session nvim-plan` が構造化マーカーとpane一覧からsession分離・pane移動を含む実行計画を作り、`herdr-restore.sh` が**idleな生存ペインのぶんだけ**間隔をあけて投入する
 6. 各 nvim で auto-session がバッファを復元する
 
 **アタッチは復元完了を待たない。** 投入は数分に散るので、待つと端末が数分沈黙する。
@@ -82,6 +85,7 @@ Claude と Codex の `SessionStart` hook は `pane report-agent-session` で ses
   一番知りたいときに黙って終わる
 - **触らなかったペインは skipped として数える。** 復元前から何か動いていたペインには手を出さない。
   done と total が食い違う理由が表示だけで分かるようにしている
+- **`pane run` の受付だけではdoneにしない。** 前面processがnvimになったことを上限付きpollで確認する。command errorやsession未作成による即時終了を成功表示にしない
 - **`state=running` のまま pid が居なければ「中断」。** 復元プロセスが落ちたことに気づけるようにする
 - **復元対象が0件なら状態ファイルも通知も触らない。** 既にサーバーが動いている状態で `he` を叩いた
   だけでトーストが飛ぶのを避ける

@@ -44,6 +44,7 @@ expected=$(printf '%s\n' \
   help \
   private-bundle \
   rebuild \
+  session \
   settings \
   skill \
   version \
@@ -52,7 +53,7 @@ expected=$(printf '%s\n' \
   yazi-update)
 
 check "全トップレベルサブコマンドを補完する" test "$candidates" = "$expected"
-check "候補に説明を付ける" test "$(printf '%s\n' "$completions" | grep -c $'\t')" -eq 13
+check "候補に説明を付ける" test "$(printf '%s\n' "$completions" | grep -c $'\t')" -eq 14
 
 nested=$(fish --no-config -c \
   "set -g fish_complete_path '$COMPLETION_DIR' \$fish_complete_path; complete -C 'dotctl worktree '")

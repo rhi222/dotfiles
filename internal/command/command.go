@@ -91,6 +91,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   doctor migration   移行前チェック
   docker clean       docker の不要リソースを掃除する
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
+  session nvim-plan  nvim のherdr復元計画をJSONで出す
   fisher-update      変更があるときだけfish pluginを更新する
   yazi-update        変更があるときだけyazi packageを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする
@@ -134,6 +135,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runDocker(ctx, args[1:], env)
 	case "agent-usage":
 		return runAgentUsage(ctx, args[1:], env)
+	case "session":
+		return runSession(args[1:], env)
 	case "fisher-update":
 		return runFisherUpdate(ctx, args[1:], env)
 	case "yazi-update":

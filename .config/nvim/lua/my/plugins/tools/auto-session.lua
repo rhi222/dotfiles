@@ -6,6 +6,12 @@ local launch_argc = #vim.fn.argv()
 -- `:restart` / `ZR` 由来の起動では nvim 本体がセッションを復元するため、
 -- auto-session 側の復元を止めて二重復元を防ぐ。理由の詳細は session-start.lua。
 local is_normal_start = require("my.plugins.tools.session-start").is_normal_start()
+local restore_session_tag = vim.env.HERDR_RESTORE_SESSION_TAG
+
+local function clear_restore_session_tag()
+	restore_session_tag = nil
+	vim.env.HERDR_RESTORE_SESSION_TAG = nil
+end
 
 -- auto-session の headless 判定（init.lua の in_headless_mode）に合わせる。
 -- テスト用の解除フラグまで含めて揃えないと、headless で駆動しているテストから
@@ -89,6 +95,9 @@ require("auto-session").setup({
 	-- ペイン ID をタグとして混ぜ、ペインごとに別の状態で復元できるようにする。
 	-- herdr の外で起動した nvim は nil を返して従来どおり cwd 単位になる。
 	custom_session_tag = function()
+		if restore_session_tag and restore_session_tag ~= "" then
+			return restore_session_tag
+		end
 		local pane = vim.env.HERDR_PANE_ID
 		if pane and pane ~= "" then
 			return pane
@@ -107,6 +116,9 @@ require("auto-session").setup({
 	-- 両ペインが同じ内容で開く。以後はペインごとに分かれる。
 	no_restore_cmds = {
 		function()
+			-- pane move後の旧tagは最初の検索にだけ使う。見つからなかった場合の
+			-- cwd fallbackと、その後の保存は現在paneのtagへ戻す。
+			clear_restore_session_tag()
 			-- no_restore は「タグ付きが無かった」以外の理由でも発火する。
 			-- ここで対象を絞らないと、auto-session が意図して復元を止めた場面まで
 			-- 復元してしまう。
@@ -160,6 +172,9 @@ require("auto-session").setup({
 			-- タグ無しの名前に固定されてしまう。
 			auto_session.restore_session_file(path)
 		end,
+	},
+	post_restore_cmds = {
+		clear_restore_session_tag,
 	},
 	-- tmux kill-server等でSIGHUP/SIGTERM受信中のセッション保存をスキップ
 	pre_save_cmds = {
@@ -216,7 +231,13 @@ local function schedule_auto_save()
 			end
 			-- suppressed_dirs や args_allow_files_auto_save 等の判定は
 			-- auto_save_session() 側が持っているため、ここでは重複して持たない。
-			require("auto-session").auto_save_session()
+			local saved = require("auto-session").auto_save_session()
+			if saved then
+				local ok, registry = pcall(require, "my.settings.herdr-registry")
+				if ok then
+					registry.session_saved()
+				end
+			end
 		end)
 	)
 end

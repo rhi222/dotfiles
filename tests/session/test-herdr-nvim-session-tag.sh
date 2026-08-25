@@ -104,6 +104,17 @@ restored_buffers_at_vim_enter() {
   cat "$out" 2>/dev/null
 }
 
+# pane move前のtagを最初のrestoreだけに使い、以後は現在paneのtagで保存する。
+restored_buffers_from_moved_tag() {
+  local pane="$1" old_tag="$2"
+  local out="$WORK/.moved.$pane"
+  (cd "$WORK" && HERDR_PANE_ID="$pane" HERDR_RESTORE_SESSION_TAG="$old_tag" nvim --headless \
+    -c 'lua vim.api.nvim_clear_autocmds({ group = "auto_session_group", event = "VimEnter" }); require("auto-session").auto_restore_session_at_vim_enter()' \
+    -c "lua vim.fn.writefile({table.concat(vim.tbl_map(function(b) return vim.fn.fnamemodify(b.name, ':t') end, vim.fn.getbufinfo({buflisted=1})), ',')}, '$out')" \
+    -c 'wqa') >/dev/null 2>&1
+  cat "$out" 2>/dev/null
+}
+
 # ファイル引数付きの起動を再現する。
 # auto-session はこの場合「復元しない」と判断するが、その判断も no_restore
 # フックを発火させる。ここでフォールバックが走ると、開こうとしたファイルが
@@ -151,6 +162,10 @@ assert_eq "フォールバック後の保存はタグ付きになる" "present" 
 
 echo "test: タグ付きがあればフォールバックしない"
 assert_eq "w9:p1 は自分のセッションを復元する" "a.txt" "$(restored_buffers_at_vim_enter w9:p1)"
+
+echo "test: pane move前のtagから復元して現在tagへ移行する"
+assert_eq "旧tagのbufferを復元する" "a.txt" "$(restored_buffers_from_moved_tag w8:p8 w9:p1)"
+assert_eq "保存先は現在paneのtagになる" "present" "$(tagged_session_exists w8:p8)"
 
 echo "test: ファイル引数付きの起動ではフォールバックしない"
 : >"$WORK/d.txt"

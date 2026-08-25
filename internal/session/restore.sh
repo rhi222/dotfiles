@@ -10,58 +10,6 @@ herdr_restore_state_dir() {
   printf '%s/%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}" "$1"
 }
 
-# pane_id から workspace ID を取り出す。"w5:p29" -> "w5"
-herdr_restore_workspace_of() {
-  printf '%s\n' "${1%%:*}"
-}
-
-# 復元プランを実行順に出力する。1行 = "<kind>\t<pane_id>\t<command>"
-#
-# フォーカス中 workspace を先にし、同一グループ内は pane_id の辞書順にする。
-herdr_restore_plan() {
-  local nvim_dir="$1" alive_file="$2" focused_ws="$3"
-  local group want_focused marker pane ws is_focused
-
-  for group in nvim-focused nvim-other; do
-    case "$group" in
-      nvim-focused)
-        want_focused=1
-        ;;
-      nvim-other)
-        want_focused=0
-        ;;
-    esac
-    [[ -d "$nvim_dir" ]] || continue
-
-    while IFS= read -r marker; do
-      [[ -n "$marker" ]] || continue
-      pane=$(basename "$marker")
-      grep -Fxq "$pane" "$alive_file" || continue
-      ws=$(herdr_restore_workspace_of "$pane")
-      is_focused=0
-      [[ "$ws" == "$focused_ws" ]] && is_focused=1
-      [[ "$is_focused" == "$want_focused" ]] || continue
-      printf 'nvim\t%s\tnvim\n' "$pane"
-    done < <(find "$nvim_dir" -maxdepth 1 -type f 2>/dev/null | sort)
-  done
-}
-
-# 生存していないペインのマーカーを削除する。
-# alive_file が空のときはペイン一覧の取得に失敗したとみなし、何も消さない。
-herdr_restore_prune_markers() {
-  local dir="$1" alive_file="$2"
-  [[ -d "$dir" ]] || return 0
-  [[ -s "$alive_file" ]] || return 0
-
-  local marker pane
-  while IFS= read -r marker; do
-    [[ -n "$marker" ]] || continue
-    pane=$(basename "$marker")
-    grep -Fxq "$pane" "$alive_file" && continue
-    rm -f "$marker"
-  done < <(find "$dir" -maxdepth 1 -type f 2>/dev/null | sort)
-}
-
 # ---- 復元の進行状況 ---------------------------------------------------------
 #
 # 投入は数分に散るため、走っているのか終わったのかを外から見えるようにする。
@@ -184,6 +132,8 @@ herdr_restore_counts_summary() {
 herdr_restore_reason_text() {
   case "$1" in
     pane-list) printf 'ペイン一覧を取得できませんでした\n' ;;
+    session-list) printf 'Herdr sessionを特定できませんでした\n' ;;
+    dotctl) printf 'nvim復元計画を作成できませんでした（dotctl rebuildを実行）\n' ;;
     '') printf '原因不明\n' ;;
     *) printf '%s\n' "$1" ;;
   esac
@@ -252,4 +202,14 @@ herdr_restore_pane_is_idle() {
   shell_pid=$(printf '%s' "$json" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null)
   fg_pid=$(printf '%s' "$json" | jq -r '.result.process_info.foreground_processes[0].pid // empty' 2>/dev/null)
   [[ -n "$shell_pid" && "$shell_pid" == "$fg_pid" ]]
+}
+
+# pane run が受理された後、実際にnvimが前面へ出たことを確認する。
+herdr_restore_pane_is_nvim() {
+  local json="$1" command
+  command=$(printf '%s' "$json" | jq -r \
+    '.result.process_info.foreground_processes[0].cmdline // empty' 2>/dev/null)
+  command="${command%% *}"
+  command="${command##*/}"
+  [[ "$command" == nvim || "$command" == nvim-* ]]
 }

@@ -9,6 +9,7 @@ set -l dotctl_commands \
     doctor \
     docker \
     agent-usage \
+    session \
     fisher-update \
     yazi-update \
     rebuild \
@@ -25,6 +26,7 @@ complete -c dotctl -f -n "$dotctl_needs_command" -a wsl -d 'WSL2 のキャッシ
 complete -c dotctl -f -n "$dotctl_needs_command" -a doctor -d 環境の残骸と移行前チェック
 complete -c dotctl -f -n "$dotctl_needs_command" -a docker -d 'Docker の不要リソースを掃除'
 complete -c dotctl -f -n "$dotctl_needs_command" -a agent-usage -d 'AI agent のレート上限を表示'
+complete -c dotctl -f -n "$dotctl_needs_command" -a session -d 'Herdr session の復元計画'
 complete -c dotctl -f -n "$dotctl_needs_command" -a fisher-update -d '変更時だけ fish plugin を更新'
 complete -c dotctl -f -n "$dotctl_needs_command" -a yazi-update -d '変更時だけ yazi package を更新'
 complete -c dotctl -f -n "$dotctl_needs_command" -a rebuild -d 'dotctl を再ビルド'
@@ -67,3 +69,5 @@ complete -c dotctl -f -n '__fish_seen_subcommand_from docker; and not __fish_see
 complete -c dotctl -f -n '__fish_seen_subcommand_from agent-usage; and not __fish_seen_subcommand_from line detail refresh' -a line -d 'tab bar 用の1行を表示'
 complete -c dotctl -f -n '__fish_seen_subcommand_from agent-usage; and not __fish_seen_subcommand_from line detail refresh' -a detail -d 詳細を表示
 complete -c dotctl -f -n '__fish_seen_subcommand_from agent-usage; and not __fish_seen_subcommand_from line detail refresh' -a refresh -d レート上限を取得して更新
+
+complete -c dotctl -f -n '__fish_seen_subcommand_from session; and not __fish_seen_subcommand_from nvim-plan' -a nvim-plan -d 'nvim の復元計画をJSONで出す'

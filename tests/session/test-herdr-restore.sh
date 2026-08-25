@@ -1,6 +1,6 @@
 #!/bin/bash
-# herdr復元は生存paneだけを安全な順序で計画し、使用中paneと取得失敗を破壊しない。
-# marker・status・表示整形の契約を外部herdrなしで検査する。
+# herdr復元は使用中paneと取得失敗を破壊せず、起動確認後だけ完了に数える。
+# status・process判定・表示整形の契約を外部herdrなしで検査する。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,15 +20,9 @@ FAIL=0
 TOTAL=0
 
 TEST_DIR=""
-NVIM_DIR=""
-ALIVE=""
 
 setup() {
   TEST_DIR=$(mktemp -d)
-  NVIM_DIR="$TEST_DIR/herdr-nvim"
-  ALIVE="$TEST_DIR/alive"
-  mkdir -p "$NVIM_DIR"
-  : >"$ALIVE"
 }
 
 teardown() {
@@ -75,47 +69,6 @@ assert_ng() {
   fi
 }
 
-nvim_marker() { printf '/tmp/proj\n' >"$NVIM_DIR/$1"; }
-
-echo "test: workspace_of"
-assert_eq "w5:p29 -> w5" "w5" "$(herdr_restore_workspace_of w5:p29)"
-assert_eq "w6:p8V -> w6" "w6" "$(herdr_restore_workspace_of w6:p8V)"
-
-echo "test: plan の並び順"
-setup
-printf 'w5:p1\nw6:p1\n' >"$ALIVE"
-nvim_marker "w5:p1"
-nvim_marker "w6:p1"
-EXPECTED=$(printf 'nvim\tw5:p1\tnvim\nnvim\tw6:p1\tnvim')
-assert_eq "フォーカス中 workspace が先" "$EXPECTED" "$(herdr_restore_plan "$NVIM_DIR" "$ALIVE" "w5")"
-teardown
-
-echo "test: 死んだペインは plan に入らない"
-setup
-printf 'w5:p1\n' >"$ALIVE"
-nvim_marker "w5:p1"
-nvim_marker "w5:p99"
-assert_eq "生存ペインだけ" "$(printf 'nvim\tw5:p1\tnvim')" "$(herdr_restore_plan "$NVIM_DIR" "$ALIVE" "w5")"
-teardown
-
-echo "test: prune_markers"
-setup
-printf 'w5:p1\n' >"$ALIVE"
-nvim_marker "w5:p1"
-nvim_marker "w5:p99"
-herdr_restore_prune_markers "$NVIM_DIR" "$ALIVE"
-assert_eq "生存ペインのマーカーは残る" "present" "$([[ -f "$NVIM_DIR/w5:p1" ]] && echo present || echo absent)"
-assert_eq "死んだペインのマーカーは消える" "absent" "$([[ -f "$NVIM_DIR/w5:p99" ]] && echo present || echo absent)"
-teardown
-
-echo "test: alive が空なら何も消さない"
-setup
-: >"$ALIVE"
-nvim_marker "w5:p1"
-herdr_restore_prune_markers "$NVIM_DIR" "$ALIVE"
-assert_eq "取得失敗時はマーカーを保持する" "present" "$([[ -f "$NVIM_DIR/w5:p1" ]] && echo present || echo absent)"
-teardown
-
 echo "test: pane_is_idle"
 IDLE='{"result":{"process_info":{"foreground_processes":[{"cmdline":"/usr/bin/fish","pid":23983}],"shell_pid":23983}}}'
 BUSY='{"result":{"process_info":{"foreground_processes":[{"cmdline":"nvim","pid":24497}],"shell_pid":23986}}}'
@@ -123,6 +76,8 @@ EMPTY='{"result":{}}'
 assert_ok "素のシェルは idle" herdr_restore_pane_is_idle "$IDLE"
 assert_ng "何か走っていれば idle でない" herdr_restore_pane_is_idle "$BUSY"
 assert_ng "情報が取れなければ idle でない" herdr_restore_pane_is_idle "$EMPTY"
+assert_ok "nvimを起動確認できる" herdr_restore_pane_is_nvim "$BUSY"
+assert_ng "shellをnvimと誤認しない" herdr_restore_pane_is_nvim "$IDLE"
 
 echo "test: format_duration"
 assert_eq "60秒未満は秒だけ" "45秒" "$(herdr_restore_format_duration 45)"

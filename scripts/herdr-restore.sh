@@ -58,6 +58,8 @@ NVIM_DIR="$(herdr_restore_state_dir herdr-nvim)"
 STATUS="$(herdr_restore_state_dir herdr-restore.status)"
 NVIM_BATCH="${HERDR_RESTORE_NVIM_BATCH:-3}"
 NVIM_INTERVAL="${HERDR_RESTORE_NVIM_INTERVAL:-2}"
+DOTCTL="${HERDR_RESTORE_DOTCTL:-$HOME/.local/bin/dotctl}"
+[[ -x "$DOTCTL" ]] || DOTCTL="$(command -v dotctl 2>/dev/null || true)"
 
 # WSL2 以外（powershell.exe が無い環境）では通知しない。
 #
@@ -89,8 +91,9 @@ mkdir -p "$(dirname "$LOCK")"
 exec 9>"$LOCK"
 flock -n 9 || exit 0
 
-ALIVE=$(mktemp)
-trap 'rm -f "$ALIVE"' EXIT
+PANE_FILE=$(mktemp)
+PLAN_FILE=$(mktemp)
+trap 'rm -f "$PANE_FILE" "$PLAN_FILE"' EXIT
 
 fail() {
   local reason="$1"
@@ -104,36 +107,51 @@ fail() {
 # ペイン一覧を取れなかった場合は、マーカーを消さずに何もしないで終わる。
 pane_json=$(herdr_cli pane list 2>/dev/null) || fail pane-list
 printf '%s' "$pane_json" | jq -e '.result.panes | type == "array"' >/dev/null 2>&1 || fail pane-list
-printf '%s' "$pane_json" | jq -r '.result.panes[].pane_id' >"$ALIVE"
-[[ -s "$ALIVE" ]] || exit 0
+printf '%s' "$pane_json" >"$PANE_FILE"
+printf '%s' "$pane_json" | jq -e '.result.panes | length > 0' >/dev/null 2>&1 || exit 0
 
 focused_ws=$(herdr_cli api snapshot 2>/dev/null | jq -r '.result.snapshot.focused_workspace_id // empty')
+session_json=$(herdr session list --json 2>/dev/null) || fail session-list
+session_name="${SESSION:-default}"
+socket_path=$(printf '%s' "$session_json" | jq -r --arg name "$session_name" \
+  '.sessions[]? | select(.name == $name and .running == true) | .socket_path' | head -n 1)
+[[ -n "$socket_path" ]] || fail session-list
+[[ -n "$DOTCTL" ]] || fail dotctl
 
-# マーカーディレクトリはセッション間で共有されている。名前付きセッションを
-# 対象にしているときに掃除すると、既定セッションのマーカーを「死んだペイン」と
-# 誤判定して全部消してしまう。掃除は既定セッションのときだけ行う。
-if [[ "$DRY_RUN" -eq 0 && -z "$SESSION" ]]; then
-  herdr_restore_prune_markers "$NVIM_DIR" "$ALIVE"
+planner_args=(session nvim-plan --markers "$NVIM_DIR" --panes "$PANE_FILE"
+  --socket "$socket_path" --focused "$focused_ws")
+# Version 1 markers predate per-session ownership and are only safe for default.
+[[ -z "$SESSION" ]] && planner_args+=(--legacy)
+"$DOTCTL" "${planner_args[@]}" >"$PLAN_FILE" 2>/dev/null || fail dotctl
+jq -e '.entries | type == "array"' "$PLAN_FILE" >/dev/null 2>&1 || fail dotctl
+
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  while IFS= read -r stale; do
+    [[ "$stale" == "$NVIM_DIR/"* ]] && rm -f -- "$stale"
+  done < <(jq -r '.stale[]' "$PLAN_FILE")
 fi
 
 PLAN=()
-while IFS= read -r line; do
-  [[ -n "$line" ]] && PLAN+=("$line")
-done < <(herdr_restore_plan "$NVIM_DIR" "$ALIVE" "$focused_ws")
+while IFS= read -r encoded; do
+  [[ -n "$encoded" ]] && PLAN+=("$encoded")
+done < <(jq -rc '.entries[] | @base64' "$PLAN_FILE")
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   for line in "${PLAN[@]}"; do
-    printf '%s\n' "$line"
+    printf '%s' "$line" | base64 -d | jq -r '[.kind, .pane_id, .command] | @tsv'
   done
   exit 0
 fi
 
-NVIM_TOTAL=0
+READY_PLAN=()
 for line in "${PLAN[@]}"; do
-  case "${line%%$'\t'*}" in
-    nvim) NVIM_TOTAL=$((NVIM_TOTAL + 1)) ;;
-  esac
+  pane=$(printf '%s' "$line" | base64 -d | jq -r '.pane_id')
+  info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || continue
+  herdr_restore_pane_is_idle "$info" || continue
+  READY_PLAN+=("$line")
 done
+PLAN=("${READY_PLAN[@]}")
+NVIM_TOTAL=${#PLAN[@]}
 
 # 復元するものが無ければ、前回の記録を残したまま黙って終わる。
 # 既にサーバーが動いている状態の `he` で通知が飛ぶのを避ける。
@@ -161,10 +179,18 @@ launch() {
     return 0
   fi
   if herdr_cli pane run "$pane" "$cmd" >/dev/null 2>&1; then
-    herdr_restore_status_bump "$STATUS" "${kind}_done"
-  else
-    herdr_restore_status_bump "$STATUS" "${kind}_skipped"
+    # pane runの受理だけでは起動成功ではない。前面processがnvimになるまで
+    # 上限付きでpollし、command errorを「復元完了」に数えない。
+    for _ in $(seq 1 40); do
+      info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || info=""
+      if herdr_restore_pane_is_nvim "$info"; then
+        herdr_restore_status_bump "$STATUS" "${kind}_done"
+        return 0
+      fi
+      sleep 0.25
+    done
   fi
+  herdr_restore_status_bump "$STATUS" "${kind}_skipped"
 }
 
 run_group() {
@@ -173,14 +199,16 @@ run_group() {
   local line pane cmd i n
 
   for line in "${PLAN[@]}"; do
-    [[ "${line%%$'\t'*}" == "$kind" ]] && entries+=("$line")
+    [[ "$(printf '%s' "$line" | base64 -d | jq -r '.kind')" == "$kind" ]] && entries+=("$line")
   done
 
   i=0
   while ((i < ${#entries[@]})); do
     n=0
     while ((n < batch && i < ${#entries[@]})); do
-      IFS=$'\t' read -r _ pane cmd <<<"${entries[i]}"
+      line=$(printf '%s' "${entries[i]}" | base64 -d)
+      pane=$(printf '%s' "$line" | jq -r '.pane_id')
+      cmd=$(printf '%s' "$line" | jq -r '.command')
       launch "$kind" "$pane" "$cmd"
       i=$((i + 1))
       n=$((n + 1))
