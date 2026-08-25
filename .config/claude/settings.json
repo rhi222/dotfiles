@@ -3,6 +3,7 @@
   "enabledPlugins": {
     "codex@openai-codex": true,
     "example-skills@anthropic-agent-skills": false,
+    "lua-lsp@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true
   },
   "env": {
