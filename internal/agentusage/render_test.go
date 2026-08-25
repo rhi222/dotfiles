@@ -141,6 +141,21 @@ func TestRenderDetail(t *testing.T) {
 	}
 }
 
+func TestRenderDetailUnknownReset(t *testing.T) {
+	// Claude APIは使用率0%の未開始sessionでresets_atを返さないことがある。
+	// epochへ変換して1970/1/1と表示せず、日時不明として扱う。
+	now := time.Date(2026, 8, 25, 12, 40, 0, 0, time.Local)
+	c := fixtureCache(now)
+	c.Claude.Session = &Window{Percent: 0, ResetsAt: 0}
+	got := RenderDetail(c, now, 15*time.Minute)
+	if !strings.Contains(got, "Session 5h  ▱▱▱▱▱▱▱▱   0%  reset --") {
+		t.Errorf("resets_at不明の表示が不正:\n%s", got)
+	}
+	if strings.Contains(got, "1/1 09:00") || strings.Contains(got, "reset -- (") {
+		t.Errorf("resets_at不明でepoch/countdownを表示している:\n%s", got)
+	}
+}
+
 func TestRenderDetailMultipleCodexAccounts(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	c := fixtureCache(now)

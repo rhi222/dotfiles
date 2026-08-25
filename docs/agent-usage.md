@@ -15,6 +15,7 @@ AGENTS.md の一覧から参照される設計記録。
   窓ごとには付けない
 - キャッシュが無い側は欄ごと消える
 - 詳細は prefix+u の popup（バー・絶対時刻・fetched 経過）。
+  APIがreset日時を返さない未開始の窓は `reset --` とし、Unix epochや残り0分として表示しない。
   popup は通常の端末なので ANSI 色を使い、見出しを太字シアン、使用率を 60% 未満=緑 / 60%以上=黄 / 85%以上=赤、空きバーと補足を dim、stale を太字赤で表示する。
   tab bar は ANSI 非対応なので着色しない
 - override無しの実データで確認済み（`line` は `CC s91% w56% f33% · CX w7%`、`detail` はバー・絶対リセット時刻・`fetched:` 経過付きの複数行）

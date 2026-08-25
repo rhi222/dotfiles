@@ -133,10 +133,13 @@ func detailBar(percent int, color bool) string {
 }
 
 func detailRow(label string, w *Window, now time.Time, withCountdown, color bool) string {
-	r := time.Unix(w.ResetsAt, 0).Local()
-	reset := fmt.Sprintf("reset %d/%d %02d:%02d", int(r.Month()), r.Day(), r.Hour(), r.Minute())
-	if withCountdown {
-		reset += fmt.Sprintf(" (%s)", countdown(w, now))
+	reset := "reset --"
+	if w.ResetsAt > 0 {
+		r := time.Unix(w.ResetsAt, 0).Local()
+		reset = fmt.Sprintf("reset %d/%d %02d:%02d", int(r.Month()), r.Day(), r.Hour(), r.Minute())
+		if withCountdown {
+			reset += fmt.Sprintf(" (%s)", countdown(w, now))
+		}
 	}
 	return fmt.Sprintf("  %s %s %s  %s",
 		styled(color, ansiBold, fmt.Sprintf("%-11s", label)),
