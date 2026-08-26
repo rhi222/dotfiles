@@ -25,7 +25,6 @@
 | esa-diff-weekly        | esa週次差分URL取得&サマリ                     |
 | esa-weekly-report      | esa週次エグゼクティブレポート生成             |
 | executive-report       | 部長会用の役員報告リライト                    |
-| git-commit             | Conventional Commit形式のコミット作成         |
 | humanize               | AI文章の自然化                                |
 | linear-add             | Linear起票（規約の自動適用）                  |
 | linear-recall          | 起票済みLinear issueの検索・想起              |

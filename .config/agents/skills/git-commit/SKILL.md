@@ -2,7 +2,6 @@
 name: git-commit
 description: ステージされた変更からConventional Commitメッセージを作成してコミットする。「コミットして」「commit」「変更をコミット」「git commit」などで使用。コミットメッセージの作成やステージ済み変更の確定が必要な場面で常に使用すること。
 allowed-tools: Bash(git commit:*)
-disable-model-invocation: true
 ---
 
 ## 重要事項
@@ -69,7 +68,7 @@ flowchart TD
   - **リファクタリング時**: `refactor:`
 
 - **開発ツール・補助ツール関連**:
-  - **Claude Code設定変更**: `chore:` (.claude/ディレクトリ内の変更)
+  - **agent設定変更**: `chore:` (`.claude/`、`.codex/`、`.agents/` などの変更)
   - **その他開発支援ツール**: `chore:`
   - **パッケージ更新・設定変更**: `chore:`
   - **CI/CD設定**: `ci:`
