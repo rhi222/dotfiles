@@ -393,6 +393,7 @@ check "潰さなかったことを報告する" grep -q "実ディレクトリ" 
 # 自作 skill と名前が衝突したらリンクしない。
 # 両方リンクしようとすると後から張った方で上書きされ、どちらが有効か分からなくなる
 mkdir -p "$vs/dc/claude/skills/dup" "$vs/dc/agents/skills-vendor/dup"
+: >"$vs/dc/claude/skills/dup/SKILL.md"
 : >"$vs/dc/agents/skills-vendor/dup/SKILL.md"
 SKIPPED=()
 out=$(DC="$vs/dc" HOME="$vs/home" link_vendor_skills_into "$vs/home/.claude/skills" 2>&1)
