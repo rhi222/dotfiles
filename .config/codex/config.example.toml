@@ -44,5 +44,7 @@ status_line = [
   "current-dir",
   "five-hour-limit",
   "weekly-limit",
+  "git-branch",
+  "pull-request-number",
 ]
 status_line_use_colors = true

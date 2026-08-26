@@ -1,0 +1,25 @@
+{
+  "skill_name": "ci-debug",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "GitHub Actionsで npm ci が EUSAGE: package.json and package-lock.json are not in sync になりました。原因と次に確認することを整理して。",
+      "expected_output": "依存関係・lockfile不整合として分類し、再実行だけで済ませず、package.jsonとlockfileの差分確認、正しいpackage managerでのlockfile再生成、ローカル検証を具体的に案内する。",
+      "assertions": [
+        "失敗箇所をnpm ciまたは依存関係のインストールと特定している",
+        "package.jsonとlockfileの不整合を原因として説明している",
+        "lockfileを正しいpackage managerで再生成してCI相当のコマンドを再実行する手順がある"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "CIが落ちた、という情報しかありません。直して。",
+      "expected_output": "原因を推測で断定せず、対象runや失敗job/stepを特定するための最小限のログ取得を先に行う。修正は原因確認後に提案する。",
+      "assertions": [
+        "情報不足のまま原因や修正を断定していない",
+        "gh run viewなどで失敗ログを取得する手順を示している",
+        "workflow、job、stepのどこで失敗したかを切り分けようとしている"
+      ]
+    }
+  ]
+}

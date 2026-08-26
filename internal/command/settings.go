@@ -7,9 +7,10 @@ import (
 	"github.com/rhi222/dotfiles/internal/settings"
 )
 
-const settingsUsage = `使い方: dotctl settings sync <claude|windows> <pull|push|status> [オプション]
+const settingsUsage = `使い方: dotctl settings sync <claude|codex|windows> <pull|push|status> [オプション]
 
   claude    ~/.claude/settings.json とリポジトリ版
+  codex     ~/.codex/config.toml と共有テンプレート（statusのみ）
   windows   .wslconfig と Windows Terminal の settings.json
 
   pull [--dry-run]  実ファイルをリポジトリに取り込む（通常はこちら）
@@ -40,6 +41,8 @@ func runSettings(ctx context.Context, args []string, env Env) int {
 	switch rest[0] {
 	case "claude":
 		return runSettingsClaude(ctx, rest[1:], env)
+	case "codex":
+		return runSettingsCodex(rest[1:], env)
 	case "windows":
 		return runSettingsWindows(ctx, rest[1:], env)
 	case "-h", "--help":
@@ -49,6 +52,17 @@ func runSettings(ctx context.Context, args []string, env Env) int {
 		fmt.Fprintf(env.Stderr, "dotctl settings sync: 知らない対象: %s\n\n%s", rest[0], settingsUsage)
 		return 2
 	}
+}
+
+func runSettingsCodex(args []string, env Env) int {
+	if len(args) != 1 || args[0] != "status" {
+		fmt.Fprint(env.Stderr, settingsUsage)
+		return 2
+	}
+	return settings.CodexStatus(env.CodexSettings, settings.IO{
+		Stdout: env.Stdout,
+		Stderr: env.Stderr,
+	}).ExitCode()
 }
 
 // parseSyncFlags は pull/push/status に共通のオプションを読む。

@@ -113,21 +113,23 @@ Gitは直接の `git add` / `git diff` / `git commit`、GitHubは `gh pr view` /
 `config.example.toml` はGitHub pluginの有効状態も共有するが、plugin本体のinstallは行わない。
 新環境ではCodexのplugin管理画面またはCLIから別途installする。
 
-`notice.*` と `tui.model_availability_nux` はCodexが書き込む確認済み状態なので、
+`projects.*`、`notice.*`、`tui.model_availability_nux` は端末や実行時の状態なので、
 ローカルの実体だけに残し、共有テンプレートへは取り込まない。
+`hooks.state` もCodexが生成するhookの信頼状態として同様に扱う。
 
 ## 更新フロー（テンプレート反映）
 
 ローカル設定は手元の裁量で変わるため、テンプレートの差分だけを安全に取り込みます。
 
-1. テンプレートを退避して比較
+1. 機械固有stateをマスクして意味的に比較
 
    ```bash
-   cp ~/.codex/config.toml /tmp/codex.config.toml.bak
-   diff -u /tmp/codex.config.toml.bak .config/codex/config.example.toml
+   bash scripts/settings/sync-codex.sh
    ```
 
-2. 必要な差分だけを手動で反映
+   コメントやキー順は差分にせず、値を表示しない。差があるキー名だけを報告する。
+
+2. 必要な共有差分だけを手動で `config.example.toml` へ反映
 
 ## よくある運用パターン
 

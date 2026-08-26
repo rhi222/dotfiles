@@ -106,11 +106,12 @@ Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-s
 | 状態確認       | `bash scripts/private-bundle.sh status`          |
 
 `~/.claude/settings.json` とWindows側設定はアプリがrenameで書き戻すためsymlinkにしない。
-**どちらも実ファイルを正、repoを追従側とする。**
+**どちらも実ファイルを正、repoを追従側とする。** Codex設定も端末固有stateを含むためsymlinkにしない。
 
 | 対象             | status                            | 実体 → repo | repo → 実体      |
 | ---------------- | --------------------------------- | ----------- | ---------------- |
 | Claude settings  | `sync-claude-settings.sh status`  | `pull`      | `push [--force]` |
+| Codex config     | `bash scripts/settings/sync-codex.sh` | 手動        | 手動             |
 | Windows settings | `sync-windows-settings.sh status` | `pull`      | `push [--force]` |
 
 Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選べる。`.wslconfig` は端末の

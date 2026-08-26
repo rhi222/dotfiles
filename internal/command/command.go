@@ -40,8 +40,9 @@ type Env struct {
 	// Cwd はカレントディレクトリ（worktree init の既定の対象）。
 	Cwd string
 
-	// ClaudeSettings / WindowsSettings は設定同期の対象パス。
+	// ClaudeSettings / CodexSettings / WindowsSettings は設定同期の対象パス。
 	ClaudeSettings  settings.ClaudeConfig
+	CodexSettings   settings.CodexConfig
 	WindowsSettings settings.WindowsConfig
 
 	// Vendor は vendored skill の取込設定。
@@ -82,7 +83,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
 サブコマンド:
   worktree cleanup   消し忘れた git worktree を洗い出して掃除する
   worktree init      worktree 作成後の初期化
-  settings sync      設定ファイルのコピー同期（claude / windows）
+  settings sync      設定ファイルの同期・比較（claude / codex / windows）
   skill audit        skill の内容を機械的に検査する
   skill vendor       vendored skill の取込と点検
   private-bundle     ローカル設定の集約と運搬

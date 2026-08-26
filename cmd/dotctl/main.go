@@ -50,6 +50,14 @@ func claudeSettings() settings.ClaudeConfig {
 	}
 }
 
+func codexSettings() settings.CodexConfig {
+	home, _ := os.UserHomeDir()
+	return settings.CodexConfig{
+		Live:     envOr("CODEX_SETTINGS_LIVE", filepath.Join(home, ".codex", "config.toml")),
+		Template: envOr("CODEX_SETTINGS_TEMPLATE", repoPath(".config/codex/config.example.toml")),
+	}
+}
+
 // windowsSettings は Windows 側設定のパスを解く。
 //
 // **実ファイルのパス解決は環境変数が最優先。** テストが /mnt/c を触らずに
@@ -274,6 +282,7 @@ func main() {
 		Cwd:                cwd(),
 
 		ClaudeSettings:  claudeSettings(),
+		CodexSettings:   codexSettings(),
 		WindowsSettings: windowsSettings(),
 
 		Vendor:            vendorConfig(),

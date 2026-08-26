@@ -16,16 +16,13 @@
 
 | スキル                 | 説明                                          |
 | ---------------------- | --------------------------------------------- |
-| accessibility-reviewer | フロントエンドコードのa11yレビュー（WCAG 2.1/2.2 AA基準） |
 | backport-pr            | 既存PRを別ベースブランチ向けPRへ移植          |
-| ci-debug               | GitHub Actionsエラー分析                      |
 | difit                  | ステージ差分のブラウザレビュー                |
 | doc-refine             | 文書の論理批評→AIくささ修正パイプライン（humanizeを内部参照） |
 | esa-api                | esa.io API共通ナレッジ (他esa-*から内部参照)  |
 | esa-diff-weekly        | esa週次差分URL取得&サマリ                     |
 | esa-weekly-report      | esa週次エグゼクティブレポート生成             |
 | executive-report       | 部長会用の役員報告リライト                    |
-| humanize               | AI文章の自然化                                |
 | linear-add             | Linear起票（規約の自動適用）                  |
 | linear-recall          | 起票済みLinear issueの検索・想起              |
 | linear-slack-sweep     | Slackスタンプ→Linear Triage起票               |
@@ -38,7 +35,6 @@
 | puml-from-drawio       | draw.io→PlantUML変換                          |
 | nippo-\*               | 日報システム（後述）                          |
 | session-patterns       | セッション履歴から繰り返しパターンを抽出      |
-| tech-writing           | 日本語技術文書の文章規範（推敲やリライト）    |
 
 ---
 

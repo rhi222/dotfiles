@@ -4,8 +4,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-SCAN="$SCRIPTS_DIR/secret-scan.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SCRIPTS_DIR="$REPO_ROOT/scripts"
+SCAN="$SCRIPTS_DIR/repository/secret-scan.sh"
 
 PASS=0
 FAIL=0
@@ -123,6 +124,25 @@ git -C "$repo" commit -q -m add-e
 r=$(run_scan --tree)
 check_exit 1 "$(exit_of "$r")" "--tree はコミット済みの機密語を検出する" "$(out_of "$r")"
 
+echo "=== --worktree: ignoreされていない未追跡ファイルを見る ==="
+echo "secretcorp untracked" >"$repo/untracked.txt"
+r=$(run_scan --worktree)
+check_exit 1 "$(exit_of "$r")" "--worktree は未追跡ファイルの機密語を検出する" "$(out_of "$r")"
+check_contains "untracked.txt" "$(out_of "$r")" "未追跡ファイル名を出力する"
+rm "$repo/untracked.txt"
+
+echo "=== --worktree: ignore済み未追跡ファイルは見ない ==="
+echo 'ignored.txt' >"$repo/.gitignore"
+git -C "$repo" add .gitignore
+git -C "$repo" commit -q -m ignore-fixture
+echo "secretcorp ignored" >"$repo/ignored.txt"
+r=$(run_scan --worktree)
+check_exit 1 "$(exit_of "$r")" "既存の追跡ファイルに機密語があれば検出したまま" "$(out_of "$r")"
+case "$(out_of "$r")" in
+  *ignored.txt*) ng "ignore済み未追跡ファイルは検査しない" "$(out_of "$r")" ;;
+  *) ok "ignore済み未追跡ファイルは検査しない" ;;
+esac
+
 echo "=== 辞書ファイル自身は検査しない ==="
 # 辞書はパターンの一覧なので必ず自分にマッチする。CI は .example を辞書として使うので実際に踏む
 cp "$tmp/patterns.txt" "$repo/dict.txt"
@@ -165,6 +185,16 @@ r=$(run_scan)
 check_exit 2 "$(exit_of "$r")" "引数なしは exit 2" "$(out_of "$r")"
 r=$(run_scan --bogus)
 check_exit 2 "$(exit_of "$r")" "未知のモードは exit 2" "$(out_of "$r")"
+
+echo "=== cross-repo設定はagent別配置でもignoreする ==="
+for agent in agents claude codex; do
+  path=".config/$agent/skills/cross-repo-investigate/repos.yml"
+  if git -C "$REPO_ROOT" check-ignore -q "$path"; then
+    ok "$agent 配置の repos.yml をignoreする"
+  else
+    ng "$agent 配置の repos.yml をignoreする"
+  fi
+done
 
 echo "=== 辞書が無い場合 ==="
 export SECRET_PATTERNS="$tmp/does-not-exist.txt"

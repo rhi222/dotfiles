@@ -19,16 +19,18 @@ subdomain形式は汎用辞書に一致しうるため、`slack.example.com` の
 
 ## 検査
 
-`scripts/secret-scan.sh` を二層で使う。
+`scripts/repository/secret-scan.sh` を三層で使う。
 
 | 層 | mode | 辞書 |
 | -- | ---- | ---- |
 | pre-commit | `--staged` | 実体辞書 |
+| 手元の全変更確認 | `--worktree` | 実体辞書 |
 | GitHub Actions | `--tree` | `.example` の汎用pattern |
 
 - CIへ実体辞書を渡さない。public logに辞書そのものが漏れるため
 - 辞書が無い新環境は警告して通し、`scripts/bootstrap.sh` が雛形を作る
 - 内容だけでなくpath名も検査する
+- commit前に未追跡ファイルを含めて確認するときは `--worktree` を使う。ignore済みファイルは対象外
 - 社内名を含む対象は、名前を `.gitignore` に書かず親directory単位でignoreする
 - `--no-verify` は原則使わない
 

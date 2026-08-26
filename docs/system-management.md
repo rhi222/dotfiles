@@ -47,6 +47,11 @@ gitがignoreしているものだけを拾う。`~/.claude/settings.json` と
 - 不正なJSONを相手側へ伝播しない
 - `daily-update.sh` のpullは差分を作るだけで、自動commitしない
 
+### Codex config.toml
+
+Codexの `config.toml` はsymlinkせず、`bash scripts/settings/sync-codex.sh` で共有テンプレートとの差を確認する。
+端末固有のtrusted projectと実行時stateは除外し、値を表示せず差があるキー名だけを報告する。
+
 ### Windows設定
 
 | repo | Windows側 |

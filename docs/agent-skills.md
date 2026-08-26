@@ -20,6 +20,10 @@ Claude CodeとCodexで使うskillの配置、信頼境界、vendoringの詳細�
 ユーザー共通の `~/.agents/skills` と二重に見えるため。中立な正本は自動探索されない
 `.config/agents/skills` に置く。
 
+agent固有のtool名、設定path、実行モデルに依存しない自作skillは共用へ置く。
+変更時は `evals/evals.json` に典型的な発動例と、誤発動や過剰な断定を防ぐ境界例を置き、
+出力の言い回しではなく観察可能な振る舞いをassertionにする。
+
 ## 信頼境界の作り方
 
 ### 明示呼び出し専用skill
