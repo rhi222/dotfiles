@@ -22,6 +22,13 @@ Claude CodeとCodexで使うskillの配置、信頼境界、vendoringの詳細�
 
 ## 信頼境界の作り方
 
+### 明示呼び出し専用skill
+
+`git-commit` は「既にstageされた差分だけをcommitする」ための明示呼び出し専用skill。
+`agents/openai.yaml` の `allow_implicit_invocation: false` で通常のcommit依頼には発動させない。
+skillの発動を分ける理由は、通常依頼ではCodexが今回の作業差分をstageする一方、
+`$git-commit` を選ぶときはユーザーがstage範囲を決めたとみなすため。
+
 ### 取り込みと信頼
 
 - **allowlist は default-deny。**

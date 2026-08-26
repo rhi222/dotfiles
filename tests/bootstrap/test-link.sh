@@ -250,6 +250,7 @@ echo config >"$codex_case/dc/codex/config.toml"
 echo example >"$codex_case/dc/codex/config.example.toml"
 echo shared >"$codex_case/dc/codex/rules/dotfiles.rules"
 echo '{}' >"$codex_case/dc/codex/hooks.json"
+echo guidance >"$codex_case/dc/codex/AGENTS.md"
 echo local >"$codex_case/home/.codex/rules/default.rules"
 
 override_home="$codex_case/home/.codex-private"
@@ -262,8 +263,12 @@ check "TUIが書いたdefault.rulesを残す" \
   grep -qx local "$codex_case/home/.codex/rules/default.rules"
 check "default CODEX_HOME へ復元 hook 宣言をリンクする" \
   test -L "$codex_case/home/.codex/hooks.json"
+check "default CODEX_HOME へglobal作業方針をリンクする" \
+  test -L "$codex_case/home/.codex/AGENTS.md"
 check "account 切り替え用 CODEX_HOME へもリンクする" \
   test -L "$override_home/hooks.json"
+check "account 切り替え用 CODEX_HOME へもglobal作業方針をリンクする" \
+  test -L "$override_home/AGENTS.md"
 
 # 偽 HOME のテストから実 HOME の override 値へ逃げない。
 outside_override="$tmp/outside-codex-home"
@@ -296,6 +301,7 @@ mkdir -p "$codex_reconcile/dc/codex/rules" "$codex_reconcile/dc/codex/skills" \
 echo live >"$codex_reconcile/home/.codex/config.toml"
 echo shared >"$codex_reconcile/dc/codex/rules/dotfiles.rules"
 echo '{}' >"$codex_reconcile/dc/codex/hooks.json"
+echo guidance >"$codex_reconcile/dc/codex/AGENTS.md"
 HOME="$codex_reconcile/home" DC="$codex_reconcile/dc" link_codex_config >/dev/null 2>&1
 check "reconcileはCodex live設定をdefaultへ戻さない" \
   grep -qx live "$codex_reconcile/home/.codex/config.toml"

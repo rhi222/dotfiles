@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: ステージされた変更からConventional Commitメッセージを作成してコミットする。「コミットして」「commit」「変更をコミット」「git commit」などで使用。コミットメッセージの作成やステージ済み変更の確定が必要な場面で常に使用すること。
+description: ステージ済みの変更だけからConventional Commitメッセージを作成してコミットする。ユーザーが$git-commitを明示的に呼び出し、git addせずに現在のstage内容のみを確定したいときに使用する。通常の「commitして」は対象外。
 allowed-tools: Bash(git commit:*)
 ---
 

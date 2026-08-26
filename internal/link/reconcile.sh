@@ -312,18 +312,22 @@ link_codex_config() {
   safe_link "$DC/codex/rules/dotfiles.rules" ~/.codex/rules/dotfiles.rules
   backup_real_file ~/.codex/hooks.json
   safe_link "$DC/codex/hooks.json" ~/.codex/hooks.json
+  backup_real_file ~/.codex/AGENTS.md
+  safe_link "$DC/codex/AGENTS.md" ~/.codex/AGENTS.md
 
-  # account 切り替え用 CODEX_HOME も hooks.json を別に読む。
-  # 認証情報は共有せず、復元 hook の宣言だけを同じ実体へ向ける。
+  # account 切り替え用 CODEX_HOME も hooks.json と global AGENTS.md を別に読む。
+  # 認証情報は共有せず、復元 hook の宣言と作業方針だけを同じ実体へ向ける。
   if [ -n "${AGENT_USAGE_CODEX_OVERRIDE_HOME:-}" ]; then
     case "$AGENT_USAGE_CODEX_OVERRIDE_HOME" in
       "$HOME"/*)
         mkdir -p "$AGENT_USAGE_CODEX_OVERRIDE_HOME"
         backup_real_file "$AGENT_USAGE_CODEX_OVERRIDE_HOME/hooks.json"
         safe_link "$DC/codex/hooks.json" "$AGENT_USAGE_CODEX_OVERRIDE_HOME/hooks.json"
+        backup_real_file "$AGENT_USAGE_CODEX_OVERRIDE_HOME/AGENTS.md"
+        safe_link "$DC/codex/AGENTS.md" "$AGENT_USAGE_CODEX_OVERRIDE_HOME/AGENTS.md"
         ;;
       *)
-        echo "[WARN] Codex override home が現在の HOME 配下でないため hooks.json を変更しません" >&2
+        echo "[WARN] Codex override home が現在の HOME 配下でないため共有設定を変更しません" >&2
         ;;
     esac
   fi

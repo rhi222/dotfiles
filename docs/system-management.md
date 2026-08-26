@@ -135,3 +135,8 @@ Codex専用は `.config/codex/skills/<name>/` を正本にする。`dotfilesLink
 
 読み込み口全体はリンクせず、外部skillと共存する。削除するのはリンク切れsymlinkだけで、
 正本どうしの同名衝突は拒否する。追加後は `./dotfilesLink.sh` を実行し、必要ならagentを再起動する。
+
+Codexのglobal作業方針は `.config/codex/AGENTS.md` を正本とする。`dotfilesLink.sh` がdefaultの
+`~/.codex/AGENTS.md` と、`AGENT_USAGE_CODEX_OVERRIDE_HOME` で指定したaccount切り替え用
+`CODEX_HOME` の両方へリンクする。通常のcommit依頼は今回の作業差分だけをstageし、
+`$git-commit` の明示呼び出しだけはskillがstage済みの差分のみをcommitする。
