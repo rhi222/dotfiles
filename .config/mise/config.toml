@@ -5,12 +5,31 @@ deno = "latest"
 go = "latest"
 java = "21"
 node = "24"
-python = "latest"
+python = { version = "latest", postinstall = "python -m pip install --upgrade boto3 pynvim requests" }
 rust = "latest"
 
 # パッケージマネージャ
 "npm:pnpm" = "latest"
 uv = "latest"
+
+# Node製CLI（Node本体と分離してツール単位で更新）
+"npm:@drawio/mcp" = "latest"
+"npm:@github/copilot" = "latest"
+"npm:@google/gemini-cli" = "latest"
+"npm:@mistweaverco/kulala-fmt" = "latest"
+"npm:@openai/codex" = "latest"
+"npm:aws-cdk" = "latest"
+"npm:browser-sync" = "latest"
+"npm:ccmanager" = "latest"
+"npm:ccstatusline" = "latest"
+"npm:ccusage" = "latest"
+# 3.34.1はnpmのgitHeadと公式repositoryの同version commitを確認済み。
+# 版を限定し、別versionでtrust evidenceが低下した場合は再びfailさせる。
+"npm:difit" = { version = "latest", trust_policy_excludes = ["cytoscape@3.34.1"] }
+"npm:neovim" = "latest"   # Neovim Node host。本体バイナリは aqua:neovim/neovim
+"npm:npm-check-updates" = "latest"
+"npm:prettier" = "latest"
+"npm:wsl-open" = "latest"
 
 # CLIツール（aquaバックエンドでプリビルドバイナリを取得）
 aws = "latest"
@@ -50,9 +69,16 @@ herdr = "latest"
 "aqua:marp-team/marp-cli" = "latest"
 "aqua:rvben/rumdl" = "latest"
 "aqua:tree-sitter/tree-sitter" = "latest"
+"aqua:modem-dev/hunk" = "latest"  # ターミナルdiffビューア
 
 # pipxバックエンドで管理するPython製CLIツール（隔離環境にインストール）
 "pipx:git-remote-codecommit" = "latest"  # AWS CodeCommitのgit remote helper
+"pipx:python-lsp-server" = { version = "latest", extras = ["all"] }
+"pipx:sqlfluff" = "latest"
+"pipx:xmlformatter" = "latest"
+
+# Go製CLI（Go本体と分離してツール単位で更新）
+"go:golang.org/x/tools/cmd/goimports" = "latest"
 
 [settings]
 # Pythonはプリビルドバイナリを強制（WSL2でコンパイル回避）

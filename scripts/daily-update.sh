@@ -15,8 +15,6 @@ mkdir -p "$LOG_DIR"
 # 日次ログは溜まり続けるので、30日より古いものを起動時に掃除する
 find "$LOG_DIR" -name '*.log' -mtime +30 -delete 2>/dev/null || true
 
-# shellcheck source=../internal/update/pkg.sh
-source "$SCRIPT_DIR/../internal/update/pkg.sh"
 # shellcheck source=../internal/update/fisher.sh
 source "$SCRIPT_DIR/../internal/update/fisher.sh"
 
@@ -259,8 +257,6 @@ main() {
   # 以降の更新判定（fisher cacheを含む）が現在のdotctl実装を使えるよう、
   # Go更新後すぐに再ビルドする。
   run_step "dotctl rebuild" dotctl_rebuild
-  run_step "npm global update" npm_global_update
-  run_step "pip global update" pip_global_update
   run_step "nvim Lazy update" timeout 300 nvim --headless -c "luafile $SCRIPT_DIR/nvim-lazy-update.lua" +qa
   run_step "nvim Mason update" timeout 300 nvim --headless -c 'autocmd User MasonUpdateAllComplete quitall' -c 'MasonUpdateAll'
   # New skills are added via `scripts/skill-add.sh`; bootstrap uses

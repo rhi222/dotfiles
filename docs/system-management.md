@@ -81,7 +81,7 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 
 ## daily-update
 
-`scripts/daily-update.sh` は apt / cargo / mise / npm / pip / nvim / gh skill /
+`scripts/daily-update.sh` は apt / cargo / mise / nvim / gh skill /
 gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後にsoft checkと設定同期を行う。
 
 - 1ステップの失敗で止めず、最後に失敗名を集約する
@@ -90,6 +90,7 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 - 失敗時のWindows通知はWSL2以外ではskipする
 - `~/.daily-update/` の30日より古いログを起動時に削除する
 - miseのshimをPATH前方へ戻してから更新する
+- npm / pipx / Go製CLIはmiseのtoolとして宣言し、`mise upgrade`で更新する
 - 新規追加は担当の宣言ファイル・setupコマンドで行い、daily-updateは更新だけを担う
 - yaziは `package.toml` のrevとremote HEADを比較し、全packageが同じならupgradeをskipする。
   `package.toml` が無い環境も成功扱いでskipする

@@ -96,13 +96,10 @@ mise install                                                 # config.toml の�
    `dotfilesLink.sh` により配置されるので、先に `mise install` すると宣言そのものが見つからない。
    bootstrapは `mise install` を呼ばないため、ここで明示的に実行する
 2. **`exec fish` が次。** リンクされた `my/conf.d/*.fish` がここで初めて読まれ、
-   `00-paths.fish` が `~/.local/bin` を PATH に入れ、`01-mise.fish` が
-   `MISE_*_DEFAULT_PACKAGES_FILE` を設定する
-3. **`mise install` が最後。** **2 より前に走らせると、ランタイムは入るが
-   `.default-python-packages` / `.default-npm-packages` の中身が入らない。**
-   場所を教えているのが 2 で設定される環境変数だけだからで、mise は黙って成功する。
-   `pynvim` が落ちて nvim の `:checkhealth` が Python provider を ERROR にする、
-   といった形で後から気づくことになる
+   `00-paths.fish` が `~/.local/bin` を PATH に入れ、`01-mise.fish` がmiseをactivateする
+3. **`mise install` が最後。** ランタイムに加えて、`npm:` / `pipx:` / `go:` backendで
+   宣言したCLIをツール単位で導入する。Python providerの `pynvim` と共通ライブラリは
+   Python toolの `postinstall` が導入する
 
 ### mise の確認と復旧
 
@@ -111,10 +108,10 @@ mise install                                                 # config.toml の�
 前に読ませる必要があり（番号がそのまま依存順になる）、逆順だと `type -q mise` が偽になって
 mise が activate されない。
 
-既に default packages 抜きで入れてしまった場合は、環境変数が入った状態で入れ直す。
+Python providerが不足している場合は、Pythonの `postinstall` を再実行する。
 
 ```fish
-mise install --force python node
+mise install --force python
 ```
 
 `01-mise.fish` / `09-git-wt.fish` は activate 結果を `~/.cache/` にキャッシュする。

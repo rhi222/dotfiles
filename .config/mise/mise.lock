@@ -104,6 +104,16 @@ checksum = "sha256:ae46ff054919dccd20f2402fd1747a2363ab2dc5a652f2d589df211ed5e26
 url = "https://github.com/marp-team/marp-cli/releases/download/v4.5.0/marp-cli-v4.5.0-linux.tar.gz"
 url_api = "https://api.github.com/repos/marp-team/marp-cli/releases/assets/480912019"
 
+[[tools."aqua:modem-dev/hunk"]]
+version = "0.19.0"
+backend = "aqua:modem-dev/hunk"
+specifiers = ["latest"]
+
+[tools."aqua:modem-dev/hunk"."platforms.linux-x64"]
+checksum = "sha256:d4d942fedc05b8bb5173e2913e545406a5d9412ba0ddb88f8e7f4dcd77fd0602"
+url = "https://github.com/modem-dev/hunk/releases/download/v0.19.0/hunkdiff-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/modem-dev/hunk/releases/assets/517164661"
+
 [[tools."aqua:mvdan/sh"]]
 version = "3.13.1"
 backend = "aqua:mvdan/sh"
@@ -297,6 +307,11 @@ specifiers = ["latest"]
 checksum = "sha256:675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685"
 url = "https://dl.google.com/go/go1.27.0.linux-amd64.tar.gz"
 
+[[tools."go:golang.org/x/tools/cmd/goimports"]]
+version = "0.49.0"
+backend = "go:golang.org/x/tools/cmd/goimports"
+specifiers = ["latest"]
+
 [[tools.herdr]]
 version = "0.8.2"
 backend = "aqua:herdrdev/herdr"
@@ -328,14 +343,110 @@ specifiers = ["24"]
 checksum = "sha256:f625d97cd707df4ff96254916fbc5ff014f09c09effe5a1e0ca8f6d41a8789d4"
 url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.gz"
 
+[[tools."npm:@drawio/mcp"]]
+version = "1.5.0"
+backend = "npm:@drawio/mcp"
+specifiers = ["latest"]
+
+[[tools."npm:@github/copilot"]]
+version = "1.0.80"
+backend = "npm:@github/copilot"
+specifiers = ["latest"]
+
+[[tools."npm:@google/gemini-cli"]]
+version = "0.56.0"
+backend = "npm:@google/gemini-cli"
+specifiers = ["latest"]
+
+[[tools."npm:@mistweaverco/kulala-fmt"]]
+version = "4.5.3"
+backend = "npm:@mistweaverco/kulala-fmt"
+specifiers = ["latest"]
+
+[[tools."npm:@openai/codex"]]
+version = "0.149.1"
+backend = "npm:@openai/codex"
+specifiers = ["latest"]
+
+[[tools."npm:aws-cdk"]]
+version = "2.1138.0"
+backend = "npm:aws-cdk"
+specifiers = ["latest"]
+
+[[tools."npm:browser-sync"]]
+version = "3.0.4"
+backend = "npm:browser-sync"
+specifiers = ["latest"]
+
+[[tools."npm:ccmanager"]]
+version = "4.3.1"
+backend = "npm:ccmanager"
+specifiers = ["latest"]
+
+[[tools."npm:ccstatusline"]]
+version = "2.2.27"
+backend = "npm:ccstatusline"
+specifiers = ["latest"]
+
+[[tools."npm:ccusage"]]
+version = "20.0.20"
+backend = "npm:ccusage"
+specifiers = ["latest"]
+
+[[tools."npm:difit"]]
+version = "5.0.11"
+backend = "npm:difit"
+specifiers = ["latest"]
+
+[tools."npm:difit".options]
+trust_policy_excludes = '["cytoscape@3.34.1"]'
+
+[[tools."npm:neovim"]]
+version = "5.4.0"
+backend = "npm:neovim"
+specifiers = ["latest"]
+
+[[tools."npm:npm-check-updates"]]
+version = "23.1.0"
+backend = "npm:npm-check-updates"
+specifiers = ["latest"]
+
 [[tools."npm:pnpm"]]
 version = "11.23.0"
 backend = "npm:pnpm"
 specifiers = ["latest"]
 
+[[tools."npm:prettier"]]
+version = "3.9.6"
+backend = "npm:prettier"
+specifiers = ["latest"]
+
+[[tools."npm:wsl-open"]]
+version = "2.2.1"
+backend = "npm:wsl-open"
+specifiers = ["latest"]
+
 [[tools."pipx:git-remote-codecommit"]]
 version = "1.17"
 backend = "pipx:git-remote-codecommit"
+specifiers = ["latest"]
+
+[[tools."pipx:python-lsp-server"]]
+version = "1.15.0"
+backend = "pipx:python-lsp-server"
+specifiers = ["latest"]
+
+[tools."pipx:python-lsp-server".options]
+extras = "all"
+
+[[tools."pipx:sqlfluff"]]
+version = "4.3.0"
+backend = "pipx:sqlfluff"
+specifiers = ["latest"]
+
+[[tools."pipx:xmlformatter"]]
+version = "0.2.9"
+backend = "pipx:xmlformatter"
 specifiers = ["latest"]
 
 [[tools.python]]
