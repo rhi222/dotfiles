@@ -106,9 +106,9 @@ codex --profile <name>
 
 command allowlist は `config.toml` ではなく `.rules` に置く。共有ruleは
 `dotfiles.rules`、TUIが書き込む端末固有ruleは `default.rules` として共存させる。
-Gitは直接の `git commit`、GitHubは `gh pr view` / `gh pr diff` / `gh pr review` /
-`gh pr checkout` を自動許可する。`git push` と、method次第で任意のAPI書き込みができる
-`gh api` は都度確認する。
+Gitは直接の `git add` / `git diff` / `git commit`、GitHubは `gh pr view` / `gh pr diff` /
+`gh pr review` / `gh pr checkout` を自動許可する。`git push` と、method次第で任意のAPI書き込みが
+できる `gh api` は都度確認する。
 
 `config.example.toml` はGitHub pluginの有効状態も共有するが、plugin本体のinstallは行わない。
 新環境ではCodexのplugin管理画面またはCLIから別途installする。
