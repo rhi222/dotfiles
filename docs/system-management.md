@@ -118,6 +118,15 @@ yaziは `init.lua` がpluginを `require` するため、実体が無いと起�
 新環境の `scripts/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
 検査する。`package.toml` はrev/hashを持つlockfileであり、upgradeによる差分のcommitは人間が判断する。
 
+## GitHub CLI
+
+GitHub CLIの公開可能な一般設定とaliasは `.config/gh/config.yml` を正本にし、
+`dotfilesLink.sh` が `~/.config/gh/config.yml` へファイル単位でsymlinkする。
+認証情報を含む `~/.config/gh/hosts.yml` は端末ローカルの実ファイルとして管理対象外にする。
+
+`gh alias set` はsymlinkを保って書き戻すため、aliasを変更するとrepository側に差分が出る。
+初回link時に既存の `config.yml` が正本と異なる場合は、上書きせずtimestamp付きで退避する。
+
 ## 自作agent skill
 
 共用skillは `.config/agents/skills/<name>/`、Claude専用は `.config/claude/skills/<name>/`、

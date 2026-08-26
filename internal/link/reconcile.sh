@@ -129,7 +129,7 @@ link_private_files() {
 # 集約先に入り込んで zip に混ざる。
 ensure_dirs() {
   mkdir -p ~/.config ~/.config/fish ~/.config/herdr ~/.claude/skills ~/.codex ~/.codex/rules ~/.agents/skills \
-    ~/.config/codex ~/.config/dotfiles ~/.config/linear ~/.config/psql
+    ~/.config/codex ~/.config/dotfiles ~/.config/gh ~/.config/linear ~/.config/psql
 }
 
 # 単純な src -> dest のリンクを宣言的に列挙する。
@@ -168,6 +168,7 @@ link_configs() {
     "$DC/mise|$HOME/.config/mise"
     "$DC/gitui|$HOME/.config/gitui"
     "$DC/lazygit|$HOME/.config/lazygit"
+    "$DC/gh/config.yml|$HOME/.config/gh/config.yml"
     "$DC/deck|$HOME/.config/deck"
     "$DC/alacritty|$HOME/.config/alacritty"
     "$DC/yazi|$HOME/.config/yazi"
@@ -279,6 +280,22 @@ backup_fish_plugins() {
   mv "$live" "$backup"
 }
 
+# hosts.yml は認証情報を含むため端末ローカルに残し、公開可能な config.yml だけを管理する。
+# gh alias set は symlink を保って書き戻すので、一度リンクすればalias追加もGit差分になる。
+backup_gh_config() {
+  local live=~/.config/gh/config.yml
+  local repo="$DC/gh/config.yml"
+
+  [ -e "$live" ] || return 0
+  [ -L "$live" ] && return 0
+  if [ -f "$repo" ] && cmp -s "$live" "$repo"; then
+    rm -f "$live"
+    return 0
+  fi
+
+  backup_real_file "$live"
+}
+
 # Codex config の内容は初期化しない。repo側の実体がある場合だけlinkをreconcileする。
 # 無い状態でlive側を張り替えると、migration後の設定をexample相当へ戻してしまうため。
 link_codex_config() {
@@ -366,6 +383,8 @@ link_main() {
   link_private_files
   # link_configs が fish_plugins を張る前に、内容の違う実ファイルを退避する
   backup_fish_plugins
+  # hosts.yml と同居させるため、gh directory全体ではなくconfig.ymlだけを張る
+  backup_gh_config
   link_configs
   link_claude_skills
   link_codex_config

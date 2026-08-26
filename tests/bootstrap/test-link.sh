@@ -209,6 +209,7 @@ mkdir -p "$fakehome"
 HOME="$fakehome" ensure_dirs
 check "ensure_dirs が ~/.config/linear を作る" test -d "$fakehome/.config/linear"
 check "ensure_dirs が ~/.config/dotfiles を作る" test -d "$fakehome/.config/dotfiles"
+check "ensure_dirs が ~/.config/gh を作る" test -d "$fakehome/.config/gh"
 check "ensure_dirs が ~/.agents/skills を作る" test -d "$fakehome/.agents/skills"
 check "ensure_dirs が ~/.codex/rules を作る" test -d "$fakehome/.codex/rules"
 
@@ -499,6 +500,41 @@ check "link_configs が fish_plugins をリンク対象にしている" \
 # 退避は link_configs より前でなければ意味がない（後だと実ファイルは既に消えている）
 check "link_main が link_configs より先に backup_fish_plugins を呼ぶ" \
   bash -c 'awk "/^link_main\\(\\)/,/^}/" "'"$IMPLEMENTATION"'" | grep -n -e backup_fish_plugins -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_fish_plugins'
+
+# --- backup_gh_config ---
+# hosts.ymlは端末ローカルに残したまま、公開可能なconfig.ymlだけをrepositoryから配る。
+ghc="$tmp/gh1"
+mkdir -p "$ghc/home/.config/gh" "$ghc/dc/gh"
+printf 'aliases: {}\n' >"$ghc/dc/gh/config.yml"
+printf 'aliases: {local: pr list}\n' >"$ghc/home/.config/gh/config.yml"
+(
+  DC="$ghc/dc"
+  HOME="$ghc/home"
+  export HOME
+  backup_gh_config
+)
+check "異なるgh configは退避する" \
+  bash -c 'compgen -G "'"$ghc"'/home/.config/gh/config.yml.bak.*" >/dev/null'
+check "退避したgh configの内容を失わない" \
+  bash -c 'grep -q local "'"$ghc"'"/home/.config/gh/config.yml.bak.*'
+
+ghc="$tmp/gh2"
+mkdir -p "$ghc/home/.config/gh" "$ghc/dc/gh"
+printf 'aliases: {}\n' >"$ghc/dc/gh/config.yml"
+cp "$ghc/dc/gh/config.yml" "$ghc/home/.config/gh/config.yml"
+(
+  DC="$ghc/dc"
+  HOME="$ghc/home"
+  export HOME
+  backup_gh_config
+  safe_link "$DC/gh/config.yml" "$HOME/.config/gh/config.yml"
+)
+check "同じgh configはbackupを増やさずlinkする" \
+  test -L "$ghc/home/.config/gh/config.yml"
+check "gh configだけをlink対象にする" \
+  grep -q 'gh/config.yml|' "$IMPLEMENTATION"
+check "link_mainがlink前にgh configを保護する" \
+  bash -c 'awk "/^link_main\\(\\)/,/^}/" "'"$IMPLEMENTATION"'" | grep -n -e backup_gh_config -e "^ *link_configs$" | head -2 | head -1 | grep -q backup_gh_config'
 
 echo "---"
 echo "pass: $pass, fail: $fail"
