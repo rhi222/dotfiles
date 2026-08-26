@@ -114,6 +114,16 @@ checksum = "sha256:fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c7539
 url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
 url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322866"
 
+[[tools."aqua:neovim/neovim"]]
+version = "0.12.5"
+backend = "aqua:neovim/neovim"
+specifiers = ["latest"]
+
+[tools."aqua:neovim/neovim"."platforms.linux-x64"]
+checksum = "sha256:bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875"
+url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz"
+url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
+
 [[tools."aqua:rvben/rumdl"]]
 version = "0.2.60"
 backend = "aqua:rvben/rumdl"
@@ -308,14 +318,6 @@ shorthand_vendor = "openjdk"
 [tools.java."platforms.linux-x64"]
 checksum = "sha256:a2def047a73941e01a73739f92755f86b895811afb1f91243db214cff5bdac3f"
 url = "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz"
-
-[[tools.neovim]]
-version = "0.12.5"
-backend = "vfox:mise-plugins/vfox-neovim"
-specifiers = ["latest"]
-
-[tools.neovim."platforms.linux-x64"]
-url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz"
 
 [[tools.node]]
 version = "24.19.0"
