@@ -63,7 +63,7 @@
 | ----------------- | ---------------------------------------------------------- | ---------- |
 | `skill-add.sh`    | `<owner/repo> <skill>`                                     | doc        |
 | `skill-audit.sh`  | `[--quiet] <skill-dir>`                                    | doc        |
-| `skill-vendor.sh` | `add <repo> <sub-path> [name]`\|`update`\|`status`\|`list` | doc        |
+| `skill-vendor.sh` | `add <repo> <sub-path> [name]`\|`update <name> [name...]`\|`status`\|`list` | doc        |
 
 ### worktree
 

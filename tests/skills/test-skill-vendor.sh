@@ -107,6 +107,13 @@ rc=$?
 check "変更が無い update は 0 で返す" "0" "$rc"
 check "変更なしと伝える" "yes" "$(has '変更なし' "$out")"
 
+# 一括更新の途中に未登録名があっても、後続skillの差分確認を飛ばさない。
+out=$(run update nope demo)
+rc=$?
+check "一括 update は1件でも失敗すると非0で返す" "1" "$rc"
+check "一括 update は失敗後も続行する" "yes" "$(has '=== update: demo (2/2) ===' "$out")"
+check "後続skillも更新確認する" "yes" "$(has '変更なし: demo' "$out")"
+
 echo "== エラーの転送 =="
 
 out=$(run update nope)

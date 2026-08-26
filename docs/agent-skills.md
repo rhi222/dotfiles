@@ -76,7 +76,9 @@ Claude CodeとCodexで使うskillの配置、信頼境界、vendoringの詳細�
 
 - **`daily-update.sh` は検知だけ。**
   vendored な実体はsymlinkで各agentの読み込み口へ生で繋がるので、作業ツリーを書き換えた瞬間に有効になる。
-  未レビューのコードが有効になる瞬間を作らない
+  未レビューのコードが有効になる瞬間を作らない。更新が複数あるときは
+  `skill-vendor.sh update <name> [name...]` の一括取込コマンドを表示するが、差分表示と承認はskillごとに行う。
+  1件が失敗しても残りは続行し、全体は非0で終了する
 - **`local:` 行は廃止した。**
   shallow clone の HEAD を毎回取り直して入れるため pin もレビュー面も無く、3導線のうち最も無制御だった。
   vendoring が上位互換

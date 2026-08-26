@@ -12,7 +12,7 @@ const skillUsage = `使い方: dotctl skill <subcommand>
 サブコマンド:
   audit [--quiet] <skill-dir>                       skill の内容を機械的に検査する
   vendor add <owner/repo|git-url> <sub-path> [name]  vendored skill を取り込む
-  vendor update <name>                               upstream へ追随させる
+  vendor update <name> [name...]                     upstream へ追随させる
   vendor status [--no-network]                        取込済みを点検する
   vendor list                                        取込済みを一覧する
   trusted <owner/repo>                               owner が allowlist にあるか（終了コードで返す）
@@ -28,7 +28,7 @@ const auditUsage = `使い方: dotctl skill audit [--quiet] <skill-dir>
 
 const vendorUsage = `使い方:
   dotctl skill vendor add <owner/repo|git-url> <sub-path> [name]
-  dotctl skill vendor update <name>
+  dotctl skill vendor update <name> [name...]
   dotctl skill vendor status [--no-network]
   dotctl skill vendor list
 
@@ -110,11 +110,22 @@ func runSkillVendor(ctx context.Context, args []string, env Env) int {
 		}
 		return skill.VendorAdd(ctx, env.Runner, cfg, rest[0], rest[1], name, w)
 	case "update":
-		if len(args) != 2 {
+		if len(args) < 2 {
 			fmt.Fprint(env.Stderr, vendorUsage)
 			return 2
 		}
-		return skill.VendorUpdate(ctx, env.Runner, cfg, args[1], w)
+		rc := 0
+		for i, name := range args[1:] {
+			if len(args) > 2 {
+				fmt.Fprintf(env.Stdout, "=== update: %s (%d/%d) ===\n", name, i+1, len(args)-1)
+			}
+			// 1件の失敗で残りの確認機会を失わない。各 update の差分表示と
+			// 承認は VendorUpdate が個別に行い、1件でも失敗したら全体は非0にする。
+			if skill.VendorUpdate(ctx, env.Runner, cfg, name, w) != 0 {
+				rc = 1
+			}
+		}
+		return rc
 	case "status":
 		noNetwork := false
 		for _, a := range args[1:] {

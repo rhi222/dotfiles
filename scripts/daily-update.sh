@@ -188,7 +188,7 @@ gh_skill_update() {
 #
 # 実体は symlink で ~/.claude/skills へ生で繋がるので、作業ツリーを書き換えた
 # 瞬間に有効になる。だからここは検知だけにして、取込は人が
-# `skill-vendor.sh update <name>` を叩く。未レビューのコードが有効になる瞬間を
+# `skill-vendor.sh update <name> [name...]` を叩く。未レビューのコードが有効になる瞬間を
 # 作らないため。
 #
 # 比較するのは upstream リポジトリの HEAD なので、その skill と無関係な commit でも
@@ -202,6 +202,7 @@ vendored_skill_check() {
   fi
 
   local found=0 behind=0 d name json origin commit remote
+  local -a behind_names=()
   for d in "$vendor_dir"/*/; do
     [ -d "$d" ] || continue
     found=1
@@ -220,8 +221,8 @@ vendored_skill_check() {
     fi
     if [ "$remote" != "$commit" ]; then
       behind=$((behind + 1))
+      behind_names+=("$name")
       echo "  $name: upstream に更新あり（${commit:0:7} -> ${remote:0:7}）"
-      echo "    取込: bash scripts/skill-vendor.sh update $name"
     fi
   done
 
@@ -229,6 +230,10 @@ vendored_skill_check() {
     echo "vendored skill はありません"
   elif [ "$behind" -eq 0 ]; then
     echo "全 vendored skill が upstream と同じ commit です"
+  else
+    printf '  一括取込: bash scripts/skill-vendor.sh update'
+    printf ' %q' "${behind_names[@]}"
+    printf '\n'
   fi
   return 0
 }

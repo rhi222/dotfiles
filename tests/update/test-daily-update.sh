@@ -558,6 +558,8 @@ jq -n --arg o "$vsc/origin.git" --arg c "$vsc_head1" \
   '{origin:$o, sub_path:".", commit:$c, vendored_at:"2026-08-19",
     reviewed_commit:$c, audit:{high:0,med:0,low:0}, license:"MIT"}' \
   >"$vsc/skills-vendor/one/.vendor.json"
+mkdir -p "$vsc/skills-vendor/two"
+cp "$vsc/skills-vendor/one/.vendor.json" "$vsc/skills-vendor/two/.vendor.json"
 
 out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
 assert_eq 0 "$?" "最新なら終了コードは 0"
@@ -579,7 +581,8 @@ git -C "$vsc/work" push --quiet origin HEAD:refs/heads/main
 out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
 assert_eq 0 "$?" "更新があっても終了コードは 0"
 assert_output_contains "更新あり" "$out" "更新ありと報告する"
-assert_output_contains "skill-vendor.sh update one" "$out" "取込コマンドを案内する"
+assert_output_contains "一括取込: bash scripts/skill-vendor.sh update one two" "$out" \
+  "更新対象の一括取込コマンドを案内する"
 assert_output_contains "$vsc_head1" "$(cat "$vsc/skills-vendor/one/.vendor.json")" \
   ".vendor.json は書き換えない"
 
