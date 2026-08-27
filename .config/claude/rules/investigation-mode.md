@@ -1,7 +1,7 @@
 ---
 paths:
-  - "**/docs/investigation/**"
-  - "**/06_Domain/**"
+  - "/data/git-repos/**"
+  - "~/Obsidian/**"
 ---
 
 # 調査モード
