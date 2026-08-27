@@ -205,6 +205,36 @@ func TestRenderDetail(t *testing.T) {
 	}
 }
 
+func TestRenderDetailResetZeroPadded(t *testing.T) {
+	// 月日を0埋めしないと 8/27 と 9/1 で幅が変わり、右の時刻と countdown が行ごとにずれる
+	now := time.Date(2026, 8, 27, 11, 0, 0, 0, time.Local)
+	c := fixtureCache(now)
+	c.Claude.Session = &Window{Percent: 7, ResetsAt: time.Date(2026, 8, 27, 15, 9, 0, 0, time.Local).Unix()}
+	c.Claude.Weekly = &Window{Percent: 14, ResetsAt: time.Date(2026, 9, 1, 20, 59, 0, 0, time.Local).Unix()}
+	got := RenderDetail(c, now, 15*time.Minute)
+	for _, want := range []string{"reset 08/27 15:09", "reset 09/01 20:59"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderDetail に %q が無い:\n%s", want, got)
+		}
+	}
+	// reset の開始桁が全行で揃う
+	var cols []int
+	for _, line := range strings.Split(got, "\n") {
+		if i := strings.Index(line, "reset "); i >= 0 {
+			cols = append(cols, len([]rune(line[:i])))
+		}
+	}
+	if len(cols) < 2 {
+		t.Fatalf("reset 行が足りない:\n%s", got)
+	}
+	for _, col := range cols[1:] {
+		if col != cols[0] {
+			t.Errorf("reset の開始桁がずれている %v:\n%s", cols, got)
+			break
+		}
+	}
+}
+
 func TestRenderDetailUnknownReset(t *testing.T) {
 	// Claude APIは使用率0%の未開始sessionでresets_atを返さないことがある。
 	// epochへ変換して1970/1/1と表示せず、日時不明として扱う。

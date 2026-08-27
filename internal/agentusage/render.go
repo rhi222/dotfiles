@@ -164,7 +164,8 @@ func detailRow(label string, w *Window, now time.Time, withCountdown, color bool
 	reset := "reset --"
 	if w.ResetsAt > 0 {
 		r := time.Unix(w.ResetsAt, 0).Local()
-		reset = fmt.Sprintf("reset %d/%d %02d:%02d", int(r.Month()), r.Day(), r.Hour(), r.Minute())
+		// 月日も0埋めする。8/27 と 9/1 で幅が変わると、右の時刻と countdown が行ごとにずれる
+		reset = fmt.Sprintf("reset %02d/%02d %02d:%02d", int(r.Month()), r.Day(), r.Hour(), r.Minute())
 		if withCountdown {
 			reset += fmt.Sprintf(" (%s)", countdown(w, now))
 		}
