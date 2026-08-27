@@ -7,8 +7,12 @@
 #
 # **依存コマンドは全てPATHのスタブへ差し替える。** 実 `wslpath` を使うとWSL上でしか
 # 走らなくなり（CIで落ちる）、実 `win32yank.exe` を使うとテストが端末のclipboardを
-# 破壊する。PATHは スタブdir + /usr/bin + /bin に絞り、/mnt/c/windows/system32 の
-# 実 clip.exe や /usr/local/bin の実 win32yank.exe を拾わせない。
+# 破壊する。
+#
+# PATHには /usr/bin を入れない。/usr/bin/wslpath が実在するため、入れると「非WSL環境」
+# （wslpath が無い状態）を再現できない。代わりにスタブが必要とする cat だけを $SYSBIN へ
+# symlinkして渡す。winpath 本体が使う printf・test・type・string は全て fish のbuiltinで、
+# 外部コマンドを必要としない。
 #
 # clipboardの内容は `cat "$file"` で比較しない。コマンド置換が末尾改行を落とすため、
 # 「末尾改行を付けない」という一番壊れやすい約束が検証できなくなる。`cmp` でバイト比較する。
@@ -57,6 +61,11 @@ STUB_CLIP="$TMP/stub-clip"     # wslpath + clip.exe のみ（win32yankフォー�
 STUB_NOCLIP="$TMP/stub-noclip" # wslpath のみ
 STUB_NOWSL="$TMP/stub-nowsl"   # 空（wslpath すら無い＝非WSL環境）
 mkdir -p "$STUB_FULL" "$STUB_CLIP" "$STUB_NOCLIP" "$STUB_NOWSL"
+
+# スタブ（#!/bin/bash）が使う外部コマンドだけを通す最小のsystem bin
+SYSBIN="$TMP/sysbin"
+mkdir -p "$SYSBIN"
+ln -s "$(command -v cat)" "$SYSBIN/cat"
 
 make_wslpath() {
   cat >"$1/wslpath" <<'STUB'
@@ -113,7 +122,7 @@ run() {
   rm -f "$CLIP_OUT" "$CLIP_OUT.args" "$CLIP_OUT.name"
   (
     cd "$WORK" && timeout 10 env \
-      PATH="$stubdir:/usr/bin:/bin" \
+      PATH="$stubdir:$SYSBIN" \
       WINPATH_STUB_OUT="$CLIP_OUT" \
       "$FISH_BIN" --no-config -c "source $WINPATH; winpath \$argv" -- "$@"
   ) >"$OUT" 2>"$ERR"
