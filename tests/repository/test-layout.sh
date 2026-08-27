@@ -38,8 +38,10 @@ check "session共通実装はscripts/libへ戻さない" \
 check "update共通実装はscripts/libへ戻さない" \
   test ! -e "$REPO_ROOT/scripts/lib/${UPDATE_LIB:-pkg-update}.sh"
 
-check "scripts直下に実行scriptを置かない" \
-  test -z "$(find "$REPO_ROOT/scripts" -maxdepth 1 -type f -name '*.sh' -print -quit)"
+check "scripts直下はdotctl bootstrap以外の実行scriptを置かない" \
+  test -z "$(find "$REPO_ROOT/scripts" -maxdepth 1 -type f -name '*.sh' ! -name 'setup-dotctl.sh' -print -quit)"
+check "旧dotctlが使うbootstrap pathを維持する" \
+  test -x "$REPO_ROOT/scripts/setup-dotctl.sh"
 check "公開入口をfeature別に置く" \
   test -x "$REPO_ROOT/scripts/worktree/init.sh"
 check "互換pathのmanifestがある" \

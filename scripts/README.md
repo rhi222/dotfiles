@@ -21,4 +21,6 @@
 
 repo内からは `scripts/<feature>/<command>.sh` を呼ぶ。
 旧 `~/scripts/<name>` は `dotfilesLink.sh` が
-[`compat-links.txt`](compat-links.txt) から生成する互換linkであり、repo直下へ旧名wrapperは置かない。
+[`compat-links.txt`](compat-links.txt) から生成する互換linkであり、repo直下へ旧名wrapperは原則置かない。
+`setup-dotctl.sh` だけは、更新前の `dotctl` が埋め込んだrepo pathから
+新しい `scripts/setup/dotctl.sh` へ自己更新するためのbootstrap wrapperとして維持する。

@@ -12,6 +12,8 @@
 cron、hook、外部skillが使ってきた `~/scripts/<旧名>` は削除しない。
 `dotfilesLink.sh` が `scripts/compat-links.txt` を読み、HOME側にだけflatな互換linkを生成する。
 repo直下へ旧名wrapperを残すと一覧が再び平坦になるため、互換名と正規pathの対応はmanifestだけに置く。
+ただし `scripts/setup-dotctl.sh` は例外として残す。
+更新前の `dotctl` がこのrepo pathを埋め込んでおり、正規入口へ自己更新するbootstrapに必要だからである。
 
 `scripts/lib/{linear-api,nippo-paths}.sh` はskillが `source` する公開Shell APIなので維持する。
 `internal/` の実装パスを外部から直接呼ばない。
