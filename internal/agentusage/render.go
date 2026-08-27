@@ -57,25 +57,30 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 		}
 		parts = append(parts, p)
 	}
-	if p := renderCodexLine(c, now, staleAfter); p != "" {
-		parts = append(parts, p)
-	}
+	parts = append(parts, renderCodexParts(c, now, staleAfter)...)
 	return strings.Join(parts, " · ")
 }
 
-// codexAccounts は表示する Codex account を宣言順に返す。
+// codexAccounts は表示する Codex account を見出し付きで宣言順に返す。
 // weekly が取れていない account は欄ごと落とす（`line` の必須要素）。
-func codexAccounts(c Cache) (labels []string, sides []*Side) {
+//
+// 見出しは default だけなら `CX`、複数なら `CXd` / `CXo`。
+// default が落ちて override だけ残ったときも `CXo` にする — どちらの account か
+// 分からないまま%だけ出すより、欄が1つでも素性を示すほうが誤読しない。
+func codexAccounts(c Cache) (headings []string, sides []*Side) {
 	for _, a := range []struct {
-		label string
-		side  *Side
+		suffix string
+		side   *Side
 	}{{"d", c.Codex}, {"o", c.CodexOverride}} {
 		if a.side != nil && a.side.Weekly != nil {
-			labels = append(labels, a.label)
+			headings = append(headings, "CX"+a.suffix)
 			sides = append(sides, a.side)
 		}
 	}
-	return labels, sides
+	if len(sides) == 1 && headings[0] == "CXd" {
+		headings[0] = "CX"
+	}
+	return headings, sides
 }
 
 // codexFields は1 account 分の `s30% w2%`。5h 窓が無ければ weekly だけにする。
@@ -88,28 +93,21 @@ func codexFields(s *Side) string {
 	return strings.Join(f, " ")
 }
 
-// renderCodexLine は CX 欄を組む。account が1つなら `CX s30% w2%`、
-// 複数なら account ごとに括弧で囲って `CX d(s30% w2%) o(s7% w12%)` とする。
-// account を跨いで窓が並ぶと d/o の s と w の対応が読めなくなるため。
-func renderCodexLine(c Cache, now time.Time, staleAfter time.Duration) string {
-	labels, sides := codexAccounts(c)
-	if len(sides) == 0 {
-		return ""
-	}
-	p := "CX"
-	stale := false
+// renderCodexParts は Codex account ごとに独立した欄を返す。
+// `CXd s30% w2%` と `CXo s7% w12%` を CC と同じ区切りで並べる。
+// **[stale] は account ごとに付ける** — 欄が分かれている以上、
+// どちらの取得が古いのかを欄の位置で示せるため。
+func renderCodexParts(c Cache, now time.Time, staleAfter time.Duration) []string {
+	headings, sides := codexAccounts(c)
+	parts := make([]string, 0, len(sides))
 	for i, s := range sides {
-		if len(sides) == 1 && labels[i] == "d" {
-			p += " " + codexFields(s)
-		} else {
-			p += fmt.Sprintf(" %s(%s)", labels[i], codexFields(s))
+		p := headings[i] + " " + codexFields(s)
+		if sideStale(s, now, staleAfter) {
+			p += " [stale]"
 		}
-		stale = stale || sideStale(s, now, staleAfter)
+		parts = append(parts, p)
 	}
-	if stale {
-		p += " [stale]"
-	}
-	return p
+	return parts
 }
 
 // bar は 8マスの使用率バー。popup は通常ペインなので Unicode を使ってよい。

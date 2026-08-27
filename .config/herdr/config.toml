@@ -105,7 +105,7 @@ agent_panel_sort = "spaces"
 tab_bar_right = [
   { type = "zoom" },
   { type = "command", command = "$HOME/.config/herdr/scripts/clock.sh", interval_seconds = 1, timeout_seconds = 2 },
-  # AI agent のレート上限（Claude session/weekly/Fable + Codex weekly）。
+  # AI agent のレート上限（Claude session/weekly/Fable + Codex account ごとの 5h/weekly）。
   # カウントダウンは分単位なので 60秒間隔で足りる。詳細は prefix+u の popup
   { type = "command", command = "$HOME/.config/herdr/scripts/usage.sh", interval_seconds = 60, timeout_seconds = 2 },
   { type = "command", command = "$HOME/.config/herdr/scripts/status.sh", interval_seconds = 1, timeout_seconds = 2 },

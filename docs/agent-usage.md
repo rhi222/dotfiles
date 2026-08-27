@@ -7,11 +7,14 @@ AGENTS.md の一覧から参照される設計記録。
 ## 表示
 
 - tab bar: 通常は `CC s45% w50% f29% · CX s30% w2%`（session% / weekly% / Fable weekly%）。
-  Codex override設定時は `CX d(s30% w2%) o(s7% w12%)` とし、**account単位で括弧に閉じる**。
-  括弧を外して `ds30% dw2% os7% ow12%` と並べると、どの%がどのaccountの窓かを読むのに接頭辞を1文字ずつ照合することになる。
-  AI agentの見出しは大文字2文字の `CC` / `CX`、枠は小文字の `s`（current session / Codexは5h）/ `w`（weekly）/ `f`（Fable weekly）/ `d`（Codex default）/ `o`（Codex override）に固定する。
+  Codex override設定時は account を独立した欄に分け、`CXd s30% w2% · CXo s7% w12%` とする。
+  **account は見出しで区別し、%の位置には持たせない。** `CX d0/1% o93/41%` のように1つの欄へ詰めると、
+  欄の中に見出しと窓の2階層ができて、どの%がどのaccountの窓かを接頭辞1文字ずつ照合することになる。
+  AI agentの見出しは大文字2文字の `CC` / `CX`、Codex accountは `CXd`（default）/ `CXo`（override）。
+  枠は小文字の `s`（current session / Codexは5h）/ `w`（weekly）/ `f`（Fable weekly）に固定する。
+  default が落ちて override だけ残ったときも `CXo` にする — 素性を示さないまま%だけ出すより誤読しない。
   tab bar ではreset時間を省き、絶対時刻と残り時間は popup に集約する
-- `[stale]` は side 単位で末尾に1回だけ付く。Codexはどちらかのaccountがstaleなら `CX` の末尾に1回付ける。
+- `[stale]` は欄単位で末尾に1回だけ付く。Codexは欄がaccountごとに分かれているので、古い側の欄だけに付く。
   付く条件は2つ: ①`fetched_at` が15分より古い ②表示中のいずれかの窓の `resets_at` を過ぎている（窓が切り替わったのにキャッシュの%が切り替わり前のまま）。
   窓ごとには付けない
 - キャッシュが無い側は欄ごと消える。
@@ -21,7 +24,7 @@ AGENTS.md の一覧から参照される設計記録。
   APIがreset日時を返さない未開始の窓は `reset --` とし、Unix epochや残り0分として表示しない。
   popup は通常の端末なので ANSI 色を使い、見出しを太字シアン、使用率を 60% 未満=緑 / 60%以上=黄 / 85%以上=赤、空きバーと補足を dim、stale を太字赤で表示する。
   tab bar は ANSI 非対応なので着色しない
-- override有りの実データで確認済み（`line` は `CC s7% w14% f16% · CX d(s0% w1%) o(s93% w41%)`、`detail` は各accountに `Session 5h` と `Weekly` の2行）
+- override有りの実データで確認済み（`line` は `CC s8% w14% f16% · CXd s0% w1% · CXo s96% w42%`、`detail` は各accountに `Session 5h` と `Weekly` の2行）
 
 ## 仕組み
 

@@ -63,7 +63,7 @@ func TestRenderLineMultipleCodexAccounts(t *testing.T) {
 		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
 	}
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC s45% w50% f29% · CX d(s30% w2%) o(s7% w12%)"
+	want := "CC s45% w50% f29% · CXd s30% w2% · CXo s7% w12%"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -127,7 +127,40 @@ func TestRenderLineCodexSessionMissing(t *testing.T) {
 		FetchedAt: now.Add(-1 * time.Minute).Unix(),
 		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
 	}
-	if got, want := RenderLine(c, now, 15*time.Minute), "CC s45% w50% f29% · CX d(w2%) o(w12%)"; got != want {
+	if got, want := RenderLine(c, now, 15*time.Minute), "CC s45% w50% f29% · CXd w2% · CXo w12%"; got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+}
+
+func TestRenderLineCodexOverrideOnly(t *testing.T) {
+	// default 側が未ログインなどで落ちても、override がどちらの account かは残す
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.Codex = nil
+	c.CodexOverride = &Side{
+		FetchedAt: now.Add(-1 * time.Minute).Unix(),
+		Session:   &Window{Percent: 7, ResetsAt: now.Add(1 * time.Hour).Unix()},
+		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
+	}
+	got := RenderLine(c, now, 15*time.Minute)
+	want := "CC s45% w50% f29% · CXo s7% w12%"
+	if got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+}
+
+func TestRenderLineCodexStalePerAccount(t *testing.T) {
+	// account ごとに欄が分かれたので、[stale] も古い account だけに付ける
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.CodexOverride = &Side{
+		FetchedAt: now.Add(-20 * time.Minute).Unix(), // staleAfter=15m を超過
+		Session:   &Window{Percent: 7, ResetsAt: now.Add(1 * time.Hour).Unix()},
+		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
+	}
+	got := RenderLine(c, now, 15*time.Minute)
+	want := "CC s45% w50% f29% · CXd s30% w2% · CXo s7% w12% [stale]"
+	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
 }
