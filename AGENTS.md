@@ -247,6 +247,7 @@ session hookとherdr native restore、nvimはpane単位のmarkerと段階起動�
 - Neovim pluginはlazy.nvim + `lazy-lock.json`、LSP serverはMason
 - runtimeはmiseで管理する
 - Docker compose helperは `dc` / `dcl` / `dcu` / `dcd`
+- host側のファイルエクスプローラーへ貼るWindowsパスは `winpath`（`-c` でclipboardへ）
 
 Docker cleanupは稼働containerとnamed volumeを削除しない。`dclean` / `dclean -a` の正確な範囲は
 [docs/docker-clean.md](docs/docker-clean.md)。
