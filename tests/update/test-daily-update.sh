@@ -7,9 +7,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-DAILY_UPDATE="$SCRIPTS_DIR/update/daily.sh"
+DAILY_UPDATE_TARGET="$SCRIPTS_DIR/update/daily.sh"
 TEST_HOME=$(mktemp -d)
 export HOME="$TEST_HOME"
+mkdir -p "$HOME/scripts"
+DAILY_UPDATE="$HOME/scripts/daily-update.sh"
+ln -s "$DAILY_UPDATE_TARGET" "$DAILY_UPDATE"
 trap 'rm -rf "$TEST_HOME"' EXIT
 
 if [[ ! -f "$DAILY_UPDATE" ]]; then

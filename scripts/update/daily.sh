@@ -8,7 +8,7 @@ set -euo pipefail
 # which lacks the `skill` subcommand and breaks `gh skill update`.
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 LOG_DIR="$HOME/.local/state/daily-update"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
 mkdir -p "$LOG_DIR"

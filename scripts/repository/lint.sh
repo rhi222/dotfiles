@@ -15,7 +15,7 @@
 #   LINT_REPO_ROOT  検査するリポジトリのルート（テストで差し替える）
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="${LINT_REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 
 FIX=0

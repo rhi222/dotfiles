@@ -56,6 +56,22 @@ compat_targets_exist() {
   done <"$REPO_ROOT/scripts/compat-links.txt"
 }
 check "互換manifestの正規pathがすべて存在する" compat_targets_exist
+
+compat_shell_paths_resolve() {
+  local old target script
+  while IFS="|" read -r old target; do
+    [[ -n "$old" ]] || continue
+    [[ "$old" == "#"* ]] && continue
+    [[ "$target" == *.sh ]] || continue
+    script="$REPO_ROOT/scripts/$target"
+    if grep -q 'SCRIPT_DIR=' "$script"; then
+      grep -q 'readlink -f' "$script" || return 1
+    fi
+  done <"$REPO_ROOT/scripts/compat-links.txt"
+}
+check "互換shell入口はsymlinkの実体を基準にpathを解決する" \
+  compat_shell_paths_resolve
+
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

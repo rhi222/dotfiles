@@ -27,7 +27,7 @@
 #   REF_CHECK_REPO  検査するリポジトリのルート（テストで差し替える）
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="${REF_CHECK_REPO:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 ALLOW="$REPO_ROOT/scripts/repository/ref-check-allow.txt"
 

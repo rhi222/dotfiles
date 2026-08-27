@@ -17,7 +17,7 @@
 # Claude / Codex の conversation は Herdr 本体の native agent restore が担当する。
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 # shellcheck source=../../internal/session/restore.sh
 source "$SCRIPT_DIR/../../internal/session/restore.sh"
 

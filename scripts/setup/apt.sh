@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 PACKAGES_FILE="$SCRIPT_DIR/apt-packages.txt"
 
 if [ ! -f "$PACKAGES_FILE" ]; then

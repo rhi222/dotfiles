@@ -19,7 +19,7 @@
 #                    (default: "claude-code codex")
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 SKILLS_FILE="${CLAUDE_SKILLS_FILE:-$SCRIPT_DIR/claude-skills.txt}"
 MIGRATE="${MIGRATE:-0}"
 STRICT="${STRICT:-0}"

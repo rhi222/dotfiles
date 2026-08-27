@@ -38,7 +38,7 @@
 # 箇所（payload の cwd など）は書き込みが無いので問題ない。
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 # 既定はリポジトリの tests/。無ければ従来どおり scripts/ を見る
 # （テストの移設前後どちらでも動くようにしておく）
 default_test_dir() {

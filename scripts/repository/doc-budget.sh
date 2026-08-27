@@ -17,7 +17,7 @@
 #   DOC_BUDGET_REPO  検査するリポジトリのルート（テストで差し替える）
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="${DOC_BUDGET_REPO:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 DECL="$REPO_ROOT/scripts/repository/doc-budget.txt"
 

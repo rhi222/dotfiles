@@ -17,7 +17,7 @@
 # so the `gh not found` path can be exercised with an empty PATH.
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 EXT_FILE="${GH_EXTENSIONS_FILE:-$SCRIPT_DIR/gh-extensions.txt}"
 STRICT="${STRICT:-0}"
 DRY_RUN=0

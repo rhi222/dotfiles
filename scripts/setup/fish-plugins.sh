@@ -24,7 +24,7 @@
 #   FISH_PLUGINS_FILE=    : override the declaration file path (tests)
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 PLUGINS_FILE="${FISH_PLUGINS_FILE:-$SCRIPT_DIR/../../.config/fish/fish_plugins}"
 STRICT="${STRICT:-0}"
 DRY_RUN=0

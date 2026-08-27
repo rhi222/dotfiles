@@ -8,7 +8,7 @@
 # trusted-skill-owners.txt; untrusted owners go through skill-vendor.sh.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 SKILLS_FILE="${CLAUDE_SKILLS_FILE:-$SCRIPT_DIR/../setup/claude-skills.txt}"
 SKILL_AGENTS="${SKILL_AGENTS:-claude-code codex}"
 
