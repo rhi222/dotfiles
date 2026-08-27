@@ -167,12 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.31"
+version = "2.36.32"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.31.zip"
+checksum = "blake3:86d7b8c32a4c732667e910beb1180a256a7d82c6566958bd661cfd04bb008580"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.32.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -412,7 +413,7 @@ backend = "npm:npm-check-updates"
 specifiers = ["latest"]
 
 [[tools."npm:pnpm"]]
-version = "11.23.0"
+version = "11.24.0"
 backend = "npm:pnpm"
 specifiers = ["latest"]
 
@@ -450,13 +451,13 @@ backend = "pipx:xmlformatter"
 specifiers = ["latest"]
 
 [[tools.python]]
-version = "3.14.6"
+version = "3.14.7"
 backend = "core:python"
 specifiers = ["latest"]
 
 [tools.python."platforms.linux-x64"]
-checksum = "sha256:ba960817e542642021135db330d875f410f4e14c64a62e2ae5faf3697ada08b2"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+checksum = "sha256:a0f39e822fd3b96a2605f30f954acf9a2cdf91faa1385a13e24bc407a41e05ea"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260825/cpython-3.14.7+20260825-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [[tools.ripgrep]]
