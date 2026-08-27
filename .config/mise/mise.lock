@@ -105,14 +105,14 @@ url = "https://github.com/marp-team/marp-cli/releases/download/v4.5.0/marp-cli-v
 url_api = "https://api.github.com/repos/marp-team/marp-cli/releases/assets/480912019"
 
 [[tools."aqua:modem-dev/hunk"]]
-version = "0.19.0"
+version = "0.20.0"
 backend = "aqua:modem-dev/hunk"
 specifiers = ["latest"]
 
 [tools."aqua:modem-dev/hunk"."platforms.linux-x64"]
-checksum = "sha256:d4d942fedc05b8bb5173e2913e545406a5d9412ba0ddb88f8e7f4dcd77fd0602"
-url = "https://github.com/modem-dev/hunk/releases/download/v0.19.0/hunkdiff-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/modem-dev/hunk/releases/assets/517164661"
+checksum = "sha256:3c1a36767a77675133a25ea7a7fded4c11788ce923407f6bf3608f20c06cf0bb"
+url = "https://github.com/modem-dev/hunk/releases/download/v0.20.0/hunkdiff-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/modem-dev/hunk/releases/assets/529321145"
 
 [[tools."aqua:mvdan/sh"]]
 version = "3.13.1"
