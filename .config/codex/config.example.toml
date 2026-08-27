@@ -15,6 +15,7 @@ cli_auth_credentials_store = "file"
 ###########################
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
+approvals_reviewer = "auto_review"
 
 [features]
 # Herdr に session identity を報告し、server 再起動後に conversation を復元する。
