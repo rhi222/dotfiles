@@ -16,6 +16,7 @@
 # --- Operations ---
 [push]
 	autoSetupRemote = true
+	useForceIfIncludes = true
 [branch]
 	# 起点が同名のリモート追跡ブランチのときだけupstreamを設定する。
 	# origin/develop 起点で作ったworktreeブランチがdevelopを追跡してしまい、
@@ -25,6 +26,8 @@
 	rebase = true
 [rebase]
 	autoStash = true
+[rerere]
+	enabled = true
 [fetch]
 	prune = true
 [merge]
@@ -59,7 +62,7 @@
 	fe  = fetch
 	fsw = "!fish -c git-fsw" # branch 選択 + プレビュー + 自動追跡ブランチ作成
 	l  = log
-	log = log --graph --all --name-status --pretty=format:"%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset"
+	lg = log --graph --all --name-status --pretty=format:'%C(red)%h %C(green)%an %Creset%s %C(yellow)%d%Creset'
 	me  = merge
 	pl = !git pull origin $(git branch --show-current)
 	rs  = restore
