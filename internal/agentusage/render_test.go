@@ -39,6 +39,7 @@ func fixtureCache(now time.Time) Cache {
 		},
 		Codex: &Side{
 			FetchedAt: now.Add(-1 * time.Minute).Unix(),
+			Session:   &Window{Percent: 30, ResetsAt: now.Add(3 * time.Hour).Unix()},
 			Weekly:    &Window{Percent: 2, ResetsAt: now.Add(4*24*time.Hour + 8*time.Hour).Unix()},
 		},
 	}
@@ -47,7 +48,7 @@ func fixtureCache(now time.Time) Cache {
 func TestRenderLineFresh(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	got := RenderLine(fixtureCache(now), now, 15*time.Minute)
-	want := "CC s45% w50% f29% · CX w2%"
+	want := "CC s45% w50% f29% · CX s30% w2%"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -58,10 +59,11 @@ func TestRenderLineMultipleCodexAccounts(t *testing.T) {
 	c := fixtureCache(now)
 	c.CodexOverride = &Side{
 		FetchedAt: now.Add(-1 * time.Minute).Unix(),
+		Session:   &Window{Percent: 7, ResetsAt: now.Add(1 * time.Hour).Unix()},
 		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
 	}
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC s45% w50% f29% · CX d2% o12%"
+	want := "CC s45% w50% f29% · CX d(s30% w2%) o(s7% w12%)"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -72,7 +74,7 @@ func TestRenderLineStale(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.FetchedAt = now.Add(-20 * time.Minute).Unix() // staleAfter=15m を超過
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC s45% w50% f29% [stale] · CX w2%"
+	want := "CC s45% w50% f29% [stale] · CX s30% w2%"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -84,7 +86,7 @@ func TestRenderLineResetPassed(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Session.ResetsAt = now.Add(-1 * time.Minute).Unix()
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC s45% w50% f29% [stale] · CX w2%"
+	want := "CC s45% w50% f29% [stale] · CX s30% w2%"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -95,7 +97,7 @@ func TestRenderLinePartial(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude = nil // Claude 側キャッシュがまだ無い → 欄ごと落とす
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CX w2%"
+	want := "CX s30% w2%"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -107,7 +109,36 @@ func TestRenderLineFableMissing(t *testing.T) {
 	c := fixtureCache(now)
 	c.Claude.Fable = nil
 	got := RenderLine(c, now, 15*time.Minute)
-	want := "CC s45% w50% · CX w2%"
+	want := "CC s45% w50% · CX s30% w2%"
+	if got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+}
+
+func TestRenderLineCodexSessionMissing(t *testing.T) {
+	// 5h 窓を返さないアカウントでは s を出さず、weekly だけにする
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.Codex.Session = nil
+	if got, want := RenderLine(c, now, 15*time.Minute), "CC s45% w50% f29% · CX w2%"; got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+	c.CodexOverride = &Side{
+		FetchedAt: now.Add(-1 * time.Minute).Unix(),
+		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
+	}
+	if got, want := RenderLine(c, now, 15*time.Minute), "CC s45% w50% f29% · CX d(w2%) o(w12%)"; got != want {
+		t.Errorf("RenderLine = %q, want %q", got, want)
+	}
+}
+
+func TestRenderLineCodexSessionResetPassed(t *testing.T) {
+	// Codex の 5h 窓が切り替わったのに%が古いときも stale に倒す
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.Codex.Session.ResetsAt = now.Add(-1 * time.Minute).Unix()
+	got := RenderLine(c, now, 15*time.Minute)
+	want := "CC s45% w50% f29% · CX s30% w2% [stale]"
 	if got != want {
 		t.Errorf("RenderLine = %q, want %q", got, want)
 	}
@@ -156,17 +187,70 @@ func TestRenderDetailUnknownReset(t *testing.T) {
 	}
 }
 
+// codexSection は detail の "Codex" 見出しから次の空行までを取り出す。
+// Claude 側にも同じ "Session 5h" ラベルがあるので、Codex の行だけを見る。
+func codexSection(t *testing.T, detail, heading string) string {
+	t.Helper()
+	i := strings.Index(detail, heading+"\n")
+	if i < 0 {
+		t.Fatalf("detail に %q の節が無い:\n%s", heading, detail)
+	}
+	rest := detail[i+len(heading)+1:]
+	if j := strings.Index(rest, "\n\n"); j >= 0 {
+		rest = rest[:j]
+	}
+	if j := strings.Index(rest, "Codex override\n"); j >= 0 {
+		rest = rest[:j]
+	}
+	return rest
+}
+
+func TestRenderDetailCodexSession(t *testing.T) {
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	got := codexSection(t, RenderDetail(fixtureCache(now), now, 15*time.Minute), "Codex")
+	for _, want := range []string{"Session 5h", " 30%", "Weekly", "  2%"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Codex の節に %q が無い:\n%s", want, got)
+		}
+	}
+	if strings.Index(got, "Session 5h") > strings.Index(got, "Weekly") {
+		t.Errorf("Session 5h は Weekly より上に置く:\n%s", got)
+	}
+	// 5h 窓は残り時間が短いので countdown を出す
+	if !strings.Contains(got, "(3h0m)") {
+		t.Errorf("Session 5h に countdown が無い:\n%s", got)
+	}
+}
+
+func TestRenderDetailCodexSessionMissing(t *testing.T) {
+	// 5h 窓を返さないアカウントでは行ごと落とす
+	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
+	c := fixtureCache(now)
+	c.Codex.Session = nil
+	got := codexSection(t, RenderDetail(c, now, 15*time.Minute), "Codex")
+	if strings.Contains(got, "Session 5h") {
+		t.Errorf("5h 窓が無いのに行が出ている:\n%s", got)
+	}
+}
+
 func TestRenderDetailMultipleCodexAccounts(t *testing.T) {
 	now := time.Date(2026, 8, 22, 10, 0, 0, 0, time.UTC)
 	c := fixtureCache(now)
 	c.CodexOverride = &Side{
 		FetchedAt: now.Add(-2 * time.Minute).Unix(),
+		Session:   &Window{Percent: 7, ResetsAt: now.Add(1 * time.Hour).Unix()},
 		Weekly:    &Window{Percent: 12, ResetsAt: now.Add(2 * 24 * time.Hour).Unix()},
 	}
 	got := RenderDetail(c, now, 15*time.Minute)
 	for _, want := range []string{"Codex default", "Codex override", "2%", "12%", "codex override 2m前"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderDetail に %q が無い:\n%s", want, got)
+		}
+	}
+	for _, tc := range []struct{ heading, session string }{{"Codex default", " 30%"}, {"Codex override", "  7%"}} {
+		sec := codexSection(t, got, tc.heading)
+		if !strings.Contains(sec, "Session 5h") || !strings.Contains(sec, tc.session) {
+			t.Errorf("%s に 5h 窓 %s が無い:\n%s", tc.heading, tc.session, sec)
 		}
 	}
 }

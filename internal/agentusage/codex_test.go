@@ -73,8 +73,11 @@ func TestFetchCodex(t *testing.T) {
 	if s.FetchedAt != 1787900000 {
 		t.Errorf("FetchedAt = %d", s.FetchedAt)
 	}
-	if s.Session != nil || s.Fable != nil {
-		t.Errorf("Codex は Weekly だけのはず: %+v", s)
+	if s.Session != nil {
+		t.Errorf("weekly 窓しか無いのに Session が入っている: %+v", s.Session)
+	}
+	if s.Fable != nil {
+		t.Errorf("Codex に Fable は無いはず: %+v", s.Fable)
 	}
 }
 
@@ -106,7 +109,7 @@ done
 }
 
 func TestFetchCodexSecondaryWeekly(t *testing.T) {
-	// primary が 5h 窓・secondary が weekly のアカウント → secondary を採る
+	// 実アカウントの形: primary が 5h 窓（300分）・secondary が weekly（10080分）
 	bin := fakeCodex(t, rateLimitsResult(
 		codexWindowJSON("80", "300", "1787910000"),
 		codexWindowJSON("33.4", "10080", "1787957065"),
@@ -120,6 +123,33 @@ func TestFetchCodexSecondaryWeekly(t *testing.T) {
 	}
 	if s.Weekly.ResetsAt != 1787957065 {
 		t.Errorf("ResetsAt = %d, want secondary の値", s.Weekly.ResetsAt)
+	}
+	if s.Session == nil {
+		t.Fatal("5h 窓が取れていない")
+	}
+	if s.Session.Percent != 80 {
+		t.Errorf("Session.Percent = %d, want 80", s.Session.Percent)
+	}
+	if s.Session.ResetsAt != 1787910000 {
+		t.Errorf("Session.ResetsAt = %d, want primary の値", s.Session.ResetsAt)
+	}
+}
+
+func TestFetchCodexSessionInSecondary(t *testing.T) {
+	// 並び順に依存しない。weekly が primary、5h が secondary でも同じ結果にする
+	bin := fakeCodex(t, rateLimitsResult(
+		codexWindowJSON("33", "10080", "1787957065"),
+		codexWindowJSON("80", "300", "1787910000"),
+	))
+	s, err := FetchCodex(context.Background(), bin, 10*time.Second, time.Now())
+	if err != nil {
+		t.Fatalf("FetchCodex: %v", err)
+	}
+	if s.Weekly.Percent != 33 || s.Weekly.ResetsAt != 1787957065 {
+		t.Errorf("Weekly = %+v, want 33%% / 1787957065", s.Weekly)
+	}
+	if s.Session == nil || s.Session.Percent != 80 || s.Session.ResetsAt != 1787910000 {
+		t.Errorf("Session = %+v, want 80%% / 1787910000", s.Session)
 	}
 }
 

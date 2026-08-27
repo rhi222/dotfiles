@@ -20,7 +20,7 @@ const weeklyWindowMinutes = 10080
 // この id の応答だけを拾う。
 const codexRateLimitsID = 2
 
-// FetchCodex は codex app-server の account/rateLimits/read から weekly を取る。
+// FetchCodex は codex app-server の account/rateLimits/read から 5h と weekly を取る。
 //
 // codex-cli 0.149 で `~/.codex/sessions/**/rollout-*.jsonl` は legacy になり
 // （`codex migrate-rollouts` 参照）、ファイルからは rate_limits を拾えなくなった。
@@ -31,7 +31,7 @@ func FetchCodex(ctx context.Context, bin string, timeout time.Duration, now time
 	return FetchCodexHome(ctx, bin, "", timeout, now)
 }
 
-// FetchCodexHome は指定した CODEX_HOME の認証で weekly 上限を取る。
+// FetchCodexHome は指定した CODEX_HOME の認証で 5h と weekly の上限を取る。
 // codexHome が空なら呼び出し元の環境をそのまま継承する。
 func FetchCodexHome(ctx context.Context, bin, codexHome string, timeout time.Duration, now time.Time) (*Side, error) {
 	if timeout > 0 {
@@ -43,11 +43,11 @@ func FetchCodexHome(ctx context.Context, bin, codexHome string, timeout time.Dur
 	if err != nil {
 		return nil, err
 	}
-	w, err := weeklyFromRateLimits(result)
+	session, weekly, err := windowsFromRateLimits(result)
 	if err != nil {
 		return nil, err
 	}
-	return &Side{FetchedAt: now.Unix(), Weekly: w}, nil
+	return &Side{FetchedAt: now.Unix(), Session: session, Weekly: weekly}, nil
 }
 
 // codexRateLimits は app-server を起動して account/rateLimits/read の result を返す。
@@ -152,8 +152,12 @@ func readCodexResult(r io.Reader) (json.RawMessage, error) {
 	return nil, fmt.Errorf("app-server が account/rateLimits/read に応答しなかった")
 }
 
-// weeklyFromRateLimits は result から weekly 窓を取り出す。
-func weeklyFromRateLimits(result json.RawMessage) (*Window, error) {
+// windowsFromRateLimits は result から 5h 窓と weekly 窓を取り出す。
+//
+// **primary / secondary のどちらが 5h かは決め打ちしない。** 現状の実アカウントは
+// primary=300分・secondary=10080分 だが、窓の長さで選べば並びが入れ替わっても壊れない。
+// weekly は表示の必須要素なので取れなければ err、5h は取れなければ nil（欄ごと落とす）。
+func windowsFromRateLimits(result json.RawMessage) (session, weekly *Window, err error) {
 	var body struct {
 		RateLimits *struct {
 			Primary   *codexWindow `json:"primary"`
@@ -161,16 +165,17 @@ func weeklyFromRateLimits(result json.RawMessage) (*Window, error) {
 		} `json:"rateLimits"`
 	}
 	if err := json.Unmarshal(result, &body); err != nil {
-		return nil, fmt.Errorf("rateLimits のパースに失敗: %w", err)
+		return nil, nil, fmt.Errorf("rateLimits のパースに失敗: %w", err)
 	}
 	if body.RateLimits == nil {
-		return nil, fmt.Errorf("応答に rateLimits が無い")
+		return nil, nil, fmt.Errorf("応答に rateLimits が無い")
 	}
-	w := pickWeekly(body.RateLimits.Primary, body.RateLimits.Secondary)
-	if w == nil {
-		return nil, fmt.Errorf("rateLimits に窓が1つも無い")
+	windows := []*codexWindow{body.RateLimits.Primary, body.RateLimits.Secondary}
+	weeklyRaw := pickWeekly(windows)
+	if weeklyRaw == nil {
+		return nil, nil, fmt.Errorf("rateLimits に窓が1つも無い")
 	}
-	return &Window{Percent: int(math.Round(w.UsedPercent)), ResetsAt: w.ResetsAt}, nil
+	return toWindow(pickSession(windows, weeklyRaw)), toWindow(weeklyRaw), nil
 }
 
 type codexWindow struct {
@@ -179,12 +184,36 @@ type codexWindow struct {
 	ResetsAt      int64   `json:"resetsAt"`
 }
 
-// pickWeekly は weekly 窓（>= 10080 分）を選ぶ。無ければ primary に倒す。
-func pickWeekly(primary, secondary *codexWindow) *codexWindow {
-	for _, w := range []*codexWindow{primary, secondary} {
+func toWindow(w *codexWindow) *Window {
+	if w == nil {
+		return nil
+	}
+	return &Window{Percent: int(math.Round(w.UsedPercent)), ResetsAt: w.ResetsAt}
+}
+
+// pickWeekly は weekly 窓（>= 10080 分）を選ぶ。
+// 窓の長さが分からない応答では最初の窓を weekly とみなす。
+func pickWeekly(windows []*codexWindow) *codexWindow {
+	for _, w := range windows {
 		if w != nil && w.WindowMinutes >= weeklyWindowMinutes {
 			return w
 		}
 	}
-	return primary
+	for _, w := range windows {
+		if w != nil {
+			return w
+		}
+	}
+	return nil
+}
+
+// pickSession は weekly より短い窓（実際は 300 分）を選ぶ。
+// weekly に採った窓は除く。長さ不明（0分）の窓は 5h と断定できないので選ばない。
+func pickSession(windows []*codexWindow, weekly *codexWindow) *codexWindow {
+	for _, w := range windows {
+		if w != nil && w != weekly && w.WindowMinutes > 0 && w.WindowMinutes < weeklyWindowMinutes {
+			return w
+		}
+	}
+	return nil
 }

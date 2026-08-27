@@ -57,29 +57,59 @@ func RenderLine(c Cache, now time.Time, staleAfter time.Duration) string {
 		}
 		parts = append(parts, p)
 	}
-	defaultCodex := c.Codex != nil && c.Codex.Weekly != nil
-	overrideCodex := c.CodexOverride != nil && c.CodexOverride.Weekly != nil
-	if defaultCodex || overrideCodex {
-		p := "CX"
-		stale := false
-		if defaultCodex {
-			label := "w"
-			if overrideCodex {
-				label = "d"
-			}
-			p += fmt.Sprintf(" %s%d%%", label, c.Codex.Weekly.Percent)
-			stale = sideStale(c.Codex, now, staleAfter)
-		}
-		if overrideCodex {
-			p += fmt.Sprintf(" o%d%%", c.CodexOverride.Weekly.Percent)
-			stale = stale || sideStale(c.CodexOverride, now, staleAfter)
-		}
-		if stale {
-			p += " [stale]"
-		}
+	if p := renderCodexLine(c, now, staleAfter); p != "" {
 		parts = append(parts, p)
 	}
 	return strings.Join(parts, " · ")
+}
+
+// codexAccounts は表示する Codex account を宣言順に返す。
+// weekly が取れていない account は欄ごと落とす（`line` の必須要素）。
+func codexAccounts(c Cache) (labels []string, sides []*Side) {
+	for _, a := range []struct {
+		label string
+		side  *Side
+	}{{"d", c.Codex}, {"o", c.CodexOverride}} {
+		if a.side != nil && a.side.Weekly != nil {
+			labels = append(labels, a.label)
+			sides = append(sides, a.side)
+		}
+	}
+	return labels, sides
+}
+
+// codexFields は1 account 分の `s30% w2%`。5h 窓が無ければ weekly だけにする。
+func codexFields(s *Side) string {
+	var f []string
+	if s.Session != nil {
+		f = append(f, fmt.Sprintf("s%d%%", s.Session.Percent))
+	}
+	f = append(f, fmt.Sprintf("w%d%%", s.Weekly.Percent))
+	return strings.Join(f, " ")
+}
+
+// renderCodexLine は CX 欄を組む。account が1つなら `CX s30% w2%`、
+// 複数なら account ごとに括弧で囲って `CX d(s30% w2%) o(s7% w12%)` とする。
+// account を跨いで窓が並ぶと d/o の s と w の対応が読めなくなるため。
+func renderCodexLine(c Cache, now time.Time, staleAfter time.Duration) string {
+	labels, sides := codexAccounts(c)
+	if len(sides) == 0 {
+		return ""
+	}
+	p := "CX"
+	stale := false
+	for i, s := range sides {
+		if len(sides) == 1 && labels[i] == "d" {
+			p += " " + codexFields(s)
+		} else {
+			p += fmt.Sprintf(" %s(%s)", labels[i], codexFields(s))
+		}
+		stale = stale || sideStale(s, now, staleAfter)
+	}
+	if stale {
+		p += " [stale]"
+	}
+	return p
 }
 
 // bar は 8マスの使用率バー。popup は通常ペインなので Unicode を使ってよい。
@@ -148,6 +178,16 @@ func detailRow(label string, w *Window, now time.Time, withCountdown, color bool
 		styled(color, ansiDim, reset))
 }
 
+// codexDetailRows は Codex 1 account 分の行。Claude 側と同じく短い窓を上に置く。
+func codexDetailRows(s *Side, now time.Time, color bool) string {
+	var b strings.Builder
+	if s.Session != nil {
+		b.WriteString(detailRow("Session 5h", s.Session, now, true, color) + "\n")
+	}
+	b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
+	return b.String()
+}
+
 func fetchedAgo(s *Side, now time.Time) string {
 	return FormatCountdown(now.Sub(time.Unix(s.FetchedAt, 0)))
 }
@@ -197,7 +237,7 @@ func renderDetail(c Cache, now time.Time, staleAfter time.Duration, color bool) 
 		}
 		s := c.Codex
 		b.WriteString(styled(color, ansiBoldCyan, heading) + "\n")
-		b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
+		b.WriteString(codexDetailRows(s, now, color))
 		fetchedText := styled(color, ansiDim, fmt.Sprintf("%s %s前", fetchedLabel, fetchedAgo(s, now)))
 		if sideStale(s, now, staleAfter) {
 			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")
@@ -207,7 +247,7 @@ func renderDetail(c Cache, now time.Time, staleAfter time.Duration, color bool) 
 	if overrideCodex {
 		s := c.CodexOverride
 		b.WriteString(styled(color, ansiBoldCyan, "Codex override") + "\n")
-		b.WriteString(detailRow("Weekly", s.Weekly, now, true, color) + "\n")
+		b.WriteString(codexDetailRows(s, now, color))
 		fetchedText := styled(color, ansiDim, fmt.Sprintf("codex override %s前", fetchedAgo(s, now)))
 		if sideStale(s, now, staleAfter) {
 			fetchedText += " " + styled(color, ansiBoldRed, "[stale]")

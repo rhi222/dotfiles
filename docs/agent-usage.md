@@ -6,19 +6,22 @@ AGENTS.md の一覧から参照される設計記録。
 
 ## 表示
 
-- tab bar: 通常は `CC s45% w50% f29% · CX w2%`（session% / weekly% / Fable weekly% / Codex weekly%）。
-  Codex override設定時は `CX d2% o12%`（default / overrideのweekly%）とする。
-  AI agentの見出しは大文字2文字の `CC` / `CX`、枠は小文字の `s`（current session）/ `w`（weekly）/ `f`（Fable weekly）/ `d`（Codex default）/ `o`（Codex override）に固定する。
+- tab bar: 通常は `CC s45% w50% f29% · CX s30% w2%`（session% / weekly% / Fable weekly%）。
+  Codex override設定時は `CX d(s30% w2%) o(s7% w12%)` とし、**account単位で括弧に閉じる**。
+  括弧を外して `ds30% dw2% os7% ow12%` と並べると、どの%がどのaccountの窓かを読むのに接頭辞を1文字ずつ照合することになる。
+  AI agentの見出しは大文字2文字の `CC` / `CX`、枠は小文字の `s`（current session / Codexは5h）/ `w`（weekly）/ `f`（Fable weekly）/ `d`（Codex default）/ `o`（Codex override）に固定する。
   tab bar ではreset時間を省き、絶対時刻と残り時間は popup に集約する
 - `[stale]` は side 単位で末尾に1回だけ付く。Codexはどちらかのaccountがstaleなら `CX` の末尾に1回付ける。
   付く条件は2つ: ①`fetched_at` が15分より古い ②表示中のいずれかの窓の `resets_at` を過ぎている（窓が切り替わったのにキャッシュの%が切り替わり前のまま）。
   窓ごとには付けない
-- キャッシュが無い側は欄ごと消える
+- キャッシュが無い側は欄ごと消える。
+  weeklyが取れていないCodex accountも欄ごと落とす。5h窓だけが取れないときは `s` を省いて `w` だけ出す
 - 詳細は prefix+u の popup（バー・絶対時刻・fetched 経過）。
+  短い窓を上に置く並び（`Session 5h` → `Weekly` → `Fable wk`）はCC・CXで揃える。
   APIがreset日時を返さない未開始の窓は `reset --` とし、Unix epochや残り0分として表示しない。
   popup は通常の端末なので ANSI 色を使い、見出しを太字シアン、使用率を 60% 未満=緑 / 60%以上=黄 / 85%以上=赤、空きバーと補足を dim、stale を太字赤で表示する。
   tab bar は ANSI 非対応なので着色しない
-- override無しの実データで確認済み（`line` は `CC s91% w56% f33% · CX w7%`、`detail` はバー・絶対リセット時刻・`fetched:` 経過付きの複数行）
+- override有りの実データで確認済み（`line` は `CC s7% w14% f16% · CX d(s0% w1%) o(s93% w41%)`、`detail` は各accountに `Session 5h` と `Weekly` の2行）
 
 ## 仕組み
 
@@ -39,7 +42,10 @@ AGENTS.md の一覧から参照される設計記録。
   access token は短命で、Claude Code をしばらく起動していない間は更新されないため、定期 refresh だけが401になることがある。
   401 の警告は `claude` の起動、再実行、解消しなければ `claude auth login` という復旧手順を出す
 - Codex: `codex app-server` を stdio JSON-RPC で1往復させ、`account/rateLimits/read` の
-  `rateLimits` から weekly 窓（`windowDurationMins >= 10080`）を読む。
+  `rateLimits` から weekly 窓（`windowDurationMins >= 10080`）と 5h 窓（それ未満）を読む。
+  **`primary` / `secondary` のどちらが5hかは決め打ちしない。** 現状の実アカウントは primary=300分・secondary=10080分だが、
+  窓の長さで選べば並びが入れ替わっても壊れない。
+  窓の長さを返さない応答では最初の窓をweeklyとみなし、5hは出さない（長さ不明の窓を5hと断定しない）。
   binary は `AGENT_USAGE_CODEX_BIN`（既定 `codex`）、timeout は20秒。
   defaultは呼び出し元の `CODEX_HOME` を継承する。`AGENT_USAGE_CODEX_OVERRIDE_HOME` が設定されていれば、その値を `CODEX_HOME` にした2つ目のapp-serverも起動する。
   未ログインなら JSON-RPC error になり、そのaccountだけ旧値温存に倒れる。
