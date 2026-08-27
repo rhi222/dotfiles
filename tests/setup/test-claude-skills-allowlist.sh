@@ -6,9 +6,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-ADD="$SCRIPTS_DIR/skill-add.sh"
-SETUP="$SCRIPTS_DIR/setup-claude-skills.sh"
-OWNERS="$SCRIPTS_DIR/trusted-skill-owners.txt"
+ADD="$SCRIPTS_DIR/skills/add.sh"
+SETUP="$SCRIPTS_DIR/setup/claude-skills.sh"
+OWNERS="$SCRIPTS_DIR/skills/trusted-owners.txt"
 
 PASS=0
 FAIL=0
@@ -80,7 +80,7 @@ echo ""
 # skip して通す作りにはしない——ゲートの検査を丸ごと失うため。
 if ! command -v dotctl >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/dotctl" ]; then
   echo "ERROR: dotctl が無いので allowlist ゲートを検査できません"
-  echo "  ビルドする: bash scripts/setup-dotctl.sh"
+  echo "  ビルドする: bash scripts/setup/dotctl.sh"
   exit 1
 fi
 
@@ -127,7 +127,7 @@ if command -v dotctl >/dev/null 2>&1 || [ -x "$HOME/.local/bin/dotctl" ]; then
     echo "  PASS: allowlist が無ければ拒否する（fail-closed）"
   fi
 else
-  echo "  SKIP: dotctl が無い（bash scripts/setup-dotctl.sh でビルドする）"
+  echo "  SKIP: dotctl が無い（bash scripts/setup/dotctl.sh でビルドする）"
 fi
 echo ""
 
@@ -160,7 +160,7 @@ out="$(env PATH="$BIN:$PATH" \
 rc=$?
 assert_eq 1 "$rc" "allowlist 外は終了コード 1"
 assert_contains "trusted-skill-owners.txt" "$out" "allowlist の場所を案内する"
-assert_contains "skill-vendor.sh add" "$out" "vendor 導線を案内する"
+assert_contains "vendor.sh add" "$out" "vendor 導線を案内する"
 assert_eq "" "$(cat "$SKILLS_COPY")" "claude-skills.txt に追記しない"
 TOTAL=$((TOTAL + 1))
 if grep -q "skill install" "$GH_LOG"; then
@@ -213,7 +213,7 @@ echo ""
 
 echo "=== local: 行は廃止されている ==="
 TOTAL=$((TOTAL + 1))
-if grep -q '^local:' "$SCRIPTS_DIR/claude-skills.txt"; then
+if grep -q '^local:' "$SCRIPTS_DIR/setup/claude-skills.txt"; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: claude-skills.txt に local: 行が残っている"
 else

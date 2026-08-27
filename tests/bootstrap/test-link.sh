@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
 SETUP="$REPO_ROOT/dotfilesLink.sh"
-BOOTSTRAP="$REPO_ROOT/scripts/bootstrap.sh"
+BOOTSTRAP="$REPO_ROOT/scripts/setup/bootstrap.sh"
 BOOTSTRAP_IMPLEMENTATION="$REPO_ROOT/internal/bootstrap/setup.sh"
 IMPLEMENTATION="$REPO_ROOT/internal/link/reconcile.sh"
 
@@ -435,12 +435,61 @@ check "skills-vendor が無くても成功する" run_link_vendor_no_dir
 check "main が走っていない（偽 HOME にリンクが作られない）" \
   test '!' -e "$tmp/vs2/home/.config/fish/config.fish"
 
+# --- link_scripts ---
+# repo内はfeature別に保ち、HOME側では正規ディレクトリと旧flat名を両方提供する。
+run_link_scripts() {
+  (
+    HOME="$1"
+    # shellcheck disable=SC2034
+    DOTFILES_DIR="$REPO_ROOT"
+    # shellcheck disable=SC2034
+    SKIPPED=()
+    LINKED=0
+    UNCHANGED=0
+    export HOME
+    link_scripts
+  ) >/dev/null 2>&1
+}
+
+scripts_home="$tmp/scripts-home"
+mkdir -p "$scripts_home"
+run_link_scripts "$scripts_home"
+check "HOMEのscriptsは実ディレクトリにする" test ! -L "$scripts_home/scripts"
+check "feature別の正規pathをリンクする" test -L "$scripts_home/scripts/worktree"
+check "旧flat名を互換リンクにする" test -L "$scripts_home/scripts/worktree-init.sh"
+check "互換リンクは正規entrypointを指す" \
+  test "$(readlink -f "$scripts_home/scripts/worktree-init.sh")" = \
+  "$REPO_ROOT/scripts/worktree/init.sh"
+
+legacy_home="$tmp/scripts-legacy-home"
+mkdir -p "$legacy_home"
+ln -s "$REPO_ROOT/scripts" "$legacy_home/scripts"
+run_link_scripts "$legacy_home"
+check "旧scriptsディレクトリlinkを安全に移行する" test ! -L "$legacy_home/scripts"
+check "移行後も旧flat名を提供する" test -L "$legacy_home/scripts/nippo-cron.sh"
+
+existing_home="$tmp/scripts-existing-home"
+mkdir -p "$existing_home/scripts"
+printf 'local script\n' >"$existing_home/scripts/worktree-init.sh"
+run_link_scripts "$existing_home"
+check "旧名と衝突する実ファイルを退避する" \
+  test -f "$(find "$existing_home/scripts" -name 'worktree-init.sh.bak.*' -print -quit)"
+check "退避後に互換リンクを作る" test -L "$existing_home/scripts/worktree-init.sh"
+
+foreign_home="$tmp/scripts-foreign-home"
+foreign_target="$tmp/scripts-foreign-target"
+mkdir -p "$foreign_home" "$foreign_target"
+ln -s "$foreign_target" "$foreign_home/scripts"
+run_link_scripts "$foreign_home"
+check "別のscripts symlinkは置き換えない" test -L "$foreign_home/scripts"
+check "別symlinkのリンク先へ書き込まない" \
+  test -z "$(find "$foreign_target" -mindepth 1 -print -quit)"
 # --- lint.sh が skills-vendor を除外する ---
 # lint.sh は git ls-files で対象を集めており、「ignore 済み＝自分が保守しない」で
 # 第三者コードを切る前提に立っている。vendoring はこの前提を壊すので、
 # 除外を入れないと vendored な .sh で lint.yml が落ちる
 check "lint.sh が skills-vendor を pathspec で除外している" \
-  grep -q "skills-vendor" "$SCRIPTS_DIR/lint.sh"
+  grep -q "skills-vendor" "$SCRIPTS_DIR/repository/lint.sh"
 
 # --- backup_fish_plugins ---
 # fish_plugins は link_configs でリンクするが、safe_link の ln -snf は実ファイルを

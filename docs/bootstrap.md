@@ -4,7 +4,7 @@
 gitignore している機密ファイルの移植台帳も兼ねる。
 
 > [!IMPORTANT]
-> `scripts/bootstrap.sh` だけではセットアップは完了しない。
+> `scripts/setup/bootstrap.sh` だけではセットアップは完了しない。
 > 認証情報や社内固有の値はリポジトリに含められないため、旧環境からのコピーや手入力が必要になる。
 
 ## 全体の流れ
@@ -36,7 +36,7 @@ chsh -s /usr/bin/fish   # 反映のため一度ログインし直す
 
 > [!WARNING]
 > **この時点で `mise` は裸のコマンド名では通らない。** インストーラは `~/.local/bin/mise` に置くが、
-> そこを PATH に足しているのは `00-paths.fish` で、**`scripts/bootstrap.sh` を走らせるまで存在しない**。
+> そこを PATH に足しているのは `00-paths.fish` で、**`scripts/setup/bootstrap.sh` を走らせるまで存在しない**。
 > 手順1の `exec fish` を抜けるまでは `~/.local/bin/mise` とフルパスで呼ぶ。
 
 ### WSL2 では linger を有効にする
@@ -81,9 +81,9 @@ mkdir -p /data/git-repos/github.com/rhi222
 git clone https://github.com/rhi222/dotfiles /data/git-repos/github.com/rhi222/dotfiles
 cd /data/git-repos/github.com/rhi222/dotfiles
 
-bash scripts/apt-setup.sh                                    # apt パッケージの導入（WSL2 のみ）
-bash scripts/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
-bash scripts/bootstrap.sh                                    # 初期化後にlinkをreconcile
+bash scripts/setup/apt.sh                                    # apt パッケージの導入（WSL2 のみ）
+bash scripts/settings/private-bundle.sh import ~/dotfiles-private.zip # 旧環境から運んだ集約ファイル
+bash scripts/setup/bootstrap.sh                                    # 初期化後にlinkをreconcile
 exec fish                                                    # リンクした設定を読み込む
 mise install                                                 # config.toml のツールを一括導入
 ```
@@ -92,7 +92,7 @@ mise install                                                 # config.toml の�
 
 **この3つの順序には理由があり、入れ替えると静かに壊れる。**
 
-1. **`scripts/bootstrap.sh` が先。** `~/.config/mise/config.toml` は内部で呼ぶ
+1. **`scripts/setup/bootstrap.sh` が先。** `~/.config/mise/config.toml` は内部で呼ぶ
    `dotfilesLink.sh` により配置されるので、先に `mise install` すると宣言そのものが見つからない。
    bootstrapは `mise install` を呼ばないため、ここで明示的に実行する
 2. **`exec fish` が次。** リンクされた `my/conf.d/*.fish` がここで初めて読まれ、
@@ -127,7 +127,7 @@ rm -f ~/.cache/mise-activate.fish ~/.cache/git-wt-init.fish
 **旧環境が生きているなら、[手順2](#2-ローカル設定と機密ファイルを用意する)の移植作業はこの
 `import` で終わる。** 旧環境が無い場合は `import` を飛ばし、手順2で雛形に値を書く。
 
-集約ファイルを import していない場合、`scripts/bootstrap.sh` は次の雛形を `.example` ファイルから
+集約ファイルを import していない場合、`scripts/setup/bootstrap.sh` は次の雛形を `.example` ファイルから
 自動生成する。ただし、生成されるファイルの値は空なので、手順2で中身を埋める。
 import 済みなら実体が既にあるので、雛形生成はスキップされる。
 
@@ -152,14 +152,14 @@ import 済みなら実体が既にあるので、雛形生成はスキップさ�
 
 ```fish
 # 旧環境で
-bash scripts/private-bundle.sh adopt            # dry-run。何が動くか確認する
-bash scripts/private-bundle.sh adopt --execute  # 集約先へ移して symlink 化
-bash scripts/private-bundle.sh export           # ~/dotfiles-private-YYYYMMDD.zip
+bash scripts/settings/private-bundle.sh adopt            # dry-run。何が動くか確認する
+bash scripts/settings/private-bundle.sh adopt --execute  # 集約先へ移して symlink 化
+bash scripts/settings/private-bundle.sh export           # ~/dotfiles-private-YYYYMMDD.zip
 
 # 新環境で
-bash scripts/private-bundle.sh import ~/dotfiles-private-YYYYMMDD.zip
-bash scripts/bootstrap.sh
-bash scripts/private-bundle.sh status           # 全項目がリンク済みであること
+bash scripts/settings/private-bundle.sh import ~/dotfiles-private-YYYYMMDD.zip
+bash scripts/setup/bootstrap.sh
+bash scripts/settings/private-bundle.sh status           # 全項目がリンク済みであること
 ```
 
 集約先は `~/.local/share/dotfiles-private/` で、`home/` と `repo/` の2ルートに
@@ -198,7 +198,7 @@ tar xzf claude-memory.tar.gz -C ~
 
 - **コピー** — 再作成が難しいため、旧環境からファイルやディレクトリを持ってくる
 - **手書き** — 雛形が無いため、新環境でファイルを作成して値を記入する
-- **雛形** — `scripts/bootstrap.sh` が作った空のファイルに値を記入する
+- **雛形** — `scripts/setup/bootstrap.sh` が作った空のファイルに値を記入する
 - **自動** — セットアップ処理が配置する。内容だけ確認すればよい
 - **再ログイン** — コピー不要。新環境で各ツールにログインし直せば復旧する
 
@@ -227,7 +227,7 @@ tar xzf claude-memory.tar.gz -C ~
 - **手書き** `~/.config/linear/api-key`
   — Linear の API キー。作成後に `chmod 600 ~/.config/linear/api-key` を実行する
 - **自動** `~/.claude/settings.json`
-  — 社内 marketplace の定義を含む。`scripts/bootstrap.sh` が `sync-claude-settings.sh push` で配置し、
+  — 社内 marketplace の定義を含む。`scripts/setup/bootstrap.sh` が `sync-claude-settings.sh push` で配置し、
   同期時には機密値をマスクする
 
 #### B. 社内固有情報
@@ -247,7 +247,7 @@ tar xzf claude-memory.tar.gz -C ~
 - `.config/AutoHotkey/scripts/snippets-local.ahk`
   — 上記スクリプトを登録する定義
 
-`scripts/bootstrap.sh` が生成した雛形に値を入れるもの：
+`scripts/setup/bootstrap.sh` が生成した雛形に値を入れるもの：
 
 - `~/.claude/local-context.md`
   — Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、案件・顧客の略号
@@ -338,9 +338,9 @@ git status --short .gitconfig .config/git/                # 出力が無いこ�
 `STRICT=1` を付けた処理は、一部のインストールに失敗した場合も成功扱いにせず終了する。
 
 ```fish
-env STRICT=1 bash scripts/setup-claude-skills.sh  # 外部 agent skill
-env STRICT=1 bash scripts/setup-gh-extensions.sh  # gh 拡張
-bash scripts/linear-bootstrap.sh                  # Linear の team/state/label ID を解決
+env STRICT=1 bash scripts/setup/claude-skills.sh  # 外部 agent skill
+env STRICT=1 bash scripts/setup/gh-extensions.sh  # gh 拡張
+bash scripts/linear/bootstrap.sh                  # Linear の team/state/label ID を解決
 ```
 
 ### dotctl をビルドする
@@ -349,12 +349,12 @@ bash scripts/linear-bootstrap.sh                  # Linear の team/state/label 
 ローカルビルドして `~/.local/bin/dotctl` に置く**（バイナリはコミットしない）。
 
 ```fish
-bash scripts/setup-dotctl.sh
+bash scripts/setup/dotctl.sh
 dotctl version
 ```
 
 **順序は `apt-setup.sh` → mise（手順1）→ `setup-dotctl.sh`。** Go は mise 導入後に
-しか無いので、この順を外すとビルドできない。逆に **`scripts/bootstrap.sh` は `dotctl` を
+しか無いので、この順を外すとビルドできない。逆に **`scripts/setup/bootstrap.sh` は `dotctl` を
 必須にしていない**ので、ここを飛ばしても基本セットアップは完了する（`dotctl` を
 使う機能だけが欠ける）。bootstrap を Go の有無に依存させないための作りで、
 [docs/scripts-layout.md](scripts-layout.md) に移行の全体像がある。
@@ -373,7 +373,7 @@ dotctl version
 - 緊急時は `dotctl rebuild --skip-tests` でテストを飛ばせる
 
 復旧は入れ直すだけでよい。`~/.local/bin/dotctl` を消しても
-`bash scripts/setup-dotctl.sh` で作り直せる。
+`bash scripts/setup/dotctl.sh` で作り直せる。
 
 ### 宣言が無く、手で入れるもの
 
@@ -393,7 +393,7 @@ dotctl version
 宣言分の install まで、これ1本で済む**（gh 拡張・yazi プラグインと同じ形）。
 
 ```fish
-env STRICT=1 bash scripts/setup-fish-plugins.sh
+env STRICT=1 bash scripts/setup/fish-plugins.sh
 ```
 
 プロンプト（tide）と Ctrl+R（fzf.fish）の実体がこれ。入れないと
@@ -477,8 +477,8 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 `dotfilesLink.sh` の対象外になっている。**内容を確認してから手で押し出す。**
 
 ```fish
-bash scripts/sync-windows-settings.sh status          # 実ファイルとの差分
-bash scripts/sync-windows-settings.sh push --force    # リポジトリ -> 実ファイル
+bash scripts/settings/sync-windows.sh status          # 実ファイルとの差分
+bash scripts/settings/sync-windows.sh push --force    # リポジトリ -> 実ファイル
 wsl.exe --shutdown                                    # .wslconfig の反映（Windows 側から）
 ```
 
@@ -514,13 +514,13 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 機能が黙って止まる（linear-dispatch で実際に起きた。フラグは何も実行しない）。
 
 ```cron
-0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
-0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
-30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
-0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
-0 8 * * 1-5 $HOME/scripts/linear-sweep.sh >> $HOME/.linear-sweep.log 2>&1
-0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
-10 10 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
+0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo/notify-cron.sh >> $HOME/.nippo-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/nippo/create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
+30 18 * * 1-5 $HOME/scripts/nippo/draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
+0 16 * * 5 $HOME/scripts/nippo/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
+0 8 * * 1-5 $HOME/scripts/linear/sweep.sh >> $HOME/.linear-sweep.log 2>&1
+0 1 * * 2-6 $HOME/scripts/linear/dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
+10 10 * * 1-5 $HOME/scripts/linear/slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 ```
 
 フラグ作成前に、各機能の説明と手動確認方法を [AGENTS.md](../AGENTS.md) で確認する。
@@ -552,11 +552,11 @@ crontab ~/.local/share/dotfiles-private/crontab.txt
 機密語辞書を埋めてから、次の3つをすべて実行する。
 
 ```fish
-bash scripts/private-bundle.sh status  # ローカル設定が全てリンク済みか
-bash scripts/lint.sh                   # shellcheck + shfmt（追跡・未追跡の全 .sh）
-bash scripts/secret-scan.sh --tree     # 機密語スキャン
-bash scripts/ref-check.sh              # scripts/ 配下への参照が壊れていないか
-bash scripts/run-tests.sh              # 全テスト（Shell + Go）
+bash scripts/settings/private-bundle.sh status  # ローカル設定が全てリンク済みか
+bash scripts/repository/lint.sh                   # shellcheck + shfmt（追跡・未追跡の全 .sh）
+bash scripts/repository/secret-scan.sh --tree     # 機密語スキャン
+bash scripts/repository/ref-check.sh              # scripts/ 配下への参照が壊れていないか
+bash scripts/repository/run-tests.sh              # 全テスト（Shell + Go）
 ```
 
 `run-tests.sh` は `tests/<feature>/` 以下の Shell テストと `go test ./...` の両方を

@@ -1,0 +1,15 @@
+# gh skill の自動更新に乗せてよい owner。
+#
+# **ここに入れることは「人のレビューなしで毎日自動更新される」ことと同義。**
+# daily-update.sh が gh skill update --all を回すため、owner 側が skill 本文を
+# 書き換えれば翌朝それが取り込まれる。skill は指示なので、これは依存パッケージの
+# 更新とは意味が違う。
+#
+# 個人アカウントは入れない。scripts/skills/vendor.sh で vendoring して取り込む。
+# 判定は skill-add.sh と setup-claude-skills.sh の両方で行う（default-deny）。
+#
+# 1行1 owner。# 以降と空行は無視する。
+
+anthropics
+github
+vercel-labs

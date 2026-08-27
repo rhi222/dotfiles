@@ -28,11 +28,11 @@ func residueSetup(t *testing.T) ResidueConfig {
 	if err := os.MkdirAll(cfg.Home, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(cfg.Repo, "scripts"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cfg.Repo, "scripts", "setup"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// 宣言が読めないと skill の判定を諦めるので、空でも置いておく
-	if err := os.WriteFile(filepath.Join(cfg.Repo, "scripts", "claude-skills.txt"),
+	if err := os.WriteFile(filepath.Join(cfg.Repo, "scripts", "setup", "claude-skills.txt"),
 		[]byte("# 宣言\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ func TestResidueAcceptsVendoredSymlink(t *testing.T) {
 
 func TestResidueAcceptsDeclaredTrustedSkill(t *testing.T) {
 	cfg := residueSetup(t)
-	if err := os.WriteFile(filepath.Join(cfg.Repo, "scripts", "claude-skills.txt"),
+	if err := os.WriteFile(filepath.Join(cfg.Repo, "scripts", "setup", "claude-skills.txt"),
 		[]byte("# 宣言\nanthropics/skills skill-creator\ngithub/awesome-copilot git-commit@v1.2.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +261,7 @@ func TestResidueGivesUpOnSkillsWhenDeclarationUnreadable(t *testing.T) {
 	// **読めないまま「宣言に無い」と言うと、正しく入っているものまで
 	// 残骸に見えてしまう。**
 	cfg := residueSetup(t)
-	if err := os.Remove(filepath.Join(cfg.Repo, "scripts", "claude-skills.txt")); err != nil {
+	if err := os.Remove(filepath.Join(cfg.Repo, "scripts", "setup", "claude-skills.txt")); err != nil {
 		t.Fatal(err)
 	}
 	live := cfg.LiveSkillDirs[0]

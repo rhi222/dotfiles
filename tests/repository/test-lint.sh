@@ -12,7 +12,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-TARGET="$SCRIPTS_DIR/lint.sh"
+TARGET="$SCRIPTS_DIR/repository/lint.sh"
 
 if ! command -v fish >/dev/null 2>&1; then
   echo "ERROR: fish が見つかりません"

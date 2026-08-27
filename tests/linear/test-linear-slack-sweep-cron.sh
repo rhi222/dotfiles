@@ -7,7 +7,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-SCRIPT="$SCRIPTS_DIR/linear-slack-sweep-cron.sh"
+SCRIPT="$SCRIPTS_DIR/linear/slack-sweep-cron.sh"
 pass=0
 fail=0
 
@@ -66,7 +66,7 @@ check "DRY_RUNではclaudeを実行しない" grep -q "DRY_RUN" <<<"$out5"
 #    ~/scripts は dotfiles/scripts へのsymlinkなので、readlink -f で解決する必要がある
 ln -s "$SCRIPTS_DIR" "$tmp2/scripts"
 out6=$(HOME="$tmp2" LINEAR_SLACK_SWEEP_DRY_RUN=1 LINEAR_SLACK_SWEEP_FORCE=1 \
-  bash "$tmp2/scripts/linear-slack-sweep-cron.sh" 2>&1)
+  bash "$tmp2/scripts/linear/slack-sweep-cron.sh" 2>&1)
 check "symlink越しでもリポジトリを解決する" grep -q "$(dirname "$SCRIPTS_DIR")" <<<"$out6"
 
 echo "---"

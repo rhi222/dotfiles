@@ -10,7 +10,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-TARGET="$SCRIPTS_DIR/skill-add.sh"
+TARGET="$SCRIPTS_DIR/skills/add.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"

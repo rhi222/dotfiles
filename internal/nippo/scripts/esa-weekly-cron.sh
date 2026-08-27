@@ -4,11 +4,11 @@
 # 部長会向けレポートのドラフトをObsidianに出力する。
 #
 # crontab設定例:
-#   0 16 * * 5 $HOME/scripts/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
+#   0 16 * * 5 $HOME/scripts/nippo/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
 #
 # 有効化: touch ~/.config/esa-weekly-enabled
 # 無効化: rm ~/.config/esa-weekly-enabled
-# 動作確認: ESA_WEEKLY_DRY_RUN=1 bash scripts/esa-weekly-cron.sh
+# 動作確認: ESA_WEEKLY_DRY_RUN=1 bash scripts/nippo/esa-weekly-cron.sh
 
 set -euo pipefail
 

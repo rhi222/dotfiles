@@ -174,7 +174,7 @@ out=$(env HOME="$TEST_DIR/nohome" PATH="/usr/bin:/bin" \
   fish -c "set -g fish_function_path $FUNC_DIR \$fish_function_path; __dclean_dotctl" 2>&1)
 rc=$?
 check "どこにも無ければ非0で返す" "1" "$rc"
-check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
+check "ビルド方法を案内する" "yes" "$(has 'setup/dotctl.sh' "$out")"
 
 echo "== 起動時フック =="
 

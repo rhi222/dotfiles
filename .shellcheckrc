@@ -1,4 +1,4 @@
-# shellcheck の設定。scripts/lint.sh と CI の lint ワークフローが参照する。
+# shellcheck の設定。scripts/repository/lint.sh と CI の lint ワークフローが参照する。
 
 # SC2016: Expressions don't expand in single quotes
 #

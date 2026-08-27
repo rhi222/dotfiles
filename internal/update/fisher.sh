@@ -7,11 +7,11 @@ fisher_update() {
     return 0
   fi
   if ! fish -c 'functions -q fisher' >/dev/null 2>&1; then
-    echo "fisher not installed, skipping (run scripts/setup-fish-plugins.sh)"
+    echo "fisher not installed, skipping (run scripts/setup/fish-plugins.sh)"
     return 0
   fi
   if ! command -v dotctl >/dev/null 2>&1; then
-    echo "dotctl not found (run scripts/setup-dotctl.sh)" >&2
+    echo "dotctl not found (run scripts/setup/dotctl.sh)" >&2
     return 1
   fi
   dotctl fisher-update

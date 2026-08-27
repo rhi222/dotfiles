@@ -40,7 +40,7 @@ dotfilesリポジトリ。
 - path名もscan対象。社内名を含む場合は親directory単位でignoreする
 - `--no-verify` は原則使わない
 
-検査は `bash scripts/secret-scan.sh --tree`。詳細は
+検査は `bash scripts/repository/secret-scan.sh --tree`。詳細は
 [docs/public-repository-policy.md](docs/public-repository-policy.md)。
 
 ### 破壊操作と同期
@@ -56,22 +56,22 @@ dotfilesリポジトリ。
 - launcher、bootstrap、外部command数個の直列実行はShell
 - 複数の状態を集めて判定する処理、JSON、実行計画はGo製 `dotctl`
 - skillが `source` する `lib/nippo-paths.sh` と `lib/linear-api.sh` はShell APIを維持する
-- 公開入口は `scripts/*.sh`。内部実装は言語を問わず `internal/<feature>/` に置く
-- Goへ移しても薄いwrapperを残し、cron・hook・skillのpathを壊さない
+- 公開入口は `scripts/<feature>/*.sh`。内部実装は言語を問わず `internal/<feature>/` に置く
+- 旧 `~/scripts/*.sh` は `scripts/compat-links.txt` から生成し、cron・hook・skillのpathを壊さない
 - 新しいtestは `tests/<feature>/test-*.sh`、Go unit testは対象packageと同じdirectory
 
 ## セットアップと検証
 
 ### 新環境
 
-`scripts/bootstrap.sh` だけでは完了しない。gitignoreされた認証情報・端末固有値の準備も必要。
+`scripts/setup/bootstrap.sh` だけでは完了しない。gitignoreされた認証情報・端末固有値の準備も必要。
 
 ```fish
 ghq get rhi222/dotfiles
 cd (ghq root)/github.com/rhi222/dotfiles
-bash scripts/apt-setup.sh
-bash scripts/bootstrap.sh
-bash scripts/setup-dotctl.sh  # miseでGoを導入した後
+bash scripts/setup/apt.sh
+bash scripts/setup/bootstrap.sh
+bash scripts/setup/dotctl.sh  # miseでGoを導入した後
 ```
 
 残りの移植、外部tool、自動化、機密ファイル台帳は [docs/bootstrap.md](docs/bootstrap.md)。
@@ -79,11 +79,11 @@ bash scripts/setup-dotctl.sh  # miseでGoを導入した後
 ### 変更後の標準検証
 
 ```fish
-bash scripts/lint.sh
-bash scripts/secret-scan.sh --tree
-bash scripts/run-tests.sh
-bash scripts/doc-budget.sh
-bash scripts/ref-check.sh
+bash scripts/repository/lint.sh
+bash scripts/repository/secret-scan.sh --tree
+bash scripts/repository/run-tests.sh
+bash scripts/repository/doc-budget.sh
+bash scripts/repository/ref-check.sh
 ```
 
 `run-tests.sh` は `tests/<feature>/` のShell testと `go test ./...` を並列実行する。
@@ -95,15 +95,15 @@ Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-s
 ### symlink
 
 `./dotfilesLink.sh` がGit、Neovim、Fish、tmux、mise、Claude Codeなどのlinkをreconcileする。
-雛形生成・既存設定のadopt・初回plugin配置は新環境で `bash scripts/bootstrap.sh` を実行する。
+雛形生成・既存設定のadopt・初回plugin配置は新環境で `bash scripts/setup/bootstrap.sh` を実行する。
 ローカル設定の実体は `~/.local/share/dotfiles-private/` に集約する。
 
 | 操作           | コマンド                                         |
 | -------------- | ------------------------------------------------ |
-| 旧環境から集約 | `bash scripts/private-bundle.sh adopt --execute` |
-| export         | `bash scripts/private-bundle.sh export`          |
-| import         | `bash scripts/private-bundle.sh import <zip>`    |
-| 状態確認       | `bash scripts/private-bundle.sh status`          |
+| 旧環境から集約 | `bash scripts/settings/private-bundle.sh adopt --execute` |
+| export         | `bash scripts/settings/private-bundle.sh export`          |
+| import         | `bash scripts/settings/private-bundle.sh import <zip>`    |
+| 状態確認       | `bash scripts/settings/private-bundle.sh status`          |
 
 `~/.claude/settings.json` とWindows側設定はアプリがrenameで書き戻すためsymlinkにしない。
 **どちらも実ファイルを正、repoを追従側とする。** Codex設定も端末固有stateを含むためsymlinkにしない。
@@ -122,17 +122,17 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 
 | 対象                  | 宣言・実体                             | 追加・reconcile                                     |
 | --------------------- | -------------------------------------- | --------------------------------------------------- |
-| apt                   | `scripts/apt-packages.txt`             | `bash scripts/apt-setup.sh`                         |
-| gh extension          | `scripts/gh-extensions.txt`            | `bash scripts/setup-gh-extensions.sh`               |
-| fish plugin           | `.config/fish/fish_plugins`            | `bash scripts/setup-fish-plugins.sh`                |
-| yazi plugin           | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup-yazi-plugins.sh` |
-| trusted agent skill   | `scripts/trusted-skill-owners.txt`     | `bash scripts/skill-add.sh <owner/repo> <skill>`    |
-| vendored agent skill  | `.config/agents/skills-vendor/<name>/` | `bash scripts/skill-vendor.sh add ...`              |
+| apt                   | `scripts/setup/apt-packages.txt`             | `bash scripts/setup/apt.sh`                         |
+| gh extension          | `scripts/setup/gh-extensions.txt`            | `bash scripts/setup/gh-extensions.sh`               |
+| fish plugin           | `.config/fish/fish_plugins`            | `bash scripts/setup/fish-plugins.sh`                |
+| yazi plugin           | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` |
+| trusted agent skill   | `scripts/skills/trusted-owners.txt`     | `bash scripts/skills/add.sh <owner/repo> <skill>`    |
+| vendored agent skill  | `.config/agents/skills-vendor/<name>/` | `bash scripts/skills/vendor.sh add ...`              |
 | 共用自作skill         | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
 | Claude専用skill       | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
 | Codex専用skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
 
-`daily-update.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
+`scripts/update/daily.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
 最後に失敗を集約する。worktreeやvendored skillなどの情報提供checkは全体をFAILEDにしない。
 
 ### agent skillの信頼境界
@@ -146,22 +146,22 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 
 ## dotctlとscripts
 
-Go製 `dotctl` が複雑な状態判定を担い、従来の `scripts/*.sh` wrapperが入口を維持する。
-機能固有の実装はShell・Goとも `internal/<feature>/` に集約し、公開pathから互換層を介して呼ぶ。
+Go製 `dotctl` が複雑な状態判定を担い、`scripts/<feature>/*.sh` の薄いwrapperが正規入口を維持する。
+旧 `~/scripts/*.sh` はHOME側だけに互換linkを作る。機能固有の実装はShell・Goとも `internal/<feature>/` に集約する。
 `scripts/lib/` にはskillやhookがsourceする公開Shell APIだけを置く。境界と追加基準は
 [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 | 機能                       | 既存入口                                    |
 | -------------------------- | ------------------------------------------- |
-| worktree cleanup / init    | `scripts/worktree-{cleanup,init}.sh`        |
-| settings sync              | `scripts/sync-{claude,windows}-settings.sh` |
-| skill audit / vendor       | `scripts/skill-{audit,vendor}.sh`           |
-| private bundle             | `scripts/private-bundle.sh`                 |
-| WSL cleanup                | `scripts/wsl-cleanup.sh`                    |
-| residue / migration doctor | `scripts/{env-residue,migration-check}.sh`  |
+| worktree cleanup / init    | `scripts/worktree/{cleanup,init}.sh`      |
+| settings sync              | `scripts/settings/sync-{claude,windows}.sh` |
+| skill audit / vendor       | `scripts/skills/{audit,vendor}.sh`        |
+| private bundle             | `scripts/settings/private-bundle.sh`      |
+| WSL cleanup                | `scripts/wsl/cleanup.sh`                   |
+| residue / migration doctor | `scripts/doctor/{residue,migration}.sh`    |
 | docker clean               | `dclean`（fish function）                   |
 
-初回buildは `bash scripts/setup-dotctl.sh`、更新は `dotctl rebuild`。新command、wrapper、test配置、移植の評価結果は
+初回buildは `bash scripts/setup/dotctl.sh`、更新は `dotctl rebuild`。新command、wrapper、test配置、移植の評価結果は
 [docs/scripts-layout.md](docs/scripts-layout.md)。
 
 ## 自動化
@@ -173,12 +173,12 @@ Linearはtask本体ではなく、Jira / GitHub / Slack / esaへの**pointerを�
 
 | 操作              | 入口                                   |
 | ----------------- | -------------------------------------- |
-| 初期設定          | `bash scripts/linear-bootstrap.sh`     |
+| 初期設定          | `bash scripts/linear/bootstrap.sh`     |
 | 起票              | `/linear-add`                          |
-| draft PR sweep    | `bash scripts/linear-sweep.sh`         |
+| draft PR sweep    | `bash scripts/linear/sweep.sh`         |
 | Slack stamp sweep | `/linear-slack-sweep`                  |
 | recall            | `/linear-recall <URL or keyword>`      |
-| 夜間dispatch      | `bash scripts/linear-dispatch-cron.sh` |
+| 夜間dispatch      | `bash scripts/linear/dispatch-cron.sh` |
 
 stateは「今ボールを誰が持つか」で決める。AI成果物の判断待ちだけ `My Review`、自分の作業は
 確認中も `In Progress`。詳細は [docs/linear-command-layer.md](docs/linear-command-layer.md)。
@@ -189,10 +189,10 @@ stateは「今ボールを誰が持つか」で決める。AI成果物の判断�
 
 | 自動化       | 入口                           | enable file                      |
 | ------------ | ------------------------------ | -------------------------------- |
-| 当日日報作成 | `scripts/nippo-create-cron.sh` | `~/.config/nippo-create-enabled` |
-| reminder     | `scripts/nippo-cron.sh`        | `~/.config/nippo-notify-enabled` |
-| 日報draft    | `scripts/nippo-draft-cron.sh`  | `~/.config/nippo-draft-enabled`  |
-| esa週報      | `scripts/esa-weekly-cron.sh`   | `~/.config/esa-weekly-enabled`   |
+| 当日日報作成 | `scripts/nippo/create-cron.sh` | `~/.config/nippo-create-enabled` |
+| reminder     | `scripts/nippo/notify-cron.sh`        | `~/.config/nippo-notify-enabled` |
+| 日報draft    | `scripts/nippo/draft-cron.sh`  | `~/.config/nippo-draft-enabled`  |
+| esa週報      | `scripts/nippo/esa-weekly-cron.sh`   | `~/.config/esa-weekly-enabled`   |
 
 cronの時刻、dry-run、面談準備、allowed toolsは
 [docs/nippo-automation.md](docs/nippo-automation.md)。通知内容は
@@ -215,10 +215,10 @@ cronの時刻、dry-run、面談準備、allowed toolsは
 
 | 操作             | コマンド                                             |
 | ---------------- | ---------------------------------------------------- |
-| 候補確認         | `bash scripts/worktree-cleanup.sh`                   |
-| size付き確認     | `bash scripts/worktree-cleanup.sh --size`            |
-| 削除             | `bash scripts/worktree-cleanup.sh --execute`         |
-| 追跡fileごと削除 | `bash scripts/worktree-cleanup.sh --execute --force` |
+| 候補確認         | `bash scripts/worktree/cleanup.sh`                   |
+| size付き確認     | `bash scripts/worktree/cleanup.sh --size`            |
+| 削除             | `bash scripts/worktree/cleanup.sh --execute`         |
+| 追跡fileごと削除 | `bash scripts/worktree/cleanup.sh --execute --force` |
 
 cleanupはdry-runが既定。`locked` を最優先でSKIPし、作業中のClaude Code worktreeを消さない。
 判定表は [docs/worktree.md](docs/worktree.md)。
@@ -232,7 +232,7 @@ session hookとherdr native restore、nvimはpane単位のmarkerと段階起動�
 | ------------ | ----------------------------------------- |
 | 復元         | `he`                                      |
 | 進捗         | `he --status`                             |
-| 投入順の確認 | `bash scripts/herdr-restore.sh --dry-run` |
+| 投入順の確認 | `bash scripts/session/herdr-restore.sh --dry-run` |
 | UI設定の検証 | `herdr config check`                      |
 | UI反映       | `herdr server reload-config`              |
 
@@ -260,5 +260,5 @@ Docker cleanupは稼働containerとnamed volumeを削除しない。`dclean` / `
 - 長い箇条書きは判断・理由・注意を分け、独立した関心事は文書を分割する
 - 実測値、事故の経緯、詳細な判定表、setup例は対象docsへ置く
 - 新しい独立機能はAGENTS.mdへ長い節を足さず、docsを作って一覧へ1行追加する
-- `scripts/doc-budget.txt` の上限は圧縮後に下げ、超過時に上げて解決しない
-- `bash scripts/doc-budget.sh` と `bash scripts/ref-check.sh` で文書を検証する
+- `scripts/repository/doc-budget.txt` の上限は圧縮後に下げ、超過時に上げて解決しない
+- `bash scripts/repository/doc-budget.sh` と `bash scripts/repository/ref-check.sh` で文書を検証する

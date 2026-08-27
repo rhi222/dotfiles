@@ -5,7 +5,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-SCRIPT="$SCRIPTS_DIR/nippo-create-cron.sh"
+SCRIPT="$SCRIPTS_DIR/nippo/create-cron.sh"
 pass=0
 fail=0
 

@@ -196,7 +196,7 @@ func checkUntrackedFishFunctions(ctx context.Context, r execx.Runner, cfg Residu
 // 「宣言に無い」と言うと、正しく入っているものまで残骸に見えてしまう。
 // 第2戻り値はその理由（諦めなかったときは空）。
 func checkUndeclaredSkills(cfg ResidueConfig) ([]Residue, string) {
-	declPath := filepath.Join(cfg.Repo, "scripts", "claude-skills.txt")
+	declPath := filepath.Join(cfg.Repo, "scripts", "setup", "claude-skills.txt")
 	b, err := os.ReadFile(declPath)
 	if err != nil {
 		return nil, fmt.Sprintf("  skill の宣言が読めないため skill の判定はしません: %s", declPath)
@@ -260,7 +260,7 @@ func checkUndeclaredSkills(cfg ResidueConfig) ([]Residue, string) {
 			}
 			out = append(out, Residue{
 				fmt.Sprintf("宣言に無い skill: ~/%s/%s", short, name),
-				"trusted なら scripts/claude-skills.txt に、そうでなければ skill-vendor.sh add へ",
+				"trusted なら scripts/setup/claude-skills.txt に、そうでなければ skill-vendor.sh add へ",
 			})
 		}
 	}

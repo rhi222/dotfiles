@@ -85,13 +85,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y fish python3-yaml
 
       - name: Lint shell scripts
-        run: bash scripts/lint.sh
+        run: bash scripts/repository/lint.sh
 
       # scripts/ 配下への参照（AGENTS.md の表・docs・skill 本文・herdr config・
       # dotfilesLink.sh）が壊れていないか。**push 後の最終防波堤**で、主の防壁は
       # pre-commit 側（secret-scan と同じ二層構成）。
       - name: Check scripts/ references
-        run: bash scripts/ref-check.sh
+        run: bash scripts/repository/ref-check.sh
 
       # Go 側の静的検査。gofmt は差分が出たら落とす（shfmt と同じ扱い）
       - name: Lint Go
@@ -108,10 +108,10 @@ jobs:
       # （終了コードだけ 1 で一致するので、CI だけ2件落ちていた）。
       # 併せて setup-dotctl.sh 自体の bootstrap 経路も CI で通る。
       - name: Build dotctl
-        run: bash scripts/setup-dotctl.sh
+        run: bash scripts/setup/dotctl.sh
 
       # 個別に列挙せず run-tests.sh に全部走らせる。列挙を手書きにしていた頃は
       # 25本中2本しか走っておらず、増やしたテストがCIに入らないまま放置されていた。
       # CIで動かせないものはテストファイル側の `# ci-skip:` で宣言する。
       - name: Run shell script tests
-        run: bash scripts/run-tests.sh --ci
+        run: bash scripts/repository/run-tests.sh --ci

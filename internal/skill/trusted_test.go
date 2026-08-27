@@ -80,7 +80,7 @@ func TestRequireTrustedOwnerGuidesToVendoring(t *testing.T) {
 	}
 	// **拒否したら次の手を案内する。** ここで止まったままだと利用者が
 	// allowlist に自分で足してしまう（それは「レビューなしで自動更新」を許すこと）
-	if !strings.Contains(w.String(), "skill-vendor.sh add someone/private") {
+	if !strings.Contains(w.String(), "skills/vendor.sh add someone/private") {
 		t.Errorf("vendoring への導線が無い: %q", w.String())
 	}
 	if !strings.Contains(w.String(), "someone") {

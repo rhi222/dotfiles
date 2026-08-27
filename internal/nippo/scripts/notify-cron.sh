@@ -1,7 +1,7 @@
 #!/bin/bash
 # 日報リマインド（cron用ラッパー）
 # crontab設定例:
-#   0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo-cron.sh >> $HOME/.nippo-cron.log 2>&1
+#   0 9,11,13,15,17,19 * * 1-5 $HOME/scripts/nippo/notify-cron.sh >> $HOME/.nippo-cron.log 2>&1
 
 set -euo pipefail
 

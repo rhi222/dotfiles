@@ -7,10 +7,10 @@ source "$BOOTSTRAP_DIR/../link/reconcile.sh"
 
 # Claude Codeがrenameで書き戻すsettingsはsymlinkにできないため、初期構築時だけcopy同期する。
 setup_claude_settings() {
-  if ! bash "$DOTFILES_DIR/scripts/sync-claude-settings.sh" push; then
+  if ! bash "$DOTFILES_DIR/scripts/settings/sync-claude.sh" push; then
     echo "[WARN] ~/.claude/settings.json は更新しませんでした" >&2
-    echo "       実ファイル側を残す:     bash scripts/sync-claude-settings.sh pull" >&2
-    echo "       リポジトリ版で上書き:   bash scripts/sync-claude-settings.sh push --force" >&2
+    echo "       実ファイル側を残す:     bash scripts/settings/sync-claude.sh pull" >&2
+    echo "       リポジトリ版で上書き:   bash scripts/settings/sync-claude.sh push --force" >&2
   fi
 }
 
@@ -35,7 +35,7 @@ init_secret_patterns() {
   local patterns="$HOME/.config/dotfiles/secret-patterns.txt"
   if [ ! -f "$patterns" ]; then
     mkdir -p "$(dirname "$patterns")"
-    cp "$DOTFILES_DIR/scripts/secret-patterns.txt.example" "$patterns"
+    cp "$DOTFILES_DIR/scripts/repository/secret-patterns.txt.example" "$patterns"
     echo "[INFO] $patterns を雛形から作成しました" >&2
     echo "       社内固有の語を追記してください（この内容はコミットされません）" >&2
   fi
@@ -61,20 +61,20 @@ init_local_configs() {
 }
 
 setup_yazi_plugins() {
-  if ! bash "$DOTFILES_DIR/scripts/setup-yazi-plugins.sh"; then
+  if ! bash "$DOTFILES_DIR/scripts/setup/yazi-plugins.sh"; then
     echo "[WARN] yazi のプラグイン配置に失敗しました（yazi が起動できない状態です）" >&2
-    echo "       復旧: bash scripts/setup-yazi-plugins.sh" >&2
+    echo "       復旧: bash scripts/setup/yazi-plugins.sh" >&2
   fi
 }
 
 print_next_steps() {
   echo ""
-  echo "To install apt packages: ./scripts/apt-setup.sh"
+  echo "To install apt packages: ./scripts/setup/apt.sh"
   echo ""
   echo "日報リマインド通知を有効にするには:"
   echo "  1. touch ~/.config/nippo-notify-enabled"
   echo "  2. crontab -e で以下を追加:"
-  echo "     0 9,11,13,15,17,19 * * 1-5 \$HOME/scripts/nippo-cron.sh >> \$HOME/.nippo-cron.log 2>&1"
+  echo "     0 9,11,13,15,17,19 * * 1-5 \$HOME/scripts/nippo/notify-cron.sh >> \$HOME/.nippo-cron.log 2>&1"
   echo "  無効化: rm ~/.config/nippo-notify-enabled"
 }
 

@@ -5,7 +5,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-RUNNER="$SCRIPTS_DIR/run-tests.sh"
+RUNNER="$SCRIPTS_DIR/repository/run-tests.sh"
 
 pass=0
 fail=0

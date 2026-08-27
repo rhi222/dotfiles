@@ -10,10 +10,10 @@ gitignore しているローカル設定・機密ファイルの実体は
 
 | 操作 | コマンド |
 | ---- | -------- |
-| 旧環境から集約 | `bash scripts/private-bundle.sh adopt --execute` |
-| export | `bash scripts/private-bundle.sh export` |
-| import | `bash scripts/private-bundle.sh import <zip>` |
-| 状態確認 | `bash scripts/private-bundle.sh status` |
+| 旧環境から集約 | `bash scripts/settings/private-bundle.sh adopt --execute` |
+| export | `bash scripts/settings/private-bundle.sh export` |
+| import | `bash scripts/settings/private-bundle.sh import <zip>` |
+| 状態確認 | `bash scripts/settings/private-bundle.sh status` |
 
 設計上の不変条件:
 
@@ -38,9 +38,9 @@ gitがignoreしているものだけを拾う。`~/.claude/settings.json` と
 
 | 操作 | コマンド |
 | ---- | -------- |
-| 差分確認 | `bash scripts/sync-claude-settings.sh status` |
-| 実ファイル → repo | `bash scripts/sync-claude-settings.sh pull` |
-| repo → 実ファイル | `bash scripts/sync-claude-settings.sh push` |
+| 差分確認 | `bash scripts/settings/sync-claude.sh status` |
+| 実ファイル → repo | `bash scripts/settings/sync-claude.sh pull` |
+| repo → 実ファイル | `bash scripts/settings/sync-claude.sh push` |
 
 - 保存時に `jq -S` で正規化する
 - 両側に差分がある `push` は拒否し、明示的な `--force` だけ上書きを許す
@@ -59,7 +59,7 @@ Codexの `config.toml` はsymlinkせず、`bash scripts/settings/sync-codex.sh` 
 | `.config/wsl/.wslconfig` | `%USERPROFILE%\.wslconfig` |
 | `.config/windows-terminal/settings.json` | Terminalの `LocalState/settings.json` |
 
-操作は `scripts/sync-windows-settings.sh status|pull|push [wslconfig|terminal]`。
+操作は `scripts/settings/sync-windows.sh status|pull|push [wslconfig|terminal]`。
 
 - NTFS上の実体はWindowsからWSL symlinkを解釈できないためコピー同期する
 - Terminalはdistro検出時に設定を書き戻すため、こちらもsymlinkにしない
@@ -86,7 +86,7 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 
 ## daily-update
 
-`scripts/daily-update.sh` は apt / cargo / mise / nvim / gh skill /
+`scripts/update/daily.sh` は apt / cargo / mise / nvim / gh skill /
 gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後にsoft checkと設定同期を行う。
 
 - 1ステップの失敗で止めず、最後に失敗名を集約する
@@ -109,10 +109,10 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 
 | 対象 | 宣言 | 追加・reconcile | 更新 |
 | ---- | ---- | --------------- | ---- |
-| apt | `scripts/apt-packages.txt` | `bash scripts/apt-setup.sh` | daily-update |
-| gh extension | `scripts/gh-extensions.txt` | `bash scripts/setup-gh-extensions.sh` | daily-update |
-| fish | `.config/fish/fish_plugins` | `bash scripts/setup-fish-plugins.sh` | daily-update |
-| yazi | `.config/yazi/package.toml` | `ya pkg add` / `bash scripts/setup-yazi-plugins.sh` | daily-update |
+| apt | `scripts/setup/apt-packages.txt` | `bash scripts/setup/apt.sh` | daily-update |
+| gh extension | `scripts/setup/gh-extensions.txt` | `bash scripts/setup/gh-extensions.sh` | daily-update |
+| fish | `.config/fish/fish_plugins` | `bash scripts/setup/fish-plugins.sh` | daily-update |
+| yazi | `.config/yazi/package.toml` | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` | daily-update |
 
 gh extensionは `owner/repo[@version]` 形式で、version指定はpinになる。
 
@@ -121,7 +121,7 @@ fisherは未宣言pluginを削除する完全reconcileなので、setupは削除
 fish自体は起動できるため、`dotfilesLink.sh` から自動実行しない。
 
 yaziは `init.lua` がpluginを `require` するため、実体が無いと起動できない。このためyaziだけは
-新環境の `scripts/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
+新環境の `scripts/setup/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
 検査する。`package.toml` はrev/hashを持つlockfileであり、upgradeによる差分のcommitは人間が判断する。
 
 ## GitHub CLI

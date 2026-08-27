@@ -4,11 +4,11 @@
 # 人間は生成結果をレビューするだけにする。
 #
 # crontab設定例:
-#   30 18 * * 1-5 $HOME/scripts/nippo-draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
+#   30 18 * * 1-5 $HOME/scripts/nippo/draft-cron.sh >> $HOME/.nippo-draft-cron.log 2>&1
 #
 # 有効化: touch ~/.config/nippo-draft-enabled
 # 無効化: rm ~/.config/nippo-draft-enabled
-# 動作確認: NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 bash scripts/nippo-draft-cron.sh
+# 動作確認: NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 bash scripts/nippo/draft-cron.sh
 
 set -euo pipefail
 

@@ -63,7 +63,7 @@ git wt "<元のブランチ名>-<移植先>" "origin/<移植先>"
 
 `git wt <branch> <start-point>` は start-point からworktreeを作る。
 `git wt` が無い環境では `git worktree add .wt/<branch> -b <branch> origin/<移植先>` で代替し、
-`~/scripts/worktree-init.sh` を明示的に叩く。
+`~/scripts/worktree/init.sh` を明示的に叩く。
 
 例: 元が `fix/tokyo-timezone` で移植先が `main` なら `fix/tokyo-timezone-main`。
 

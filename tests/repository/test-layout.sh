@@ -1,6 +1,6 @@
 #!/bin/bash
-# 内部実装の置き場を言語で分けず、公開入口とinternalの境界を維持する。
-# 旧domainsと内部専用scripts/libが戻ると、機能を探すtaxonomyが再び二重になる。
+# 公開入口をfeature別に整理し、internalとの境界を維持する。
+# scripts・internal・testsで同じfeature名を使い、互換旧名はmanifestだけに置く。
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +24,7 @@ check() {
 check "旧domainsディレクトリが無い" test ! -e "$REPO_ROOT/domains"
 check "internalの配置規約がある" test -f "$REPO_ROOT/internal/README.md"
 check "dotfilesLinkの公開入口を維持する" test -x "$REPO_ROOT/dotfilesLink.sh"
-check "bootstrapの公開入口を維持する" test -x "$REPO_ROOT/scripts/bootstrap.sh"
+check "bootstrapの公開入口を維持する" test -x "$REPO_ROOT/scripts/setup/bootstrap.sh"
 check "dotfilesLink実装はinternal/linkにある" test -f "$REPO_ROOT/internal/link/reconcile.sh"
 check "bootstrap実装はinternal/bootstrapにある" test -f "$REPO_ROOT/internal/bootstrap/setup.sh"
 check "Linear実装はinternalにある" test -f "$REPO_ROOT/internal/linear/lib/api.sh"
@@ -38,6 +38,22 @@ check "session共通実装はscripts/libへ戻さない" \
 check "update共通実装はscripts/libへ戻さない" \
   test ! -e "$REPO_ROOT/scripts/lib/${UPDATE_LIB:-pkg-update}.sh"
 
+check "scripts直下に実行scriptを置かない" \
+  test -z "$(find "$REPO_ROOT/scripts" -maxdepth 1 -type f -name '*.sh' -print -quit)"
+check "公開入口をfeature別に置く" \
+  test -x "$REPO_ROOT/scripts/worktree/init.sh"
+check "互換pathのmanifestがある" \
+  test -f "$REPO_ROOT/scripts/compat-links.txt"
+
+compat_targets_exist() {
+  local old target
+  while IFS="|" read -r old target; do
+    [[ -n "$old" ]] || continue
+    [[ "$old" == "#"* ]] && continue
+    [ -e "$REPO_ROOT/scripts/$target" ] || return 1
+  done <"$REPO_ROOT/scripts/compat-links.txt"
+}
+check "互換manifestの正規pathがすべて存在する" compat_targets_exist
 echo "---"
 echo "pass: $pass, fail: $fail"
 [[ "$fail" -eq 0 ]]

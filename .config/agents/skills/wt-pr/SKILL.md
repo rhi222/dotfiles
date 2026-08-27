@@ -17,18 +17,18 @@ worktreeを切る → 実装する → コミットを分割して積む → pus
 
 - **既存PRの別ブランチへの移植** — `backport-pr` の担当
 - **stacked PR の管理** — `gh-stack`（gh CLI拡張）の担当
-- **worktreeの掃除** — `bash scripts/worktree-cleanup.sh`（既定はdry-run）
+- **worktreeの掃除** — `bash scripts/worktree/cleanup.sh`（既定はdry-run）
 
 ## 前提
 
 worktree管理は `git wt`（github.com/k1LoW/git-wt）に一本化している。
-`git wt <branch>` で作成すると `wt.hook` 経由で `~/scripts/worktree-init.sh` が走り、
+`git wt <branch>` で作成すると `wt.hook` 経由で `~/scripts/worktree/init.sh` が走り、
 gitignore対象の `.env*` のコピーと依存インストール（pnpm/npm/yarn をlockファイルで判定）
 まで済んだ状態で、新しいworktreeへ自動cdする。保存先はリポジトリ内の `.wt/`。
 
 Claude Code の `EnterWorktree` を使える環境では、PostToolUse hook から同じ初期化が走る。
 Codexを含むそれ以外の環境では `git wt` を使う。どちらの経路でも初期化は冪等なので、
-迷ったら `~/scripts/worktree-init.sh` を叩き直してよい。
+迷ったら `~/scripts/worktree/init.sh` を叩き直してよい。
 
 ## 手順
 
@@ -77,7 +77,7 @@ git wt <branch>
 初期化hookが動かなかった場合（herdr経由など）は明示的に叩く。
 
 ```bash
-~/scripts/worktree-init.sh
+~/scripts/worktree/init.sh
 ```
 
 ### 4. 実装する
@@ -132,7 +132,7 @@ gh pr create --base <ベースブランチ> --title "<title>" --body "<body>"
 - 積んだコミットの一覧（`git log --oneline <base>..HEAD`）
 - 今いるworktreeのパス
 
-worktreeはPRがマージされるまで残す。掃除は `bash scripts/worktree-cleanup.sh`（既定dry-run、
+worktreeはPRがマージされるまで残す。掃除は `bash scripts/worktree/cleanup.sh`（既定dry-run、
 実削除は `--execute`）で、マージ済み・未lockのものだけが候補になる。
 
 ## つまずいたときの扱い
@@ -141,7 +141,7 @@ worktreeはPRがマージされるまで残す。掃除は `bash scripts/worktre
 lintのような機械的な指摘は直してよいが、テストの失敗は実装の問題を示している可能性がある。
 
 **`git wt` が無い環境** — `git worktree add .wt/<branch> -b <branch>` で代替し、
-そのあと `~/scripts/worktree-init.sh <path>` を明示的に叩く。
+そのあと `~/scripts/worktree/init.sh <path>` を明示的に叩く。
 
 **worktreeが既に大量にある** — 作る前に `git wt` で一覧を見る。同じチケットのworktreeが
 既にあれば、新規作成ではなくそこへ切り替える。

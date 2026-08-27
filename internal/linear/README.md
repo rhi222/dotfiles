@@ -7,7 +7,7 @@ Linearを個人タスクの司令塔として使う機能を、このディレ�
 - `../../tests/linear/`: ドメインの回帰テスト
 - `../../docs/linear-command-layer.md`: 状態、Cycle、dispatchの仕様
 
-外部からの公開入口は従来どおり `scripts/linear-*.sh`、公開Shell APIは
+正規の公開入口は `scripts/linear/*.sh`、旧 `~/scripts/linear-*.sh` は互換link、公開Shell APIは
 `scripts/lib/linear-api.sh` とする。どちらも互換層なので、cron、skill、hook、文書から
 `internal/` の実装パスを直接呼ばない。
 

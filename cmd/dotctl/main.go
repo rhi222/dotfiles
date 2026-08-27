@@ -290,7 +290,7 @@ func main() {
 		HomeDir:           homeDir(),
 		Residue:           residueConfig(),
 		Docker:            dockerConfig(),
-		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/trusted-skill-owners.txt")),
+		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/skills/trusted-owners.txt")),
 
 		AgentUsage:        agentUsageConfig(),
 		AgentUsageSelfExe: selfExe,

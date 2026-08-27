@@ -71,7 +71,7 @@ send_windows_toast "$TITLE" "$MESSAGE"
 NIPPO_NOTIFY_FLAG="$HOME/.config/nippo-notify-enabled"
 NIPPO_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-nippo-notify"
 if [[ "$EVENT" == "Stop" && -f "$NIPPO_NOTIFY_FLAG" ]]; then
-  NIPPO_CHECK="$HOME/scripts/nippo-check.sh"
+  NIPPO_CHECK="$HOME/scripts/nippo/check.sh"
   if [[ -x "$NIPPO_CHECK" ]]; then
     (
       if ! NOTIFY_COOLDOWN_SEC=600 \

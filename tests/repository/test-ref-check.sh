@@ -8,7 +8,7 @@
 # 見ないので、この層を埋めるのが ref-check.sh。
 #
 # 参照の書き方は1つではない。`bash scripts/example.sh`、`$DOTFILES_DIR/scripts/example.sh`、
-# `$HOME/scripts/example.sh`（~/scripts は repo の scripts/ への symlink）、
+# `$HOME/scripts/example.sh`（旧名はcompat manifestからHOME側へlink）、
 # 同一ディレクトリ内の `$SCRIPTS_DIR/example.sh` が実在する。**逆に
 # `.config/herdr/scripts/status.sh` は別物**なので、これを拾うと恒久的に赤くなる。
 #
@@ -18,7 +18,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-TARGET="$SCRIPTS_DIR/ref-check.sh"
+TARGET="$SCRIPTS_DIR/repository/ref-check.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"
@@ -60,7 +60,8 @@ make_referrer() {
 }
 
 allow() {
-  printf '%s\n' "$@" >"$REPO/scripts/ref-check-allow.txt"
+  mkdir -p "$REPO/scripts/repository"
+  printf '%s\n' "$@" >"$REPO/scripts/repository/ref-check-allow.txt"
 }
 
 # ref-check.sh は引数を取らない
@@ -128,7 +129,7 @@ echo "== パスの書き方を正規化する =="
 
 setup
 make_target scripts/example-alpha.sh
-# ~/scripts は repo の scripts/ への symlink なので、どれも同じ実体を指す。
+# HOME側の旧名はcompat manifestで正規entrypointへ解決する。
 # ~ はフィクスチャ本文として literal で書くので展開させない
 # shellcheck disable=SC2088
 make_referrer docs/bootstrap.md \

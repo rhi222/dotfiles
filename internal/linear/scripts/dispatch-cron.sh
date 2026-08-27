@@ -2,7 +2,7 @@
 # LinearのAI Queued issueを夜間にheadless Claudeで実行し、draft PRまで進める
 #
 # crontab設定例:
-#   0 1 * * 2-6 $HOME/scripts/linear-dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
+#   0 1 * * 2-6 $HOME/scripts/linear/dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
 #
 # 有効化: touch ~/.config/linear-dispatch-enabled
 # 無効化: rm ~/.config/linear-dispatch-enabled

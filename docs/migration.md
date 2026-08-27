@@ -39,7 +39,7 @@ upstream の無い main、価値のある未追跡ファイルの commit がこ�
 ### 判定コマンド
 
 ```fish
-bash scripts/migration-check.sh
+bash scripts/doctor/migration.sh
 ```
 
 remote無し・未push・stash・dirty・worktree の5項目を全リポジトリ分報告する。
@@ -54,7 +54,7 @@ remote無し・未push・stash・dirty・worktree の5項目を全リポジト�
 リポジトリの作業状態とは別に、移行時は宣言外の旧設定が残っていないか確認する。
 
 ```fish
-bash scripts/env-residue.sh
+bash scripts/doctor/residue.sh
 ```
 
 `~/.fzf`、追跡外のfish関数、宣言にないskillを報告する。

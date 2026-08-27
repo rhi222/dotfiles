@@ -74,4 +74,4 @@
 [wt]
 	relative = true
 	copy = CLAUDE.md
-	hook = "bash \"$HOME/scripts/worktree-init.sh\""
+	hook = "bash \"$HOME/scripts/worktree/init.sh\""

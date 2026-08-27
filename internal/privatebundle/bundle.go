@@ -328,7 +328,7 @@ func Export(ctx context.Context, r execx.Runner, cfg Config, out string, w IO) i
 		return 1
 	}
 	fmt.Fprintf(w.out(), "[OK] %s\n", out)
-	fmt.Fprintln(w.out(), "     新環境で: bash scripts/private-bundle.sh import <このzip>")
+	fmt.Fprintln(w.out(), "     新環境で: bash scripts/settings/private-bundle.sh import <このzip>")
 	return 0
 }
 
@@ -416,8 +416,8 @@ func Classify(srcIsSymlink, srcResolves, dstExists bool) StatusKind {
 func Status(ctx context.Context, r execx.Runner, cfg Config, w IO) int {
 	if st, err := os.Stat(cfg.PrivateDir); err != nil || !st.IsDir() {
 		fmt.Fprintf(w.out(), "集約先がありません: %s\n", cfg.PrivateDir)
-		fmt.Fprintln(w.out(), "  旧環境があるなら: bash scripts/private-bundle.sh import <zip>")
-		fmt.Fprintln(w.out(), "  無いなら雛形生成にフォールバックします（bash scripts/bootstrap.sh）")
+		fmt.Fprintln(w.out(), "  旧環境があるなら: bash scripts/settings/private-bundle.sh import <zip>")
+		fmt.Fprintln(w.out(), "  無いなら雛形生成にフォールバックします（bash scripts/setup/bootstrap.sh）")
 		return 0
 	}
 

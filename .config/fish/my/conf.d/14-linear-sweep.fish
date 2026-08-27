@@ -14,8 +14,8 @@
 # ~/.linear-sweep.log を見る cron 側の実行を参照する。
 
 if status is-interactive
-    if test -x "$HOME/scripts/linear-sweep.sh"
-        "$HOME/scripts/linear-sweep.sh" --if-not-today >/dev/null 2>&1 &
+    if test -x "$HOME/scripts/linear/sweep.sh"
+        "$HOME/scripts/linear/sweep.sh" --if-not-today >/dev/null 2>&1 &
         disown
     end
 end

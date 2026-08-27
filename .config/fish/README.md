@@ -86,7 +86,7 @@ repo に持てば追跡外のファイルは autoload されず影になり、�
 
 ### 1.6 .fish の構文チェック
 
-`bash scripts/lint.sh` が全 `.fish` を `fish -n`（構文チェックのみ）に掛ける。
+`bash scripts/repository/lint.sh` が全 `.fish` を `fish -n`（構文チェックのみ）に掛ける。
 これが無いと `conf.d` のタイポは**シェル起動時まで発覚しない**。
 
 - 対象の集め方は `.sh` と同じ（追跡 + 未追跡、gitignore 済みと `skills-vendor/` は除外）

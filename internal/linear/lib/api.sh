@@ -2,7 +2,7 @@
 # LinearドメインのGraphQL APIラッパー。cron/対話スクリプト共用。
 #
 # 認証: ~/.config/linear/api-key（chmod 600・1行）
-# 設定: ~/.config/linear/config.json（scripts/linear-bootstrap.sh が生成）
+# 設定: ~/.config/linear/config.json（scripts/linear/bootstrap.sh が生成）
 # テストは LINEAR_CONFIG_DIR で設定位置を差し替え、curlをstubにする
 
 LINEAR_API_URL="${LINEAR_API_URL:-https://api.linear.app/graphql}"
@@ -42,7 +42,7 @@ linear_gql() {
 linear_config() {
   local f="$LINEAR_CONFIG_DIR/config.json"
   [[ -r "$f" ]] || {
-    echo "linear-api: configが見つからない: $f（scripts/linear-bootstrap.sh を実行）" >&2
+    echo "linear-api: configが見つからない: $f（scripts/linear/bootstrap.sh を実行）" >&2
     return 1
   }
   jq -er "$1" "$f"

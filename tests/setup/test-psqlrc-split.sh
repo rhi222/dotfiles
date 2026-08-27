@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PSQLRC="$REPO_DIR/.config/psql/psqlrc"
 EXAMPLE="$REPO_DIR/.config/psql/psqlrc.local.example"
-BOOTSTRAP="$REPO_DIR/scripts/bootstrap.sh"
+BOOTSTRAP="$REPO_DIR/scripts/setup/bootstrap.sh"
 BOOTSTRAP_IMPL="$REPO_DIR/internal/bootstrap/setup.sh"
 LINK_IMPL="$REPO_DIR/internal/link/reconcile.sh"
 

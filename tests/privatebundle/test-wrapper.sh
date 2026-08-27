@@ -12,7 +12,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-TARGET="$SCRIPTS_DIR/private-bundle.sh"
+TARGET="$SCRIPTS_DIR/settings/private-bundle.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"
@@ -144,7 +144,7 @@ rm -rf "$FAKE_HOME/.local"
 out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" bash "$TARGET" status 2>&1)
 rc=$?
 check "dotctl が無ければ非0で返す" "1" "$rc"
-check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
+check "ビルド方法を案内する" "yes" "$(has 'setup/dotctl.sh' "$out")"
 
 echo
 echo "結果: $PASS passed, $FAIL failed"

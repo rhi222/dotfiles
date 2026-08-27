@@ -1,0 +1,13 @@
+# gh CLI extensions
+# Requires: gh CLI with `gh auth login` completed
+# Lines starting with # are ignored; inline `# ...` comments allowed.
+#
+# Line format:
+#   <owner>/<repo>[@<version>]
+#     Installs via `gh extension install`. `@<version>` pins the release
+#     tag (`--pin`); omit it to track the latest.
+#
+# Install all:  bash scripts/setup/gh-extensions.sh
+# Update all:   daily-update.sh が `gh extension upgrade --all` を実行する
+
+github/gh-stack  # GitHub Stacked PRs（skill `gh-stack` の前提コマンド）

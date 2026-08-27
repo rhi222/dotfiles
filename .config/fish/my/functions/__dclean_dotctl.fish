@@ -18,6 +18,6 @@ function __dclean_dotctl --description 'dotctl の場所を返す'
         echo $p
         return 0
     end
-    echo "dclean: dotctl が見つからない。ビルドする: bash scripts/setup-dotctl.sh" >&2
+    echo "dclean: dotctl が見つからない。ビルドする: bash scripts/setup/dotctl.sh" >&2
     return 1
 end

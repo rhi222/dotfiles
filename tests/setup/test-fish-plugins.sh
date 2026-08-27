@@ -10,7 +10,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-TARGET="$SCRIPTS_DIR/setup-fish-plugins.sh"
+TARGET="$SCRIPTS_DIR/setup/fish-plugins.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"

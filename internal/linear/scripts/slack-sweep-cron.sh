@@ -4,17 +4,17 @@
 # :nishiyama_todo: を押したメッセージを Linear Triage へ起票する。
 #
 # crontab設定例:
-#   10 8 * * 1-5 $HOME/scripts/linear-slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
+#   10 8 * * 1-5 $HOME/scripts/linear/slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 #
 # 有効化: touch ~/.config/linear-slack-sweep-enabled
 # 無効化: rm ~/.config/linear-slack-sweep-enabled
-# 動作確認: LINEAR_SLACK_SWEEP_DRY_RUN=1 LINEAR_SLACK_SWEEP_FORCE=1 bash scripts/linear-slack-sweep-cron.sh
+# 動作確認: LINEAR_SLACK_SWEEP_DRY_RUN=1 LINEAR_SLACK_SWEEP_FORCE=1 bash scripts/linear/slack-sweep-cron.sh
 #
 # 【重要】Slackへは一切書き込まない。--allowedTools に読み取り2つしか入れないことが
 # その担保になっている。test-linear-slack-sweep-cron.sh がこれを検証する。
 set -euo pipefail
 
-# ~/scripts は dotfiles/scripts へのsymlinkなので readlink -f で実体を解決する。
+# ~/scripts/linear は dotfiles/scripts/linear へのsymlinkなので readlink -f で実体を解決する。
 # 解決しないと repo root が $HOME になり、skillもスクリプトも見つからない
 DOMAIN_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"

@@ -36,7 +36,7 @@
 - **既存issueが見つかったとき（`commented`）はラベルを触らない。**
   既にtriageを通って人間が付け直しているかもしれない分類を、スレを読み直しただけの機械が上書きしない
 - **判断はagent、状態変更はスクリプト。**
-  skillが要約とタイトルを作り、`scripts/linear-slack-sweep.sh` が重複チェック・起票・seen追記を持つ。
+  skillが要約とタイトルを作り、`scripts/linear/slack-sweep.sh` が重複チェック・起票・seen追記を持つ。
   夜間dispatchで push をスクリプト側に寄せたのと同じ分け方
 - **`create` の flock は待つ（`-n` を付けない）。**
   skillはキーごとに別プロセスで呼ぶので、後発を捨てるとそのメッセージだけ起票されずに落ちる。

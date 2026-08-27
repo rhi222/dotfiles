@@ -26,7 +26,7 @@ func TestRebuildRunsSetupFromEmbeddedRepo(t *testing.T) {
 		t.Fatalf("calls = %v, want 1", f.Calls)
 	}
 	call := f.Calls[0]
-	if got, want := call.String(), "bash /data/dotfiles/scripts/setup-dotctl.sh"; got != want {
+	if got, want := call.String(), "bash /data/dotfiles/scripts/setup/dotctl.sh"; got != want {
 		t.Errorf("command = %q, want %q", got, want)
 	}
 	if call.Dir != "/data/dotfiles" {
@@ -42,7 +42,7 @@ func TestRebuildForwardsSkipTests(t *testing.T) {
 	if code != 0 {
 		t.Errorf("exit = %d, want 0", code)
 	}
-	if got, want := f.Calls[0].String(), "bash /repo/scripts/setup-dotctl.sh --skip-tests"; got != want {
+	if got, want := f.Calls[0].String(), "bash /repo/scripts/setup/dotctl.sh --skip-tests"; got != want {
 		t.Errorf("command = %q, want %q", got, want)
 	}
 }

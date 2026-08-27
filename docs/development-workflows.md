@@ -6,7 +6,7 @@
 - Neovimの自作namespaceはplugin名との衝突を避けるため `lua/my/` にする
 - Neovimは `my/settings/`、`my/plugins/`、`my/commands/` へ責務別に分ける
 - Fishは `.config/fish/my/conf.d/` へ読込順の番号を付けて機能別に置く
-- runtimeとCLIはmiseで管理し、aptだけにあるものは `scripts/apt-packages.txt` に置く
+- runtimeとCLIはmiseで管理し、aptだけにあるものは `scripts/setup/apt-packages.txt` に置く
 
 Fishの主要な順序はPATH → mise → history → environment → tide → alias → abbreviation →
 tool integration → keybinding。追加時は既存番号の責務へ置き、番号を増やす前に統合できないか
@@ -41,14 +41,14 @@ tool integration → keybinding。追加時は既存番号の責務へ置き、�
 
 ## 文書予算
 
-`scripts/doc-budget.txt` がAGENTS.mdの全体行数と1セクション行数を制限する。
+`scripts/repository/doc-budget.txt` がAGENTS.mdの全体行数と1セクション行数を制限する。
 
 - 圧縮後の実測に合わせて上限を下げ、上げて解決しない
 - `##` / `###` をsection境界とし、`####` は親に含める
 - code block内の見出し風コメントはsectionに数えない
 - 対象文書や宣言が無い新環境ではskipし、壊れた宣言はfailする
 
-検査は `bash scripts/doc-budget.sh`、テストは `bash tests/repository/test-doc-budget.sh`。
+検査は `bash scripts/repository/doc-budget.sh`、テストは `bash tests/repository/test-doc-budget.sh`。
 
 ## Docker
 

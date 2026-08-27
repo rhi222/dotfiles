@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/worktree-cleanup.sh（互換 wrapper）と dotctl worktree cleanup の出力を比較し、
+# scripts/worktree/cleanup.sh（互換 wrapper）と dotctl worktree cleanup の出力を比較し、
 # あわせて実 git リポジトリに対する掃除の振る舞いを検査する。
 #
 # **役割は2つ。** wrapper が引数と終了コードをそのまま転送していることの確認と、
@@ -24,7 +24,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-SHELL_IMPL="$SCRIPTS_DIR/worktree-cleanup.sh"
+SHELL_IMPL="$SCRIPTS_DIR/worktree/cleanup.sh"
 
 if [[ ! -f "$SHELL_IMPL" ]]; then
   echo "ERROR: $SHELL_IMPL が存在しません"
@@ -246,7 +246,7 @@ out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" bash "$SHELL_IMPL" 2>&1)
 rc=$?
 check "dotctl が無ければ非0で返す" "1" "$rc"
 check "ビルド方法を案内する" "yes" \
-  "$(grep -q 'setup-dotctl.sh' <<<"$out" && echo yes || echo no)"
+  "$(grep -q 'setup/dotctl.sh' <<<"$out" && echo yes || echo no)"
 
 echo
 echo "結果: $PASS passed, $FAIL failed"

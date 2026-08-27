@@ -1,0 +1,11 @@
+# エージェント向け文書の行数予算。書式は1行1ファイルで
+#   <path> <ファイル全体の行数上限> <1セクションの行数上限>
+#
+# 検査は `bash scripts/repository/doc-budget.sh`。pre-commit hook と doc-budget.yml から自動で走る。
+#
+# **現状値から始めて手で下げる（ratchet）。** 目標値で入れると常時赤になり、
+# 「毎日 FAILED が飛ぶと無視される」状態を作る。圧縮が進んだらここを下げる。
+# 予算内でも `余裕` が毎回出るので、下げ忘れはその場で見える。
+#
+# CLAUDE.md は AGENTS.md への symlink なので、実体だけを宣言する。
+AGENTS.md 279 30

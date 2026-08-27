@@ -5,11 +5,11 @@
 # 人間は始業時にできあがった日報から書き始めるだけにする。
 #
 # crontab設定例:
-#   0 8 * * 1-5 $HOME/scripts/nippo-create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
+#   0 8 * * 1-5 $HOME/scripts/nippo/create-cron.sh >> $HOME/.nippo-create-cron.log 2>&1
 #
 # 有効化: touch ~/.config/nippo-create-enabled
 # 無効化: rm ~/.config/nippo-create-enabled
-# 動作確認: NIPPO_CREATE_DRY_RUN=1 NIPPO_CREATE_FORCE=1 bash scripts/nippo-create-cron.sh
+# 動作確認: NIPPO_CREATE_DRY_RUN=1 NIPPO_CREATE_FORCE=1 bash scripts/nippo/create-cron.sh
 
 set -euo pipefail
 

@@ -11,7 +11,7 @@ import (
 
 const rebuildUsage = `使い方: dotctl rebuild [--skip-tests]
 
-  ビルド時に埋め込まれたrepositoryの scripts/setup-dotctl.sh を実行する。
+  ビルド時に埋め込まれたrepositoryの scripts/setup/dotctl.sh を実行する。
   repositoryを移動した場合は DOTCTL_REPO で新しい場所を指定する。
 `
 
@@ -42,7 +42,7 @@ func runRebuild(ctx context.Context, args []string, env Env) int {
 		return 1
 	}
 
-	script := filepath.Join(repo, "scripts", "setup-dotctl.sh")
+	script := filepath.Join(repo, "scripts", "setup", "dotctl.sh")
 	cmdArgs := []string{script}
 	if skipTests {
 		cmdArgs = append(cmdArgs, "--skip-tests")

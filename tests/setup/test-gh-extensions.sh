@@ -5,7 +5,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-SETUP="$SCRIPTS_DIR/setup-gh-extensions.sh"
+SETUP="$SCRIPTS_DIR/setup/gh-extensions.sh"
 
 if [[ ! -f "$SETUP" ]]; then
   echo "ERROR: $SETUP が存在しません"
@@ -238,7 +238,7 @@ echo ""
 # --- 10. 実際の gh-extensions.txt がパースできる ---
 echo "[10] 実ファイルの妥当性"
 TOTAL=$((TOTAL + 1))
-real_file="$SCRIPTS_DIR/gh-extensions.txt"
+real_file="$SCRIPTS_DIR/setup/gh-extensions.txt"
 if [[ ! -f "$real_file" ]]; then
   FAIL=$((FAIL + 1))
   echo "  FAIL: $real_file が存在しない"

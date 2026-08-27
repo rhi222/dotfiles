@@ -4,7 +4,7 @@
 # 他者PRのレビュー依頼は対象外。GitHubのレビュー受信箱と二重管理になるため。
 #
 # crontab設定例:
-#   0 8 * * 1-5 $HOME/scripts/linear-sweep.sh >> $HOME/.linear-sweep.log 2>&1
+#   0 8 * * 1-5 $HOME/scripts/linear/sweep.sh >> $HOME/.linear-sweep.log 2>&1
 #
 # 有効化: touch ~/.config/linear-sweep-enabled
 # 無効化: rm ~/.config/linear-sweep-enabled

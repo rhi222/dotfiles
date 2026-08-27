@@ -6,7 +6,7 @@
 | 内容 | 実体 | 雛形 |
 | ---- | ---- | ---- |
 | Jira/GitLab/esaなどの社内context | `~/.claude/local-context.md` | `.config/claude/local-context.md.example` |
-| 機密語辞書 | `~/.config/dotfiles/secret-patterns.txt` | `scripts/secret-patterns.txt.example` |
+| 機密語辞書 | `~/.config/dotfiles/secret-patterns.txt` | `scripts/repository/secret-patterns.txt.example` |
 | nvimのHTTPS非対応host | `my/local_config.lua` | `my/local_config.lua.example` |
 | psqlのprod/stg判定 | `~/.config/psql/psqlrc.local` | `.config/psql/psqlrc.local.example` |
 | dclean除外 | `99-local.fish` | なし |
@@ -28,7 +28,7 @@ subdomain形式は汎用辞書に一致しうるため、`slack.example.com` の
 | GitHub Actions | `--tree` | `.example` の汎用pattern |
 
 - CIへ実体辞書を渡さない。public logに辞書そのものが漏れるため
-- 辞書が無い新環境は警告して通し、`scripts/bootstrap.sh` が雛形を作る
+- 辞書が無い新環境は警告して通し、`scripts/setup/bootstrap.sh` が雛形を作る
 - 内容だけでなくpath名も検査する
 - commit前に未追跡ファイルを含めて確認するときは `--worktree` を使う。ignore済みファイルは対象外
 - 社内名を含む対象は、名前を `.gitignore` に書かず親directory単位でignoreする

@@ -6,7 +6,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-SETUP="$SCRIPTS_DIR/setup-yazi-plugins.sh"
+SETUP="$SCRIPTS_DIR/setup/yazi-plugins.sh"
 
 if [[ ! -f "$SETUP" ]]; then
   echo "ERROR: $SETUP が存在しません"

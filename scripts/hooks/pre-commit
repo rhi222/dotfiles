@@ -5,7 +5,7 @@
 #   ref-check.sh             scripts/ 配下への参照が壊れていないか
 #
 # ロジックはどちらも scripts/ 側にある（lint とテストの対象にするため。
-# git hook はファイル名が固定で .sh を付けられず、scripts/lint.sh の対象から外れる）。
+# git hook はファイル名が固定で .sh を付けられず、scripts/repository/lint.sh の対象から外れる）。
 #
 # **片方が落ちてももう片方を走らせる。** 無関係な検査なので、1回の commit で
 # 両方の指摘を受け取れるほうが手戻りが少ない（daily-update.sh と同じ倒し方）。
@@ -14,10 +14,10 @@ set -uo pipefail
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 rc=0
-bash "$HOOK_DIR/../secret-scan.sh" --staged || rc=1
-bash "$HOOK_DIR/../doc-budget.sh" --staged || rc=1
+bash "$HOOK_DIR/../repository/secret-scan.sh" --staged || rc=1
+bash "$HOOK_DIR/../repository/doc-budget.sh" --staged || rc=1
 # ref-check は --staged を持たない。参照元と参照先の**両方**が作業ツリーに
 # 揃っていないと判定できず、index だけを見ると「片方だけ commit する」
 # 通常の操作で誤検知するため。実測 0.5秒なので毎回作業ツリーを見る。
-bash "$HOOK_DIR/../ref-check.sh" || rc=1
+bash "$HOOK_DIR/../repository/ref-check.sh" || rc=1
 exit "$rc"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # herdr コールドスタート復元の純粋ロジック。
 #
-# herdr API の呼び出しやプロセス起動といった副作用は scripts/herdr-restore.sh
+# herdr API の呼び出しやプロセス起動といった副作用は scripts/session/herdr-restore.sh
 # （ドライバ）側に置き、ここは組み立てと判定だけを持つ。単体テストは
 # tests/session/test-herdr-restore.sh。
 

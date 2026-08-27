@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-NIPPO_CHECK="$SCRIPTS_DIR/nippo-check.sh"
+NIPPO_CHECK="$SCRIPTS_DIR/nippo/check.sh"
 
 if [[ ! -x "$NIPPO_CHECK" ]]; then
   echo "ERROR: $NIPPO_CHECK が存在しないか実行権限がありません"

@@ -13,7 +13,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-TARGET="$SCRIPTS_DIR/env-residue.sh"
+TARGET="$SCRIPTS_DIR/doctor/residue.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"
@@ -47,8 +47,8 @@ TEST_DIR=$(mktemp -d)
 trap 'rm -rf "$TEST_DIR"' EXIT
 FAKE_HOME="$TEST_DIR/home"
 FAKE_REPO="$TEST_DIR/repo"
-mkdir -p "$FAKE_HOME" "$FAKE_REPO/scripts"
-printf '# 宣言\n' >"$FAKE_REPO/scripts/claude-skills.txt"
+mkdir -p "$FAKE_HOME" "$FAKE_REPO/scripts/setup"
+printf '# 宣言\n' >"$FAKE_REPO/scripts/setup/claude-skills.txt"
 
 if ! (cd "$REPO_ROOT" && go build -o "$TEST_DIR/dotctl" ./cmd/dotctl) 2>"$TEST_DIR/build.err"; then
   echo "ERROR: dotctl のビルドに失敗"
@@ -99,7 +99,7 @@ rm -rf "$FAKE_HOME/.local"
 out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" bash "$TARGET" 2>&1)
 rc=$?
 check "dotctl が無ければ非0で返す" "1" "$rc"
-check "ビルド方法を案内する" "yes" "$(has 'setup-dotctl.sh' "$out")"
+check "ビルド方法を案内する" "yes" "$(has 'setup/dotctl.sh' "$out")"
 
 echo
 echo "結果: $PASS passed, $FAIL failed"

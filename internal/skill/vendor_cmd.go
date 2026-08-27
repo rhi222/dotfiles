@@ -330,7 +330,7 @@ func VendorStatus(ctx context.Context, r execx.Runner, cfg VendorConfig, noNetwo
 			if remote := RemoteHead(ctx, r, meta.Origin); remote != "" && remote != meta.Commit {
 				fmt.Fprintf(w.out(), "[--] %s: upstream の HEAD が違う（%s -> %s）\n",
 					name, Short(meta.Commit), Short(remote))
-				fmt.Fprintf(w.out(), "     確認: bash scripts/skill-vendor.sh update %s\n", name)
+				fmt.Fprintf(w.out(), "     確認: bash scripts/skills/vendor.sh update %s\n", name)
 			}
 		}
 

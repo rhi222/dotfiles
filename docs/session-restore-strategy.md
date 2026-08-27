@@ -14,7 +14,7 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 | --- | --- | --- |
 | レイアウト / タブ名 / ペイン label / cwd | herdr 本体 | `~/.config/herdr/session.json` |
 | Claude / Codex のプロセスと会話 | Herdr native agent restore | Herdr session snapshot |
-| nvim のプロセス | `scripts/herdr-restore.sh` | `~/.local/state/herdr-nvim/<owner>.json` |
+| nvim のプロセス | `scripts/session/herdr-restore.sh` | `~/.local/state/herdr-nvim/<owner>.json` |
 | nvim のバッファ・カーソル位置 | auto-session | `~/.local/share/nvim/sessions/` |
 
 **Herdr は任意の前面プロセスを保存しない。** ただし公式 integration が session identity を報告した AI agent は、Herdr 本体が復元コマンドを組み立てられる。Claude / Codex はこちらに任せ、native restore の無い nvim だけマーカーを使う。

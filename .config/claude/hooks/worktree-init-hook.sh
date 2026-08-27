@@ -16,4 +16,4 @@ if [ -z "$path" ] || [ ! -d "$path" ]; then
   exit 0
 fi
 
-bash "$HOME/scripts/worktree-init.sh" "$path"
+bash "$HOME/scripts/worktree/init.sh" "$path"

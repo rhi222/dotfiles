@@ -13,7 +13,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-TARGET="$SCRIPTS_DIR/setup-dotctl.sh"
+TARGET="$SCRIPTS_DIR/setup/dotctl.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"
@@ -163,7 +163,7 @@ ln -s "$SCRIPTS_DIR" "$TEST_DIR/home/scripts"
 out=$(env PATH="$STUB:/usr/bin:/bin" \
   GO_CWD_LOG="$TEST_DIR/go-cwd.log" \
   DOTCTL_BIN="$BINDIR/dotctl" \
-  bash "$TEST_DIR/home/scripts/setup-dotctl.sh" 2>&1)
+  bash "$TEST_DIR/home/scripts/setup/dotctl.sh" 2>&1)
 rc=$?
 cwd_log=$(cat "$TEST_DIR/go-cwd.log" 2>/dev/null || true)
 check "symlink経由でも成功する" "0" "$rc"

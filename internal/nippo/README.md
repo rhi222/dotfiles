@@ -8,8 +8,8 @@
 - `../../tests/nippo/`: ドメインの回帰テスト
 - `../../docs/nippo-automation.md`: cron、dry-run、allowed toolsの仕様
 
-外部からの公開入口は従来どおり `scripts/nippo-*.sh` と
-`scripts/esa-weekly-cron.sh`、公開Shell APIは `scripts/lib/nippo-paths.sh` とする。
+正規の公開入口は `scripts/nippo/*.sh`、旧 `~/scripts/nippo-*.sh` は互換link、
+`scripts/nippo/esa-weekly-cron.sh`、公開Shell APIは `scripts/lib/nippo-paths.sh` とする。
 cron、skill、hook、文書から `internal/` の実装パスを直接呼ばない。
 
 依存方向は `scriptsの公開入口 -> internal/nippo -> internalの共有基盤`。パスは必ず

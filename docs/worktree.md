@@ -27,7 +27,7 @@ git wt --json              # JSON形式で一覧出力
 [wt]
     relative = true
     copy = CLAUDE.md
-    hook = "bash \"$HOME/scripts/worktree-init.sh\""
+    hook = "bash \"$HOME/scripts/worktree/init.sh\""
 ```
 
 作成時はhookによる初期化後、新worktreeへ自動cdする。
@@ -39,7 +39,7 @@ tmux + Claude Codeの自動起動hookもherdr移行時に廃止し、hookは初�
 どの経路（git-wt / Claude Code / herdr / 手動 `git worktree add`）で作った worktreeでも、以下で初期化できる（冪等）:
 
 ```fish
-~/scripts/worktree-init.sh [--dry-run] [worktreeパス]  # パス省略時はカレント
+~/scripts/worktree/init.sh [--dry-run] [worktreeパス]  # パス省略時はカレント
 ```
 
 処理内容:
@@ -56,7 +56,7 @@ tmux + Claude Codeの自動起動hookもherdr移行時に廃止し、hookは初�
 
 `git wt <branch>` での作成時は `wt.hook` 経由で自動実行される。
 Claude Code の EnterWorktree 経由では PostToolUse hook （`.config/claude/hooks/worktree-init-hook.sh`）で自動実行される。
-herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは手動で `~/scripts/worktree-init.sh` を実行する。
+herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`）には作成後hookの仕組みがないため（2026-07時点）、herdrが作成したworktreeは手動で `~/scripts/worktree/init.sh` を実行する。
 テストは `bash tests/worktree/test-worktree-init.sh`。
 
 ### リポジトリ別カスタム
@@ -98,10 +98,10 @@ herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`�
 
 | やりたいこと               | コマンド                                             |
 | -------------------------- | ---------------------------------------------------- |
-| 候補の確認（dry-run）      | `bash scripts/worktree-cleanup.sh`                   |
-| 解放見込みつきで確認       | `bash scripts/worktree-cleanup.sh --size`            |
-| 実削除                     | `bash scripts/worktree-cleanup.sh --execute`         |
-| 追跡ファイルの変更ごと削除 | `bash scripts/worktree-cleanup.sh --execute --force` |
+| 候補の確認（dry-run）      | `bash scripts/worktree/cleanup.sh`                   |
+| 解放見込みつきで確認       | `bash scripts/worktree/cleanup.sh --size`            |
+| 実削除                     | `bash scripts/worktree/cleanup.sh --execute`         |
+| 追跡ファイルの変更ごと削除 | `bash scripts/worktree/cleanup.sh --execute --force` |
 | 動作確認                   | `bash tests/worktree/test-worktree-cleanup.sh`       |
 
 `git worktree list --porcelain` を起点にするため、worktree の置き場所を問わず拾える。
@@ -169,7 +169,7 @@ dry-run は `DELETE 候補: N 件`（分類結果）、`--execute` は `削除: 
 ### WSL2 の容量回収
 
 WSL2 のディスクイメージは中で削除しても自動では縮まない。
-実ディスクの空きを取り戻すには `bash scripts/wsl-cleanup.sh` の末尾に出る `ext4.vhdx` 圧縮手順を Windows 側で実行する。
+実ディスクの空きを取り戻すには `bash scripts/wsl/cleanup.sh` の末尾に出る `ext4.vhdx` 圧縮手順を Windows 側で実行する。
 
 ---
 

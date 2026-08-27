@@ -7,10 +7,10 @@
 
 | やりたいこと        | コマンド                                                               |
 | ------------------- | ---------------------------------------------------------------------- |
-| 初期設定（ID解決）  | `bash scripts/linear-bootstrap.sh`                                     |
+| 初期設定（ID解決）  | `bash scripts/linear/bootstrap.sh`                                     |
 | 起票                | `/linear-add`（対話skill。規約を自動適用する）                         |
-| draft PR→Triage起票 | `bash scripts/linear-sweep.sh`（cron: 平日8:00）                       |
-| 夜間ディスパッチ    | `bash scripts/linear-dispatch-cron.sh`（cron: 火-土1:00）              |
+| draft PR→Triage起票 | `bash scripts/linear/sweep.sh`（cron: 平日8:00）                       |
+| 夜間ディスパッチ    | `bash scripts/linear/dispatch-cron.sh`（cron: 火-土1:00）              |
 | Slackスタンプ起票   | `/linear-slack-sweep`（cron: 平日10:10）                               |
 | 起票済みかの確認    | `/linear-recall <スレURL or キーワード>`                               |
 | 動作確認            | `bash tests/linear/test-linear-api.sh` ほか `tests/linear/` の全テスト |

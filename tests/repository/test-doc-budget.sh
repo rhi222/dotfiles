@@ -13,7 +13,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/scripts"
-TARGET="$SCRIPTS_DIR/doc-budget.sh"
+TARGET="$SCRIPTS_DIR/repository/doc-budget.sh"
 
 if [[ ! -f "$TARGET" ]]; then
   echo "ERROR: $TARGET が存在しません"
@@ -30,7 +30,7 @@ REPO=""
 setup() {
   TEST_DIR=$(mktemp -d)
   REPO="$TEST_DIR/repo"
-  mkdir -p "$REPO/scripts"
+  mkdir -p "$REPO/scripts/repository"
 }
 
 teardown() {
@@ -39,7 +39,7 @@ teardown() {
 
 # 宣言リストを書く。書式は `<path> <ファイル全体の上限> <1セクションの上限>`
 declare_budget() {
-  printf '%s\n' "$@" >"$REPO/scripts/doc-budget.txt"
+  printf '%s\n' "$@" >"$REPO/scripts/repository/doc-budget.txt"
 }
 
 # 指定行数の本文を持つセクションを作る（見出し1行 + 本文 n-1 行）

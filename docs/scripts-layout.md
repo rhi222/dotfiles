@@ -1,35 +1,36 @@
 # scripts/ の構成と公開入口
 
-`scripts/` を整理する（および一部を Go 製 `dotctl` へ移す）ときの基準を置く。
-**移動する前に「誰が何を呼んでいるか」を固定するための文書**で、日々の使い方は [AGENTS.md](../AGENTS.md) の各機能の表を見る。
+`scripts/` の公開コマンドを、`internal/`・`tests/` と同じfeature単位で探せるようにするための配置規約。
+日々の使い方は [AGENTS.md](../AGENTS.md) の各機能の表を見る。
 
 ## 内部実装と公開入口
 
-機能固有の実装は、ShellとGoのどちらも `internal/<feature>/` にまとめる。
-`scripts/` 直下はcron、hook、skill、手動操作から呼ぶ互換entrypointとして維持する。
-テストは `tests/<feature>/`、Go unit testは対象package、詳細仕様は `docs/` に置く。
-配置規約のため `.config/<tool>/` に必要な設定は無理に移さず、feature READMEから参照する。
+リポジトリ内の正規入口は `scripts/<feature>/*.sh` に置く。
+機能固有の実装はShellとGoのどちらも `internal/<feature>/`、black-box testは `tests/<feature>/` に置く。
+これにより、たとえばworktree機能は `scripts/worktree/`、`internal/worktree/`、`tests/worktree/`、`docs/worktree.md` の同じ名前から辿れる。
 
-Shell実装も `internal/{linear,nippo,bootstrap,link,automation,session,update}/` に置く。
-`scripts/linear-*.sh`、`scripts/nippo-*.sh`、`scripts/lib/{linear-api,nippo-paths}.sh` は公開APIなので残し、`internal/` の実装パスを外部から直接呼ばない。
+cron、hook、外部skillが使ってきた `~/scripts/<旧名>` は削除しない。
+`dotfilesLink.sh` が `scripts/compat-links.txt` を読み、HOME側にだけflatな互換linkを生成する。
+repo直下へ旧名wrapperを残すと一覧が再び平坦になるため、互換名と正規pathの対応はmanifestだけに置く。
+
+`scripts/lib/{linear-api,nippo-paths}.sh` はskillが `source` する公開Shell APIなので維持する。
+`internal/` の実装パスを外部から直接呼ばない。
 新しいfeatureを作るのは、専用entrypoint・状態・テスト・仕様のうち複数を持つ機能に限る。
-ファイル数が増えただけの設定toolごとには作らない。
 
 ## 現在の層
 
-公開pathの安定性と実装のまとまりを両立するため、次の層に分ける。
-
-| 層             | 例                                                   |
-| -------------- | ---------------------------------------------------- |
-| 公開entrypoint | `scripts/daily-update.sh`, `scripts/linear-sweep.sh` |
-| 公開Shell API  | `scripts/lib/{linear-api,nippo-paths}.sh`            |
-| Shell内部実装  | `internal/{linear,nippo,bootstrap}/`                 |
-| Go内部実装     | `internal/{worktree,settings,skill}/`                |
-| 宣言・template | `scripts/apt-packages.txt`, `scripts/doc-budget.txt` |
-| black-box test | `tests/<feature>/test-*.sh`                          |
+| 層             | 例                                                                    |
+| -------------- | --------------------------------------------------------------------- |
+| 公開entrypoint | `scripts/update/daily.sh`, `scripts/linear/sweep.sh`                  |
+| 旧名互換       | `scripts/compat-links.txt` → `~/scripts/daily-update.sh`              |
+| 公開Shell API  | `scripts/lib/{linear-api,nippo-paths}.sh`                             |
+| Shell内部実装  | `internal/{linear,nippo,bootstrap}/`                                  |
+| Go内部実装     | `internal/{worktree,settings,skill}/`                                 |
+| 宣言・template | `scripts/setup/apt-packages.txt`, `scripts/repository/doc-budget.txt` |
+| black-box test | `tests/<feature>/test-*.sh`                                           |
 
 本数や行数は変更のたびに古くなるため、この文書では固定しない。
-`scripts/` 直下をfeature別に移すとcronやskillを壊すため、直下は公開コマンド索引、`internal/` は実装を読む入口とする。
+正規入口の名前を変えるときはrepo内参照とcompat manifestを同時に更新し、旧HOME pathの契約も維持する。
 
 ## 参照はどう壊れるか
 
@@ -45,7 +46,7 @@ cron と hook からの参照は黙って失敗する。
 `secret-scan.sh` と同じ構成で、主の防壁は pre-commit 側）。
 
 - 同じ実体を指す書き方を揃える。
-  `scripts/<name>.sh` / `$DOTFILES_DIR/scripts/<name>.sh` / `$HOME/scripts/<name>.sh` / `~/scripts/<name>.sh`（`~/scripts` は repo の `scripts/` への symlink）/ `$REPO_ROOT/scripts/<name>.sh` / `$SCRIPT_DIR/<name>.sh`
+  正規pathの `scripts/<feature>/<name>.sh` と、`$HOME/scripts/<旧名>` / `~/scripts/<旧名>`。旧名は `scripts/compat-links.txt` のtargetが実在するときだけ有効と判定する
 - **`$SCRIPT_DIR` は参照元のディレクトリ基準で解く。**
   テストを別階層へ移すと基準が変わるので、移動で壊れる参照の本体はここ
 - **拾ってはいけないものが2つある。**
@@ -67,7 +68,7 @@ Goの細かな分岐はpackage内のunit test、Shell内部APIと公開wrapper�
 | feature          | 中身                                                      |
 | ---------------- | --------------------------------------------------------- |
 | `repository/`    | lint / secret-scan / doc-budget / ref-check / test runner |
-| `bootstrap/`     | `scripts/bootstrap.sh`                                    |
+| `bootstrap/`     | `scripts/setup/bootstrap.sh`                                    |
 | `link/`          | `dotfilesLink.sh`                                         |
 | `setup/`         | tool・pluginの導入                                        |
 | `update/`        | 日次更新                                                  |
@@ -95,9 +96,6 @@ Goの細かな分岐はpackage内のunit test、Shell内部APIと公開wrapper�
 
 ### 移していないもの（判断）
 
-- **宣言ファイルは `scripts/` 直下に残す。**
-  `apt-packages.txt` や `gh-extensions.txt` は利用者が編集する導線が散文に18箇所あり、消費側の `apt-setup.sh` / `setup-gh-extensions.sh` と隣接していることに意味がある。
-  直下は55→45まで落ちたので、7個動かして得られるのは見た目だけ
 - **テスト harness の共通化はしない。**
   `setup` / `teardown` / `check` が24本、`assert_eq` が22本、`assert_contains` が15本で重複しているのは事実だが、**Go 移植で最大の bash テストから順に消える予定**なので、いま共通化するとその多くが捨てる作業になる。
   移植を止める判断をした時点で改めて検討する

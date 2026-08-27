@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-DAILY_UPDATE="$SCRIPTS_DIR/daily-update.sh"
+DAILY_UPDATE="$SCRIPTS_DIR/update/daily.sh"
 TEST_HOME=$(mktemp -d)
 export HOME="$TEST_HOME"
 trap 'rm -rf "$TEST_HOME"' EXIT
@@ -353,7 +353,7 @@ exit_code=0
 output=$(PATH="$FISHER_STUB_BIN:$PATH" HAS_FISHER_EXIT=1 fisher_update 2>&1) || exit_code=$?
 assert_eq 0 "$exit_code" "fisher 未導入でも成功扱い"
 assert_eq 0 "$(grep -c "fisher-update" "$FISHER_TEST_DIR/dotctl.log")" "勝手に入れない"
-assert_output_contains "setup-fish-plugins.sh" "$output" "追加の導線を案内する"
+assert_output_contains "setup/fish-plugins.sh" "$output" "追加の導線を案内する"
 
 rm -rf "$FISHER_TEST_DIR"
 
@@ -457,7 +457,7 @@ git -C "$vsc/work" push --quiet origin HEAD:refs/heads/main
 out="$(SKILL_VENDOR_DIR="$vsc/skills-vendor" vendored_skill_check 2>&1)"
 assert_eq 0 "$?" "更新があっても終了コードは 0"
 assert_output_contains "更新あり" "$out" "更新ありと報告する"
-assert_output_contains "一括取込: bash scripts/skill-vendor.sh update one two" "$out" \
+assert_output_contains "一括取込: bash scripts/skills/vendor.sh update one two" "$out" \
   "更新対象の一括取込コマンドを案内する"
 assert_output_contains "$vsc_head1" "$(cat "$vsc/skills-vendor/one/.vendor.json")" \
   ".vendor.json は書き換えない"

@@ -34,7 +34,7 @@ safe_link() {
 }
 
 # ローカル設定の集約先。実体はここにあり、各所へは symlink を張る。
-# 中身の作成と運搬は scripts/private-bundle.sh の担当。
+# 中身の作成と運搬は scripts/settings/private-bundle.sh の担当。
 PRIVATE_DIR="${DOTFILES_PRIVATE_DIR:-$HOME/.local/share/dotfiles-private}"
 
 # 集約先に紛れ込んでも配りたくないもの
@@ -178,14 +178,48 @@ link_configs() {
     # （ログは ~/.config/herdr/*.log に出るため scripts/ をリンクしても漏れない）
     "$DC/herdr/config.toml|$HOME/.config/herdr/config.toml"
     "$DC/herdr/scripts|$HOME/.config/herdr/scripts"
-
-    # Custom scripts
-    "$DOTFILES_DIR/scripts|$HOME/scripts"
   )
   local pair
   for pair in "${links[@]}"; do
     safe_link "${pair%%|*}" "${pair#*|}"
   done
+}
+
+# scripts/ の正本は機能別ディレクトリに置く。一方、cron・hook・外部skillには
+# 従来の ~/scripts/<name> を使うものがあるため、HOME側だけにflatな互換linkを作る。
+# repo側へ旧名を残さないことで、ソースを読む入口は scripts/<feature>/ に一本化する。
+link_scripts() {
+  local scripts_home="$HOME/scripts"
+  local old target source
+
+  # 別のsymlinkはその先へ書き込まず、実ディレクトリは既存内容と共存させる。
+  if [ -L "$scripts_home" ]; then
+    if [ "$(readlink -f "$scripts_home")" = "$(readlink -f "$DOTFILES_DIR/scripts")" ]; then
+      unlink "$scripts_home"
+    else
+      echo "[SKIP] $scripts_home は別のsymlinkのためscript linkを作りません" >&2
+      SKIPPED+=("$scripts_home")
+      return 0
+    fi
+  fi
+  if [ -e "$scripts_home" ] && [ ! -d "$scripts_home" ]; then
+    echo "[SKIP] $scripts_home はディレクトリではないためscript linkを作りません" >&2
+    SKIPPED+=("$scripts_home")
+    return 0
+  fi
+  mkdir -p "$scripts_home"
+
+  for source in "$DOTFILES_DIR/scripts"/*/; do
+    old="$(basename "$source")"
+    backup_real_file "$scripts_home/$old"
+    safe_link "${source%/}" "$scripts_home/$old"
+  done
+  while IFS="|" read -r old target; do
+    [[ -n "$old" ]] || continue
+    [[ "$old" == "#"* ]] && continue
+    backup_real_file "$scripts_home/$old"
+    safe_link "$DOTFILES_DIR/scripts/$target" "$scripts_home/$old"
+  done <"$DOTFILES_DIR/scripts/compat-links.txt"
 }
 
 # skill の正本は4箇所に分かれる。同名を複数箇所へ置くとリンク順で有効な内容が
@@ -304,7 +338,7 @@ link_codex_config() {
     safe_link "$DC/codex/config.toml" ~/.codex/config.toml
   else
     echo "[WARN] $DC/codex/config.toml が無いためCodex configのlinkを変更しません" >&2
-    echo "       初期化: bash scripts/bootstrap.sh" >&2
+    echo "       初期化: bash scripts/setup/bootstrap.sh" >&2
   fi
   # TUIが自動生成する default.rules と共存させ、repository管理分だけを別fileで配る。
   mkdir -p ~/.codex/rules
@@ -335,7 +369,7 @@ link_codex_config() {
 }
 
 # pre-commit hook を有効にする。このリポジトリは public なので、社内固有情報を
-# 含むコミットを commit の手前で止める。詳細は scripts/secret-scan.sh 冒頭。
+# 含むコミットを commit の手前で止める。詳細は scripts/repository/secret-scan.sh 冒頭。
 configure_git_hooks() {
   git -C "$DOTFILES_DIR" config core.hooksPath scripts/hooks
   chmod +x "$DOTFILES_DIR/scripts/hooks/pre-commit" 2>/dev/null || true
@@ -343,14 +377,14 @@ configure_git_hooks() {
 
 # 日報通知スクリプトに実行権限を付与
 grant_exec_permissions() {
-  chmod +x "$DOTFILES_DIR/scripts/nippo-check.sh" 2>/dev/null || true
-  chmod +x "$DOTFILES_DIR/scripts/nippo-cron.sh" 2>/dev/null || true
-  chmod +x "$DOTFILES_DIR/scripts/worktree-init.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/nippo/check.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/nippo/notify-cron.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/worktree/init.sh" 2>/dev/null || true
   chmod +x "$DOTFILES_DIR/tests/worktree/test-worktree-init.sh" 2>/dev/null || true
   # Linear個人司令塔のcronスクリプト
-  chmod +x "$DOTFILES_DIR/scripts/linear-sweep.sh" 2>/dev/null || true
-  chmod +x "$DOTFILES_DIR/scripts/linear-dispatch-cron.sh" 2>/dev/null || true
-  chmod +x "$DOTFILES_DIR/scripts/linear-bootstrap.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/linear/sweep.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/linear/dispatch-cron.sh" 2>/dev/null || true
+  chmod +x "$DOTFILES_DIR/scripts/linear/bootstrap.sh" 2>/dev/null || true
 }
 
 # gitignore されているローカル git 設定の存在チェック。
@@ -390,6 +424,7 @@ link_main() {
   # hosts.yml と同居させるため、gh directory全体ではなくconfig.ymlだけを張る
   backup_gh_config
   link_configs
+  link_scripts
   link_claude_skills
   link_codex_config
   configure_git_hooks

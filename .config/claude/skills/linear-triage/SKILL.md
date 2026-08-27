@@ -7,7 +7,7 @@ allowed-tools: Read, Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(gh:*), Bash(
 
 # Linear夕方triage
 
-夜間dispatch（`scripts/linear-dispatch-cron.sh`）に渡すissueを選んで整形する。
+夜間dispatch（`scripts/linear/dispatch-cron.sh`）に渡すissueを選んで整形する。
 設計の全体像は `~/Obsidian/01_Inbox/2026-08-06-linear-command-layer-design.md`。矛盾したら設計docが正。
 
 GraphQLのsnippetは `../linear-add/references/api-recipes.md` を使う。
@@ -264,4 +264,4 @@ repo: github.com/<owner>/<name>
 - このskillは**起票しない**。新規タスクの起票は `/linear-add`
 - `dueDate` はJiraが持つ。Linear側で勝手に日付を作らない
 - 夜間dispatchは現在 **cron未登録**（数日運用してから判断する方針）。`AI Queued` に置いても
-  自動では走らない。試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear-dispatch-cron.sh`
+  自動では走らない。試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear/dispatch-cron.sh`

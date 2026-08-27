@@ -53,7 +53,7 @@ func RequireTrustedOwner(allowlistPath, repo string, w io.Writer) bool {
 	fmt.Fprintf(w, `Error: owner '%s' は trusted-skill-owners.txt に無い
   gh skill の自動同期は信頼済み owner に限定している（毎日レビューなしで更新されるため）。
   vendoring して取り込む:
-    bash scripts/skill-vendor.sh add %s <sub-path> [name]
+    bash scripts/skills/vendor.sh add %s <sub-path> [name]
 `, owner, repo)
 	return false
 }

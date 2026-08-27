@@ -4,8 +4,8 @@
 # 前提: Linear UI（またはAPI）でstate/labelを作成済み。不足があれば名前を表示して失敗する。
 # ラベルは「issue labels」であること。project labelsは別物で、ここでは拾わない。
 #
-# 使い方: bash scripts/linear-bootstrap.sh
-# teamが複数ある場合: LINEAR_TEAM_KEY=NSY bash scripts/linear-bootstrap.sh
+# 使い方: bash scripts/linear/bootstrap.sh
+# teamが複数ある場合: LINEAR_TEAM_KEY=NSY bash scripts/linear/bootstrap.sh
 set -euo pipefail
 
 DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

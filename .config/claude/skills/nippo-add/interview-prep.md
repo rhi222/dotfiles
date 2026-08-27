@@ -4,7 +4,7 @@
 日報の `## 面談準備` セクションに結果を書くためのロジック。
 
 **起票はスクリプトに任せる。** 判断（どれが面談か・準備に何が要るか）だけをここで行い、
-重複チェック・起票・seen 追記は `scripts/linear-interview-prep.sh` が担う。
+重複チェック・起票・seen 追記は `scripts/linear/interview-prep.sh` が担う。
 `linear-slack-sweep` と同じ役割分担。
 
 ## 対象にする予定
@@ -60,7 +60,7 @@
 ### 1. 未起票のものだけに絞る
 
 ```bash
-SCRIPT="$(ghq root)/github.com/rhi222/dotfiles/scripts/linear-interview-prep.sh"
+SCRIPT="$(ghq root)/github.com/rhi222/dotfiles/scripts/linear/interview-prep.sh"
 bash "$SCRIPT" unseen <event_id>...
 ```
 

@@ -19,7 +19,7 @@ WSL2（Ubuntu）+ Windows で使っている個人用の設定ファイル群。
 ghq get rhi222/dotfiles
 cd (ghq root)/github.com/rhi222/dotfiles
 
-bash scripts/apt-setup.sh   # apt パッケージ
+bash scripts/setup/apt.sh   # apt パッケージ
 ./dotfilesLink.sh           # リンク作成 + 雛形生成 + git hook 有効化
 ```
 
@@ -28,9 +28,9 @@ bash scripts/apt-setup.sh   # apt パッケージ
 ## 開発
 
 ```fish
-bash scripts/lint.sh        # shellcheck + shfmt
-bash scripts/run-tests.sh   # 全テスト
-bash scripts/secret-scan.sh --tree
+bash scripts/repository/lint.sh        # shellcheck + shfmt
+bash scripts/repository/run-tests.sh   # 全テスト
+bash scripts/repository/secret-scan.sh --tree
 ```
 
 - 公開Shell APIは `scripts/`、内部実装は言語を問わず `internal/<feature>/` に置く
