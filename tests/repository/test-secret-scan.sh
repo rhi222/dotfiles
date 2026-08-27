@@ -6,7 +6,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
-SCAN="$SCRIPTS_DIR/repository/secret-scan.sh"
+SCAN="$SCRIPTS_DIR/secret-scan.sh"
 
 PASS=0
 FAIL=0

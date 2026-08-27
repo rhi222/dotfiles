@@ -1,12 +1,12 @@
 #!/bin/bash
 # 社内固有情報がリポジトリに入るのを防ぐスキャナ。
 #
-#   bash scripts/repository/secret-scan.sh --staged  # ステージ済みの内容を検査（pre-commit hook から）
-#   bash scripts/repository/secret-scan.sh --worktree # 追跡・未追跡の作業ツリーを検査（手元確認）
-#   bash scripts/repository/secret-scan.sh --tree    # 追跡ファイル全体を検査（CI から）
+#   bash scripts/secret-scan.sh --staged   # ステージ済みの内容を検査（pre-commit hook から）
+#   bash scripts/secret-scan.sh --worktree # 追跡・未追跡の作業ツリーを検査（手元確認）
+#   bash scripts/secret-scan.sh --tree     # 追跡ファイル全体を検査（CI から）
 #
 # 辞書は ~/.config/dotfiles/secret-patterns.txt。このリポジトリは public なので
-# 辞書そのものはリポジトリに置かない（scripts/repository/secret-patterns.txt.example が雛形）。
+# 辞書そのものはリポジトリに置かない（scripts/secret-patterns.txt.example が雛形）。
 #
 # 辞書が無い場合は警告して通す。新環境で dotfilesLink.sh を走らせる前に
 # commit できなくなるのを避けるため。
@@ -29,7 +29,7 @@ fi
 
 if [ ! -f "$PATTERNS" ]; then
   echo "[WARN] 機密語辞書がありません: $PATTERNS" >&2
-  echo "       scripts/repository/secret-patterns.txt.example を参考に作成してください。" >&2
+  echo "       scripts/secret-patterns.txt.example を参考に作成してください。" >&2
   echo "       検査せずに続行します。" >&2
   exit 0
 fi
@@ -72,7 +72,7 @@ for path in "${paths[@]}"; do
   [ -z "$path" ] && continue
 
   # 辞書は検査しない。パターンの一覧なので必ず自分にマッチする
-  # （CI は scripts/repository/secret-patterns.txt.example を辞書として使うため実際に踏む）
+  # （CI は scripts/secret-patterns.txt.example を辞書として使うため実際に踏む）
   if [ "$(realpath "$path" 2>/dev/null || echo "$path")" = "$patterns_real" ]; then
     continue
   fi

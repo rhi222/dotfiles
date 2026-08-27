@@ -6,7 +6,7 @@ DOTCTL="$HOME/.local/bin/dotctl"
 [ -x "$DOTCTL" ] || DOTCTL="$(command -v dotctl 2>/dev/null || true)"
 
 if [ -z "$DOTCTL" ]; then
-  echo "sync-codex: dotctl が見つからない。ビルドする: bash scripts/setup/dotctl.sh" >&2
+  echo "sync-codex: dotctl が見つからない。ビルドする: bash scripts/setup-dotctl.sh" >&2
   exit 1
 fi
 
