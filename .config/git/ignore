@@ -7,3 +7,6 @@ nishiyama_work/*
 
 # claude
 **/.claude/settings.local.json
+
+# 調査結果のスクラッチ領域（rules/investigation-mode.md の既定の出力先）
+plans/
