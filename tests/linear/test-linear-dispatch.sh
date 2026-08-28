@@ -418,6 +418,17 @@ HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-n
 check "repo行が無ければclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 check "repo行が無ければTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
 
+# 4-2. repo行が無くても role:manager ならEMレーンの担当なのでスキップする。
+# 差し戻すとEMタスクが起票そばからTodoへ戻り続ける
+echo '{"data": {"issues": {"nodes": [{"id": "i9", "identifier": "NSY-30", "title": "EMタスク", "description": "repo行がない本文", "url": "u", "labels": {"nodes": [{"name": "role:manager"}]}}]}}}' >"$tmp/ready-em.json"
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+out42=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" 2>&1)
+check "role:managerはclaudeを実行しない" test ! -s "$CLAUDE_LOG"
+check "role:managerはTodoへ差し戻さない" bash -c "! grep -q '\"$STATE_TODO\"' '$CURL_LOG'"
+check "role:managerはEMレーン担当としてスキップと出る" grep -q "NSY-30: SKIPPED (EMレーン)" <<<"$out42"
+
 # 5. claude失敗 → エラーコメント＋Todoへ差し戻し
 cat >"$tmp/bin/claude" <<'EOF'
 #!/bin/bash

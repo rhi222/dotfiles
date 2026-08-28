@@ -121,6 +121,12 @@ dispatch_one() {
   else
     mode="new"
     if ! repo=$(dispatch_parse_repo "$desc"); then
+      # role:manager が付いていればEMレーン（em-dispatch.sh）の担当。
+      # 差し戻すとEMタスクが起票そばからTodoへ戻り続けるので、黙って残す
+      if jq -e '[.labels.nodes[].name] | index("role:manager")' <<<"$issue" >/dev/null 2>&1; then
+        echo "$identifier: SKIPPED (EMレーン)"
+        return 0
+      fi
       dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行も既存PRのURLも無い。どちらかを書いて AI Queued に戻してほしい"
       echo "$identifier: BOUNCED (no repo)"
       return 0
