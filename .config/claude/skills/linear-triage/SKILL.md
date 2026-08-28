@@ -48,22 +48,27 @@ linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canc
 # 2) Triageに残ったままの機械起票（スイープが落としたきり親に紐付いていない）
 linear_issues_in_state "Triage" | jq -r '.[] | "\(.identifier)\t\(.title)"'
 
-# 3) AI Queued なのに repo: 行が無い（dispatchが弾いてTodoへ差し戻す前に気づける）
+# 3) AI Queued なのに repo: 行が無く、EMレーンの対象でもない
+#    （どちらのランナーも拾えないので、dispatchがTodoへ差し戻す前に気づける）
+#    role:manager が付いていれば em-dispatch.sh の担当なので正常
 linear_issues_in_state "AI Queued" \
-| jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not) | .identifier'
+| jq -r '.[] | select((.description // "") | test("(?m)^repo:") | not)
+         | select([.labels.nodes[].name] | index("role:manager") | not) | .identifier'
 
 # 4) My Reviewに非AI成果物が混ざっている（WIP上限が誤作動する。実際に起きた）
 #    判定は「PR URLを持っているか」。My Reviewは四択（マージ/チームレビューへ/修正指示/破棄）を
 #    掛ける場所なので、PRが無ければそもそも裁けない。継続モードは本文の 元URL:、
-#    新規モードはdispatchの完了コメントにPR URLが入るので、両方を見る
+#    新規モードはdispatchの完了コメントにPR URLが入るので、両方を見る。
+#    EMレーンの成果物はPRではなくvault内のMarkdownなので、01_Inbox/ai/ の
+#    パスも正当な成果物として認める
 linear_gql 'query($team: ID!, $state: ID!) {
   issues(filter: {team: {id: {eq: $team}}, state: {id: {eq: $state}}}, first: 50) {
     nodes { identifier title description comments(first: 20) { nodes { body } } } } }' \
   "$(jq -n --arg t "$(linear_config '.team_id')" --arg s "$(linear_state_id 'My Review')" '{team:$t,state:$s}')" \
 | jq -r '.issues.nodes[]
          | select(([(.description // "")] + [.comments.nodes[].body] | join("\n")
-                   | test("github\\.com/[^/\\s]+/[^/\\s]+/pull/")) | not)
-         | "\(.identifier) \(.title[0:40]) PR無し"'
+                   | test("github\\.com/[^/\\s]+/[^/\\s]+/pull/|01_Inbox/ai/")) | not)
+         | "\(.identifier) \(.title[0:40]) 成果物無し"'
 
 # 5) role / em ラベルの欠落（週次の配分分析が読めなくなる）
 linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled","duplicate"]}}}) {
@@ -114,6 +119,15 @@ AIの成果物を四択で裁く場所なので、自分が手を動かしてい
 | 他人・CI・返信を待っている | `Waiting` |
 | 終わっている | `Done` |
 | AIに実装させたい | `AI Queued`（`repo:` 行を足す） |
+
+EMレーンの成果物（`01_Inbox/ai/` 配下の叩き台）に対しては、四択を次のように読み替える。
+
+| 実装レーン | EMレーン |
+| --- | --- |
+| マージ | そのまま場に出す |
+| チームレビューへ | 関係者に投げる |
+| 修正指示 | 質問に答えて再投入（`/nippo-add こたえ: <identifier>`） |
+| 破棄 | 破棄 |
 
 Projectで見るのは3点。
 

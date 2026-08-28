@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["draft_path", "summary", "questions", "next_action"],
+  "properties": {
+    "draft_path": {
+      "type": "string",
+      "description": "叩き台を書き出したvault相対パス。01_Inbox/ai/<identifier>-<slug>.md"
+    },
+    "summary": {
+      "type": "string",
+      "description": "叩き台の要約を日本語2〜3文で"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["q", "why", "options"],
+        "properties": {
+          "q": { "type": "string", "description": "本人にしか判断できない問い" },
+          "why": { "type": "string", "description": "なぜAIが決められないのか1文" },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "next_action": { "type": "string" }
+  }
+}

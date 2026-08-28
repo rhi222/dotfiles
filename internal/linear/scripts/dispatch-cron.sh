@@ -33,6 +33,8 @@ DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"
 # shellcheck source=../lib/api.sh
 source "$DOMAIN_DIR/lib/api.sh"
+# shellcheck source=../lib/dispatch-parse.sh
+source "$DOMAIN_DIR/lib/dispatch-parse.sh"
 source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
@@ -44,19 +46,6 @@ LINEAR_DISPATCH_MAX="${LINEAR_DISPATCH_MAX:-3}"
 # ネットワーク書き込み権限をagentに与える必要がない
 ALLOWED_TOOLS="Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(jq:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python3:*),Bash(pytest:*),Bash(make:*),Bash(cargo:*),Bash(go:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
 
-# dispatch_parse_repo <description> → repo（例 github.com/example-org/repo1）。無ければ非0
-#
-# Linearは本文中の `github.com/owner/name` を自動でmarkdownリンクに変換するため
-# `repo: [github.com/o/n](<http://github.com/o/n>)` の形で保存されることがある。
-# host/owner/name の3要素だけを抜き出してどちらの形式でも同じ結果にする。
-dispatch_parse_repo() {
-  local line repo
-  line=$(grep -m1 -E '^repo:' <<<"$1") || return 1
-  repo=$(grep -oE '[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+' <<<"$line" | head -1)
-  [[ -n "$repo" ]] || return 1
-  echo "$repo"
-}
-
 # dispatch_bounce <issueId> <message>
 # 実行せずTodoへ差し戻す。理由をコメントに残す（黙って消えないようにする）
 #
@@ -66,15 +55,6 @@ dispatch_parse_repo() {
 dispatch_bounce() {
   linear_comment "$1" "$2" || echo "警告: コメントを残せなかった（issue $1）" >&2
   linear_issue_move "$1" "Todo" || echo "警告: Todoへ戻せなかった（issue $1）" >&2
-}
-
-# dispatch_parse_pr_url <description> → owner/name/number（例 example-org/repo1/42）。無ければ非0
-# LinearはURLをmarkdownリンク化するので、リンク記法でも素のURLでも拾えるようにする
-dispatch_parse_pr_url() {
-  local m
-  m=$(grep -oE 'github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pull/[0-9]+' <<<"$1" | head -1)
-  [[ -n "$m" ]] || return 1
-  sed -E 's#^github\.com/##' <<<"$m" | sed -E 's#/pull/#/#'
 }
 
 # dispatch_can_create_pr <owner/name>
@@ -141,6 +121,12 @@ dispatch_one() {
   else
     mode="new"
     if ! repo=$(dispatch_parse_repo "$desc"); then
+      # role:manager が付いていればEMレーン（em-dispatch.sh）の担当。
+      # 差し戻すとEMタスクが起票そばからTodoへ戻り続けるので、黙って残す
+      if jq -e '[.labels.nodes[].name] | index("role:manager")' <<<"$issue" >/dev/null 2>&1; then
+        echo "$identifier: SKIPPED (EMレーン)"
+        return 0
+      fi
       dispatch_bounce "$id" "dispatch失敗: 本文に \`repo: github.com/<owner>/<name>\` 行も既存PRのURLも無い。どちらかを書いて AI Queued に戻してほしい"
       echo "$identifier: BOUNCED (no repo)"
       return 0
@@ -298,7 +284,7 @@ $(tail -20 <<<"$log")
 main() {
   [[ -f "$HOME/.config/linear-dispatch-enabled" ]] || exit 0
 
-  local wip ready count issue
+  local wip ready targets count issue
   wip=$(linear_issues_in_state "My Review" | jq 'length')
   if [[ "$wip" -ge "$LINEAR_WIP_LIMIT" ]]; then
     echo "$(date): WIP上限（My Review ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
@@ -306,9 +292,22 @@ main() {
   fi
 
   ready=$(linear_issues_in_state "AI Queued")
-  count=$(jq 'length' <<<"$ready")
+  # EMレーン対象は実装レーンでは着手できずSKIPするだけ。上限（.[:MAX]）を
+  # 取る前に除外しないと、先頭がEM issueで埋まった晩にrepo issueへ到達せず、
+  # 夜間cronが空回りする（ログにはSKIPPEDが並ぶだけで無言に近い）。
+  # EMレーンの em_run_batch が自レーン対象だけを集めるのと対称にする
+  targets="[]"
+  while read -r issue; do
+    [[ -n "$issue" ]] || continue
+    if em_is_em_lane "$issue"; then
+      echo "$(jq -r '.identifier' <<<"$issue"): SKIPPED (EMレーン)"
+      continue
+    fi
+    targets=$(jq -c --argjson i "$issue" '. + [$i]' <<<"$targets")
+  done < <(jq -c '.[]' <<<"$ready")
+  count=$(jq 'length' <<<"$targets")
   if [[ "$count" -eq 0 ]]; then
-    echo "$(date): AI Queuedが0件。何もしない"
+    echo "$(date): AI Queuedに実装レーン対象が0件。何もしない"
     exit 0
   fi
 
@@ -317,7 +316,7 @@ main() {
     # 1件が想定外に落ちても残りは処理する。夜間バッチなので
     # 先頭の1件で止まると朝まで誰も気付けない
     dispatch_one "$issue" || echo "警告: dispatchが異常終了した。次のissueへ進む" >&2
-  done < <(jq -c ".[:$LINEAR_DISPATCH_MAX][]" <<<"$ready")
+  done < <(jq -c ".[:$LINEAR_DISPATCH_MAX][]" <<<"$targets")
   echo "$(date): linear-dispatch done"
 }
 
