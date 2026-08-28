@@ -86,9 +86,15 @@ PROMPT
 em_run_codex() {
   local issue="$1" out_json="$2" log_file="$3" prompt
   prompt=$(em_build_prompt "$issue")
+  # issue本文（src:slack/src:jira 由来の外部テキストでありうる）をプロンプトに
+  # 埋めるので、サンドボックスでネットワークを塞いでプロンプトインジェクションの
+  # 外部送信経路を止める。EMレーンはvaultを読んで叩き台を書くだけで、
+  # ネットワークは要らない（モデル自身のAPI通信はサンドボックス外の別経路）。
+  # ユーザーの ~/.codex/config.toml は変えず、呼び出し単位の上書きで閉じる
   timeout "$LINEAR_EM_TIMEOUT" "$CODEX_BIN" exec \
     -C "$VAULT" \
     -s workspace-write \
+    -c sandbox_workspace_write.network_access=false \
     --output-schema "$EM_SCHEMA" \
     -o "$out_json" \
     "$prompt" \

@@ -195,6 +195,10 @@ check "codexにoutput-schemaを渡す" grep -q -- "--output-schema" "$CODEX_LOG"
 # 実行時に検出しようとしてもテスト環境のstdinは常に非ttyなので無条件に通ってしまう。
 # 関数定義そのものを見て、リダイレクトが書かれていることを保証する
 check "em_run_codexがcodexのstdinを閉じている" bash -c "source '$SCRIPT'; declare -f em_run_codex | grep -q '/dev/null'"
+# issue本文（外部テキスト）をプロンプトに埋めるので、サンドボックスで
+# ネットワークを塞いでプロンプトインジェクションの外部送信経路を止める。
+# 実行時のネットワーク遮断検証は現実的でないので、関数定義を静的に見る
+check "em_run_codexがcodexのネットワークを塞いでいる" bash -c "source '$SCRIPT'; declare -f em_run_codex | grep -q 'network_access=false'"
 check "AI Running(s4)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_AI_RUNNING\"'"
 check "My Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_MY_REVIEW\"'"
 check "質問がコメントされる" grep -q "境界をどこで切りますか" "$CURL_LOG"
