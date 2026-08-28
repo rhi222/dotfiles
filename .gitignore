@@ -23,6 +23,7 @@ docs/superpowers/
 # 運用の全体像は AGENTS.md の「社内固有情報を入れない運用」を参照。
 .config/*/skills/cross-repo-investigate/repos.yml
 .config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json
+.config/claude/skills/sos-precheck/sos-precheck-posts.json
 
 # 社内システム名を検知して発動するスキル。description の発動キーワードが
 # 社内システム名そのものなので、汎用化すると機能しなくなる。
