@@ -12,7 +12,8 @@
 | スクリプト | `dispatch-cron.sh` | `em-dispatch.sh` |
 | ランナー | headless Claude | `codex exec` |
 | 起動 | 夜間cron | `/nippo-add` での承認直後 |
-| 同時実行 | 3件 | 1件（`flock`） |
+| 同時実行 | 1本 | 1本（`flock`） |
+| 1回の起動での処理上限 | 3件（`LINEAR_DISPATCH_MAX`） | 3件（`LINEAR_EM_DISPATCH_MAX`） |
 | 成果物 | draft PR | `01_Inbox/ai/` の叩き台 + 確認質問 |
 
 どちらの条件にも当てはまらないもの（`repo:` もPR URLも無く `role:manager` も無い）だけが `Todo` へ差し戻される。
