@@ -84,6 +84,7 @@
   },
   "includeCoAuthoredBy": false,
   "language": "Japanese",
+  "model": "claude-fable-5[1m]",
   "permissions": {
     "allow": [
       "Bash(awk:*)",

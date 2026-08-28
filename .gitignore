@@ -64,3 +64,6 @@ docs/superpowers/
 
 # Go のビルド成果物（バイナリはリポジトリへコミットしない）
 /dotctl
+
+# git worktree の置き場（superpowers: using-git-worktrees）
+.worktrees/

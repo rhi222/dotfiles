@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.32"
+version = "2.36.33"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:86d7b8c32a4c732667e910beb1180a256a7d82c6566958bd661cfd04bb008580"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.32.zip"
+checksum = "blake3:0046be9f535f9a69b3ac21417d26ea539ff2a3c1073e52565c0145e1b235a564"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.33.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -336,13 +336,13 @@ checksum = "sha256:a2def047a73941e01a73739f92755f86b895811afb1f91243db214cff5bda
 url = "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz"
 
 [[tools.node]]
-version = "24.19.0"
+version = "24.20.0"
 backend = "core:node"
 specifiers = ["24"]
 
 [tools.node."platforms.linux-x64"]
-checksum = "sha256:f625d97cd707df4ff96254916fbc5ff014f09c09effe5a1e0ca8f6d41a8789d4"
-url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.gz"
+checksum = "sha256:855d581f8a4eb1a8117e3426de25fe02770592febcfb31369aee1ffbfee9e8ec"
+url = "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.gz"
 
 [[tools."npm:@drawio/mcp"]]
 version = "1.5.0"
@@ -355,7 +355,7 @@ backend = "npm:@github/copilot"
 specifiers = ["latest"]
 
 [[tools."npm:@google/gemini-cli"]]
-version = "0.56.0"
+version = "0.57.0"
 backend = "npm:@google/gemini-cli"
 specifiers = ["latest"]
 
@@ -496,14 +496,14 @@ url = "https://github.com/tmux/tmux-builds/releases/download/v3.7b/tmux-3.7b-lin
 url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/465072866"
 
 [[tools.uv]]
-version = "0.12.5"
+version = "0.12.6"
 backend = "aqua:astral-sh/uv"
 specifiers = ["latest"]
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514851093"
+checksum = "sha256:8681d8921e7d520fb368991dcf5f9c1905b80f5bf2a265a0ed085c8d8e342477"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.6/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/529690831"
 provenance = "github-attestations"
 
 [[tools.yazi]]

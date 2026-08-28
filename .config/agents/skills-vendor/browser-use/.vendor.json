@@ -1,9 +1,9 @@
 {
   "origin": "https://github.com/browser-use/browser-use.git",
   "sub_path": "skills/browser-use",
-  "commit": "fac707cccf7d7c2ccf743944499baeed916bf827",
-  "vendored_at": "2026-08-26",
-  "reviewed_commit": "fac707cccf7d7c2ccf743944499baeed916bf827",
+  "commit": "35fccbb418f4be1c4883f3256bdc1c30977a9c4f",
+  "vendored_at": "2026-08-28",
+  "reviewed_commit": "35fccbb418f4be1c4883f3256bdc1c30977a9c4f",
   "audit": {
     "high": 0,
     "med": 0,
