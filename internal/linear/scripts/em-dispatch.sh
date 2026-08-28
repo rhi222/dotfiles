@@ -241,7 +241,9 @@ em_run_batch() {
       fi
     done < <(jq -c '.[]' <<<"$ready")
     count=$(jq 'length' <<<"$targets")
-    [[ "$count" -eq 0 ]] && break
+    if [[ "$count" -eq 0 ]]; then
+      break
+    fi
     issue=$(jq -c '.[0]' <<<"$targets")
     em_dispatch_one "$issue" || echo "警告: 1件が異常終了した。次へ進む" >&2
     processed=$((processed + 1))
