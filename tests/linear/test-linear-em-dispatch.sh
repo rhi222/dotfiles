@@ -102,6 +102,154 @@ broken="$tmp/broken.json"
 echo 'not json' >"$broken"
 check "JSONとして壊れていれば非0" bash -c "source '$SCRIPT'; ! em_validate_output '$broken'"
 
+# --- スクリプト全体のテスト ---
+cat >"$tmp/bin/curl" <<'EOF'
+#!/bin/bash
+data=""
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--data" ]]; then data="$2"; echo "$2" >> "${CURL_LOG:?}"; shift 2; else shift; fi
+done
+if grep -q 'viewer' <<<"$data"; then
+  echo '{"data": {"viewer": {"id": "user-me"}}}'
+elif grep -q "\"${STATE_MY_REVIEW:?}\"" <<<"$data"; then
+  cat "${WIP_RESPONSE:?}"
+elif grep -q 'issues(' <<<"$data"; then
+  cat "${READY_RESPONSE:?}"
+elif grep -q 'issueUpdate' <<<"$data"; then
+  if [[ -n "${MOVE_FAIL:-}" ]]; then
+    echo '{"errors": [{"message": "rate limited"}]}'
+    exit 0
+  fi
+  echo '{"data": {"issueUpdate": {"success": true}}}'
+else
+  echo '{"data": {"commentCreate": {"success": true}}}'
+fi
+EOF
+chmod +x "$tmp/bin/curl"
+
+# stub codex: -o で指定されたファイルへ正常な出力を書き、叩き台も作る
+cat >"$tmp/bin/codex" <<'EOF'
+#!/bin/bash
+echo "$*" >> "${CODEX_LOG:?}"
+out=""
+prev=""
+for a in "$@"; do
+  [[ "$prev" == "-o" ]] && out="$a"
+  prev="$a"
+done
+[[ "${CODEX_FAIL:-0}" == "1" ]] && { echo "codex failed hard" >&2; exit 1; }
+mkdir -p "${VAULT_DIR:?}/01_Inbox/ai"
+echo "# 叩き台" > "${VAULT_DIR:?}/01_Inbox/ai/NSY-12-x.md"
+cat > "$out" <<'JSON'
+{"draft_path":"01_Inbox/ai/NSY-12-x.md","summary":"要約",
+ "questions":[{"q":"境界をどこで切りますか","why":"合意が原則までだから","options":["課金の有無","責任主体"]},
+              {"q":"誰に最初に見せますか","why":"順序は本人判断だから","options":["予約チーム","技術MG"]},
+              {"q":"拡張を残しますか","why":"KPIの測り方が変わるから","options":["残す","残さない"]}],
+ "next_action":"回答を受けて仕上げる"}
+JSON
+EOF
+chmod +x "$tmp/bin/codex"
+
+export PATH="$tmp/bin:$PATH"
+export CURL_LOG="$tmp/curl.log"
+export CODEX_LOG="$tmp/codex.log"
+export CODEX_BIN="codex"
+export VAULT_DIR="$tmp/vault"
+export NIPPO_VAULT="$tmp/vault"
+export LINEAR_EM_STATE_DIR="$tmp/state"
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+
+echo '{"data": {"issues": {"nodes": []}}}' >"$tmp/wip-empty.json"
+jq -n '{data: {issues: {nodes: [range(10) | {id: "i\(.)", identifier: "NSY-\(.)", title: "t", description: "", labels: {nodes: []}}]}}}' >"$tmp/wip-full.json"
+jq -n '{data: {issues: {nodes: [
+  {id:"i1", identifier:"NSY-12", title:"分類案をつくる", description:"予約のコア/カスタマイズ/拡張",
+   labels:{nodes:[{name:"role:manager"},{name:"em:product"}]}}
+]}}}' >"$tmp/ready-em.json"
+jq -n '{data: {issues: {nodes: [
+  {id:"i2", identifier:"NSY-20", title:"実装", description:"repo: github.com/example-org/repo1",
+   labels:{nodes:[{name:"role:manager"}]}}
+]}}}' >"$tmp/ready-repo.json"
+
+# 1. フラグなし → 静かにスキップ
+out1=$(HOME="$tmp/home" bash "$SCRIPT" run 2>&1)
+check "フラグなしで静かにスキップ" test -z "$out1"
+
+touch "$tmp/home/.config/linear-em-dispatch-enabled"
+
+# 2. WIP上限超過 → 実行しない
+: >"$CODEX_LOG"
+out2=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-full.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run 2>&1)
+check "WIP上限超過でスキップする" grep -q "WIP" <<<"$out2"
+check "WIP超過時はcodexを実行しない" test ! -s "$CODEX_LOG"
+
+# 3. 正常系
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+out3=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run 2>&1)
+check "codexが実行される" test -s "$CODEX_LOG"
+check "codexにoutput-schemaを渡す" grep -q -- "--output-schema" "$CODEX_LOG"
+# stdinを閉じ忘れるとcodexがEOF待ちで固まる（実測で5分返らず）。
+# 実行時に検出しようとしてもテスト環境のstdinは常に非ttyなので無条件に通ってしまう。
+# 関数定義そのものを見て、リダイレクトが書かれていることを保証する
+check "em_run_codexがcodexのstdinを閉じている" bash -c "source '$SCRIPT'; declare -f em_run_codex | grep -q '/dev/null'"
+check "AI Running(s4)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_AI_RUNNING\"'"
+check "My Review(s5)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_MY_REVIEW\"'"
+check "質問がコメントされる" grep -q "境界をどこで切りますか" "$CURL_LOG"
+check "成果物パスがコメントされる" grep -q "01_Inbox/ai/NSY-12-x.md" "$CURL_LOG"
+check "出力JSONが状態ディレクトリに残る" test -f "$tmp/state/NSY-12.json"
+
+# 4. 実装レーンのissueは拾わない
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-repo.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run >/dev/null 2>&1
+check "repo行のissueはcodexを実行しない" test ! -s "$CODEX_LOG"
+check "repo行のissueはstateを動かさない" bash -c "! grep -q issueUpdate '$CURL_LOG'"
+
+# 5. AI Running遷移に失敗したら着手しない（二重実行の防止）
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+out5=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  MOVE_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run 2>&1)
+check "AI Running遷移失敗ならcodexを実行しない" test ! -s "$CODEX_LOG"
+check "AI Running遷移失敗はSKIPPEDと出る" grep -q "SKIPPED" <<<"$out5"
+
+# 6. codex失敗 → Todoへ差し戻し＋ログをコメント
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  CODEX_FAIL=1 LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run >/dev/null 2>&1
+check "codex失敗ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
+check "codex失敗ならログがコメントされる" grep -q "codex failed hard" "$CURL_LOG"
+
+# 7. 出力が不正 → Todoへ差し戻し
+cat >"$tmp/bin/codex" <<'EOF'
+#!/bin/bash
+echo "$*" >> "${CODEX_LOG:?}"
+out=""; prev=""
+for a in "$@"; do [[ "$prev" == "-o" ]] && out="$a"; prev="$a"; done
+echo '{"summary":"欠けている"}' > "$out"
+EOF
+chmod +x "$tmp/bin/codex"
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run >/dev/null 2>&1
+check "出力が不正ならTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
+check "出力が不正ならMy Reviewへ遷移しない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_MY_REVIEW\"'"
+
+# 7-2. ロックが取れなければ何もしない（同時起動で二重実行しない）。
+# enqueue が呼ばれるたびにワーカーを起動するので、必ず踏む経路
+: >"$CURL_LOG"
+: >"$CODEX_LOG"
+mkdir -p "$tmp/state"
+out72=$(flock "$tmp/state/em.lock" -c "HOME='$tmp/home' WIP_RESPONSE='$tmp/wip-empty.json' READY_RESPONSE='$tmp/ready-em.json' LINEAR_CONFIG_DIR='$tmp/home/.config/linear' bash '$SCRIPT' run" 2>&1)
+check "ロックが取れなければ何もしないと出る" grep -q "既にワーカーが動いている" <<<"$out72"
+check "ロックが取れなければcodexを実行しない" test ! -s "$CODEX_LOG"
+
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
