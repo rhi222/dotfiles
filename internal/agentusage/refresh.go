@@ -67,7 +67,13 @@ func Refresh(ctx context.Context, cfg Config) ([]error, error) {
 	results := make(chan fetchResult, resultCount)
 	client := &http.Client{Timeout: cfg.HTTPTimeout}
 	go func() {
-		side, err := FetchClaude(ctx, cfg.CredentialsFile, cfg.Endpoint, client, now)
+		claudeCtx := ctx
+		cancel := func() {}
+		if cfg.HTTPTimeout > 0 {
+			claudeCtx, cancel = context.WithTimeout(ctx, cfg.HTTPTimeout)
+		}
+		defer cancel()
+		side, err := FetchClaude(claudeCtx, cfg.CredentialsFile, cfg.Endpoint, client, now)
 		results <- fetchResult{kind: kindClaude, name: "claude", side: side, err: err}
 	}()
 	defaultName := "codex"

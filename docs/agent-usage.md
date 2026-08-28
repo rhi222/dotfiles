@@ -41,9 +41,12 @@ AGENTS.md の一覧から参照される設計記録。
 
 - Claude: `api.anthropic.com/api/oauth/usage` を `~/.claude/.credentials.json` の accessToken で GET（ヘッダ `anthropic-beta: oauth-2025-04-20`）。
   **非公式エンドポイント**（Claude Code の /usage と同じもの）で、`limits[]` の `kind: session / weekly_all / weekly_scoped` を読む。
-  仕様変更・401 では fetch を err にして旧値温存 → 15分の stale 閾値を超えれば ? 表示に倒れる（それ以前に Claude Code が再起動して token が更新されれば ? は出ない）。
-  access token は短命で、Claude Code をしばらく起動していない間は更新されないため、定期 refresh だけが401になることがある。
-  401 の警告は `claude` の起動、再実行、解消しなければ `claude auth login` という復旧手順を出す
+  401と5xxはcredentialsを読み直して1回だけ再試行する。
+  Claude Codeが同時にaccess tokenを更新した場合は、再試行が新しいtokenを使う。
+  再試行を含むHTTP処理全体を10秒で打ち切る。
+  仕様変更や再試行後の失敗ではfetchをerrにして旧値を温存し、15分のstale閾値を超えれば`?`表示に倒れる。
+  access tokenは短命なので、Claude Code本体がログイン済みでもusage APIだけが401を返すことがある。
+  401の警告はログイン失効と断定せず、`claude`の新規起動、再実行、解消しなければ`claude auth login`という復旧手順を出す
 - Codex: `codex app-server` を stdio JSON-RPC で1往復させ、`account/rateLimits/read` の
   `rateLimits` から weekly 窓（`windowDurationMins >= 10080`）と 5h 窓（それ未満）を読む。
   **`primary` / `secondary` のどちらが5hかは決め打ちしない。** 現状の実アカウントは primary=300分・secondary=10080分だが、

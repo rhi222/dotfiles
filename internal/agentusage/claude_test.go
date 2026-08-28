@@ -90,7 +90,9 @@ func TestFetchClaudeNoScopedLimit(t *testing.T) {
 }
 
 func TestFetchClaudeHTTPError(t *testing.T) {
+	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer srv.Close()
@@ -98,12 +100,82 @@ func TestFetchClaudeHTTPError(t *testing.T) {
 	if err == nil {
 		t.Fatal("401 で err が nil")
 	}
-	// Claude Code を長期間起動しないと access token が更新されず、定期 refresh だけが
-	// 401 になる。警告だけで利用者が復旧できる案内を維持するための回帰テスト。
-	for _, want := range []string{"claude", "dotctl agent-usage refresh", "claude auth login"} {
+	// 今回の障害では Claude Code 本体がログイン済みでも usage API だけが401になった。
+	// ログイン失効と断定せず、再試行後に復旧手順を出す契約を固定する。
+	if requests != 2 {
+		t.Errorf("request数 = %d, want 2", requests)
+	}
+	for _, want := range []string{"ログイン済み", "access token", "再試行", "claude auth login"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("401 の案内に %q が無い: %q", want, err)
 		}
+	}
+}
+
+func TestFetchClaudeRetriesWithUpdatedCredentials(t *testing.T) {
+	credentials := writeCredentials(t, "old-token")
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 1 {
+			if err := os.WriteFile(credentials, []byte(`{"claudeAiOauth":{"accessToken":"new-token"}}`), 0o600); err != nil {
+				t.Error(err)
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer new-token" {
+			t.Errorf("再試行のAuthorization = %q", got)
+		}
+		w.Write([]byte(claudeUsageJSON))
+	}))
+	defer srv.Close()
+
+	if _, err := FetchClaude(context.Background(), credentials, srv.URL, srv.Client(), time.Now()); err != nil {
+		t.Fatalf("credentials更新後の再試行: %v", err)
+	}
+	if requests != 2 {
+		t.Errorf("request数 = %d, want 2", requests)
+	}
+}
+
+func TestFetchClaudeRetriesServerError(t *testing.T) {
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Write([]byte(claudeUsageJSON))
+	}))
+	defer srv.Close()
+
+	if _, err := FetchClaude(context.Background(), writeCredentials(t, "tok"), srv.URL, srv.Client(), time.Now()); err != nil {
+		t.Fatalf("503後の再試行: %v", err)
+	}
+	if requests != 2 {
+		t.Errorf("request数 = %d, want 2", requests)
+	}
+}
+
+func TestFetchClaudeDoesNotRetryClientError(t *testing.T) {
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	_, err := FetchClaude(context.Background(), writeCredentials(t, "tok"), srv.URL, srv.Client(), time.Now())
+	if err == nil {
+		t.Fatal("403 で err が nil")
+	}
+	if requests != 1 {
+		t.Errorf("request数 = %d, want 1", requests)
+	}
+	if strings.Contains(err.Error(), "再試行") {
+		t.Errorf("再試行しない403の案内が不正: %q", err)
 	}
 }
 
