@@ -55,6 +55,97 @@ em_is_em_lane() {
   return 0
 }
 
+# em_build_prompt <issue-json> → プロンプト文字列
+#
+# codex exec は新しいプロセスで呼び出し側の文脈を一切持たない。
+# 参照すべきノート・成果物の置き場・制約をすべて明示的に渡す。
+# vault直下のAGENTS.mdはcodexが自動で読むので、ここでは重複させない
+em_build_prompt() {
+  local issue="$1" identifier title desc weekly
+  identifier=$(jq -r '.identifier' <<<"$issue")
+  title=$(jq -r '.title' <<<"$issue")
+  desc=$(jq -r '.description // ""' <<<"$issue")
+  # 直近の週次レポート。無ければその行を落とす
+  weekly=$(ls -1 "$VAULT"/02_Daily/weekly/*/nippo-weekly.*.md 2>/dev/null | sort | tail -1 || true)
+  if [[ -n "$weekly" ]]; then
+    weekly="- ${weekly#"$VAULT"/}"
+  fi
+
+  cat <<PROMPT
+あなたはエンジニアリングマネージャーの補助です。
+次のLinear issueについて、叩き台と確認質問を作ってください。
+
+# 対象: $identifier $title
+
+$desc
+
+# 先に読むもの
+
+- 02_Daily/config/nippo-goals.md
+$weekly
+
+# 成果物
+
+叩き台を \`01_Inbox/ai/${identifier}-<slug>.md\` に書き出してください。
+\`<slug>\` はタイトルから記号と空白を除いた短い日本語にしてください。
+書き出したパスを draft_path として返してください。
+
+# 確認質問
+
+本人にしか決められないことを3〜5個挙げてください。
+調べれば分かることは質問にせず、自分で調べて叩き台に反映してください。
+各質問には選択肢を2〜4個付け、なぜ自分で決められないのかを1文で添えてください。
+
+# 制約
+
+- Slack・Jira・esa・GitHub へは一切書き込まない
+- vault の外へ書き込まない
+- 既存ノートを要約・削除・書き換えない
+PROMPT
+}
+
+# em_run_codex <issue-json> <out_json> <log_file> → codexの終了コード
+#
+# stdinを閉じないと "Reading additional input from stdin..." でEOFを待ち続けて
+# 固まる。バックグラウンド起動では必ず踏むので、ここで固定する
+em_run_codex() {
+  local issue="$1" out_json="$2" log_file="$3" prompt
+  prompt=$(em_build_prompt "$issue")
+  timeout "$LINEAR_EM_TIMEOUT" "$CODEX_BIN" exec \
+    -C "$VAULT" \
+    -s workspace-write \
+    --output-schema "$EM_SCHEMA" \
+    -o "$out_json" \
+    "$prompt" \
+    </dev/null >"$log_file" 2>&1
+}
+
+# em_validate_output <out_json>
+# 妥当なら0。--output-schema で形は既に縛られているので、ここで見るのは
+# 「codexが約束を守ったか」の3点だけ（必須キー・質問件数・成果物の実在）
+em_validate_output() {
+  local out_json="$1" draft
+  jq -e . "$out_json" >/dev/null 2>&1 || {
+    echo "出力がJSONとして壊れている" >&2
+    return 1
+  }
+  jq -e 'has("draft_path") and has("summary") and has("questions") and has("next_action")' \
+    "$out_json" >/dev/null || {
+    echo "必須キーが欠けている" >&2
+    return 1
+  }
+  jq -e '(.questions | length) >= 3' "$out_json" >/dev/null || {
+    echo "確認質問が3件未満" >&2
+    return 1
+  }
+  draft=$(jq -r '.draft_path' "$out_json")
+  [[ -f "$VAULT/$draft" ]] || {
+    echo "draft_pathのファイルが無い: $draft" >&2
+    return 1
+  }
+  return 0
+}
+
 main() {
   [[ -f "$HOME/.config/linear-em-dispatch-enabled" ]] || exit 0
   echo "$(date): em-dispatch は未実装"

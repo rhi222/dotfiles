@@ -62,6 +62,46 @@ check "PR URLがあればEMレーンではない" bash -c "source '$SCRIPT'; ! e
 check "role:playerはEMレーンではない" bash -c "source '$SCRIPT'; ! em_is_em_lane '$issue_player'"
 check "ai:blocked-humanはEMレーンではない" bash -c "source '$SCRIPT'; ! em_is_em_lane '$issue_blocked'"
 
+# --- プロンプト生成 ---
+prompt=$(em_build_prompt "$issue_em")
+check "プロンプトにidentifierが入る" grep -q "NSY-12" <<<"$prompt"
+check "プロンプトにタイトルが入る" grep -q "分類案をつくる" <<<"$prompt"
+check "プロンプトに本文が入る" grep -q "予約のコア" <<<"$prompt"
+check "プロンプトに成果物の置き場が入る" grep -q "01_Inbox/ai/" <<<"$prompt"
+check "プロンプトにnippo-goalsの参照が入る" grep -q "nippo-goals.md" <<<"$prompt"
+check "プロンプトに外部書き込み禁止が入る" grep -q "Slack" <<<"$prompt"
+
+# --- 出力検証 ---
+good="$tmp/good.json"
+jq -n '{draft_path:"01_Inbox/ai/NSY-12-x.md", summary:"s",
+  questions:[{q:"q1",why:"w1",options:["a","b"]},
+             {q:"q2",why:"w2",options:["a","b"]},
+             {q:"q3",why:"w3",options:["a","b"]}],
+  next_action:"n"}' >"$good"
+: >"$tmp/vault/01_Inbox/ai/NSY-12-x.md"
+check "妥当な出力は検証を通る" em_validate_output "$good"
+
+missing="$tmp/missing.json"
+jq -n '{summary:"s", questions:[], next_action:"n"}' >"$missing"
+check "draft_pathが無ければ非0" bash -c "source '$SCRIPT'; ! em_validate_output '$missing'"
+
+fewq="$tmp/fewq.json"
+jq -n '{draft_path:"01_Inbox/ai/NSY-12-x.md", summary:"s",
+  questions:[{q:"q1",why:"w1",options:["a","b"]}], next_action:"n"}' >"$fewq"
+check "質問が3件未満なら非0" bash -c "source '$SCRIPT'; ! em_validate_output '$fewq'"
+
+nofile="$tmp/nofile.json"
+jq -n '{draft_path:"01_Inbox/ai/NOPE.md", summary:"s",
+  questions:[{q:"q1",why:"w1",options:["a","b"]},
+             {q:"q2",why:"w2",options:["a","b"]},
+             {q:"q3",why:"w3",options:["a","b"]}],
+  next_action:"n"}' >"$nofile"
+check "draft_pathのファイルが無ければ非0" bash -c "source '$SCRIPT'; ! em_validate_output '$nofile'"
+
+broken="$tmp/broken.json"
+echo 'not json' >"$broken"
+check "JSONとして壊れていれば非0" bash -c "source '$SCRIPT'; ! em_validate_output '$broken'"
+
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
