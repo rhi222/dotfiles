@@ -46,6 +46,20 @@ Date: $(date +%Y-%m-%d)
 - [ ] {AI提案タスク1 - 達成基準由来}
 - [ ] {AI提案タスク2 - 行動習慣由来}
 
+## AIからの質問
+
+> 前回までのCodex成果物のうち未回答のもの。`/nippo-add こたえ: <identifier>` で回答する
+> 対象が無ければセクションごと省略する
+
+- {identifier} {タイトル} — 質問{N}件 / `{draft_path}`
+
+## AIに任せる候補
+
+> `em-delegation.md` に従って提示・承認する。対象が無ければセクションごと省略する
+> Codexが叩き台と確認質問を作る。完了するとLinearの My Review に入る
+
+- [ ] {identifier} {タイトル}（滞留{N}日）→ {AI Queued|見送り}
+
 ## 今日のタスク
 
 > タスク管理はLinearに集約している: https://linear.app/nsym/my-issues
