@@ -2,6 +2,25 @@
 
 [linear-command-layer.md](linear-command-layer.md) から分割した、AI夜間dispatch、worktree、push、PR作成の設計記録。
 
+## 2つのレーン
+
+`AI Queued` は2つのランナーが分担する。振り分けは本文とラベルで決まる。
+
+| | 実装レーン | EMレーン |
+| --- | --- | --- |
+| 対象 | `repo:` 行 または PR URL を持つ | `role:manager` かつ `repo:` 行もPR URLも無い |
+| スクリプト | `dispatch-cron.sh` | `em-dispatch.sh` |
+| ランナー | headless Claude | `codex exec` |
+| 起動 | 夜間cron | `/nippo-add` での承認直後 |
+| 同時実行 | 3件 | 1件（`flock`） |
+| 成果物 | draft PR | `01_Inbox/ai/` の叩き台 + 確認質問 |
+
+どちらの条件にも当てはまらないもの（`repo:` もPR URLも無く `role:manager` も無い）だけが `Todo` へ差し戻される。
+
+**`codex exec` は必ず `< /dev/null` を付ける。** 付けないと `Reading additional input from stdin...` でEOFを待ち続けて固まる。バックグラウンド起動では必ず踏む。
+
+**vaultの指示ファイルは複数形の `AGENTS.md`。** Codexは `CLAUDE.md` を読まず、`AGENT.md`（単数）も読まない。
+
 ## 起動条件とWIP上限
 
 **夜間ディスパッチは「My Review」が `LINEAR_WIP_LIMIT`（既定10）件以上だと止まる。**
