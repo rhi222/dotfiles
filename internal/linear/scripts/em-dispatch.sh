@@ -27,33 +27,8 @@ LINEAR_WIP_LIMIT="${LINEAR_WIP_LIMIT:-10}"
 LINEAR_EM_DISPATCH_MAX="${LINEAR_EM_DISPATCH_MAX:-3}"
 LINEAR_EM_TIMEOUT="${LINEAR_EM_TIMEOUT:-900}"
 
-# em_is_em_lane <issue-json>
-# EMレーンが扱う対象なら0。実装レーンの担当・委譲不可なら非0。
-#
-# 判定は3つ。role:manager を持つ / ai:blocked-human を持たない /
-# 本文に repo: 行もPR URLも無い。ラベルを判別子に使うのは、これが
-# パイプライン上の位置ではなく「どちらのランナーが扱えるか」という
-# 属性だから（ai:blocked-human がstateと直交しているのと同じ理由）
-#
-# `A && return 1` と書かないこと。Aが失敗するとリスト全体が非0を返し、
-# set -e が効く文脈では関数ではなくスクリプトごと落ちる。必ず if で書く
-em_is_em_lane() {
-  local issue="$1" desc
-  if ! jq -e '[.labels.nodes[].name] | index("role:manager")' <<<"$issue" >/dev/null 2>&1; then
-    return 1
-  fi
-  if jq -e '[.labels.nodes[].name] | index("ai:blocked-human")' <<<"$issue" >/dev/null 2>&1; then
-    return 1
-  fi
-  desc=$(jq -r '.description // ""' <<<"$issue")
-  if dispatch_parse_repo "$desc" >/dev/null 2>&1; then
-    return 1
-  fi
-  if dispatch_parse_pr_url "$desc" >/dev/null 2>&1; then
-    return 1
-  fi
-  return 0
-}
+# em_is_em_lane はlib/dispatch-parse.shへ移した（両レーンで単一定義にするため）。
+# source済みなのでここから呼べる。
 
 # em_build_prompt <issue-json> → プロンプト文字列
 #
