@@ -64,6 +64,7 @@ var Entries = []Entry{
 	{Repo, ".config/nvim/lua/my/local_config.lua", false},
 	{Repo, ".config/agents/skills/cross-repo-investigate/repos.yml", false},
 	{Repo, ".config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json", false},
+	{Repo, ".config/claude/skills/sos-precheck/sos-precheck-posts.json", false},
 	{Repo, ".config/agents/skills/cross-repo-auto-discover", false},
 	{Repo, ".config/AutoHotkey/ahk-snippets/js", false},
 	{Repo, ".config/AutoHotkey/scripts/snippets-local.ahk", false},
