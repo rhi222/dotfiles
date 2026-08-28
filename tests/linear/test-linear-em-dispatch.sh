@@ -250,6 +250,31 @@ out72=$(flock "$tmp/state/em.lock" -c "HOME='$tmp/home' WIP_RESPONSE='$tmp/wip-e
 check "ロックが取れなければ何もしないと出る" grep -q "既にワーカーが動いている" <<<"$out72"
 check "ロックが取れなければcodexを実行しない" test ! -s "$CODEX_LOG"
 
+# 8. enqueue: AI Queuedへ移してワーカーを切り離し起動する
+cat >"$tmp/bin/setsid" <<'EOF'
+#!/bin/bash
+echo "$*" >> "${SETSID_LOG:?}"
+EOF
+chmod +x "$tmp/bin/setsid"
+export SETSID_LOG="$tmp/setsid.log"
+: >"$CURL_LOG"
+: >"$SETSID_LOG"
+jq -n '{data: {issues: {nodes: [
+  {id:"i1", identifier:"NSY-12", title:"分類案をつくる", description:"予約のコア",
+   labels:{nodes:[{name:"role:manager"}]}}
+]}}}' >"$tmp/ready-todo.json"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-todo.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" enqueue NSY-12 >/dev/null 2>&1
+check "enqueueでAI Queued(s3)へ遷移する" bash -c "grep issueUpdate '$CURL_LOG' | grep -q '\"$STATE_AI_QUEUED\"'"
+check "enqueueでワーカーを切り離し起動する" grep -q "em-dispatch" "$SETSID_LOG"
+check "enqueueはcodexを直接実行しない" bash -c "! grep -q 'output-schema' '$CODEX_LOG'"
+
+# 9. 存在しないidentifierは黙って無視せず警告する
+: >"$CURL_LOG"
+out9=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-todo.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" enqueue NSY-999 2>&1)
+check "見つからないidentifierは警告する" grep -q "NSY-999" <<<"$out9"
+
 [[ "${KEEP_TMP:-0}" == "1" ]] && echo "tmp: $tmp" || rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"

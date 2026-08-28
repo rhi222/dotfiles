@@ -251,6 +251,53 @@ em_run_batch() {
   echo "$(date): em-dispatch done (processed=$processed)"
 }
 
+# em_find_issue <identifier> → issue-json。見つからなければ非0
+#
+# My Review も探す。確認質問に回答したあとの再投入（/nippo-add こたえ:）が
+# My Review 起点になるため。ここを外すと In Progress を経由する2段階になる
+em_find_issue() {
+  local identifier="$1" state issues hit
+  for state in "Todo" "In Progress" "My Review" "AI Queued"; do
+    issues=$(linear_issues_in_state "$state") || continue
+    hit=$(jq -c --arg id "$identifier" '.[] | select(.identifier == $id)' <<<"$issues")
+    if [[ -n "$hit" ]]; then
+      echo "$hit"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# em_enqueue <identifier>...
+# AI Queued へ移してワーカーを起動する。ワーカーは setsid で切り離すので、
+# 呼び出し元の /nippo-add セッションが終わってもcodexの実行が続く
+em_enqueue() {
+  local identifier issue id moved=0
+  for identifier in "$@"; do
+    if ! issue=$(em_find_issue "$identifier"); then
+      echo "警告: $identifier が Todo / In Progress / AI Queued に見つからない" >&2
+      continue
+    fi
+    if ! em_is_em_lane "$issue"; then
+      echo "警告: $identifier はEMレーンの対象ではない（repo:行かPR URLがある、またはrole:managerでない）" >&2
+      continue
+    fi
+    id=$(jq -r '.id' <<<"$issue")
+    if linear_issue_move "$id" "AI Queued"; then
+      echo "$identifier: QUEUED"
+      moved=$((moved + 1))
+    else
+      echo "警告: $identifier を AI Queued へ移せなかった" >&2
+    fi
+  done
+  if [[ "$moved" -eq 0 ]]; then
+    return 0
+  fi
+  # ワーカーを切り離して起動する。既に動いていれば flock -n が弾く
+  setsid nohup "${BASH_SOURCE[0]}" run >>"$EM_STATE_DIR/worker.log" 2>&1 &
+  echo "ワーカーを起動した（${moved}件）"
+}
+
 main() {
   [[ -f "$HOME/.config/linear-em-dispatch-enabled" ]] || exit 0
   local sub="${1:-run}" wip
@@ -271,8 +318,13 @@ main() {
       fi
       em_run_batch
       ;;
+    enqueue)
+      shift
+      mkdir -p "$EM_STATE_DIR"
+      em_enqueue "$@"
+      ;;
     *)
-      echo "usage: em-dispatch.sh [run]" >&2
+      echo "usage: em-dispatch.sh [run|enqueue <identifier>...]" >&2
       exit 1
       ;;
   esac
