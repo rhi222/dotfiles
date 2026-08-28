@@ -284,7 +284,7 @@ $(tail -20 <<<"$log")
 main() {
   [[ -f "$HOME/.config/linear-dispatch-enabled" ]] || exit 0
 
-  local wip ready count issue
+  local wip ready targets count issue
   wip=$(linear_issues_in_state "My Review" | jq 'length')
   if [[ "$wip" -ge "$LINEAR_WIP_LIMIT" ]]; then
     echo "$(date): WIP上限（My Review ${wip}件 >= ${LINEAR_WIP_LIMIT}）。dispatchをスキップ。朝の判断タイムで捌いてほしい"
@@ -292,9 +292,22 @@ main() {
   fi
 
   ready=$(linear_issues_in_state "AI Queued")
-  count=$(jq 'length' <<<"$ready")
+  # EMレーン対象は実装レーンでは着手できずSKIPするだけ。上限（.[:MAX]）を
+  # 取る前に除外しないと、先頭がEM issueで埋まった晩にrepo issueへ到達せず、
+  # 夜間cronが空回りする（ログにはSKIPPEDが並ぶだけで無言に近い）。
+  # EMレーンの em_run_batch が自レーン対象だけを集めるのと対称にする
+  targets="[]"
+  while read -r issue; do
+    [[ -n "$issue" ]] || continue
+    if em_is_em_lane "$issue"; then
+      echo "$(jq -r '.identifier' <<<"$issue"): SKIPPED (EMレーン)"
+      continue
+    fi
+    targets=$(jq -c --argjson i "$issue" '. + [$i]' <<<"$targets")
+  done < <(jq -c '.[]' <<<"$ready")
+  count=$(jq 'length' <<<"$targets")
   if [[ "$count" -eq 0 ]]; then
-    echo "$(date): AI Queuedが0件。何もしない"
+    echo "$(date): AI Queuedに実装レーン対象が0件。何もしない"
     exit 0
   fi
 
@@ -303,7 +316,7 @@ main() {
     # 1件が想定外に落ちても残りは処理する。夜間バッチなので
     # 先頭の1件で止まると朝まで誰も気付けない
     dispatch_one "$issue" || echo "警告: dispatchが異常終了した。次のissueへ進む" >&2
-  done < <(jq -c ".[:$LINEAR_DISPATCH_MAX][]" <<<"$ready")
+  done < <(jq -c ".[:$LINEAR_DISPATCH_MAX][]" <<<"$targets")
   echo "$(date): linear-dispatch done"
 }
 

@@ -429,6 +429,29 @@ check "role:managerはclaudeを実行しない" test ! -s "$CLAUDE_LOG"
 check "role:managerはTodoへ差し戻さない" bash -c "! grep -q '\"$STATE_TODO\"' '$CURL_LOG'"
 check "role:managerはEMレーン担当としてスキップと出る" grep -q "NSY-30: SKIPPED (EMレーン)" <<<"$out42"
 
+# 4-3. AI Queued の先頭が role:manager のEM issueで埋まっていても、
+# 実装レーンはEM issueを先に除外してから上限を取るので、後ろのrepo issueに到達する。
+# 除外しないと .[:LINEAR_DISPATCH_MAX] がEM issueで食い潰され、repo issueが着手されない
+jq -n '{data: {issues: {nodes: [
+  {id: "em1", identifier: "NSY-41", title: "EM1", description: "本文だけ", url: "u", labels: {nodes: [{name: "role:manager"}]}},
+  {id: "em2", identifier: "NSY-42", title: "EM2", description: "本文だけ", url: "u", labels: {nodes: [{name: "role:manager"}]}},
+  {id: "em3", identifier: "NSY-43", title: "EM3", description: "本文だけ", url: "u", labels: {nodes: [{name: "role:manager"}]}},
+  {id: "rr", identifier: "NSY-44", title: "実装", description: "repo: github.com/example-org/repo1", url: "u", labels: {nodes: []}}
+]}}}' >"$tmp/ready-em-then-repo.json"
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+: >"$GIT_LOG"
+: >"$GH_LOG"
+: >"$GIT_BR_REG"
+: >"$GIT_WT_REG"
+echo base >"$HEAD_FILE"
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em-then-repo.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" >/dev/null 2>&1
+check "EM issueが先頭を埋めてもrepo issueがclaudeまで到達する" test -s "$CLAUDE_LOG"
+check "EM issue(em1)はstateを動かさない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"em1\"'"
+check "EM issue(em2)はstateを動かさない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"em2\"'"
+check "EM issue(em3)はstateを動かさない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"em3\"'"
+
 # 5. claude失敗 → エラーコメント＋Todoへ差し戻し
 cat >"$tmp/bin/claude" <<'EOF'
 #!/bin/bash
