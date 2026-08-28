@@ -6,6 +6,8 @@ model_reasoning_effort = "medium"
 personality = "pragmatic"
 # show_raw_agent_reasoning = true
 web_search = "cached"
+# Codex CLI は mise で一元更新するため、npm/pnpm の自己更新を案内しない。
+check_for_update_on_startup = false
 
 # CODEX_HOMEごとにauth.jsonを分離し、account切り替えを成立させる。
 cli_auth_credentials_store = "file"
