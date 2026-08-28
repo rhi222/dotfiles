@@ -256,7 +256,7 @@ em_enqueue() {
   local identifier issue id moved=0
   for identifier in "$@"; do
     if ! issue=$(em_find_issue "$identifier"); then
-      echo "警告: $identifier が Todo / In Progress / AI Queued に見つからない" >&2
+      echo "警告: $identifier が Todo / In Progress / My Review / AI Queued に見つからない" >&2
       continue
     fi
     if ! em_is_em_lane "$issue"; then
