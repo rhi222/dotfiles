@@ -33,6 +33,8 @@ DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$DOMAIN_DIR/../.." && pwd)"
 # shellcheck source=../lib/api.sh
 source "$DOMAIN_DIR/lib/api.sh"
+# shellcheck source=../lib/dispatch-parse.sh
+source "$DOMAIN_DIR/lib/dispatch-parse.sh"
 source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
@@ -44,19 +46,6 @@ LINEAR_DISPATCH_MAX="${LINEAR_DISPATCH_MAX:-3}"
 # ネットワーク書き込み権限をagentに与える必要がない
 ALLOWED_TOOLS="Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(jq:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(python3:*),Bash(pytest:*),Bash(make:*),Bash(cargo:*),Bash(go:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
 
-# dispatch_parse_repo <description> → repo（例 github.com/example-org/repo1）。無ければ非0
-#
-# Linearは本文中の `github.com/owner/name` を自動でmarkdownリンクに変換するため
-# `repo: [github.com/o/n](<http://github.com/o/n>)` の形で保存されることがある。
-# host/owner/name の3要素だけを抜き出してどちらの形式でも同じ結果にする。
-dispatch_parse_repo() {
-  local line repo
-  line=$(grep -m1 -E '^repo:' <<<"$1") || return 1
-  repo=$(grep -oE '[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+' <<<"$line" | head -1)
-  [[ -n "$repo" ]] || return 1
-  echo "$repo"
-}
-
 # dispatch_bounce <issueId> <message>
 # 実行せずTodoへ差し戻す。理由をコメントに残す（黙って消えないようにする）
 #
@@ -66,15 +55,6 @@ dispatch_parse_repo() {
 dispatch_bounce() {
   linear_comment "$1" "$2" || echo "警告: コメントを残せなかった（issue $1）" >&2
   linear_issue_move "$1" "Todo" || echo "警告: Todoへ戻せなかった（issue $1）" >&2
-}
-
-# dispatch_parse_pr_url <description> → owner/name/number（例 example-org/repo1/42）。無ければ非0
-# LinearはURLをmarkdownリンク化するので、リンク記法でも素のURLでも拾えるようにする
-dispatch_parse_pr_url() {
-  local m
-  m=$(grep -oE 'github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pull/[0-9]+' <<<"$1" | head -1)
-  [[ -n "$m" ]] || return 1
-  sed -E 's#^github\.com/##' <<<"$m" | sed -E 's#/pull/#/#'
 }
 
 # dispatch_can_create_pr <owner/name>
