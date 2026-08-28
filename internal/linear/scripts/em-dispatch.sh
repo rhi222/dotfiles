@@ -1,0 +1,65 @@
+#!/bin/bash
+# LinearのAI Queued issueのうち、実装レーンが扱えないもの（role:managerで
+# repo:行もPR URLも無い）をcodexで「叩き台＋確認質問」まで進め、My Reviewへ戻す。
+#
+# 有効化: touch ~/.config/linear-em-dispatch-enabled
+# 無効化: rm ~/.config/linear-em-dispatch-enabled
+#
+# キューはLinearのstate（AI Queued）そのもの。別のキューファイルは持たない。
+#
+# 【重要】外部システム（Slack/Jira/esa/GitHub）へ書き込まない。
+# 書き込み先はObsidian vaultとLinearコメントのみ。
+set -euo pipefail
+
+# $0 ではなく BASH_SOURCE を使う。テストが関数単体を source して呼ぶため
+DOMAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/api.sh
+source "$DOMAIN_DIR/lib/api.sh"
+# shellcheck source=../lib/dispatch-parse.sh
+source "$DOMAIN_DIR/lib/dispatch-parse.sh"
+
+CODEX_BIN="${CODEX_BIN:-codex}"
+VAULT="${NIPPO_VAULT:-$HOME/Obsidian}"
+EM_SCHEMA="${LINEAR_EM_SCHEMA:-$DOMAIN_DIR/schema/em-output.schema.json}"
+EM_STATE_DIR="${LINEAR_EM_STATE_DIR:-$HOME/.local/state/linear-em-dispatch}"
+EM_LOCK="$EM_STATE_DIR/em.lock"
+LINEAR_WIP_LIMIT="${LINEAR_WIP_LIMIT:-10}"
+LINEAR_EM_DISPATCH_MAX="${LINEAR_EM_DISPATCH_MAX:-3}"
+LINEAR_EM_TIMEOUT="${LINEAR_EM_TIMEOUT:-900}"
+
+# em_is_em_lane <issue-json>
+# EMレーンが扱う対象なら0。実装レーンの担当・委譲不可なら非0。
+#
+# 判定は3つ。role:manager を持つ / ai:blocked-human を持たない /
+# 本文に repo: 行もPR URLも無い。ラベルを判別子に使うのは、これが
+# パイプライン上の位置ではなく「どちらのランナーが扱えるか」という
+# 属性だから（ai:blocked-human がstateと直交しているのと同じ理由）
+#
+# `A && return 1` と書かないこと。Aが失敗するとリスト全体が非0を返し、
+# set -e が効く文脈では関数ではなくスクリプトごと落ちる。必ず if で書く
+em_is_em_lane() {
+  local issue="$1" desc
+  if ! jq -e '[.labels.nodes[].name] | index("role:manager")' <<<"$issue" >/dev/null 2>&1; then
+    return 1
+  fi
+  if jq -e '[.labels.nodes[].name] | index("ai:blocked-human")' <<<"$issue" >/dev/null 2>&1; then
+    return 1
+  fi
+  desc=$(jq -r '.description // ""' <<<"$issue")
+  if dispatch_parse_repo "$desc" >/dev/null 2>&1; then
+    return 1
+  fi
+  if dispatch_parse_pr_url "$desc" >/dev/null 2>&1; then
+    return 1
+  fi
+  return 0
+}
+
+main() {
+  [[ -f "$HOME/.config/linear-em-dispatch-enabled" ]] || exit 0
+  echo "$(date): em-dispatch は未実装"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
