@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.60"
+version = "0.2.61"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:84fc96856d21203b6482b7284aff5b539b7329a5cc078d7a94c55ae40d88752f"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.60/rumdl-v0.2.60-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/524937024"
+checksum = "sha256:1fee3b467a15a8f8cc34597d1b9b9097c855400e4a6f9836c1988decea8dcb54"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.61/rumdl-v0.2.61-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/531230587"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.33"
+version = "2.36.34"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:0046be9f535f9a69b3ac21417d26ea539ff2a3c1073e52565c0145e1b235a564"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.33.zip"
+checksum = "blake3:ddaf763faab825118d5e6d5d49651892fb67ea7f5c00175b32fda70f51af3855"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.34.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -186,14 +186,14 @@ url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_
 url_api = "https://api.github.com/repos/sharkdp/bat/releases/assets/323549181"
 
 [[tools.bottom]]
-version = "0.14.8"
+version = "0.14.9"
 backend = "aqua:ClementTsang/bottom"
 specifiers = ["latest"]
 
 [tools.bottom."platforms.linux-x64"]
-checksum = "sha256:1e29fb2b0230c8285665d107fc370493e61369433d9e0b9398f6bec19624fa50"
-url = "https://github.com/ClementTsang/bottom/releases/download/0.14.8/bottom_x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/ClementTsang/bottom/releases/assets/513309986"
+checksum = "sha256:e0c325829e8bdcea25a8a7651da05dbb6f1fc109ac5d2f0187867d3d5d9c0df8"
+url = "https://github.com/ClementTsang/bottom/releases/download/0.14.9/bottom_x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/ClementTsang/bottom/releases/assets/531978159"
 provenance = "github-attestations"
 
 [[tools.bun]]
@@ -247,14 +247,14 @@ url = "https://github.com/eza-community/eza/releases/download/v0.23.5/eza_x86_64
 url_api = "https://api.github.com/repos/eza-community/eza/releases/assets/471228887"
 
 [[tools.fd]]
-version = "10.4.2"
+version = "10.5.0"
 backend = "aqua:sharkdp/fd"
 specifiers = ["latest"]
 
 [tools.fd."platforms.linux-x64"]
-checksum = "sha256:def59805cd14b5651b68990855f426ad087f3b96881296d963910431ba3143c8"
-url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/sharkdp/fd/releases/assets/370662118"
+checksum = "sha256:a1259cd129636efbc3fef123525c1b49e88fe5088c012630983c310e52fdfa95"
+url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/sharkdp/fd/releases/assets/530481615"
 
 [[tools.fzf]]
 version = "0.74.3"
@@ -365,12 +365,12 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.149.1"
+version = "0.150.1"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 
 [[tools."npm:aws-cdk"]]
-version = "2.1138.0"
+version = "2.1139.0"
 backend = "npm:aws-cdk"
 specifiers = ["latest"]
 
