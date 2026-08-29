@@ -57,6 +57,21 @@ exit 0
 STUB
   chmod +x "$STUB_DIR/rumdl"
 
+  cat >"$STUB_DIR/prettier" <<'STUB'
+#!/bin/bash
+for arg in "$@"; do
+  [[ "$arg" == *.md ]] || continue
+  [[ -f "$arg" ]] || exit 9
+  if grep -q 'BAD_PRETTIER' "$arg"; then
+    exit 1
+  fi
+done
+exit 0
+STUB
+  chmod +x "$STUB_DIR/prettier"
+
+  printf '{"proseWrap":"preserve"}\n' >"$REPO/.prettierrc.json"
+
   cat >"$STUB_DIR/stylua" <<'STUB'
 #!/bin/bash
 for arg in "$@"; do
@@ -135,6 +150,17 @@ printf '# BAD_MARKDOWN\n' >"$REPO/broken.md"
 git -C "$REPO" add -A
 out=$(run_lint)
 check "不正なMarkdownがあれば失敗する" "1" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf '# BAD_PRETTIER\n' >"$REPO/broken.md"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "Prettier未整形のMarkdownがあれば失敗する" "1" "$?"
+check "Prettierの検査を行ったと出力する" "yes" \
+  "$(printf '%s' "$out" | grep -q '=== prettier ===' && echo yes || echo no)"
 teardown
 
 setup
@@ -353,11 +379,12 @@ NOFISH="$TEST_DIR/nofish"
 mkdir -p "$NOFISH"
 # printf は bash の組み込みでもあるので type -P で外部コマンドの実体を引く
 # （command -v だと "printf" が返り、自分を指す symlink ができて無限ループになる）
-for t in git xargs sort dirname printf; do
+for t in bash git xargs sort dirname printf readlink; do
   ln -sf "$(type -P "$t")" "$NOFISH/$t"
 done
 ln -sf "$STUB_DIR/shellcheck" "$NOFISH/shellcheck"
 ln -sf "$STUB_DIR/shfmt" "$NOFISH/shfmt"
+ln -sf "$STUB_DIR/prettier" "$NOFISH/prettier"
 out=$(env PATH="$NOFISH" LINT_REPO_ROOT="$REPO" /bin/bash "$TARGET" 2>&1)
 rc=$?
 # fish が無いだけで lint 全体を落とすと、fish を使わない端末で commit できなくなる

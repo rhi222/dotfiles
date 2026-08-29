@@ -50,6 +50,17 @@ tool integration → keybinding。追加時は既存番号の責務へ置き、�
 
 検査は `bash scripts/repository/doc-budget.sh`、テストは `bash tests/repository/test-doc-budget.sh`。
 
+## Markdown整形
+
+MarkdownはNeovimの保存時にPrettierで整形する。`proseWrap: preserve`として、日本語本文の
+改行位置は執筆者の判断を維持する。
+
+pre-commitはstage済みの内容だけを検査し、自動修正しない。部分stageでも未stageの編集を
+巻き込まないため、indexから内容を読み出してPrettierの出力と比較する。手動での検査は
+`bash scripts/repository/markdown-format.sh`、整形は末尾に`--fix`を付ける。
+
+vendored skillはupstreamの書式を維持するため対象外とする。
+
 ## Docker
 
 composeは `find_docker_compose` で探索し、`dc` / `dcl` / `dcu` / `dcd` のfish略語を使う。

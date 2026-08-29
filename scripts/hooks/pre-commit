@@ -2,9 +2,10 @@
 # ステージ済みの内容を commit の手前で検査する。
 #   secret-scan.sh --staged  社内固有情報が混ざっていないか
 #   doc-budget.sh  --staged  文書の行数予算を超えていないか
+#   markdown-format.sh       stage済みMarkdownがPrettier整形済みか
 #   ref-check.sh             scripts/ 配下への参照が壊れていないか
 #
-# ロジックはどちらも scripts/ 側にある（lint とテストの対象にするため。
+# ロジックは scripts/ 側にある（lint とテストの対象にするため。
 # git hook はファイル名が固定で .sh を付けられず、scripts/repository/lint.sh の対象から外れる）。
 #
 # **片方が落ちてももう片方を走らせる。** 無関係な検査なので、1回の commit で
@@ -16,6 +17,7 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rc=0
 bash "$HOOK_DIR/../repository/secret-scan.sh" --staged || rc=1
 bash "$HOOK_DIR/../repository/doc-budget.sh" --staged || rc=1
+bash "$HOOK_DIR/../repository/markdown-format.sh" --staged || rc=1
 # ref-check は --staged を持たない。参照元と参照先の**両方**が作業ツリーに
 # 揃っていないと判定できず、index だけを見ると「片方だけ commit する」
 # 通常の操作で誤検知するため。実測 0.5秒なので毎回作業ツリーを見る。

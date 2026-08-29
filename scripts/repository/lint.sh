@@ -1,15 +1,15 @@
 #!/bin/bash
 # リポジトリが追跡しているシェルスクリプトを検査する。
 #   *.sh   : shellcheck + shfmt
-#   *.md   : rumdl
+#   *.md   : rumdl + Prettier
 #   *.lua  : stylua + LuaLS CLI
 #   *.fish : fish -n + fish_indent
 #   *.yml  : YAML としてパースできるか（整形はしない）
 #
 #   bash scripts/repository/lint.sh        # 検査のみ（CIと同じ）
-#   bash scripts/repository/lint.sh --fix  # shfmt の整形を実際に適用
+#   bash scripts/repository/lint.sh --fix  # shfmtなどの整形を実際に適用
 #
-# 依存: shellcheck / shfmt / rumdl / stylua / lua-language-server（miseで管理）、fish
+# 依存: shellcheck / shfmt / rumdl / prettier / stylua / lua-language-server（miseで管理）、fish
 #
 # 環境変数:
 #   LINT_REPO_ROOT  検査するリポジトリのルート（テストで差し替える）
@@ -83,6 +83,13 @@ if [ "${#markdown_files[@]}" -eq 0 ]; then
   echo "検査対象の .md が無い"
 elif ! rumdl check --config "$REPO_ROOT/.rumdl.toml" "${markdown_files[@]}"; then
   rc=1
+fi
+
+echo "=== prettier ==="
+if [ "$FIX" -eq 1 ]; then
+  MARKDOWN_FORMAT_REPO_ROOT="$REPO_ROOT" bash "$SCRIPT_DIR/markdown-format.sh" --fix || rc=1
+else
+  MARKDOWN_FORMAT_REPO_ROOT="$REPO_ROOT" bash "$SCRIPT_DIR/markdown-format.sh" || rc=1
 fi
 
 mapfile -t lua_files < <(

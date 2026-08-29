@@ -14,6 +14,8 @@ on:
       # 参照は散文側にもあるので、.md だけの変更でも ref-check を走らせる
       - "**.md"
       - ".rumdl.toml"
+      - ".prettierrc.json"
+      - ".prettierignore"
       - "**.lua"
       - ".config/nvim/.luarc.json"
       - "**.go"
@@ -26,6 +28,8 @@ on:
       - ".github/workflows/lint.yml"
       - "**.md"
       - ".rumdl.toml"
+      - ".prettierrc.json"
+      - ".prettierignore"
       - "**.lua"
       - ".config/nvim/.luarc.json"
       - "**.go"
@@ -58,6 +62,7 @@ jobs:
             "aqua:koalaman/shellcheck" = "0.11.0"
             "aqua:mvdan/sh" = "3.13.1"
             "aqua:rvben/rumdl" = "0.2.58"
+            "npm:prettier" = "3.9.6"
             "aqua:JohnnyMorganz/StyLua" = "2.5.2"
             "aqua:LuaLS/lua-language-server" = "3.19.1"
             # run-tests.sh が go test ./... も走らせるため。go が無い環境では
@@ -69,6 +74,7 @@ jobs:
           shellcheck --version | grep version
           shfmt --version
           rumdl --version
+          prettier --version
           stylua --version
           lua-language-server --version
           go version
