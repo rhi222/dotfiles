@@ -10,12 +10,12 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 
 3層に分かれていて、層をまたぐ責務は持たせていない。
 
-| 何を | 誰が | どこに保存されるか |
-| --- | --- | --- |
-| レイアウト / タブ名 / ペイン label / cwd | herdr 本体 | `~/.config/herdr/session.json` |
-| Claude / Codex のプロセスと会話 | Herdr native agent restore | Herdr session snapshot |
-| nvim のプロセス | `scripts/session/herdr-restore.sh` | `~/.local/state/herdr-nvim/<owner>.json` |
-| nvim のバッファ・カーソル位置 | auto-session | `~/.local/share/nvim/sessions/` |
+| 何を                                     | 誰が                               | どこに保存されるか                       |
+| ---------------------------------------- | ---------------------------------- | ---------------------------------------- |
+| レイアウト / タブ名 / ペイン label / cwd | herdr 本体                         | `~/.config/herdr/session.json`           |
+| Claude / Codex のプロセスと会話          | Herdr native agent restore         | Herdr session snapshot                   |
+| nvim のプロセス                          | `scripts/session/herdr-restore.sh` | `~/.local/state/herdr-nvim/<owner>.json` |
+| nvim のバッファ・カーソル位置            | auto-session                       | `~/.local/share/nvim/sessions/`          |
 
 **Herdr は任意の前面プロセスを保存しない。** ただし公式 integration が session identity を報告した AI agent は、Herdr 本体が復元コマンドを組み立てられる。Claude / Codex はこちらに任せ、native restore の無い nvim だけマーカーを使う。
 
@@ -23,9 +23,9 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 
 「復元する側がプロセスを検出する」のではなく、**各プロセスが自分で足跡を残す**。
 
-| プロセス | マーカー | 中身 | 書く場所 |
-| --- | --- | --- | --- |
-| nvim | `~/.local/state/herdr-nvim/<owner>.json` | pane、Herdr socket、cwd、起動種別・引数、session tag | `.config/nvim/lua/my/settings/herdr-registry.lua` |
+| プロセス | マーカー                                 | 中身                                                 | 書く場所                                          |
+| -------- | ---------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| nvim     | `~/.local/state/herdr-nvim/<owner>.json` | pane、Herdr socket、cwd、起動種別・引数、session tag | `.config/nvim/lua/my/settings/herdr-registry.lua` |
 
 - **1プロセス=1ファイル。** 同じペインで複数のnvimが動いても、片方の正常終了がもう片方の記録を消さない。復元時はペインごとに最新のownerだけを選ぶ
 - **正常終了では自分のマーカーだけを消す。** `VimLeavePre` で `v:dying == 0` のときだけ削除する
@@ -65,9 +65,9 @@ Claude と Codex の `SessionStart` hook は `pane report-agent-session` で ses
 
 **nvim の同時投入数と間隔を絞る。**
 
-| 種別 | 同時投入数 | 間隔 | 環境変数 |
-| --- | --- | --- | --- |
-| nvim | 3 | 2秒 | `HERDR_RESTORE_NVIM_{BATCH,INTERVAL}` |
+| 種別 | 同時投入数 | 間隔 | 環境変数                              |
+| ---- | ---------- | ---- | ------------------------------------- |
+| nvim | 3          | 2秒  | `HERDR_RESTORE_NVIM_{BATCH,INTERVAL}` |
 
 独自 wrapper の投入はフォーカス中の workspace を先にし、同一グループ内はペイン ID の辞書順にする。AI agent は Herdr 本体が attach 後に復元する。native restore には投入間隔の調整項目がないため、負荷制御より取りこぼし防止を優先した選択である。
 
@@ -110,12 +110,12 @@ nvim は `nil` を返して従来どおり cwd 単位になる。
 **フォールバックは引数なしの起動だけで働く。** auto-session の `no_restore` フックは「タグ付きが
 無かった」以外の理由でも発火するため、絞らないと事故る。
 
-| 起動 | auto-session の判断 | `no_restore` | フォールバックさせるか |
-| --- | --- | --- | --- |
-| `nvim` | 復元する | 発火する | **する** |
-| `nvim somefile` | `args_allow_files_auto_save = false` により復元しない | 発火する | しない |
-| `nvim --headless "+Lazy! sync"` | 復元しない | 発火する | しない |
-| `git diff \| nvim -`（pager） | 復元しない | 発火する | しない |
+| 起動                            | auto-session の判断                                   | `no_restore` | フォールバックさせるか |
+| ------------------------------- | ----------------------------------------------------- | ------------ | ---------------------- |
+| `nvim`                          | 復元する                                              | 発火する     | **する**               |
+| `nvim somefile`                 | `args_allow_files_auto_save = false` により復元しない | 発火する     | しない                 |
+| `nvim --headless "+Lazy! sync"` | 復元しない                                            | 発火する     | しない                 |
+| `git diff \| nvim -`（pager）   | 復元しない                                            | 発火する     | しない                 |
 
 絞らなかったときは実際に事故が起きている。`nvim somefile` で開こうとしたファイルが、セッションの
 内容に置き換わった。

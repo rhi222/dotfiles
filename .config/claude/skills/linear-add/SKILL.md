@@ -59,12 +59,12 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
   fields: ["summary", "duedate", "status", "description", "priority"]
   ```
 
-  | Jiraの項目 | Linearへの反映先 |
-  | --- | --- |
-  | `summary` | タイトル（`{summary} [KEY]`）。ただし後述の但し書きあり |
-  | `duedate` | `dueDate`（型は `TimelessDate!`。`YYYY-MM-DD` 文字列） |
+  | Jiraの項目                   | Linearへの反映先                                                 |
+  | ---------------------------- | ---------------------------------------------------------------- |
+  | `summary`                    | タイトル（`{summary} [KEY]`）。ただし後述の但し書きあり          |
+  | `duedate`                    | `dueDate`（型は `TimelessDate!`。`YYYY-MM-DD` 文字列）           |
   | `description` の「完了条件」 | 本文の `完了条件:`。開発系プロジェクトは明記されていることが多い |
-  | `status` | Linearのstateは自分の作業状態なので**同期しない**。参考程度 |
+  | `status`                     | Linearのstateは自分の作業状態なので**同期しない**。参考程度      |
 
   **`duedate` は null のことが多い。** null なら `dueDate` を設定しない（勝手に日付を作らない）。
 
@@ -76,6 +76,7 @@ URLが渡されたら読み取って情報を補う（読み取りのみ）。
 
   この経路は**対話セッション限定**（cronのheadless実行ではMCP認証が使えない）。
   自動同期が要るならJira APIトークンが別途必要になる。
+
 - **Slack / esa URL** → そのまま元URLとして持つ
 
 材料が揃ったら、**起票する前に重複を確認する**。スイープの重複判定はURL一致なので、
@@ -119,10 +120,10 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 
 **子issueにするのは「dispatch対象になる工程」だけ。それ以外はチェックボックスで書く。**
 
-| 工程 | 表現 | 理由 |
-| --- | --- | --- |
-| 実装（PRを伴う） | **子issue** | 夜間dispatchは子issueを対象に動く（`repo:` 行・PR URLを持つのは子） |
-| レビュー依頼・社内連絡・リリース | **親本文のチェックボックス** | APIで状態遷移させる必要がなく、issue数を無駄に消費しない |
+| 工程                             | 表現                         | 理由                                                                |
+| -------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| 実装（PRを伴う）                 | **子issue**                  | 夜間dispatchは子issueを対象に動く（`repo:` 行・PR URLを持つのは子） |
+| レビュー依頼・社内連絡・リリース | **親本文のチェックボックス** | APIで状態遷移させる必要がなく、issue数を無駄に消費しない            |
 
 チェックボックスはAPIから個別に状態遷移できないため、dispatchに渡す工程は子issueでなければならない。
 逆に人間が手でやるだけの工程は、子issueにする理由がない。
@@ -133,9 +134,9 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 
 **子issueのタイトルはprefixで dispatchモードを表す。判定は「draft PRが既に存在するか」の1点。**
 
-| 子issueの状況               | prefix                     | 本文             | dispatchモード |
-| --------------------------- | -------------------------- | ---------------- | -------------- |
-| draft PRが既にある          | `draft仕上げ: <PRタイトル>` | `元URL: <PR URL>` | 継続           |
+| 子issueの状況                | prefix                      | 本文              | dispatchモード |
+| ---------------------------- | --------------------------- | ----------------- | -------------- |
+| draft PRが既にある           | `draft仕上げ: <PRタイトル>` | `元URL: <PR URL>` | 継続           |
 | PRはまだ無い（これから作る） | `実装: <やること>`          | `repo:` 行        | 新規           |
 
 **`draft仕上げ:` はPRが実在するものにだけ付ける。** この名前は `linear-sweep.sh` が
@@ -165,16 +166,16 @@ linear_gql '{ projects(first: 50) { nodes { id name state } } }'
 
 2軸は直交する。`role:player + em:tech`（自分で実装した）と `role:manager + em:tech`（技術方針を決めた）を区別する。
 
-| group | label                                                               | 意味                                                                  |
-| ----- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| role  | `role:player`                                                       | 自分が手を動かす                                                      |
-| role  | `role:manager`                                                      | 人を動かす・決める                                                    |
-| em    | `em:people`                                                         | 人・採用・育成・評価・体制                                            |
-| em    | `em:tech`                                                           | 技術方針・設計・実装・基盤・品質                                      |
-| em    | `em:project`                                                        | 進行・段取り・リスク・調整                                            |
-| em    | `em:product`                                                        | 何を作るか・仕様・ドメイン・価値                                      |
-| src   | `src:github` / `src:jira` / `src:slack` / `src:esa` / `src:todoist` | 流入元（該当すれば付ける）                                            |
-| ai    | `ai:blocked-human`                                                  | 人間の判断・調整が必要                                                |
+| group | label                                                               | 意味                             |
+| ----- | ------------------------------------------------------------------- | -------------------------------- |
+| role  | `role:player`                                                       | 自分が手を動かす                 |
+| role  | `role:manager`                                                      | 人を動かす・決める               |
+| em    | `em:people`                                                         | 人・採用・育成・評価・体制       |
+| em    | `em:tech`                                                           | 技術方針・設計・実装・基盤・品質 |
+| em    | `em:project`                                                        | 進行・段取り・リスク・調整       |
+| em    | `em:product`                                                        | 何を作るか・仕様・ドメイン・価値 |
+| src   | `src:github` / `src:jira` / `src:slack` / `src:esa` / `src:todoist` | 流入元（該当すれば付ける）       |
+| ai    | `ai:blocked-human`                                                  | 人間の判断・調整が必要           |
 
 draft PRの仕上げは常に `role:player` + `em:tech`。
 

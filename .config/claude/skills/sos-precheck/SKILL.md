@@ -26,23 +26,23 @@ cwd 相対では書かない（どのリポジトリで作業中でも呼べる�
 
 返るのは設定の並び順どおりのJSON配列。1件は次の形。
 
-| キー | 意味 |
-| --- | --- |
-| `post_number` | esa記事番号。週次議事録が未作成の週だけ `null` |
-| `label` | 領域名（検索 / 予約 など） |
-| `owner` / `slack_id` | 未更新のときにメンションする相手 |
-| `updated` | 前回SoS以降にリビジョンが増えたか |
-| `from_rev` / `head_rev` | 判定に使ったリビジョン番号 |
-| `url` | スレに貼るURL（後述の3種を出し分け済み） |
-| `mention` | この記事でメンションすべきか |
+| キー                    | 意味                                           |
+| ----------------------- | ---------------------------------------------- |
+| `post_number`           | esa記事番号。週次議事録が未作成の週だけ `null` |
+| `label`                 | 領域名（検索 / 予約 など）                     |
+| `owner` / `slack_id`    | 未更新のときにメンションする相手               |
+| `updated`               | 前回SoS以降にリビジョンが増えたか              |
+| `from_rev` / `head_rev` | 判定に使ったリビジョン番号                     |
+| `url`                   | スレに貼るURL（後述の3種を出し分け済み）       |
+| `mention`               | この記事でメンションすべきか                   |
 
 **URLの出し分けはスクリプト側で閉じている。** 手で組み立て直さないこと。
 
-| 状態 | URL |
-| --- | --- |
-| 更新あり | `.../posts/N/revisions/compare/<from>...head/html_diff` |
-| 更新なし | `.../posts/N/revisions` |
-| `link_style: plain` の記事 | `.../posts/N` |
+| 状態                       | URL                                                     |
+| -------------------------- | ------------------------------------------------------- |
+| 更新あり                   | `.../posts/N/revisions/compare/<from>...head/html_diff` |
+| 更新なし                   | `.../posts/N/revisions`                                 |
+| `link_style: plain` の記事 | `.../posts/N`                                           |
 
 TOを `head` で固定しているのは、投稿してから定例までの間に追記されてもURLを貼り直さずに
 最新差分が出るため。
@@ -59,7 +59,9 @@ TOを `head` で固定しているのは、投稿してから定例までの間�
 ```
 --- YYYY/MM/DD ---
 ```
+
 <url を設定の並び順で1行ずつ>
+
 ```
 @owner @owner esaの更新お願いします。
 ```
@@ -88,10 +90,10 @@ TOを `head` で固定しているのは、投稿してから定例までの間�
 
 草稿の後に、確認用の表を出す。
 
-| 領域 | 判定 | rev | メンション |
-| --- | --- | --- | --- |
-| 検索 | 更新あり | 172 → 178 | — |
-| 予約 | 未更新 | 176 → 176 | @owner |
+| 領域 | 判定     | rev       | メンション |
+| ---- | -------- | --------- | ---------- |
+| 検索 | 更新あり | 172 → 178 | —          |
+| 予約 | 未更新   | 176 → 176 | @owner     |
 
 **これを出すのは、誤メンションにその場で気づけるようにするため。** 草稿だけ見せると
 「なぜこの人が入っているのか」が確認できず、送ってから気づくことになる。
@@ -104,10 +106,25 @@ TOを `head` で固定しているのは、投稿してから定例までの間�
 {
   "team": "<esa team>",
   "posts": [
-    { "post_number": 0, "label": "領域名", "owner": "screen_name", "slack_id": "U..." },
-    { "post_number": 0, "label": "メンション不要な記事", "mention": false, "link_style": "plain" },
-    { "dynamic": "weekly_minutes", "label": "週次議事録",
-      "category": "<esaのカテゴリ>", "mention": false, "link_style": "plain" }
+    {
+      "post_number": 0,
+      "label": "領域名",
+      "owner": "screen_name",
+      "slack_id": "U..."
+    },
+    {
+      "post_number": 0,
+      "label": "メンション不要な記事",
+      "mention": false,
+      "link_style": "plain"
+    },
+    {
+      "dynamic": "weekly_minutes",
+      "label": "週次議事録",
+      "category": "<esaのカテゴリ>",
+      "mention": false,
+      "link_style": "plain"
+    }
   ]
 }
 ```

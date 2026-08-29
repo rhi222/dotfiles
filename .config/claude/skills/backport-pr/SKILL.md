@@ -37,12 +37,12 @@ gh pr view <元PR> --json number,title,body,baseRefName,headRefName,state,merged
 
 見るのは次の4つ。
 
-| 項目 | 何に使うか |
-| --- | --- |
-| `baseRefName` | 移植元。移植先と同じなら誤りなので止める |
+| 項目                 | 何に使うか                                               |
+| -------------------- | -------------------------------------------------------- |
+| `baseRefName`        | 移植元。移植先と同じなら誤りなので止める                 |
 | `state` / `mergedAt` | マージ済みかどうかで、持っていくコミットの取り方が変わる |
-| `mergeCommit` | squash mergeされていれば、この1コミットが変更の全体 |
-| `commits` | 未マージなら、この一覧を順に持っていく |
+| `mergeCommit`        | squash mergeされていれば、この1コミットが変更の全体      |
+| `commits`            | 未マージなら、この一覧を順に持っていく                   |
 
 ### 2. 移植先ブランチの実在を確認する
 

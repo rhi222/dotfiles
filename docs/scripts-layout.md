@@ -70,7 +70,7 @@ Goの細かな分岐はpackage内のunit test、Shell内部APIと公開wrapper�
 | feature          | 中身                                                      |
 | ---------------- | --------------------------------------------------------- |
 | `repository/`    | lint / secret-scan / doc-budget / ref-check / test runner |
-| `bootstrap/`     | `scripts/setup/bootstrap.sh`                                    |
+| `bootstrap/`     | `scripts/setup/bootstrap.sh`                              |
 | `link/`          | `dotfilesLink.sh`                                         |
 | `setup/`         | tool・pluginの導入                                        |
 | `update/`        | 日次更新                                                  |
@@ -128,7 +128,7 @@ CI で動かせないものはテストファイル側の `# ci-skip:` で宣言
 
 ## 関連する設計記録
 
-| 対象 | 文書 |
-| ---- | ---- |
+| 対象                             | 文書                                                 |
+| -------------------------------- | ---------------------------------------------------- |
 | 公開スクリプトの引数と呼び出し元 | [scripts-command-index.md](scripts-command-index.md) |
-| Go移植の評価とShellに残すAPI | [scripts-go-migration.md](scripts-go-migration.md) |
+| Go移植の評価とShellに残すAPI     | [scripts-go-migration.md](scripts-go-migration.md)   |

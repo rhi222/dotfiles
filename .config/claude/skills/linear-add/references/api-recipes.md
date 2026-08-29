@@ -7,12 +7,12 @@ GraphQLをその場で手書きしない（引数の渡し方やinputの形を�
 
 `linear-api.sh` に含まれる。snippet内で使う。
 
-| 関数 | 返すもの |
-| --- | --- |
-| `linear_config '.team_id'` | チームID |
-| `linear_state_id "<state名>"` | workflow stateのID |
-| `linear_label_id "<label名>"` | ラベルID |
-| `linear_viewer_id` | 認証ユーザー（自分）のID |
+| 関数                          | 返すもの                 |
+| ----------------------------- | ------------------------ |
+| `linear_config '.team_id'`    | チームID                 |
+| `linear_state_id "<state名>"` | workflow stateのID       |
+| `linear_label_id "<label名>"` | ラベルID                 |
+| `linear_viewer_id`            | 認証ユーザー（自分）のID |
 
 ## issueCreate（Project・親子・複数ラベルを一度に設定）
 

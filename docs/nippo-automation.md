@@ -4,11 +4,11 @@
 
 日報は `~/Obsidian/02_Daily/` 以下に置く。
 
-| パス | 内容 |
-| ---- | ---- |
-| `daily/YYYY/MM/nippo.YYYY-MM-DD.md` | 日次 |
+| パス                                   | 内容 |
+| -------------------------------------- | ---- |
+| `daily/YYYY/MM/nippo.YYYY-MM-DD.md`    | 日次 |
 | `weekly/YYYY/nippo-weekly.YYYY-Wnn.md` | 週次 |
-| `config/nippo-goals.md` | 目標 |
+| `config/nippo-goals.md`                | 目標 |
 
 **skill、script、testはパスを直接組み立てず、`scripts/lib/nippo-paths.sh` を使う。**
 `NIPPO_DIR` が `NIPPO_VAULT` より優先され、既定値は関数の呼び出し時に評価する。
@@ -23,12 +23,12 @@ cronの `--allowedTools` はskill frontmatterとは別管理なので、ライ�
 
 ## 自動化一覧
 
-| 時刻 | 入口 | enable file | 役割 |
-| ---- | ---- | ----------- | ---- |
-| 平日8:00 | `scripts/nippo/create-cron.sh` | `~/.config/nippo-create-enabled` | 当日日報を作成 |
-| 平日9〜19時の奇数時 | `scripts/nippo/notify-cron.sh` | `~/.config/nippo-notify-enabled` | 日報状態を通知 |
-| 平日18:30 | `scripts/nippo/draft-cron.sh` | `~/.config/nippo-draft-enabled` | 日報ドラフトを仕上げる |
-| 金曜16:00 | `scripts/nippo/esa-weekly-cron.sh` | `~/.config/esa-weekly-enabled` | esa週次レポートを作る |
+| 時刻                | 入口                               | enable file                      | 役割                   |
+| ------------------- | ---------------------------------- | -------------------------------- | ---------------------- |
+| 平日8:00            | `scripts/nippo/create-cron.sh`     | `~/.config/nippo-create-enabled` | 当日日報を作成         |
+| 平日9〜19時の奇数時 | `scripts/nippo/notify-cron.sh`     | `~/.config/nippo-notify-enabled` | 日報状態を通知         |
+| 平日18:30           | `scripts/nippo/draft-cron.sh`      | `~/.config/nippo-draft-enabled`  | 日報ドラフトを仕上げる |
+| 金曜16:00           | `scripts/nippo/esa-weekly-cron.sh` | `~/.config/esa-weekly-enabled`   | esa週次レポートを作る  |
 
 有効化前にdry-runまたは手動実行し、生成物を確認してからcrontabへ登録する。完全なcrontab例と
 新環境への移植手順は [bootstrap.md](bootstrap.md) に置く。

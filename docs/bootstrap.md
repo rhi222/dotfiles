@@ -131,13 +131,13 @@ rm -f ~/.cache/mise-activate.fish ~/.cache/git-wt-init.fish
 自動生成する。ただし、生成されるファイルの値は空なので、手順2で中身を埋める。
 import 済みなら実体が既にあるので、雛形生成はスキップされる。
 
-| ファイル                                 | 生成処理              | 埋める内容                                                        |
-| ---------------------------------------- | --------------------- | ----------------------------------------------------------------- |
+| ファイル                                 | 生成処理               | 埋める内容                                                        |
+| ---------------------------------------- | ---------------------- | ----------------------------------------------------------------- |
 | `~/.config/dotfiles/secret-patterns.txt` | `init_secret_patterns` | 社内固有の語。空のままだと機密語検出 hook が機能しない            |
 | `~/.claude/local-context.md`             | `init_local_configs`   | Jira cloudId、プロジェクトキー、GitLab ホスト、esa チーム名、略号 |
 | `.config/nvim/lua/my/local_config.lua`   | `init_local_configs`   | HTTPS 非対応ホスト                                                |
 | `~/.config/psql/psqlrc.local`            | `init_local_configs`   | psql の環境判定。案件固有のDB名・DBユーザー名・ポート番号         |
-| `.config/codex/config.toml`              | `init_codex_config`    | 既存live設定をadopt。無ければCodexの既定設定                       |
+| `.config/codex/config.toml`              | `init_codex_config`    | 既存live設定をadopt。無ければCodexの既定設定                      |
 
 ## 2. ローカル設定と機密ファイルを用意する
 
@@ -257,7 +257,7 @@ tar xzf claude-memory.tar.gz -C ~
   — HTTPS 非対応ホスト
 - `~/.config/psql/psqlrc.local`
   — psql の prod/stg 判定。案件固有の DB 名・DB ユーザー名・トンネルのポート番号。
-    埋めないと汎用の命名規約（`*_prod` / `*_stg`）による判定だけになる
+  埋めないと汎用の命名規約（`*_prod` / `*_stg`）による判定だけになる
 
 手書きするもの：
 

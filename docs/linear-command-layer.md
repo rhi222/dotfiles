@@ -42,8 +42,8 @@
 この文書は共通の入口と安全境界だけを扱う。
 変更対象に応じて、次の設計記録を読む。
 
-| 対象 | 文書 |
-| ---- | ---- |
-| state、Cycle、estimate、Project、親子issue | [linear-state-and-planning.md](linear-state-and-planning.md) |
-| Slack・draft PRからの起票、重複排除、recall | [linear-intake.md](linear-intake.md) |
-| AI夜間dispatch、worktree、push、PR作成 | [linear-dispatch.md](linear-dispatch.md) |
+| 対象                                        | 文書                                                         |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| state、Cycle、estimate、Project、親子issue  | [linear-state-and-planning.md](linear-state-and-planning.md) |
+| Slack・draft PRからの起票、重複排除、recall | [linear-intake.md](linear-intake.md)                         |
+| AI夜間dispatch、worktree、push、PR作成      | [linear-dispatch.md](linear-dispatch.md)                     |

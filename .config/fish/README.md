@@ -70,10 +70,10 @@
 
 Ctrl+R は担当が変わると読む設定変数まで変わるのが厄介で、
 
-| 担当                              | 効く変数           | 履歴行の形            |
-| --------------------------------- | ------------------ | --------------------- |
-| fzf.fish `_fzf_search_history`    | `fzf_history_opts` | `MM-DD HH:MM:SS │ cmd` |
-| fzf 標準 `fzf-history-widget`     | `FZF_CTRL_R_OPTS`  | タブ区切り3列         |
+| 担当                           | 効く変数           | 履歴行の形             |
+| ------------------------------ | ------------------ | ---------------------- |
+| fzf.fish `_fzf_search_history` | `fzf_history_opts` | `MM-DD HH:MM:SS │ cmd` |
+| fzf 標準 `fzf-history-widget`  | `FZF_CTRL_R_OPTS`  | タブ区切り3列          |
 
 片方に寄せた設定はもう片方では丸ごと無効になる。そのため「一覧の時刻列を消す」修正が
 端末をまたぐたび元に戻っていた（実際に2回往復している）。

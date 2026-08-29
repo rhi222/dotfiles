@@ -28,10 +28,10 @@ curl -sf \
 
 ## URL体系
 
-| 用途 | URL |
-|------|-----|
+| 用途      | URL                                       |
+| --------- | ----------------------------------------- |
 | APIベース | `https://api.esa.io/v1/teams/${ESA_TEAM}` |
-| Webベース | `https://${ESA_TEAM}.esa.io` |
+| Webベース | `https://${ESA_TEAM}.esa.io`              |
 
 ## 主要エンドポイント
 
@@ -64,6 +64,7 @@ curl -sf \
 レスポンス: `{ "revisions": [...], "total_count": N, "next_page": N|null }`
 
 各リビジョン:
+
 ```json
 {
   "number": 25,

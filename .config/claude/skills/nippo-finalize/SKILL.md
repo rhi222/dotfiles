@@ -50,12 +50,12 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
    - 「## 今日の作業サマリ（Linear）」セクションとして日報に追記する。内容は以下:
 
-     | 項目 | 出し方 |
-     | --- | --- |
-     | 完了 | `state.type == "completed"` のissue。identifier＋タイトル |
-     | 進行中 | `In Progress` / `AI Running` のissue |
-     | My Review待ち | `My Review` のissue（＝翌朝の判断対象） |
-     | 職能の配分 | `em:*` ラベルを集計して件数を並べる |
+     | 項目          | 出し方                                                    |
+     | ------------- | --------------------------------------------------------- |
+     | 完了          | `state.type == "completed"` のissue。identifier＋タイトル |
+     | 進行中        | `In Progress` / `AI Running` のissue                      |
+     | My Review待ち | `My Review` のissue（＝翌朝の判断対象）                   |
+     | 職能の配分    | `em:*` ラベルを集計して件数を並べる                       |
 
    - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない
    - GitHub活動（Phase 3）と重複して見えることがあるが、**視点が違うので両方残す**。

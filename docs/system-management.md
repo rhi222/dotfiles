@@ -8,12 +8,12 @@ AGENTS.md から分離した、端末固有設定の同期と各種ツール管�
 gitignore しているローカル設定・機密ファイルの実体は
 `~/.local/share/dotfiles-private/` に集約し、`dotfilesLink.sh` が各所へ symlink を張る。
 
-| 操作 | コマンド |
-| ---- | -------- |
+| 操作           | コマンド                                                  |
+| -------------- | --------------------------------------------------------- |
 | 旧環境から集約 | `bash scripts/settings/private-bundle.sh adopt --execute` |
-| export | `bash scripts/settings/private-bundle.sh export` |
-| import | `bash scripts/settings/private-bundle.sh import <zip>` |
-| 状態確認 | `bash scripts/settings/private-bundle.sh status` |
+| export         | `bash scripts/settings/private-bundle.sh export`          |
+| import         | `bash scripts/settings/private-bundle.sh import <zip>`    |
+| 状態確認       | `bash scripts/settings/private-bundle.sh status`          |
 
 設計上の不変条件:
 
@@ -36,11 +36,11 @@ gitがignoreしているものだけを拾う。`~/.claude/settings.json` と
 
 ### Claude Code settings.json
 
-| 操作 | コマンド |
-| ---- | -------- |
-| 差分確認 | `bash scripts/settings/sync-claude.sh status` |
-| 実ファイル → repo | `bash scripts/settings/sync-claude.sh pull` |
-| repo → 実ファイル | `bash scripts/settings/sync-claude.sh push` |
+| 操作              | コマンド                                      |
+| ----------------- | --------------------------------------------- |
+| 差分確認          | `bash scripts/settings/sync-claude.sh status` |
+| 実ファイル → repo | `bash scripts/settings/sync-claude.sh pull`   |
+| repo → 実ファイル | `bash scripts/settings/sync-claude.sh push`   |
 
 - 保存時に `jq -S` で正規化する
 - 両側に差分がある `push` は拒否し、明示的な `--force` だけ上書きを許す
@@ -54,9 +54,9 @@ Codexの `config.toml` はsymlinkせず、`bash scripts/settings/sync-codex.sh` 
 
 ### Windows設定
 
-| repo | Windows側 |
-| ---- | --------- |
-| `.config/wsl/.wslconfig` | `%USERPROFILE%\.wslconfig` |
+| repo                                     | Windows側                             |
+| ---------------------------------------- | ------------------------------------- |
+| `.config/wsl/.wslconfig`                 | `%USERPROFILE%\.wslconfig`            |
 | `.config/windows-terminal/settings.json` | Terminalの `LocalState/settings.json` |
 
 操作は `scripts/settings/sync-windows.sh status|pull|push [wslconfig|terminal]`。
@@ -107,12 +107,12 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 
 ## パッケージとプラグイン
 
-| 対象 | 宣言 | 追加・reconcile | 更新 |
-| ---- | ---- | --------------- | ---- |
-| apt | `scripts/setup/apt-packages.txt` | `bash scripts/setup/apt.sh` | daily-update |
-| gh extension | `scripts/setup/gh-extensions.txt` | `bash scripts/setup/gh-extensions.sh` | daily-update |
-| fish | `.config/fish/fish_plugins` | `bash scripts/setup/fish-plugins.sh` | daily-update |
-| yazi | `.config/yazi/package.toml` | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` | daily-update |
+| 対象         | 宣言                              | 追加・reconcile                                     | 更新         |
+| ------------ | --------------------------------- | --------------------------------------------------- | ------------ |
+| apt          | `scripts/setup/apt-packages.txt`  | `bash scripts/setup/apt.sh`                         | daily-update |
+| gh extension | `scripts/setup/gh-extensions.txt` | `bash scripts/setup/gh-extensions.sh`               | daily-update |
+| fish         | `.config/fish/fish_plugins`       | `bash scripts/setup/fish-plugins.sh`                | daily-update |
+| yazi         | `.config/yazi/package.toml`       | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` | daily-update |
 
 gh extensionは `owner/repo[@version]` 形式で、version指定はpinになる。
 

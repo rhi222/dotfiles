@@ -5,12 +5,12 @@ Claude CodeとCodexで使うskillの配置、信頼境界、vendoringの詳細�
 
 ## 配置と配布
 
-| 正本 | 用途 | 配布先 |
-| ---- | ---- | ------ |
-| `.config/agents/skills/<name>/` | 自作・共用 | `~/.claude/skills` と `~/.agents/skills` |
-| `.config/claude/skills/<name>/` | Claude専用 | `~/.claude/skills` |
-| `.config/codex/skills/<name>/` | Codex専用 | `~/.agents/skills` |
-| `.config/agents/skills-vendor/<name>/` | review済み外部・共用 | 両方 |
+| 正本                                   | 用途                 | 配布先                                   |
+| -------------------------------------- | -------------------- | ---------------------------------------- |
+| `.config/agents/skills/<name>/`        | 自作・共用           | `~/.claude/skills` と `~/.agents/skills` |
+| `.config/claude/skills/<name>/`        | Claude専用           | `~/.claude/skills`                       |
+| `.config/codex/skills/<name>/`         | Codex専用            | `~/.agents/skills`                       |
+| `.config/agents/skills-vendor/<name>/` | review済み外部・共用 | 両方                                     |
 
 正本はskill単位でsymlinkし、読み込み口全体はリンクしない。外部skillの実ディレクトリと共存し、
 リンク切れだけをreconcile時に削除する。同名skillが複数の正本にあれば、リンク順で有効な内容が

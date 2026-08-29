@@ -41,19 +41,19 @@ http://<host>/<group>/<project>/-/<type>/<rest>
 
 `REPO="-R <host>/<group>/<project>"`、`glab api` は `GITLAB_HOST=<host>` 前提。
 
-| URL パターン | コマンド |
-|---|---|
-| `/-/issues/<n>` | `glab issue view <n> $REPO`（`--comments` でコメントも） |
-| `/-/merge_requests/<n>` | `glab mr view <n> $REPO`（`--comments` でコメントも） |
-| `/-/merge_requests/<n>/diffs` | `glab mr diff <n> $REPO` |
-| `/-/blob/<ref>/<file>` | `glab api "projects/<enc>/repository/files/<enc_file>/raw?ref=<ref>"`（`<enc_file>` もパス全体をエンコード） |
-| `/-/tree/<ref>/<dir>` | `glab api "projects/<enc>/repository/tree?ref=<ref>&path=<dir>&per_page=100"` |
-| `/-/commit/<sha>` | `glab api "projects/<enc>/repository/commits/<sha>"`（差分は `.../commits/<sha>/diff`） |
-| `/-/pipelines/<n>` | `glab api "projects/<enc>/pipelines/<n>"`（ジョブ一覧は `.../pipelines/<n>/jobs`） |
-| `/-/jobs/<n>` | `glab api "projects/<enc>/jobs/<n>/trace"`（ログ取得） |
-| リポジトリルート | `glab repo view $REPO` |
-| issue 一覧 `/-/issues` | `glab issue list $REPO` |
-| MR 一覧 `/-/merge_requests` | `glab mr list $REPO` |
+| URL パターン                  | コマンド                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `/-/issues/<n>`               | `glab issue view <n> $REPO`（`--comments` でコメントも）                                                     |
+| `/-/merge_requests/<n>`       | `glab mr view <n> $REPO`（`--comments` でコメントも）                                                        |
+| `/-/merge_requests/<n>/diffs` | `glab mr diff <n> $REPO`                                                                                     |
+| `/-/blob/<ref>/<file>`        | `glab api "projects/<enc>/repository/files/<enc_file>/raw?ref=<ref>"`（`<enc_file>` もパス全体をエンコード） |
+| `/-/tree/<ref>/<dir>`         | `glab api "projects/<enc>/repository/tree?ref=<ref>&path=<dir>&per_page=100"`                                |
+| `/-/commit/<sha>`             | `glab api "projects/<enc>/repository/commits/<sha>"`（差分は `.../commits/<sha>/diff`）                      |
+| `/-/pipelines/<n>`            | `glab api "projects/<enc>/pipelines/<n>"`（ジョブ一覧は `.../pipelines/<n>/jobs`）                           |
+| `/-/jobs/<n>`                 | `glab api "projects/<enc>/jobs/<n>/trace"`（ログ取得）                                                       |
+| リポジトリルート              | `glab repo view $REPO`                                                                                       |
+| issue 一覧 `/-/issues`        | `glab issue list $REPO`                                                                                      |
+| MR 一覧 `/-/merge_requests`   | `glab mr list $REPO`                                                                                         |
 
 検証済みの実例:
 
@@ -66,14 +66,14 @@ GITLAB_HOST=gitlab.example.com glab api "projects/group%2Fproject"
 
 **書き込み前に、対象 URL と送信内容をユーザーに提示して確認を取ること。**
 
-| やりたいこと | コマンド |
-|---|---|
-| issue にコメント | `glab issue note <n> -m "<body>" $REPO` |
-| MR にコメント | `glab mr note <n> -m "<body>" $REPO` |
-| issue の更新（タイトル・ラベル等） | `glab issue update <n> ... $REPO` |
-| MR の更新 | `glab mr update <n> ... $REPO` |
-| issue 作成 | `glab issue create --title "..." --description "..." $REPO` |
-| その他 | `glab api -X POST/PUT "projects/<enc>/..." -f key=value` |
+| やりたいこと                       | コマンド                                                    |
+| ---------------------------------- | ----------------------------------------------------------- |
+| issue にコメント                   | `glab issue note <n> -m "<body>" $REPO`                     |
+| MR にコメント                      | `glab mr note <n> -m "<body>" $REPO`                        |
+| issue の更新（タイトル・ラベル等） | `glab issue update <n> ... $REPO`                           |
+| MR の更新                          | `glab mr update <n> ... $REPO`                              |
+| issue 作成                         | `glab issue create --title "..." --description "..." $REPO` |
+| その他                             | `glab api -X POST/PUT "projects/<enc>/..." -f key=value`    |
 
 注意:
 
@@ -93,9 +93,9 @@ GITLAB_HOST=<host> glab api "projects/<enc>/<endpoint>"
 
 ## エラーハンドリング
 
-| 症状 | 対処 |
-|---|---|
-| `cannot preserve mount namespace` | サンドボックスなしで再実行（snap の既知問題） |
-| 401 Unauthorized | `glab auth status --hostname <host>` で確認 → 切れていたら `glab auth login --hostname <host>` をユーザーに依頼 |
-| 404 Not Found | project パスのエンコード漏れ（`/` → `%2F`）、group/project の取り違え、ホスト指定漏れ（gitlab.com に飛んでいる）を疑う |
-| telemetry の 401 エラー（stderr） | gitlab.com への送信失敗で無害。結果に影響しないので無視する |
+| 症状                              | 対処                                                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `cannot preserve mount namespace` | サンドボックスなしで再実行（snap の既知問題）                                                                          |
+| 401 Unauthorized                  | `glab auth status --hostname <host>` で確認 → 切れていたら `glab auth login --hostname <host>` をユーザーに依頼        |
+| 404 Not Found                     | project パスのエンコード漏れ（`/` → `%2F`）、group/project の取り違え、ホスト指定漏れ（gitlab.com に飛んでいる）を疑う |
+| telemetry の 401 エラー（stderr） | gitlab.com への送信失敗で無害。結果に影響しないので無視する                                                            |

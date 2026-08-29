@@ -39,28 +39,33 @@ gh run list --status failure --limit 5
 エラーを以下の5カテゴリに分類して報告する:
 
 ### 1. インフラ/AWS エラー
+
 - **ECR**: RepositoryNotFoundException, AuthorizationException
 - **ECS**: ClientException, service不安定, タスク起動失敗
 - **CDK**: ChangeSet作成失敗, スタックdrift, ROLLBACK_COMPLETE
 - **IAM**: AccessDenied, AssumeRole失敗, OIDC設定不備
 
 ### 2. ビルド/依存関係エラー
+
 - **Node.js**: バージョン非推奨警告, エンジン不一致
 - **パッケージ**: npm/pnpm install失敗, lockfile不整合
 - **TypeScript**: 型エラー, コンパイル失敗
 - **Docker**: ビルド失敗, マルチステージ問題
 
 ### 3. テスト失敗
+
 - **ユニットテスト**: assertion失敗, タイムアウト
 - **E2Eテスト**: セレクタ変更, 環境依存
 - **Lint/Format**: ESLint, Prettier違反
 
 ### 4. デプロイ/リリースエラー
+
 - **CDK deploy**: スタック更新失敗, リソース競合
 - **ECS deploy**: ヘルスチェック失敗, ローリング更新タイムアウト
 - **DB migration**: マイグレーション失敗, スキーマ不整合
 
 ### 5. ワークフロー設定エラー
+
 - **権限**: GITHUB_TOKEN不足, secrets未設定
 - **構文**: YAML構文エラー, expression評価失敗
 - **トリガー**: イベント不一致, パスフィルタ問題
@@ -75,15 +80,19 @@ gh run list --status failure --limit 5
 **カテゴリ**: [上記5分類のいずれか]
 
 ### エラー内容
+
 [エラーメッセージの要約]
 
 ### 原因
+
 [特定された原因]
 
 ### 対処法
+
 1. [具体的な修正手順]
 
 ### 補足
+
 [再発防止策や関連情報があれば]
 ```
 

@@ -13,7 +13,7 @@ dotfilesリポジトリ。
 | [docs/bootstrap.md](docs/bootstrap.md)                               | 新端末の立ち上げ、機密ファイル台帳、cron登録   |
 | [docs/migration.md](docs/migration.md)                               | PC移行でrepository群と作業状態を運ぶ           |
 | [docs/system-management.md](docs/system-management.md)               | ローカル設定、同期、更新、plugin管理を触る     |
-| [docs/agent-skills.md](docs/agent-skills.md)                        | agent skillの配置・信頼境界・vendoringを変える |
+| [docs/agent-skills.md](docs/agent-skills.md)                         | agent skillの配置・信頼境界・vendoringを変える |
 | [docs/scripts-layout.md](docs/scripts-layout.md)                     | scripts、tests、dotctlの構成と公開入口を変える |
 | [docs/testing.md](docs/testing.md)                                   | テストを書く・直す（固定対象・時間依存の禁止） |
 | [docs/nippo-automation.md](docs/nippo-automation.md)                 | 日報、面談準備、esa、cronを触る                |
@@ -98,8 +98,8 @@ Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-s
 雛形生成・既存設定のadopt・初回plugin配置は新環境で `bash scripts/setup/bootstrap.sh` を実行する。
 ローカル設定の実体は `~/.local/share/dotfiles-private/` に集約する。
 
-| 操作           | コマンド                                         |
-| -------------- | ------------------------------------------------ |
+| 操作           | コマンド                                                  |
+| -------------- | --------------------------------------------------------- |
 | 旧環境から集約 | `bash scripts/settings/private-bundle.sh adopt --execute` |
 | export         | `bash scripts/settings/private-bundle.sh export`          |
 | import         | `bash scripts/settings/private-bundle.sh import <zip>`    |
@@ -108,11 +108,11 @@ Shell testは `mktemp` で独立させる。CI不能ならfile headerに `# ci-s
 `~/.claude/settings.json` とWindows側設定はアプリがrenameで書き戻すためsymlinkにしない。
 **どちらも実ファイルを正、repoを追従側とする。** Codex設定も端末固有stateを含むためsymlinkにしない。
 
-| 対象             | status                            | 実体 → repo | repo → 実体      |
-| ---------------- | --------------------------------- | ----------- | ---------------- |
-| Claude settings  | `sync-claude-settings.sh status`  | `pull`      | `push [--force]` |
+| 対象             | status                                | 実体 → repo | repo → 実体      |
+| ---------------- | ------------------------------------- | ----------- | ---------------- |
+| Claude settings  | `sync-claude-settings.sh status`      | `pull`      | `push [--force]` |
 | Codex config     | `bash scripts/settings/sync-codex.sh` | 手動        | 手動             |
-| Windows settings | `sync-windows-settings.sh status` | `pull`      | `push [--force]` |
+| Windows settings | `sync-windows-settings.sh status`     | `pull`      | `push [--force]` |
 
 Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選べる。`.wslconfig` は端末の
 物理RAMに依存するため `dotfilesLink.sh` から自動pushしない。詳細は
@@ -120,17 +120,17 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 
 ## toolとpluginの管理
 
-| 対象                  | 宣言・実体                             | 追加・reconcile                                     |
-| --------------------- | -------------------------------------- | --------------------------------------------------- |
-| apt                   | `scripts/setup/apt-packages.txt`             | `bash scripts/setup/apt.sh`                         |
-| gh extension          | `scripts/setup/gh-extensions.txt`            | `bash scripts/setup/gh-extensions.sh`               |
-| fish plugin           | `.config/fish/fish_plugins`            | `bash scripts/setup/fish-plugins.sh`                |
-| yazi plugin           | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` |
-| trusted agent skill   | `scripts/skills/trusted-owners.txt`     | `bash scripts/skills/add.sh <owner/repo> <skill>`    |
-| vendored agent skill  | `.config/agents/skills-vendor/<name>/` | `bash scripts/skills/vendor.sh add ...`              |
-| 共用自作skill         | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
-| Claude専用skill       | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
-| Codex専用skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
+| 対象                 | 宣言・実体                             | 追加・reconcile                                     |
+| -------------------- | -------------------------------------- | --------------------------------------------------- |
+| apt                  | `scripts/setup/apt-packages.txt`       | `bash scripts/setup/apt.sh`                         |
+| gh extension         | `scripts/setup/gh-extensions.txt`      | `bash scripts/setup/gh-extensions.sh`               |
+| fish plugin          | `.config/fish/fish_plugins`            | `bash scripts/setup/fish-plugins.sh`                |
+| yazi plugin          | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` |
+| trusted agent skill  | `scripts/skills/trusted-owners.txt`    | `bash scripts/skills/add.sh <owner/repo> <skill>`   |
+| vendored agent skill | `.config/agents/skills-vendor/<name>/` | `bash scripts/skills/vendor.sh add ...`             |
+| 共用自作skill        | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Claude専用skill      | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Codex専用skill       | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
 
 `scripts/update/daily.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
 最後に失敗を集約する。worktreeやvendored skillなどの情報提供checkは全体をFAILEDにしない。
@@ -153,12 +153,12 @@ Go製 `dotctl` が複雑な状態判定を担い、`scripts/<feature>/*.sh` の�
 
 | 機能                       | 既存入口                                    |
 | -------------------------- | ------------------------------------------- |
-| worktree cleanup / init    | `scripts/worktree/{cleanup,init}.sh`      |
+| worktree cleanup / init    | `scripts/worktree/{cleanup,init}.sh`        |
 | settings sync              | `scripts/settings/sync-{claude,windows}.sh` |
-| skill audit / vendor       | `scripts/skills/{audit,vendor}.sh`        |
-| private bundle             | `scripts/settings/private-bundle.sh`      |
-| WSL cleanup                | `scripts/wsl/cleanup.sh`                   |
-| residue / migration doctor | `scripts/doctor/{residue,migration}.sh`    |
+| skill audit / vendor       | `scripts/skills/{audit,vendor}.sh`          |
+| private bundle             | `scripts/settings/private-bundle.sh`        |
+| WSL cleanup                | `scripts/wsl/cleanup.sh`                    |
+| residue / migration doctor | `scripts/doctor/{residue,migration}.sh`     |
 | docker clean               | `dclean`（fish function）                   |
 
 初回buildは `bash scripts/setup/dotctl.sh`、更新は `dotctl rebuild`。新command、wrapper、test配置、移植の評価結果は
@@ -187,12 +187,12 @@ stateは「今ボールを誰が持つか」で決める。AI成果物の判断�
 
 日報pathは必ず `scripts/lib/nippo-paths.sh` で解決し、skillやtestで直書きしない。
 
-| 自動化       | 入口                           | enable file                      |
-| ------------ | ------------------------------ | -------------------------------- |
-| 当日日報作成 | `scripts/nippo/create-cron.sh` | `~/.config/nippo-create-enabled` |
-| reminder     | `scripts/nippo/notify-cron.sh`        | `~/.config/nippo-notify-enabled` |
-| 日報draft    | `scripts/nippo/draft-cron.sh`  | `~/.config/nippo-draft-enabled`  |
-| esa週報      | `scripts/nippo/esa-weekly-cron.sh`   | `~/.config/esa-weekly-enabled`   |
+| 自動化       | 入口                               | enable file                      |
+| ------------ | ---------------------------------- | -------------------------------- |
+| 当日日報作成 | `scripts/nippo/create-cron.sh`     | `~/.config/nippo-create-enabled` |
+| reminder     | `scripts/nippo/notify-cron.sh`     | `~/.config/nippo-notify-enabled` |
+| 日報draft    | `scripts/nippo/draft-cron.sh`      | `~/.config/nippo-draft-enabled`  |
+| esa週報      | `scripts/nippo/esa-weekly-cron.sh` | `~/.config/esa-weekly-enabled`   |
 
 cronの時刻、dry-run、面談準備、allowed toolsは
 [docs/nippo-automation.md](docs/nippo-automation.md)。通知内容は
@@ -228,13 +228,13 @@ cleanupはdry-runが既定。`locked` を最優先でSKIPし、作業中のClaud
 `he` はherdr layoutに加えてnvim/Claude/Codex processを復元する。Claude/Codexは
 session hookとherdr native restore、nvimはpane単位のmarkerと段階起動を使う。
 
-| 操作         | コマンド                                  |
-| ------------ | ----------------------------------------- |
-| 復元         | `he`                                      |
-| 進捗         | `he --status`                             |
+| 操作         | コマンド                                          |
+| ------------ | ------------------------------------------------- |
+| 復元         | `he`                                              |
+| 進捗         | `he --status`                                     |
 | 投入順の確認 | `bash scripts/session/herdr-restore.sh --dry-run` |
-| UI設定の検証 | `herdr config check`                      |
-| UI反映       | `herdr server reload-config`              |
+| UI設定の検証 | `herdr config check`                              |
+| UI反映       | `herdr server reload-config`                      |
 
 復元設計は [docs/session-restore-strategy.md](docs/session-restore-strategy.md)、tab statusとkeyは
 [docs/herdr-ui.md](docs/herdr-ui.md)。
