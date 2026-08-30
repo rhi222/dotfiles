@@ -4,6 +4,7 @@
     "codex@openai-codex": true,
     "example-skills@anthropic-agent-skills": false,
     "lua-lsp@claude-plugins-official": true,
+    "ponytail@personal": true,
     "superpowers@claude-plugins-official": true
   },
   "env": {
@@ -20,6 +21,12 @@
     "openai-codex": {
       "source": {
         "repo": "openai/codex-plugin-cc",
+        "source": "github"
+      }
+    },
+    "personal": {
+      "source": {
+        "repo": "rhi222/dotfiles",
         "source": "github"
       }
     }

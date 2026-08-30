@@ -11,6 +11,7 @@ import (
 	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
+	"github.com/rhi222/dotfiles/internal/pluginvendor"
 	"github.com/rhi222/dotfiles/internal/privatebundle"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
@@ -47,6 +48,8 @@ type Env struct {
 
 	// Vendor は vendored skill の取込設定。
 	Vendor skill.VendorConfig
+	// PluginVendor は vendored agent plugin の更新設定。
+	PluginVendor pluginvendor.Config
 	// TrustedOwnersFile は gh skill を自動更新してよい owner の allowlist。
 	TrustedOwnersFile string
 
@@ -86,6 +89,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   settings sync      設定ファイルの同期・比較（claude / codex / windows）
   skill audit        skill の内容を機械的に検査する
   skill vendor       vendored skill の取込と点検
+  plugin vendor      vendored agent plugin の更新と点検
   private-bundle     ローカル設定の集約と運搬
   wsl cleanup        WSL2 のキャッシュ掃除
   doctor residue     環境の残骸を洗い出す
@@ -126,6 +130,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runSettings(ctx, args[1:], env)
 	case "skill":
 		return runSkill(ctx, args[1:], env)
+	case "plugin":
+		return runPlugin(ctx, args[1:], env)
 	case "private-bundle":
 		return runPrivateBundle(ctx, args[1:], env)
 	case "wsl":

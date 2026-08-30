@@ -19,6 +19,7 @@ import (
 	"github.com/rhi222/dotfiles/internal/docker"
 	"github.com/rhi222/dotfiles/internal/doctor"
 	"github.com/rhi222/dotfiles/internal/execx"
+	"github.com/rhi222/dotfiles/internal/pluginvendor"
 	"github.com/rhi222/dotfiles/internal/privatebundle"
 	"github.com/rhi222/dotfiles/internal/settings"
 	"github.com/rhi222/dotfiles/internal/skill"
@@ -104,6 +105,16 @@ func vendorConfig() skill.VendorConfig {
 		},
 		Today:   envOr("SKILL_VENDOR_DATE", today()),
 		AutoYes: os.Getenv("SKILL_VENDOR_YES") == "1",
+	}
+}
+
+func pluginVendorConfig() pluginvendor.Config {
+	home, _ := os.UserHomeDir()
+	return pluginvendor.Config{
+		VendorDir: envOr("PLUGIN_VENDOR_DIR", repoPath("plugins")),
+		CacheDir:  envOr("PLUGIN_VENDOR_CACHE", filepath.Join(home, ".cache", "agent-plugin-vendor")),
+		Today:     envOr("PLUGIN_VENDOR_DATE", today()),
+		AutoYes:   os.Getenv("PLUGIN_VENDOR_YES") == "1",
 	}
 }
 
@@ -286,6 +297,7 @@ func main() {
 		WindowsSettings: windowsSettings(),
 
 		Vendor:            vendorConfig(),
+		PluginVendor:      pluginVendorConfig(),
 		Private:           privateConfig(),
 		HomeDir:           homeDir(),
 		Residue:           residueConfig(),

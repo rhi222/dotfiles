@@ -31,7 +31,7 @@ fi
 if [ "$MODE" = "--staged" ]; then
   mapfile -d '' -t files < <(
     git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- \
-      '*.md' ':(exclude).config/agents/skills-vendor/**'
+      '*.md' ':(exclude).config/agents/skills-vendor/**' ':(exclude)plugins/**'
   )
 
   [ "${#files[@]}" -gt 0 ] || exit 0
@@ -69,7 +69,7 @@ fi
 
 mapfile -d '' -t candidates < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.md' ':!:.config/agents/skills-vendor/**'
+    '*.md' ':!:.config/agents/skills-vendor/**' ':!:plugins/**'
 )
 
 files=()

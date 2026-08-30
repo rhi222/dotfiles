@@ -1,0 +1,40 @@
+{
+  "origin": "https://github.com/DietrichGebert/ponytail.git",
+  "commit": "2ed6c52c9d7e5e56942508591085fd45dea277d3",
+  "reviewed_commit": "2ed6c52c9d7e5e56942508591085fd45dea277d3",
+  "vendored_at": "2026-08-31",
+  "version": "4.9.0",
+  "files": [
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+    "LICENSE",
+    "assets/logo.png",
+    "hooks/claude-codex-hooks.json",
+    "hooks/ponytail-activate.js",
+    "hooks/ponytail-config.js",
+    "hooks/ponytail-instructions.js",
+    "hooks/ponytail-mode-tracker.js",
+    "hooks/ponytail-runtime.js",
+    "hooks/ponytail-statusline.ps1",
+    "hooks/ponytail-statusline.sh",
+    "hooks/ponytail-subagent.js",
+    "skills/ponytail-audit/SKILL.md",
+    "skills/ponytail-debt/SKILL.md",
+    "skills/ponytail-gain/SKILL.md",
+    "skills/ponytail-help/SKILL.md",
+    "skills/ponytail-review/SKILL.md",
+    "skills/ponytail/SKILL.md"
+  ],
+  "generated_files": [
+    "hooks/hooks.json"
+  ],
+  "binary_sha256": {
+    "assets/logo.png": "818905aa5c99519b4e648fee82828c97dbeb471603335c990605dfe29b966121"
+  },
+  "audit": {
+    "high": 0,
+    "med": 8,
+    "low": 0
+  },
+  "license": "MIT"
+}

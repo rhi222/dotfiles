@@ -86,6 +86,12 @@ git -C "$REPO" add "$REPO/.config/agents/skills-vendor/demo/SKILL.md"
 run_check --staged
 check "vendored skillはstage済みでも除外する" "0" "$?"
 
+mkdir -p "$REPO/plugins/demo"
+printf '# BAD_FORMAT\n' >"$REPO/plugins/demo/README.md"
+git -C "$REPO" add "$REPO/plugins/demo/README.md"
+run_check --staged
+check "vendored pluginはstage済みでも除外する" "0" "$?"
+
 ln -s doc.md "$REPO/link.md"
 git -C "$REPO" add link.md
 run_check --staged

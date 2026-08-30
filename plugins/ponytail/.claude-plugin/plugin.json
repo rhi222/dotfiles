@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Dietrich Gebert",
+    "url": "https://github.com/DietrichGebert"
+  },
+  "description": "Lazy senior dev mode. Forces the simplest, shortest solution that actually works: YAGNI, stdlib first, no unrequested abstractions.",
+  "hooks": "./hooks/claude-codex-hooks.json",
+  "name": "ponytail",
+  "version": "4.9.0+vendor.2ed6c52"
+}

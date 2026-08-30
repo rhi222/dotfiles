@@ -276,6 +276,8 @@ main() {
   # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
   # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
   run_step_soft "vendored skill 更新チェック" vendored_skill_check
+  # vendored agent pluginも自動更新しない。review済みcommitとの差だけを知らせる。
+  run_step_soft "vendored plugin 更新チェック" bash "$SCRIPT_DIR/../plugins/vendor.sh" status
   # Claude Code が実行時に書き換えた settings.json をリポジトリに取り込む。
   # 作業ツリーに差分が出るだけなので、コミットするかは人間が判断する。
   run_step "claude settings pull" bash "$SCRIPT_DIR/../settings/sync-claude.sh" pull

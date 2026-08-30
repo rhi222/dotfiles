@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "personal",
+  "description": "Reviewed agent plugins managed by rhi222/dotfiles",
+  "owner": {
+    "name": "rhi222"
+  },
+  "plugins": [
+    {
+      "name": "ponytail",
+      "description": "Prefer the smallest correct implementation without removing safety checks.",
+      "source": "./plugins/ponytail",
+      "category": "productivity"
+    }
+  ]
+}

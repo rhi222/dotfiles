@@ -29,12 +29,12 @@ FIX=0
 # --cached だけだと、書いたばかりのファイルが commit するまでローカルで検査されず、
 # CI（checkout 後は追跡済み）で初めて落ちることになる。
 #
-# skills-vendor/ は除外する。**vendored な外部 skill は追跡しているが自分は保守しない。**
+# skills-vendor/ と plugins/ は除外する。**vendored な外部codeは追跡しているが自分は保守しない。**
 # 上の「ignore 済み＝自分が保守しない」という前提の唯一の例外で、除外しないと
 # 第三者の .sh が shellcheck / shfmt に掛かって lint.yml が落ちる。
 mapfile -t files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.sh' ':!:.config/agents/skills-vendor/**' |
+    '*.sh' ':!:.config/agents/skills-vendor/**' ':!:plugins/**' |
     xargs -0 -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -68,10 +68,10 @@ elif ! shfmt -d -i 2 -ci "${files[@]}"; then
 fi
 
 # MarkdownもShellと同じく、自分が保守する追跡fileと未追跡fileだけを対象にする。
-# vendored skillはupstreamの書式を保つため除外する。
+# vendored skill/pluginはupstreamの書式を保つため除外する。
 mapfile -t markdown_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.md' ':!:.config/agents/skills-vendor/**' |
+    '*.md' ':!:.config/agents/skills-vendor/**' ':!:plugins/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -94,7 +94,7 @@ fi
 
 mapfile -t lua_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.lua' ':!:.config/agents/skills-vendor/**' |
+    '*.lua' ':!:.config/agents/skills-vendor/**' ':!:plugins/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -133,10 +133,10 @@ fi
 # paths に **.fish を持っていて .fish の変更で発火するのに、走るのはテストを
 # 持つ一部の関数のテストだけだった。
 #
-# 対象の集め方は .sh と揃える（追跡 + 未追跡、ignore 済みと skills-vendor は除外）。
+# 対象の集め方は .sh と揃える（追跡 + 未追跡、ignore 済みとvendored codeは除外）。
 mapfile -t fish_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.fish' ':!:.config/agents/skills-vendor/**' |
+    '*.fish' ':!:.config/agents/skills-vendor/**' ':!:plugins/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"
@@ -182,7 +182,7 @@ echo "=== yaml ==="
 # 見たいのは「構造が壊れていないか」だけ。
 mapfile -t yaml_files < <(
   git -C "$REPO_ROOT" ls-files -z --cached --others --exclude-standard \
-    '*.yml' '*.yaml' ':!:.config/agents/skills-vendor/**' |
+    '*.yml' '*.yaml' ':!:.config/agents/skills-vendor/**' ':!:plugins/**' |
     xargs -0 -r -n1 printf '%s/%s\n' "$REPO_ROOT" |
     while IFS= read -r file; do
       [ -f "$file" ] && printf '%s\n' "$file"

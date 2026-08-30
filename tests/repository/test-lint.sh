@@ -1,7 +1,7 @@
 #!/bin/bash
 # lint.sh のユニットテスト
 #
-# 検査対象の集め方（git ls-files ベース、skills-vendor/ 除外）と、
+# 検査対象の集め方（git ls-files ベース、vendored code除外）と、
 # Markdown / Lua / Fish の不正を各検査が落とすことを見る。
 #
 # 本物のリポジトリでは走らせない。LINT_REPO_ROOT で使い捨ての git リポジトリを
@@ -170,6 +170,15 @@ printf '# BAD_MARKDOWN\n' >"$REPO/.config/agents/skills-vendor/x/vendored.md"
 git -C "$REPO" add -A
 out=$(run_lint)
 check "skills-vendor配下のMarkdownは検査しない" "0" "$?"
+teardown
+
+setup
+mkdir -p "$REPO/scripts" "$REPO/plugins/x"
+echo '#!/bin/bash' >"$REPO/scripts/a.sh"
+printf '# BAD_MARKDOWN\n' >"$REPO/plugins/x/vendored.md"
+git -C "$REPO" add -A
+out=$(run_lint)
+check "vendored plugin配下のMarkdownは検査しない" "0" "$?"
 teardown
 
 echo "== Lua format =="
