@@ -120,17 +120,18 @@ Windows同期は末尾に `wslconfig` / `terminal` を付けて片方だけ選�
 
 ## toolとpluginの管理
 
-| 対象                 | 宣言・実体                             | 追加・reconcile                                     |
-| -------------------- | -------------------------------------- | --------------------------------------------------- |
-| apt                  | `scripts/setup/apt-packages.txt`       | `bash scripts/setup/apt.sh`                         |
-| gh extension         | `scripts/setup/gh-extensions.txt`      | `bash scripts/setup/gh-extensions.sh`               |
-| fish plugin          | `.config/fish/fish_plugins`            | `bash scripts/setup/fish-plugins.sh`                |
-| yazi plugin          | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` |
-| trusted agent skill  | `scripts/skills/trusted-owners.txt`    | `bash scripts/skills/add.sh <owner/repo> <skill>`   |
-| vendored agent skill | `.config/agents/skills-vendor/<name>/` | `bash scripts/skills/vendor.sh add ...`             |
-| 共用自作skill        | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
-| Claude専用skill      | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
-| Codex専用skill       | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
+| 対象                  | 宣言・実体                             | 追加・reconcile                                     |
+| --------------------- | -------------------------------------- | --------------------------------------------------- |
+| apt                   | `scripts/setup/apt-packages.txt`       | `bash scripts/setup/apt.sh`                         |
+| gh extension          | `scripts/setup/gh-extensions.txt`      | `bash scripts/setup/gh-extensions.sh`               |
+| fish plugin           | `.config/fish/fish_plugins`            | `bash scripts/setup/fish-plugins.sh`                |
+| yazi plugin           | `.config/yazi/package.toml`            | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` |
+| trusted agent skill   | `scripts/skills/trusted-owners.txt`    | `bash scripts/skills/add.sh <owner/repo> <skill>`   |
+| vendored agent skill  | `.config/agents/skills-vendor/<name>/` | `bash scripts/skills/vendor.sh add ...`             |
+| vendored agent plugin | `plugins/<name>/`                      | `bash scripts/setup/agent-plugins.sh`               |
+| 共用自作skill         | `.config/agents/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Claude専用skill       | `.config/claude/skills/<name>/`        | `./dotfilesLink.sh`                                 |
+| Codex専用skill        | `.config/codex/skills/<name>/`         | `./dotfilesLink.sh`                                 |
 
 `scripts/update/daily.sh` は導入済みのものを更新するだけで、新規追加しない。1ステップの失敗で止めず、
 最後に失敗を集約する。worktreeやvendored skillなどの情報提供checkは全体をFAILEDにしない。

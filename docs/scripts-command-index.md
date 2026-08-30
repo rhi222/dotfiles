@@ -34,16 +34,17 @@
 
 ### セットアップ（新環境の立ち上げ）
 
-| スクリプト                       | 引数          | 呼び出し元 |
-| -------------------------------- | ------------- | ---------- |
-| `scripts/setup/bootstrap.sh`     | なし          | doc        |
-| `scripts/setup/apt.sh`           | なし          | doc boot   |
-| `scripts/setup/dotctl.sh`        | なし          | doc boot   |
-| `scripts/setup/claude-skills.sh` | `[--dry-run]` | doc        |
-| `scripts/setup/fish-plugins.sh`  | `[--dry-run]` | doc        |
-| `scripts/setup/gh-extensions.sh` | `[--dry-run]` | doc        |
-| `scripts/setup/yazi-plugins.sh`  | `[--dry-run]` | doc boot   |
-| `scripts/linear/bootstrap.sh`    | なし          | doc link   |
+| スクリプト                       | 引数                               | 呼び出し元 |
+| -------------------------------- | ---------------------------------- | ---------- |
+| `scripts/setup/bootstrap.sh`     | なし                               | doc        |
+| `scripts/setup/agent-plugins.sh` | `[--dry-run] [--replace-upstream]` | doc        |
+| `scripts/setup/apt.sh`           | なし                               | doc boot   |
+| `scripts/setup/dotctl.sh`        | なし                               | doc boot   |
+| `scripts/setup/claude-skills.sh` | `[--dry-run]`                      | doc        |
+| `scripts/setup/fish-plugins.sh`  | `[--dry-run]`                      | doc        |
+| `scripts/setup/gh-extensions.sh` | `[--dry-run]`                      | doc        |
+| `scripts/setup/yazi-plugins.sh`  | `[--dry-run]`                      | doc boot   |
+| `scripts/linear/bootstrap.sh`    | なし                               | doc link   |
 
 ### 同期・運搬
 
@@ -66,6 +67,12 @@
 | `scripts/skills/add.sh`    | `<owner/repo> <skill>`                                                      | doc        |
 | `scripts/skills/audit.sh`  | `[--quiet] <skill-dir>`                                                     | doc        |
 | `scripts/skills/vendor.sh` | `add <repo> <sub-path> [name]`\|`update <name> [name...]`\|`status`\|`list` | doc        |
+
+### agent plugin管理
+
+| スクリプト                  | 引数                                        | 呼び出し元 |
+| --------------------------- | ------------------------------------------- | ---------- |
+| `scripts/plugins/vendor.sh` | `status [--no-network]`\|`update <name>...` | doc        |
 
 ### worktree
 

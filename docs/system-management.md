@@ -107,12 +107,13 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 
 ## パッケージとプラグイン
 
-| 対象         | 宣言                              | 追加・reconcile                                     | 更新         |
-| ------------ | --------------------------------- | --------------------------------------------------- | ------------ |
-| apt          | `scripts/setup/apt-packages.txt`  | `bash scripts/setup/apt.sh`                         | daily-update |
-| gh extension | `scripts/setup/gh-extensions.txt` | `bash scripts/setup/gh-extensions.sh`               | daily-update |
-| fish         | `.config/fish/fish_plugins`       | `bash scripts/setup/fish-plugins.sh`                | daily-update |
-| yazi         | `.config/yazi/package.toml`       | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` | daily-update |
+| 対象         | 宣言                              | 追加・reconcile                                     | 更新                 |
+| ------------ | --------------------------------- | --------------------------------------------------- | -------------------- |
+| apt          | `scripts/setup/apt-packages.txt`  | `bash scripts/setup/apt.sh`                         | daily-update         |
+| gh extension | `scripts/setup/gh-extensions.txt` | `bash scripts/setup/gh-extensions.sh`               | daily-update         |
+| fish         | `.config/fish/fish_plugins`       | `bash scripts/setup/fish-plugins.sh`                | daily-update         |
+| yazi         | `.config/yazi/package.toml`       | `ya pkg add` / `bash scripts/setup/yazi-plugins.sh` | daily-update         |
+| agent plugin | `plugins/<name>/.vendor.json`     | `bash scripts/setup/agent-plugins.sh`               | 手動review後に取込み |
 
 gh extensionは `owner/repo[@version]` 形式で、version指定はpinになる。
 
@@ -123,6 +124,11 @@ fish自体は起動できるため、`dotfilesLink.sh` から自動実行しな�
 yaziは `init.lua` がpluginを `require` するため、実体が無いと起動できない。このためyaziだけは
 新環境の `scripts/setup/bootstrap.sh` からsetupを自動実行する。`ya` の終了コードだけでなく、宣言されたpluginの実体も
 検査する。`package.toml` はrev/hashを持つlockfileであり、upgradeによる差分のcommitは人間が判断する。
+
+agent pluginは外部codeとhookを実行するため、upstreamから自動更新しない。`daily-update.sh` は
+更新の有無だけをsoft checkし、`bash scripts/plugins/vendor.sh update <name>` がaudit、diff表示、
+人の承認を経てvendor実体を更新する。信頼境界とPonytail固有の変換は
+[agent-skills.md](agent-skills.md#agent-pluginのvendoring)を参照する。
 
 ## GitHub CLI
 

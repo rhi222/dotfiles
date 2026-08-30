@@ -450,6 +450,25 @@ claude --version
 claude           # 初回はログインが要る
 ```
 
+#### Agent plugin
+
+Claude CodeとCodexを導入した後、review済みのlocal marketplaceを両方へ登録する。
+通常はcommit・push済みの `rhi222/dotfiles` から取得する。
+
+```fish
+bash scripts/setup/agent-plugins.sh
+```
+
+upstreamのPonytailを直接導入済みの端末では、初回だけ次を実行する。personal版を先に導入するため、
+途中で失敗しても動作中のupstream版は残る。
+
+```fish
+bash scripts/setup/agent-plugins.sh --replace-upstream
+```
+
+導入後はClaude CodeとCodexを再起動する。Codexは `/hooks` でvendor版hookを確認し、trustする。
+更新は自動適用せず、[agent-skills.md](agent-skills.md#agent-pluginのvendoring)の手順でreviewする。
+
 #### tmux tpm
 
 `~/.config/tmux/plugins/` も追跡していない。tpm だけ手で clone し、残りは tmux 内から取る。

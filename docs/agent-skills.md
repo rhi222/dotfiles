@@ -77,7 +77,7 @@ skillの発動を分ける理由は、通常依頼ではCodexが今回の作業�
 - **バイナリ判定は `grep -Iq`。**
   **`file --mime` は使わない。**
   コードブロックの多い `.md` が `application/javascript` と判定され、`vercel-react-best-practices` の正当な `rules/*.md` 27件が誤って弾かれる
-- **`lint.sh` は `skills-vendor/` を除外する。**
+- **`lint.sh` は `skills-vendor/` と `plugins/` を除外する。**
   `lint.sh` は「ignore 済み＝自分が保守しない」で第三者コードを切る前提に立っているが、vendored は **追跡していながら自分は保守しない**ので、この前提の唯一の例外になる
 - **`secret-scan.sh` は除外しない。**
   vendored に社内ホスト名や実在の値が混ざっていたら止めたい。
@@ -106,6 +106,38 @@ bash tests/skills/test-skill-audit.sh
 bash tests/skills/test-skill-vendor.sh
 bash tests/setup/test-claude-skills-allowlist.sh
 ```
+
+## Agent pluginのvendoring
+
+外部pluginはskillに加えてhookの実行コードを含むため、allowlistで自動更新せず
+`plugins/<name>/` に必要なruntimeだけをvendorする。Claude Code用marketplaceは
+`.claude-plugin/marketplace.json`、Codex用marketplaceは `.agents/plugins/marketplace.json` を正本にする。
+
+各pluginの `.vendor.json` にはupstream URL、固定commit、レビュー済みcommit、取り込むファイル一覧、
+監査件数を記録する。画像など機械監査できないバイナリは、人が確認した内容のSHA-256も記録し、
+差し替われば `status` を失敗させる。PonytailではCodexの既定探索に合わせて
+`hooks/hooks.json` を生成し、vendor更新をcacheへ反映させるためmanifest versionへcommit短縮値を加える。
+
+```fish
+bash scripts/plugins/vendor.sh status
+bash scripts/plugins/vendor.sh update ponytail
+```
+
+`daily-update.sh` はremote HEADとの差だけを通知し、実体は更新しない。`update` は一時directoryへ候補を作り、
+skill auditとvendor全体のdiffを表示してから人の承認を求める。承認後にだけ実体と
+`reviewed_commit` を更新する。更新後はpluginを再installし、新しいsessionでhookとskillを確認する。
+
+導入先のmarketplace名はClaude CodeとCodexで共通の `personal` とする。通常は公開repository
+`rhi222/dotfiles` から取得するため、vendor差分をcommitしてpushした後にreconcileする。
+
+```fish
+bash scripts/setup/agent-plugins.sh
+# upstream marketplaceからの初回移行時だけ
+bash scripts/setup/agent-plugins.sh --replace-upstream
+```
+
+`--replace-upstream` はpersonal版を先に導入してから、upstream版のpluginとmarketplaceを外す。
+開発中の未push差分を試す場合だけ `AGENT_PLUGIN_MARKETPLACE_SOURCE=$PWD` を指定する。
 
 ## upstream が skill をやめることがある
 
