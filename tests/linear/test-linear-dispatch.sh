@@ -452,6 +452,20 @@ check "EM issue(em1)はstateを動かさない" bash -c "! grep issueUpdate '$CU
 check "EM issue(em2)はstateを動かさない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"em2\"'"
 check "EM issue(em3)はstateを動かさない" bash -c "! grep issueUpdate '$CURL_LOG' | grep -q '\"em3\"'"
 
+# 4-4. role:manager + ai:blocked-human + repo行無し は、どちらのレーンも扱えない。
+# em_is_em_lane が ai:blocked-human で false を返すため main のフィルタは除外せず
+# dispatch_one まで届く。ここを role:manager だけで判定して黙ってスキップすると、
+# EMレーンも拾わず整合チェック3（role:manager除外）にも出ず AI Queued に永久滞留する。
+# dispatch_bounce の存在理由は「黙って消えないようにする」ことなので差し戻す
+echo '{"data": {"issues": {"nodes": [{"id": "ib", "identifier": "NSY-50", "title": "委譲不可", "description": "repo行がない本文", "url": "u", "labels": {"nodes": [{"name": "role:manager"}, {"name": "ai:blocked-human"}]}}]}}}' >"$tmp/ready-blocked.json"
+: >"$CURL_LOG"
+: >"$CLAUDE_LOG"
+out44=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-blocked.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" 2>&1)
+check "ai:blocked-humanはclaudeを実行しない" test ! -s "$CLAUDE_LOG"
+check "ai:blocked-humanはTodo(s2)へ差し戻す" grep -q "\"$STATE_TODO\"" "$CURL_LOG"
+check "ai:blocked-humanはBOUNCEDと出る" grep -q "NSY-50: BOUNCED (no repo)" <<<"$out44"
+
 # 5. claude失敗 → エラーコメント＋Todoへ差し戻し
 cat >"$tmp/bin/claude" <<'EOF'
 #!/bin/bash
