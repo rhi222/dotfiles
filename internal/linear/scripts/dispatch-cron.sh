@@ -121,9 +121,14 @@ dispatch_one() {
   else
     mode="new"
     if ! repo=$(dispatch_parse_repo "$desc"); then
-      # role:manager が付いていればEMレーン（em-dispatch.sh）の担当。
-      # 差し戻すとEMタスクが起票そばからTodoへ戻り続けるので、黙って残す
-      if jq -e '[.labels.nodes[].name] | index("role:manager")' <<<"$issue" >/dev/null 2>&1; then
+      # EMレーン（em-dispatch.sh）が扱えるものだけ黙って残す。
+      # 差し戻すとEMタスクが起票そばからTodoへ戻り続けるため。
+      #
+      # 判定に role:manager 単独を使わないこと。`ai:blocked-human` が付いた
+      # role:manager は EMレーンも拾わないので、スキップすると AI Queued に
+      # 永久滞留する（整合チェック3も role:manager を除外条件に持つので出ない）。
+      # em_is_em_lane はその条件も見るため、扱えないものは下の差し戻しへ落ちる
+      if em_is_em_lane "$issue"; then
         echo "$identifier: SKIPPED (EMレーン)"
         return 0
       fi
