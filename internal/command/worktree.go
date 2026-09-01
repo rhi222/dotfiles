@@ -49,6 +49,9 @@ func runWorktreeCleanup(ctx context.Context, args []string, env Env) int {
 		PRStateCmd: env.WorktreePRStateCmd,
 	}
 	execute := false
+	// **dry-run が案内する削除コマンドは実引数から組み立てる。** --force や
+	// --size を落とすと、貼って実行した結果が一覧と食い違う。
+	passthru := []string{"dotctl", "worktree", "cleanup"}
 
 	for _, a := range args {
 		switch a {
@@ -56,8 +59,10 @@ func runWorktreeCleanup(ctx context.Context, args []string, env Env) int {
 			execute = true
 		case "--force":
 			cfg.Force = true
+			passthru = append(passthru, a)
 		case "--size":
 			cfg.ShowSize = true
+			passthru = append(passthru, a)
 		case "-h", "--help":
 			fmt.Fprint(env.Stdout, cleanupUsage)
 			return 0
@@ -68,7 +73,12 @@ func runWorktreeCleanup(ctx context.Context, args []string, env Env) int {
 	}
 
 	plan := worktree.BuildPlan(ctx, env.Runner, cfg)
-	ropt := worktree.RenderOptions{Execute: execute, ShowSize: cfg.ShowSize, Color: env.Color}
+	ropt := worktree.RenderOptions{
+		Execute:    execute,
+		ShowSize:   cfg.ShowSize,
+		Color:      env.Color,
+		ExecuteCmd: strings.Join(append(passthru, "--execute"), " "),
+	}
 
 	// **表示は Plan だけを読む。** 実行の前後で同じ Plan を参照するので、
 	// 「表示したものと消したものが違う」状態が構造的に起きない。

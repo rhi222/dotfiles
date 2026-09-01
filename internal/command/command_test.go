@@ -276,3 +276,16 @@ func TestPrivateBundleRejectsUnknownOption(t *testing.T) {
 		}
 	}
 }
+
+// dry-run が案内する削除コマンドに、実行時のフラグを引き継ぐ。
+func TestWorktreeCleanupDryRunSuggestsCommandWithFlags(t *testing.T) {
+	f := execx.NewFake()
+	f.On("git", execx.Result{Stdout: "/repo/.git\n"})
+	f.On("git", execx.Result{Stdout: "worktree /repo\nbranch refs/heads/main\n\n"})
+
+	_, out, _ := runEnv(t, Env{Runner: f, WorktreeRoots: "/repo", WorktreeRepos: []string{"/repo"}},
+		"worktree", "cleanup", "--force")
+	if !strings.Contains(out, "dotctl worktree cleanup --force --execute") {
+		t.Errorf("案内コマンドに --force が残っていない: %q", out)
+	}
+}

@@ -202,3 +202,26 @@ func TestRenderColorWhenTTY(t *testing.T) {
 func renderAll(p *Plan, opt RenderOptions) string {
 	return RenderHead(p, opt) + RenderSummary(p, opt)
 }
+
+// dry-run の案内は、そのまま貼れる削除コマンドを1行で示す。
+// **説明文だけだと「--execute を付ける」を読んでから自分で組み立てる手間が残る。**
+func TestRenderDryRunShowsCopyPasteCommand(t *testing.T) {
+	p := &Plan{Roots: "/r", Repos: []RepoPlan{{Repo: "/r/x", Items: []Item{
+		{Path: "/w/a", Branch: "a", Decision: Decision{Verdict: DELETE, Reason: "MERGED #1"}},
+	}}}}
+
+	out := renderAll(p, RenderOptions{})
+	if !strings.Contains(out, "\n  dotctl worktree cleanup --execute\n") {
+		t.Errorf("貼れる削除コマンドが行として出ていない:\n%s", out)
+	}
+}
+
+// dry-run で付けた絞り込みフラグは、案内するコマンドにも残す。
+// **--force を落とすと、貼って実行した結果が dry-run の一覧と食い違う。**
+func TestRenderDryRunCommandKeepsFlags(t *testing.T) {
+	p := &Plan{Roots: "/r"}
+	out := renderAll(p, RenderOptions{ExecuteCmd: "dotctl worktree cleanup --force --size --execute"})
+	if !strings.Contains(out, "\n  dotctl worktree cleanup --force --size --execute\n") {
+		t.Errorf("ExecuteCmd がそのまま出ていない:\n%s", out)
+	}
+}

@@ -11,7 +11,15 @@ type RenderOptions struct {
 	Execute  bool
 	ShowSize bool
 	Color    bool // stdout が TTY のときだけ真にする
+	// ExecuteCmd は dry-run の案内に載せる、そのまま貼れる削除コマンド。
+	// **dry-run で付けた --force や --size を落とすと、貼って実行した結果が
+	// 一覧と食い違う。** 呼び出し側が実引数から組み立てて渡す。
+	// 空なら既定のコマンドを出す。
+	ExecuteCmd string
 }
+
+// defaultExecuteCmd は ExecuteCmd 未指定のときの案内。
+const defaultExecuteCmd = "dotctl worktree cleanup --execute"
 
 const labelWidth = 44
 
@@ -159,8 +167,12 @@ func RenderSummary(p *Plan, opt RenderOptions) string {
 	b.WriteString("\n")
 
 	if !opt.Execute {
-		fmt.Fprintf(&b, "\n%sこれは dry-run です。実際に削除するには --execute を付けて再実行してください。%s\n",
-			c.yellow, c.reset)
+		cmd := opt.ExecuteCmd
+		if cmd == "" {
+			cmd = defaultExecuteCmd
+		}
+		fmt.Fprintf(&b, "\n%sこれは dry-run です。実際に削除するには次を実行する:%s\n\n  %s\n",
+			c.yellow, c.reset, cmd)
 	}
 	return b.String()
 }
