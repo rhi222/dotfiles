@@ -4,7 +4,7 @@
     "codex@openai-codex": true,
     "example-skills@anthropic-agent-skills": false,
     "lua-lsp@claude-plugins-official": true,
-    "ponytail@personal": true,
+    "ponytail@ponytail": true,
     "superpowers@claude-plugins-official": true
   },
   "env": {
@@ -24,9 +24,9 @@
         "source": "github"
       }
     },
-    "personal": {
+    "ponytail": {
       "source": {
-        "repo": "rhi222/dotfiles",
+        "repo": "DietrichGebert/ponytail",
         "source": "github"
       }
     }
