@@ -40,8 +40,12 @@ em_build_prompt() {
   identifier=$(jq -r '.identifier' <<<"$issue")
   title=$(jq -r '.title' <<<"$issue")
   desc=$(jq -r '.description // ""' <<<"$issue")
-  # 直近の週次レポート。無ければその行を落とす
-  weekly=$(ls -1 "$VAULT"/02_Daily/weekly/*/nippo-weekly.*.md 2>/dev/null | sort | tail -1 || true)
+  # 直近の週次レポート。無ければその行を落とす。
+  # **glob を直接展開しない。** マッチが無いと bash はパターン文字列をそのまま
+  # 残すので、存在しないパスを週次レポートとして渡してしまう。find なら 0 件で空になる。
+  # -L は glob と揃えるため。週次ディレクトリが symlink でも glob なら辿れる。
+  weekly=$(find -L "$VAULT/02_Daily/weekly" -mindepth 2 -maxdepth 2 -type f \
+    -name 'nippo-weekly.*.md' 2>/dev/null | sort | tail -1 || true)
   if [[ -n "$weekly" ]]; then
     weekly="- ${weekly#"$VAULT"/}"
   fi
