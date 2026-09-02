@@ -187,8 +187,10 @@ check "WIP超過時はcodexを実行しない" test ! -s "$CODEX_LOG"
 # 3. 正常系
 : >"$CURL_LOG"
 : >"$CODEX_LOG"
-out3=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
-  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run 2>&1)
+# out1 / out2 と違い、この回は出力そのものを見ない。検査対象は CURL_LOG と
+# CODEX_LOG に残る副作用なので、変数へ溜めず捨てる。
+HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run >/dev/null 2>&1
 check "codexが実行される" test -s "$CODEX_LOG"
 check "codexにoutput-schemaを渡す" grep -q -- "--output-schema" "$CODEX_LOG"
 # stdinを閉じ忘れるとcodexがEOF待ちで固まる（実測で5分返らず）。

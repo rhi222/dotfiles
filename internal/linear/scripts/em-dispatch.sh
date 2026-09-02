@@ -139,7 +139,7 @@ em_questions_markdown() {
     echo ""
     echo "成果物: \`$(jq -r '.draft_path' "$out_json")\`"
     echo ""
-    echo "$(jq -r '.summary' "$out_json")"
+    jq -r '.summary' "$out_json"
     echo ""
     echo "## 確認したいこと"
     jq -r '.questions | to_entries[]
