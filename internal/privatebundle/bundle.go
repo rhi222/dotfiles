@@ -58,6 +58,7 @@ var Entries = []Entry{
 	{Home, ".claude/local-context.md", false},
 	{Home, ".config/linear/api-key", false},
 	{Home, ".config/dotfiles/secret-patterns.txt", false},
+	{Home, ".config/dotfiles/ssh-tunnel.tsv", false},
 	{Repo, ".config/git/config-local", false},
 	{Repo, ".config/git/config-work", false},
 	{Repo, ".config/fish/my/conf.d/99-local.fish", false},

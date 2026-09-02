@@ -258,6 +258,9 @@ tar xzf claude-memory.tar.gz -C ~
 - `~/.config/psql/psqlrc.local`
   — psql の prod/stg 判定。案件固有の DB 名・DB ユーザー名・トンネルのポート番号。
   埋めないと汎用の命名規約（`*_prod` / `*_stg`）による判定だけになる
+- `~/.config/dotfiles/ssh-tunnel.tsv`
+  — `scripts/db/tunnel.sh` の接続先表。踏み台ホストと RDS エンドポイント。
+  雛形は `scripts/db/ssh-tunnel.tsv.example`
 
 手書きするもの：
 
