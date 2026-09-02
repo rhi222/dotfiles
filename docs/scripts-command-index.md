@@ -81,6 +81,12 @@
 | `scripts/worktree/init.sh`    | `[--dry-run] [<path>]`           | doc skill hook link |
 | `scripts/worktree/cleanup.sh` | `[--size] [--execute] [--force]` | doc skill           |
 
+### git
+
+| スクリプト                 | 引数                        | 呼び出し元 |
+| -------------------------- | --------------------------- | ---------- |
+| `scripts/git/check-tag.sh` | `<repo_name> <tag1> <tag2>` | doc        |
+
 ### 掃除
 
 | スクリプト               | 引数          | 呼び出し元 |
