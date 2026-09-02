@@ -224,6 +224,11 @@ tar xzf claude-memory.tar.gz -C ~
   — esa の API トークンと `docker_clean_ignore_patterns`。会社PCではprivate Codex accountを使う
   repository rootの `codex_alt_repo_roots`、専用homeの `codex_alt_home`、agent usage用にexportする
   `AGENT_USAGE_CODEX_OVERRIDE_HOME` も設定する。個人PCではCodex用の3変数を設定しない
+- **再ログイン** glab（`glab auth login --hostname <社内ホスト>`）。
+  ホスト名とプロトコルは `~/.claude/local-context.md` を参照。ログイン後に per-host 設定を入れる:
+  `glab config set --host <社内ホスト> api_protocol http`。**`-h` は help なので `--host` を使う。**
+  `~/.config/glab-cli/config.yml` はトークンと社内ホスト名を平文で持ち、実行のたびに
+  書き換わるため、リポジトリでも private bundle でも管理しない
 - **手書き** `~/.config/linear/api-key`
   — Linear の API キー。作成後に `chmod 600 ~/.config/linear/api-key` を実行する
 - **自動** `~/.claude/settings.json`
