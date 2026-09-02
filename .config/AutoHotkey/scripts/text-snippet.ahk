@@ -10,12 +10,21 @@
 ; ----------------------------
 ; Config
 ; ----------------------------
+; deploy-ahk-script.sh が配備時に実行環境の値へ差し替える。ここは既定値。
+; 手で書き換えず、端末を移ったら deploy を実行し直す。
 WSL_DISTRO := "Ubuntu"
 WSL_USER   := "nishiyama"
 
-; WSL share root (\\wsl$\Ubuntu\...)
+; WSL share root (\\wsl$\<distro>\...)
 ; NOTE: If WSL isn't running, this path may temporarily fail.
 SNIPPET_ROOT := "\\wsl$\" WSL_DISTRO "\data\git-repos\github.com\rhi222\dotfiles\.config\AutoHotkey\ahk-snippets"
+
+; private-bundle の集約先（ローカル設定の実体）。
+; SNIPPET_ROOT 配下の js\ と passwords\<subsys>\ は集約先への symlink で、
+; Windows は WSL の symlink を辿れない（\\wsl$ でも \\wsl.localhost でも、
+; reparse point として見えるだけで列挙も FileExist も失敗する）。
+; そのため実体側をもう1つのルートとして直接見る。
+PRIVATE_ROOT := "\\wsl$\" WSL_DISTRO "\home\" WSL_USER "\.local\share\dotfiles-private\repo\.config\AutoHotkey\ahk-snippets"
 
 ; How long to wait for clipboard to become ready (sec)
 CLIPWAIT_SEC := 1.5
@@ -24,7 +33,7 @@ CLIPWAIT_SEC := 1.5
 ; Snippet Registry (edit here)
 ; key: hotstring trigger
 ; label: menu label
-; rel: path relative to SNIPPET_ROOT
+; rel: path relative to SNIPPET_ROOT (無ければ PRIVATE_ROOT からも探す)
 ; group: menu group (optional). If omitted, derived from rel prefix.
 ; ----------------------------
 SNIPPETS := Map(
@@ -52,6 +61,18 @@ JoinPath(base, rel) {
     base := RTrim(base, "\/")
     rel  := LTrim(rel, "\/")
     return base "\" rel
+}
+
+ResolveSnippet(rel) {
+    ; rel をリポジトリ側 → 集約先の順で解決する。
+    ; どちらにも無ければ既定ルートのパスを返し、PasteSnippet にエラーを出させる。
+    path := JoinPath(SNIPPET_ROOT, rel)
+    if FileExist(path)
+        return path
+    fallback := JoinPath(PRIVATE_ROOT, rel)
+    if FileExist(fallback)
+        return fallback
+    return path
 }
 
 InferGroup(rel) {
@@ -121,10 +142,13 @@ PasteText(text) {
     }
 }
 
-PasteFile(path, *) {
+PasteSnippet(rel, *) {
     ; Try waking WSL first (cheap + helps reliability)
+    ; 解決は貼り付け時に行う。起動時に WSL が落ちていると全部フォールバック側に
+    ; 倒れてしまうため、パスではなく rel を bind する。
     EnsureWSLRunning(WSL_DISTRO)
 
+    path := ResolveSnippet(rel)
     if !FileExist(path) {
         MsgBox(
             "File not found:`n" path "`n`n"
@@ -156,11 +180,16 @@ PasteFile(path, *) {
 ; Password Snippets (auto-scan)
 ; ============================================================
 ScanPasswordSnippets() {
-    pwDir := JoinPath(SNIPPET_ROOT, "passwords")
     results := Map()
+    ; rel は共通で、実体がどちらのルートにあるかは ResolveSnippet に任せる
+    for _, root in [SNIPPET_ROOT, PRIVATE_ROOT]
+        ScanPasswordRoot(JoinPath(root, "passwords"), results)
+    return results
+}
 
+ScanPasswordRoot(pwDir, results) {
     if !DirExist(pwDir)
-        return results
+        return
 
     ; サブシステム → 環境 → ファイルの3層を走査
     loop Files, pwDir "\*", "D" {          ; サブシステムディレクトリ
@@ -184,7 +213,6 @@ ScanPasswordSnippets() {
             }
         }
     }
-    return results
 }
 
 EnsureWSLRunning(WSL_DISTRO)
@@ -197,10 +225,9 @@ for trig, meta in ScanPasswordSnippets()
 for trig, meta in SNIPPETS {
     if (StrLen(trig) > 40)  ; AHK hotstring上限=40文字。超過分はGUIメニューのみ利用可
         continue
-    fullPath := JoinPath(SNIPPET_ROOT, meta["rel"])
     ; :*: = trigger immediately when typed (no ending char needed)
     ; If you prefer safer boundary behavior, consider :*?:
-    Hotstring(":*:" trig, PasteFile.Bind(fullPath))
+    Hotstring(":*:" trig, PasteSnippet.Bind(meta["rel"]))
 }
 
 ; ============================================================
@@ -218,8 +245,7 @@ for trig, meta in SNIPPETS {
             continue
         rel      := meta["rel"]
         label    := meta["label"]
-        fullPath := JoinPath(SNIPPET_ROOT, rel)
-        cb       := PasteFile.Bind(fullPath)
+        cb       := PasteSnippet.Bind(rel)
 
         group := meta.Has("group") ? meta["group"] : InferGroup(rel)
 
@@ -253,8 +279,7 @@ for trig, meta in SNIPPETS {
         subsys := meta["pw_subsys"]
         env    := meta["pw_env"]
         key    := subsys "\" env
-        fullPath := JoinPath(SNIPPET_ROOT, meta["rel"])
-        cb       := PasteFile.Bind(fullPath)
+        cb     := PasteSnippet.Bind(meta["rel"])
 
         ; 環境メニュー（最下層）
         if !pwEnvMenus.Has(key)
