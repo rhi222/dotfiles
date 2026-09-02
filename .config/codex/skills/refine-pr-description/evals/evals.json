@@ -1,0 +1,26 @@
+{
+  "skill_name": "refine-pr-description",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "$refine-pr-description を使って、現在のブランチのPR本文を読みやすく整理して。",
+      "expected_output": "現在のブランチに対応するPRを特定し、追加確認を求めずにGitHub上の本文を更新して、更新対象と要約を報告する。",
+      "assertions": [
+        "現在のブランチに対応するPRを特定している",
+        "本文更新について追加の許可を求めていない",
+        "GitHub上のPR本文を実際に更新している",
+        "PRを新規作成したりタイトルを変更したりしていない"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "$refine-pr-description を使って、次のPR本文案を整理して。GitHub上は変更しないでください。『設定を直しました。テストしました。』",
+      "expected_output": "指定された文章だけを根拠に貼り付け可能なMarkdown本文案を提示し、GitHub上のPRは変更しない。",
+      "assertions": [
+        "貼り付け可能なMarkdown本文案を提示している",
+        "GitHub上のPR本文を更新していない",
+        "入力にない変更内容やテスト結果を捏造していない"
+      ]
+    }
+  ]
+}
