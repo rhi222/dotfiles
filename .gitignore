@@ -46,6 +46,12 @@ docs/superpowers/
 # .config/psql/ 配下に置いてしまった場合の保険として ignore しておく。
 .config/psql/psqlrc.local
 
+# DBトンネルの接続先表（踏み台ホスト・RDSエンドポイント）。雛形は
+# scripts/db/ssh-tunnel.tsv.example。実体の置き場所は
+# ~/.config/dotfiles/ssh-tunnel.tsv（リポジトリ外）だが、リポジトリ内へ
+# 置いてしまった場合の保険として、どこにあっても ignore する。
+ssh-tunnel.tsv
+
 # 社内固有値の集約先。実体は ~/.claude/local-context.md（リポジトリ外）だが、
 # .config/claude/ 配下に置いてしまった場合の保険として ignore しておく。
 .config/claude/local-context.md

@@ -13,6 +13,7 @@
 | `skills/`     | agent skillの追加・監査・vendoring       |
 | `worktree/`   | worktreeの初期化・掃除                   |
 | `git/`        | 他repoに対するgit補助コマンド            |
+| `db/`         | DBへのSSHトンネル                        |
 | `linear/`     | Linear自動化                             |
 | `nippo/`      | 日報・レポート自動化                     |
 | `session/`    | herdr session復元                        |

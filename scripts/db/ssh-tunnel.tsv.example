@@ -1,0 +1,10 @@
+# ssh-tunnel.tsv — scripts/db/tunnel.sh の接続先表。
+#
+# 実体は ~/.config/dotfiles/ssh-tunnel.tsv へ置く（このrepoはpublicなので
+# 社内踏み台名・RDSエンドポイントをcommitしない）。
+#
+# 空白区切り。# 始まりの行と空行は無視する。
+#
+# app  env  ssh先([user@]host)  ローカルport  接続先host  読み取り専用host(任意)
+myapp  stg   user@bastion-stg.example.com   54321  db-stg.example.com   db-stg-ro.example.com
+myapp  prod  user@bastion-prod.example.com  64321  db-prod.example.com  db-prod-ro.example.com

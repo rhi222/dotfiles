@@ -9,6 +9,7 @@
 | 機密語辞書                       | `~/.config/dotfiles/secret-patterns.txt` | `scripts/repository/secret-patterns.txt.example` |
 | nvimのHTTPS非対応host            | `my/local_config.lua`                    | `my/local_config.lua.example`                    |
 | psqlのprod/stg判定               | `~/.config/psql/psqlrc.local`            | `.config/psql/psqlrc.local.example`              |
+| DBトンネルの踏み台とendpoint     | `~/.config/dotfiles/ssh-tunnel.tsv`      | `scripts/db/ssh-tunnel.tsv.example`              |
 | dclean除外                       | `99-local.fish`                          | なし                                             |
 | 社内AHK snippet                  | `snippets-local.ahk`, `ahk-snippets/js/` | なし                                             |
 | 社内pluginとmarketplace          | 実 `settings.json`。同期時にmask         | なし                                             |
