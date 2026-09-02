@@ -17,7 +17,7 @@ GitLab の URL を `glab` CLI に変換して、URL 先のリソースを読み�
 
 ## 前提・環境の注意
 
-- glab は snap でインストールされている（`/snap/bin/glab`）。**サンドボックス内では `cannot preserve mount namespace` エラーで失敗する**ため、失敗したらサンドボックスなしで再実行する。
+- glab は mise で管理している（`.config/mise/config.toml` の `glab`）。
 - デフォルトホストは `gitlab.com`。**リポジトリ外から叩くときは必ずホストを指定する**：
   - サブコマンド系: `-R <host>/<group>/<project>`（例: `-R gitlab.example.com/group/project`）
   - `glab api`: `GITLAB_HOST=<host>` 環境変数（例: `GITLAB_HOST=gitlab.example.com glab api ...`）
