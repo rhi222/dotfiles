@@ -146,14 +146,14 @@ url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/532322356"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
-version = "0.26.13"
+version = "0.27.0"
 backend = "aqua:tree-sitter/tree-sitter"
 specifiers = ["latest"]
 
 [tools."aqua:tree-sitter/tree-sitter"."platforms.linux-x64"]
-checksum = "sha256:c9c8bef027658d60249ca4fc0663578ceb2e2029346bb8702e091e20d7716475"
-url = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.26.13/tree-sitter-linux-x64.gz"
-url_api = "https://api.github.com/repos/tree-sitter/tree-sitter/releases/assets/526034722"
+checksum = "sha256:20a1f39ec1c45f2211492dcb8881c802b643b554bb196869a29ac3778277fa77"
+url = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.27.0/tree-sitter-linux-x64.gz"
+url_api = "https://api.github.com/repos/tree-sitter/tree-sitter/releases/assets/536857303"
 provenance = "github-attestations"
 
 [[tools."aqua:x-motemen/ghq"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.36"
+version = "2.36.37"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:bec4e1ad03958b9762123cfe9f11e4fc2c88b668e92fd020a5d719283d25a7d3"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.36.zip"
+checksum = "blake3:710dbfcd2f48e7fd723dbb1883224d5ffdadc115fd5ec42a7d8160310b0141d8"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.37.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -380,7 +380,7 @@ backend = "npm:browser-sync"
 specifiers = ["latest"]
 
 [[tools."npm:ccmanager"]]
-version = "4.3.1"
+version = "4.3.2"
 backend = "npm:ccmanager"
 specifiers = ["latest"]
 
