@@ -11,11 +11,15 @@ AutoHotKeyの設定ファイル群
 C:\Users\<user>\Documents\AutoHotkey\
 ├── main.ahk
 ├── keymap-vimlike.ahk
-└── text-snippet.ahk
+├── text-snippet.ahk
+└── snippets-local.ahk  # ローカル専用（gitignore済み・無ければ配備されない）
 ```
 
 - `bash AutoHotkey/deploy-ahk-script.sh`
   - `--dry-run` オプションで、配備先のファイル構成を確認できます。
+  - 配備時に `text-snippet.ahk` の `WSL_DISTRO` / `WSL_USER` を実行環境の値へ
+    差し替えます。**端末を移ったら必ず実行し直してください。** distro名が変わると
+    `\\wsl$` のパスが丸ごと存在しなくなり、Passwordsメニューが消えます。
 
 ```
 C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\
