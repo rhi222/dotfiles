@@ -1,8 +1,9 @@
 -- options
 vim.scriptencoding = "utf-8"
 
--- providers: 外部プロセスを起動せずパスを解決
-vim.g.node_host_prog = vim.fn.exepath("neovim-node-host")
+-- miseのnpm shimはshell scriptだが、Nvimはnodeで直接実行するため実体のJSを指定する
+local node_host_bin = vim.fn.exepath("neovim-node-host")
+vim.g.node_host_prog = vim.fn.glob(vim.fs.dirname(node_host_bin) .. "/../.mise/neovim@*/node_modules/neovim/bin/cli.js")
 vim.g.python3_host_prog = vim.fn.exepath("python3")
 
 -- checkhealthの警告抑制
