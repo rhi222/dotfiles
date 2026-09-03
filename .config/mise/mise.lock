@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.37"
+version = "2.36.38"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:710dbfcd2f48e7fd723dbb1883224d5ffdadc115fd5ec42a7d8160310b0141d8"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.37.zip"
+checksum = "blake3:187e708bfc4f8c8f77dbd639f41341db7c9580fbf58096b087e8915209d7b4fd"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.38.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -506,14 +506,14 @@ url = "https://github.com/tmux/tmux-builds/releases/download/v3.7b/tmux-3.7b-lin
 url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/465072866"
 
 [[tools.uv]]
-version = "0.12.7"
+version = "0.12.8"
 backend = "aqua:astral-sh/uv"
 specifiers = ["latest"]
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:788f18abea7c5f55d6216e4f5613fd89d4d59b631efeec117b2b07fe72f1da21"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/532935280"
+checksum = "sha256:2e2b37e9811e17675a9e70bed5e1a58fc8c0388be63d751d72cc735188c149ff"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.8/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/538592029"
 provenance = "github-attestations"
 
 [[tools.yazi]]
