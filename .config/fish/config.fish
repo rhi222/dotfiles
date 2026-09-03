@@ -16,5 +16,13 @@ for file in ~/.config/fish/my/conf.d/*.fish
     end
 end
 
+# **conf.d を全部読んだ後に呼ぶ。** 99-local.fish の閾値・除外リストを見てから
+# 判定させる必要がある。**docker の有無は関数側で見る。** 未導入の端末では
+# docker info が command not found ハンドラを起こし、起動のたびに snap の
+# 導入案内が出る。
+if functions -q __docker_clean_greeting
+    __docker_clean_greeting
+end
+
 # Generated for envman. Do not edit.
 test -s ~/.config/envman/load.fish; and source ~/.config/envman/load.fish

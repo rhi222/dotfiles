@@ -12,7 +12,13 @@
 #   docker_clean_ignore_patterns      長時間稼働の集計から除外する名前/イメージのグロブ
 #   docker_clean_cache_ttl_h          キャッシュの TTL（既定 6）
 
+# **呼び出しは config.fish の conf.d ループ後。** ここで直接呼ぶと
+# 99-local.fish の docker_clean_ignore_patterns がまだ未設定で、除外したはずの
+# コンテナを通知が数える（通知は 2件、dclean --status は 0件 という食い違いになった）。
 function __docker_clean_greeting --description 'docker の溜まり具合をキャッシュから通知する'
+    status is-interactive; or return 0
+    type -q docker; or return 0
+
     set -l dotctl (__dclean_dotctl 2>/dev/null)
     or return 0
 
@@ -24,10 +30,4 @@ function __docker_clean_greeting --description 'docker の溜まり具合をキ�
         # 「There are no suitable jobs」を出す。切り離せていれば目的は足りるので捨てる。
         disown 2>/dev/null
     end
-end
-
-# **docker の有無を見てから呼ぶ。** 未導入の端末では docker info が
-# command not found ハンドラを起こし、起動のたびに snap の導入案内が出る。
-if status is-interactive; and type -q docker
-    __docker_clean_greeting
 end
