@@ -252,7 +252,12 @@ check "出力が不正ならMy Reviewへ遷移しない" bash -c "! grep issueUp
 : >"$CURL_LOG"
 : >"$CODEX_LOG"
 mkdir -p "$tmp/state"
-out72=$(flock "$tmp/state/em.lock" -c "HOME='$tmp/home' WIP_RESPONSE='$tmp/wip-empty.json' READY_RESPONSE='$tmp/ready-em.json' LINEAR_CONFIG_DIR='$tmp/home/.config/linear' bash '$SCRIPT' run" 2>&1)
+exec 8>"$tmp/state/em.lock"
+flock 8
+out72=$(HOME="$tmp/home" WIP_RESPONSE="$tmp/wip-empty.json" READY_RESPONSE="$tmp/ready-em.json" \
+  LINEAR_CONFIG_DIR="$tmp/home/.config/linear" bash "$SCRIPT" run 2>&1)
+flock -u 8
+exec 8>&-
 check "ロックが取れなければ何もしないと出る" grep -q "既にワーカーが動いている" <<<"$out72"
 check "ロックが取れなければcodexを実行しない" test ! -s "$CODEX_LOG"
 

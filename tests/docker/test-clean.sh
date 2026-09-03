@@ -166,6 +166,8 @@ check "\$HOME/.local/bin を優先する" "yes" "$(has "$FAKE_HOME/.local/bin/do
 # PATH 上にしか無い場合はそちらへ落ちる
 mkdir -p "$TEST_DIR/pathbin"
 cp "$FAKE_HOME/.local/bin/dotctl" "$TEST_DIR/pathbin/dotctl"
+printf '#!/bin/sh\nexit 0\n' >"$TEST_DIR/pathbin/docker"
+chmod +x "$TEST_DIR/pathbin/docker"
 out=$(env HOME="$TEST_DIR/nohome" PATH="$TEST_DIR/pathbin:/usr/bin:/bin" \
   fish -c "set -g fish_function_path $FUNC_DIR \$fish_function_path; __dclean_dotctl" 2>&1)
 check "PATH へフォールバックする" "yes" "$(has "$TEST_DIR/pathbin/dotctl" "$out")"
@@ -193,7 +195,7 @@ STUB
 chmod +x "$FAKE_HOME/.local/bin/dotctl"
 
 : >"$TEST_DIR/calls.log"
-out=$(env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" fish -c "
+out=$(env HOME="$FAKE_HOME" PATH="$TEST_DIR/pathbin:/usr/bin:/bin" fish -ic "
   set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF
   __docker_clean_greeting" 2>&1)
@@ -204,7 +206,7 @@ check "stale を別に呼ばない" "no" "$(has 'docker stale' "$(cat "$TEST_DIR
 check "新しければ refresh しない" "no" "$(has 'docker refresh' "$(cat "$TEST_DIR/calls.log")")"
 
 : >"$TEST_DIR/calls.log"
-env HOME="$FAKE_HOME" PATH="/usr/bin:/bin" STALE_EXIT=0 fish -c "
+env HOME="$FAKE_HOME" PATH="$TEST_DIR/pathbin:/usr/bin:/bin" STALE_EXIT=0 fish -ic "
   set -g fish_function_path $FUNC_DIR \$fish_function_path
   source $CONF
   __docker_clean_greeting" >/dev/null 2>&1
