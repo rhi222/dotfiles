@@ -18,9 +18,9 @@
 # バイナリはリポジトリへコミットしない（.gitignore）。
 #
 # **-ldflags で commit と repo を埋め込むのが version skew 検知の土台。**
-# git pull 後に再ビルドしなければ、cron と hook は古いバイナリを黙って実行し
+# git pull でGo sourceが変わった後に再ビルドしなければ、cron と hook は古いバイナリを黙って実行し
 # 続ける（daily-update.sh が古い installs/<tool>/ の gh を掴んだ事故と同型）。
-# 埋め込んだ値と repo HEAD がずれていたら dotctl 自身が stderr へ1行警告する。
+# 埋め込んだcommit以降でGoのbuild入力が変わっていたらdotctl自身がstderrへ1行警告する。
 set -uo pipefail
 
 # ~/scripts のように scripts/ 自体が symlink の場合も、物理pathを基準にrepo rootを
@@ -49,7 +49,7 @@ if ! command -v "$GO" >/dev/null 2>&1; then
   exit 1
 fi
 
-# HEAD・Go toolchain・Go sourceがすべて同じなら、毎日のtest/buildを省く。
+# Go toolchain・Go sourceが同じなら、毎日のtest/buildを省く。
 # sourceはdirtyの有無ではなく内容のfingerprintで比べる。未コミットのGo変更が
 # あっても、一度その内容をbuild済みなら次回はskipできる。
 commit="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
@@ -72,16 +72,14 @@ if ! source_hash="$(source_fingerprint)"; then
   echo "setup-dotctl: Go sourceのfingerprintを計算できない" >&2
   exit 1
 fi
-installed_commit=""
 installed_go=""
 installed_source_hash=""
 if [ -x "$BIN" ]; then
-  installed_commit="$("$BIN" version 2>/dev/null | awk 'NR == 1 && $1 == "dotctl" { print $2 }')"
   installed_source_hash="$("$BIN" version 2>/dev/null | awk 'NR == 1 && $1 == "dotctl" { print $3 }')"
   installed_go="$("$GO" version -m "$BIN" 2>/dev/null | awk 'NR == 1 { print $2 }')"
 fi
-if [ -n "$current_go" ] && [ "$installed_commit" = "$commit" ] &&
-  [ "$installed_go" = "$current_go" ] && [ "$installed_source_hash" = "$source_hash" ]; then
+if [ -n "$current_go" ] && [ "$installed_go" = "$current_go" ] &&
+  [ "$installed_source_hash" = "$source_hash" ]; then
   echo "setup-dotctl: already current ($commit, $current_go), skipping"
   exit 0
 fi

@@ -2,9 +2,15 @@
 package command
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/rhi222/dotfiles/internal/agentusage"
@@ -169,29 +175,56 @@ func versionString(env Env) string {
 	return env.Commit
 }
 
-// warnIfStale はバイナリのコミットと repo HEAD がずれていたら警告する。
+// warnIfStale はビルド後に Go source が変わっていたら警告する。
 //
 // **実行は止めない。** cron を skew で落とすほうが害が大きいので、
 // stderr へ1行出すだけにする。ビルド情報が無いとき（go run）と
 // repo が読めないとき（リポジトリを消した端末、バイナリだけ配った端末）は
 // 何も言わない。毎回警告が出る状態を作ると無視されるようになる。
 func warnIfStale(ctx context.Context, env Env) {
-	if env.Commit == "" || env.Repo == "" || env.Runner == nil {
+	if env.Commit == "" || env.Repo == "" || env.SourceHash == "" || env.Runner == nil {
 		return
 	}
 	res, err := env.Runner.Run(ctx, execx.Cmd{
-		Name: "git", Args: []string{"-C", env.Repo, "rev-parse", "HEAD"},
+		Name: "git", Args: []string{"-C", env.Repo, "ls-files", "-coz", "--exclude-standard", "--", "*.go", "go.mod", "go.sum"},
 	})
 	if err != nil || !res.OK() {
 		return
 	}
-	head := strings.TrimSpace(res.Stdout)
-	if head == "" || head == env.Commit {
+	files := strings.Split(strings.TrimSuffix(res.Stdout, "\x00"), "\x00")
+	if len(files) == 1 && files[0] == "" {
+		files = nil
+	}
+	if currentSourceHash(env.Repo, files) == env.SourceHash {
 		return
 	}
 	fmt.Fprintf(env.Stderr,
-		"dotctl: バイナリが古い（%s、repo は %s）。再ビルド: dotctl rebuild\n",
-		short(env.Commit), short(head))
+		"dotctl: ビルド入力が変わった（binary は %s）。再ビルド: dotctl rebuild\n",
+		short(env.Commit))
+}
+
+func currentSourceHash(repo string, files []string) string {
+	sort.Strings(files)
+	var source bytes.Buffer
+	for _, file := range files {
+		data, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(file)))
+		if err != nil {
+			return ""
+		}
+		source.WriteString(file)
+		source.WriteByte(0)
+		source.WriteString(gitBlobHash(data))
+		source.WriteByte('\n')
+	}
+	return gitBlobHash(source.Bytes())
+}
+
+// gitBlobHash は setup-dotctl.sh の `git hash-object` と同じfingerprintを返す。
+func gitBlobHash(data []byte) string {
+	h := sha1.New() //nolint:gosec // Git SHA-1 object IDとの互換性に使い、セキュリティ用途ではない。
+	fmt.Fprintf(h, "blob %d\x00", len(data))
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func short(s string) string {

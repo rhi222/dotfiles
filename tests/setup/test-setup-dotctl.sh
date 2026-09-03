@@ -198,10 +198,14 @@ cat >"$BINDIR/dotctl" <<EOF
 echo 'dotctl $head $source_hash'
 EOF
 chmod +x "$BINDIR/dotctl"
+# build入力と無関係なcommitでHEADだけ進めても再buildしない。
+echo changed >"$FAKE_REPO/f"
+git -C "$FAKE_REPO" add f
+git -C "$FAKE_REPO" commit -qm non-build-change
 out=$(GO_CALL_LOG="$TEST_DIR/go.log" run_setup)
 rc=$?
-check "未commit sourceもbuild済みなら成功する" "0" "$rc"
-check "未commit sourceも同じ内容ならtest/buildしない" "0" "$([ -f "$TEST_DIR/go.log" ] && wc -l <"$TEST_DIR/go.log" || echo 0)"
+check "HEADが進んでもbuild入力が同じなら成功する" "0" "$rc"
+check "build入力が同じならtest/buildしない" "0" "$([ -f "$TEST_DIR/go.log" ] && wc -l <"$TEST_DIR/go.log" || echo 0)"
 check "skipしたことを伝える" "yes" "$(has 'skipping' "$out")"
 teardown
 
@@ -335,7 +339,7 @@ echo "== ビルド情報の埋め込み =="
 
 setup
 # -ldflags に repo の HEAD と repo パスが入っていること。
-# **これが無いと version skew を検知できない**
+# **これが無いと build入力のskewを検知できない**
 cat >"$STUB/go" <<'EOF'
 #!/bin/bash
 case "$1" in

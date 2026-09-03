@@ -101,8 +101,8 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
   `package.toml` が無い環境も成功扱いでskipする
 - fisherはremote commit SHAを `~/.cache/dotfiles/fisher-update.refs` に記録し、
   宣言またはSHAが変わったときだけfull reconcileする。cache削除時は次回full updateする
-- dotctlはmiseによるGo更新の直後に再buildする。HEAD・build時のGo version・Go sourceが
-  すべて現在値と一致すればtest/buildをskipする。test中にGo sourceが変わった場合は
+- dotctlはmiseによるGo更新の直後に再buildする。build時のGo version・Go sourceが
+  現在値と一致すれば、HEADが進んでいてもtest/buildをskipする。test中にGo sourceが変わった場合は
   build直前にfingerprintを取り直し、build中にも変わった場合は不整合なバイナリを採用しない
 
 ## パッケージとプラグイン

@@ -5,6 +5,8 @@ package command
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -72,14 +74,19 @@ func TestUnknownSubcommandNamesItOnStderr(t *testing.T) {
 
 // --- version skew ---
 //
-// git pull 後に再ビルドしないと、cron と hook は古いバイナリを黙って実行し
+// git pull でGo sourceが変わった後に再ビルドしないと、cron と hook は古いバイナリを黙って実行し
 // 続ける（daily-update.sh が古い installs/<tool>/ の gh を掴んだ事故と同型）。
 // 実行は止めず、stderr へ1行だけ警告する。
 
-func TestWarnsWhenBinaryIsStaleAgainstRepoHead(t *testing.T) {
+func TestWarnsWhenBuildInputsChanged(t *testing.T) {
+	repo := t.TempDir()
+	file := filepath.Join(repo, "main.go")
+	os.WriteFile(file, []byte("package main\n"), 0o600)
+	builtHash := currentSourceHash(repo, []string{"main.go"})
+	os.WriteFile(file, []byte("package changed\n"), 0o600)
 	f := execx.NewFake()
-	f.On("git", execx.Result{Stdout: "newhash\n"})
-	code, _, errOut := runWithBuild(t, f, "oldhash", "/repo", "version")
+	f.On("git", execx.Result{Stdout: "main.go\x00"})
+	code, _, errOut := runWithBuild(t, f, "oldhash", repo, builtHash, "version")
 	if code != 0 {
 		t.Errorf("skew では実行を止めない: exit = %d", code)
 	}
@@ -91,12 +98,19 @@ func TestWarnsWhenBinaryIsStaleAgainstRepoHead(t *testing.T) {
 	}
 }
 
-func TestSilentWhenBinaryMatchesRepoHead(t *testing.T) {
+func TestSilentWhenOnlyNonBuildInputsChanged(t *testing.T) {
+	repo := t.TempDir()
+	os.WriteFile(filepath.Join(repo, "main.go"), []byte("package main\n"), 0o600)
+	builtHash := currentSourceHash(repo, []string{"main.go"})
 	f := execx.NewFake()
-	f.On("git", execx.Result{Stdout: "samehash\n"})
-	_, _, errOut := runWithBuild(t, f, "samehash", "/repo", "version")
+	f.On("git", execx.Result{Stdout: "main.go\x00"})
+	_, _, errOut := runWithBuild(t, f, "oldhash", repo, builtHash, "version")
 	if errOut != "" {
-		t.Errorf("一致しているときは何も言わない: %q", errOut)
+		t.Errorf("build入力が同じなら何も言わない: %q", errOut)
+	}
+	want := "git -C " + repo + " ls-files -coz --exclude-standard -- *.go go.mod go.sum"
+	if got := f.Calls[0].String(); got != want {
+		t.Errorf("build入力だけを比較していない: %q, want %q", got, want)
 	}
 }
 
@@ -104,7 +118,7 @@ func TestSilentWhenRepoIsUnavailable(t *testing.T) {
 	// リポジトリを消した端末・バイナリだけ配った端末で毎回警告を出さない
 	f := execx.NewFake()
 	f.On("git", execx.Result{ExitCode: 128, Stderr: "not a git repository"})
-	_, _, errOut := runWithBuild(t, f, "oldhash", "/gone", "version")
+	_, _, errOut := runWithBuild(t, f, "oldhash", "/gone", "oldsource", "version")
 	if errOut != "" {
 		t.Errorf("repo が読めないときは黙る: %q", errOut)
 	}
@@ -113,7 +127,7 @@ func TestSilentWhenRepoIsUnavailable(t *testing.T) {
 func TestSilentWhenBuildInfoIsAbsent(t *testing.T) {
 	// go run や -ldflags なしのビルドで警告を出さない
 	f := execx.NewFake()
-	_, _, errOut := runWithBuild(t, f, "", "", "version")
+	_, _, errOut := runWithBuild(t, f, "", "", "", "version")
 	if errOut != "" {
 		t.Errorf("ビルド情報が無いときは黙る: %q", errOut)
 	}
@@ -122,10 +136,10 @@ func TestSilentWhenBuildInfoIsAbsent(t *testing.T) {
 	}
 }
 
-func runWithBuild(t *testing.T, r execx.Runner, commit, repo string, args ...string) (int, string, string) {
+func runWithBuild(t *testing.T, r execx.Runner, commit, repo, sourceHash string, args ...string) (int, string, string) {
 	t.Helper()
 	var out, errOut bytes.Buffer
-	env := Env{Stdout: &out, Stderr: &errOut, Runner: r, Commit: commit, Repo: repo}
+	env := Env{Stdout: &out, Stderr: &errOut, Runner: r, Commit: commit, Repo: repo, SourceHash: sourceHash}
 	code := Run(context.Background(), args, env)
 	return code, out.String(), errOut.String()
 }

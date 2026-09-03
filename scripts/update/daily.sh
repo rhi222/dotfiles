@@ -68,7 +68,7 @@ YAZI_PACKAGE_FILE="${YAZI_PACKAGE_FILE:-$HOME/.config/yazi/package.toml}"
 # このステップは自動で効き始める。
 #
 # 一方 **ビルドの失敗は隠さない。** 古いバイナリを掴み続ける状態そのものなので、
-# run_step で FAILED として拾わせる。dotctl 自身も実行のたびに repo HEAD との
+# run_step で FAILED として拾わせる。dotctl 自身も実行のたびにGoのbuild入力との
 # ずれを警告するが、そちらは「気付ける」だけで直しはしない。
 DOTCTL_GO_MOD="${DOTCTL_GO_MOD:-$SCRIPT_DIR/../../go.mod}"
 DOTCTL_SETUP_SCRIPT="${DOTCTL_SETUP_SCRIPT:-$SCRIPT_DIR/../setup/dotctl.sh}"

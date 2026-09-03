@@ -371,11 +371,11 @@ dotctl version
   通ったものだけを rename で差し替える。落ちたときは直前まで動いていた
   バイナリがそのまま残るので、`dotctl` 越しに動く cron と hook は止まらない
 - 更新は `daily-update.sh` が日次で `setup-dotctl.sh` を呼ぶ。**手で `git pull`
-  した直後は `dotctl rebuild` を走らせる。** ビルド元のrepository pathはバイナリに
+  してGo sourceが変わったときは `dotctl rebuild` を走らせる。** ビルド元のrepository pathはバイナリに
   埋め込まれているため、dotfiles以外のdirectoryからでも実行できる。再ビルドしないと
   cron と hook は古いバイナリを黙って実行し続ける
-- 古いバイナリで実行すると `dotctl` 自身が stderr へ1行警告する
-  （`バイナリが古い（... repo は ...）`）。実行は止めない
+- Go sourceが変わった古いバイナリを実行すると `dotctl` 自身が stderr へ1行警告する。
+  lockfileや文書だけの変更では警告しない。実行は止めない
 - repositoryを移動した場合は `DOTCTL_REPO=/new/path dotctl rebuild` で埋め込みpathを
   上書きする
 - 緊急時は `dotctl rebuild --skip-tests` でテストを飛ばせる
