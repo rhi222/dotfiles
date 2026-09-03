@@ -168,7 +168,7 @@ notify "🔄 herdr 復元開始" "$(herdr_restore_toast_start_body "$NVIM_TOTAL"
 # `--status` の表示だけでわかるようにするため。起動コマンド自体が失敗した
 # 場合も、件数の辻褄を合わせるため skipped に入れる。
 launch() {
-  local kind="$1" pane="$2" cmd="$3"
+  local kind="$1" pane="$2" cmd="$3" marker="$4"
   local info
   info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || {
     herdr_restore_status_bump "$STATUS" "${kind}_skipped"
@@ -184,6 +184,7 @@ launch() {
     for _ in $(seq 1 40); do
       info=$(herdr_cli pane process-info --pane "$pane" 2>/dev/null) || info=""
       if herdr_restore_pane_is_nvim "$info"; then
+        [[ "$marker" == "$NVIM_DIR/"* ]] && rm -f -- "$marker"
         herdr_restore_status_bump "$STATUS" "${kind}_done"
         return 0
       fi
@@ -196,7 +197,7 @@ launch() {
 run_group() {
   local kind="$1" batch="$2" interval="$3"
   local -a entries=()
-  local line pane cmd i n
+  local line pane cmd marker i n
 
   for line in "${PLAN[@]}"; do
     [[ "$(printf '%s' "$line" | base64 -d | jq -r '.kind')" == "$kind" ]] && entries+=("$line")
@@ -209,7 +210,8 @@ run_group() {
       line=$(printf '%s' "${entries[i]}" | base64 -d)
       pane=$(printf '%s' "$line" | jq -r '.pane_id')
       cmd=$(printf '%s' "$line" | jq -r '.command')
-      launch "$kind" "$pane" "$cmd"
+      marker=$(printf '%s' "$line" | jq -r '.marker_path')
+      launch "$kind" "$pane" "$cmd" "$marker"
       i=$((i + 1))
       n=$((n + 1))
     done

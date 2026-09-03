@@ -69,13 +69,19 @@ func TestBuildPlanUsesNewestOwnerAndQuotesFileArgs(t *testing.T) {
 	if err := os.Chtimes(old, time.Unix(1, 0), time.Unix(1, 0)); err != nil {
 		t.Fatal(err)
 	}
-	writeTestMarker(t, dir, "new.json", Marker{Version: 2, Owner: "new", PaneID: "w1:p1", SocketPath: "/sock", Cwd: "/repo", Kind: "files", Args: []string{"a b", "it's.txt"}})
+	newest := writeTestMarker(t, dir, "new.json", Marker{Version: 2, Owner: "new", PaneID: "w1:p1", SocketPath: "/sock", Cwd: "/repo", Kind: "files", Args: []string{"a b", "it's.txt"}})
 	plan, err := BuildPlan(PlanOptions{MarkerDir: dir, SocketPath: "/sock", PaneJSON: testPaneJSON(Pane{PaneID: "w1:p1", Cwd: "/repo"})})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got, want := plan.Entries[0].Command, "nvim -- 'a b' 'it'\"'\"'s.txt'"; got != want {
 		t.Fatalf("command=%q want %q", got, want)
+	}
+	if plan.Entries[0].MarkerPath != newest {
+		t.Fatalf("marker=%q want %q", plan.Entries[0].MarkerPath, newest)
+	}
+	if len(plan.Stale) != 1 || plan.Stale[0] != old {
+		t.Fatalf("stale=%#v want [%q]", plan.Stale, old)
 	}
 }
 

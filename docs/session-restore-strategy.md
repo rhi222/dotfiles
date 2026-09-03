@@ -31,6 +31,7 @@ reboot 後に `he` を叩くと、ターミナルのレイアウトだけでな�
 - **正常終了では自分のマーカーだけを消す。** `VimLeavePre` で `v:dying == 0` のときだけ削除する
 - **異常終了ではマーカーが残る。** OS shutdown では `VimLeavePre` が走らない。
   つまり**残っているマーカー = 落ちる直前に動いていたペイン**になり、これがそのまま復元対象の一覧になる
+- **復元成功後は使用したマーカーを消す。** 起動失敗時は再試行できるよう残し、同じペインの古い世代は計画時に破棄する
 - `HERDR_PANE_ID` が無い環境（herdr の外で起動した nvim）は何も書かない
 - headless / pagerは記録しない。ファイル引数付きのinteractive起動は引数をJSONへ保持し、`nvim -- <args>` として戻す
 - `pane move` はpublic pane IDを変えるため、稼働中に `herdr pane current --current` を問い合わせて記録を更新する。shutdownが更新より先でも、復元時にcwdが一意なら新paneへ対応付ける。候補が複数なら誤投入せず保留する

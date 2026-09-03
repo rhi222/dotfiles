@@ -35,9 +35,10 @@ type paneList struct {
 }
 
 type Entry struct {
-	Kind    string `json:"kind"`
-	PaneID  string `json:"pane_id"`
-	Command string `json:"command"`
+	Kind       string `json:"kind"`
+	PaneID     string `json:"pane_id"`
+	Command    string `json:"command"`
+	MarkerPath string `json:"marker_path"`
 }
 
 type Plan struct {
@@ -130,8 +131,13 @@ func BuildPlan(opts PlanOptions) (Plan, error) {
 			continue
 		}
 		c := candidate{marker: marker, path: path, mtime: info.ModTime().UnixNano(), target: target}
-		if old, ok := byTarget[target.PaneID]; !ok || newer(c, old) {
+		if old, ok := byTarget[target.PaneID]; !ok {
 			byTarget[target.PaneID] = c
+		} else if newer(c, old) {
+			stale = append(stale, old.path)
+			byTarget[target.PaneID] = c
+		} else {
+			stale = append(stale, c.path)
 		}
 	}
 
@@ -141,7 +147,9 @@ func BuildPlan(opts PlanOptions) (Plan, error) {
 		if !ok {
 			continue
 		}
-		entries = append(entries, Entry{Kind: "nvim", PaneID: c.target.PaneID, Command: cmd})
+		entries = append(entries, Entry{
+			Kind: "nvim", PaneID: c.target.PaneID, Command: cmd, MarkerPath: c.path,
+		})
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		iFocused := workspaceOf(entries[i].PaneID) == opts.FocusedWorkspace
