@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markdown構成整理"
+  short_description: "情報を保ったまま長大なMarkdownを読みやすく再構成する"
+  default_prompt: "$organize-markdown を使って、このMarkdownを情報量を落とさず読みやすく整理してください。"
