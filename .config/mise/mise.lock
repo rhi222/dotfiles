@@ -300,14 +300,14 @@ url = "https://github.com/gitui-org/gitui/releases/download/v0.28.1/gitui-linux-
 url_api = "https://api.github.com/repos/gitui-org/gitui/releases/assets/380787855"
 
 [[tools.glab]]
-version = "1.115.0"
+version = "1.116.0"
 backend = "gitlab:gitlab-org/cli"
 specifiers = ["latest"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:3744c9f393fdf0aabd329e536aec3501ce780d5f7785eb2cbe0f1d3efa0f436b"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.115.0/downloads/glab_1.115.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E115%2E0/glab_1%2E115%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:173cc61ea94c562f2ccd831f320d25b73982192e82810064552282482e3713ea"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.116.0/downloads/glab_1.116.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E116%2E0/glab_1%2E116%2E0_linux_amd64%2Etar%2Egz"
 
 [[tools.go]]
 version = "1.27.0"
@@ -375,7 +375,7 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.151.0"
+version = "0.152.0"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 
@@ -517,14 +517,14 @@ url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/538592029"
 provenance = "github-attestations"
 
 [[tools.yazi]]
-version = "26.8.15"
+version = "26.9.1"
 backend = "aqua:sxyazi/yazi"
 specifiers = ["latest"]
 
 [tools.yazi."platforms.linux-x64"]
-checksum = "sha256:cc67eb7991550c2f9407cda52d3f5af0937627aa6884e7de99a04fcf059807e0"
-url = "https://github.com/sxyazi/yazi/releases/download/v26.8.15/yazi-x86_64-unknown-linux-gnu.zip"
-url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/515472936"
+checksum = "sha256:a02fe91d3304294048c681f010f1100856872a4e98ecf6927328e888d40a6ad2"
+url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unknown-linux-gnu.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261400"
 
 [[tools.yq]]
 version = "4.53.6"
