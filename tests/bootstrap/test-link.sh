@@ -213,6 +213,22 @@ check "ensure_dirs が ~/.config/gh を作る" test -d "$fakehome/.config/gh"
 check "ensure_dirs が ~/.agents/skills を作る" test -d "$fakehome/.agents/skills"
 check "ensure_dirs が ~/.codex/rules を作る" test -d "$fakehome/.codex/rules"
 
+# bootstrap.md が雛形生成を案内する接続先表。新端末で欠けると tunnel.sh は
+# 実行時まで失敗が分からないので、他のローカル設定と同じ初期化経路に載せる。
+local_init="$tmp/local-init"
+mkdir -p "$local_init/repo/.config/nvim/lua/my" "$local_init/repo/.config/claude" \
+  "$local_init/repo/.config/psql" "$local_init/repo/scripts/db" "$local_init/home"
+echo 'example-entry' >"$local_init/repo/scripts/db/ssh-tunnel.tsv.example"
+HOME="$local_init/home" DC="$local_init/repo/.config" DOTFILES_DIR="$local_init/repo" \
+  init_local_configs >/dev/null
+check "ssh-tunnel.tsv を雛形から生成する" \
+  grep -qx example-entry "$local_init/home/.config/dotfiles/ssh-tunnel.tsv"
+echo 'local-entry' >"$local_init/home/.config/dotfiles/ssh-tunnel.tsv"
+HOME="$local_init/home" DC="$local_init/repo/.config" DOTFILES_DIR="$local_init/repo" \
+  init_local_configs >/dev/null
+check "既存の ssh-tunnel.tsv を上書きしない" \
+  grep -qx local-entry "$local_init/home/.config/dotfiles/ssh-tunnel.tsv"
+
 # 親が実ディレクトリなので api-key だけがファイル単位でリンクされること
 priv="$tmp/ed/private"
 mkdir -p "$priv/home/.config/linear"

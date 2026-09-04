@@ -247,6 +247,8 @@ tar xzf claude-memory.tar.gz -C ~
   — ディレクトリごとコピーする。`repos.yml` は上記ファイルへの symlink
 - `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json`
   — 週次レポート対象の記事番号
+- `.config/claude/skills/sos-precheck/sos-precheck-posts.json`
+  — SoSで更新を確認する記事番号と担当者
 - `.config/AutoHotkey/ahk-snippets/js/`
   — 社内システムの DOM 操作スクリプト
 - `.config/AutoHotkey/scripts/snippets-local.ahk`

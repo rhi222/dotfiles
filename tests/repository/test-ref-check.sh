@@ -2,8 +2,8 @@
 # ref-check.sh のユニットテスト
 #
 # scripts/ 配下のパスは AGENTS.md の表・docs・Claude skill 本文・herdr の
-# config.toml・cron 行・dotfilesLink.sh から**散文として**参照されている（実測で
-# prod 228件 / test 67件）。これらは呼ばれた瞬間まで壊れていることが分からず、
+# config.toml・cron 行・dotfilesLink.sh から**散文として**参照されている。
+# これらは呼ばれた瞬間まで壊れていることが分からず、
 # cron や hook からの参照は**黙って**失敗する。テストとリンタは自分の中身しか
 # 見ないので、この層を埋めるのが ref-check.sh。
 #
@@ -94,6 +94,21 @@ out=$(run_check)
 rc=$?
 check "全部生きていれば成功で返す" "0" "$rc"
 check "OK を伝える" "yes" "$(has 'ref-check: OK' "$out")"
+teardown
+
+echo "== 公開コマンド索引 =="
+
+setup
+make_target scripts/example/tool.sh
+make_referrer docs/scripts-command-index.md '# scripts'
+out=$(run_check)
+rc=$?
+check "索引から漏れた公開コマンドを落とす" "1" "$rc"
+check "漏れたコマンドを名指しする" "yes" "$(has 'scripts/example/tool.sh' "$out")"
+make_referrer docs/scripts-command-index.md '# scripts' '`scripts/example/tool.sh`'
+out=$(run_check)
+rc=$?
+check "公開コマンドが索引にあれば通す" "0" "$rc"
 teardown
 
 echo "== dangling を見つけたとき =="

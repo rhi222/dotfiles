@@ -36,9 +36,9 @@ skillの発動を分ける理由は、通常依頼ではCodexが今回の作業�
 ### 取り込みと信頼
 
 - **allowlist は default-deny。**
-  allowlist 外の owner を `skill-add.sh` / `setup-claude-skills.sh` に渡すと**エラーで止まり** vendor 導線が案内される。
-  `claude-skills.txt` に書いた行も同じで、bootstrap（`setup-claude-skills.sh`）は信頼済みの行を入れ切ってから非0で終わる。
-  **bootstrap の失敗ではなく行が1本間違っている**ので、その行を `skill-vendor.sh add` に移すのが直し方になる。
+  allowlist 外の owner を `scripts/skills/add.sh` / `scripts/setup/claude-skills.sh` に渡すと**エラーで止まり** vendor 導線が案内される。
+  `scripts/setup/claude-skills.txt` に書いた行も同じで、bootstrapは信頼済みの行を入れ切ってから非0で終わる。
+  **bootstrap の失敗ではなく行が1本間違っている**ので、その行を `scripts/skills/vendor.sh add` に移すのが直し方になる。
   散文の規約では取りこぼすので、判定が確定する唯一の瞬間（owner を渡すところ）にゲートを置いた。
   ゲートは**両方**に要る。
   片方だけだと bootstrap 経路から素通りする
@@ -88,7 +88,7 @@ skillの発動を分ける理由は、通常依頼ではCodexが今回の作業�
 - **`daily-update.sh` は検知だけ。**
   vendored な実体はsymlinkで各agentの読み込み口へ生で繋がるので、作業ツリーを書き換えた瞬間に有効になる。
   未レビューのコードが有効になる瞬間を作らない。更新が複数あるときは
-  `skill-vendor.sh update <name> [name...]` の一括取込コマンドを表示するが、差分表示と承認はskillごとに行う。
+  `scripts/skills/vendor.sh update <name> [name...]` の一括取込コマンドを表示するが、差分表示と承認はskillごとに行う。
   1件が失敗しても残りは続行し、全体は非0で終了する
 - **`local:` 行は廃止した。**
   shallow clone の HEAD を毎回取り直して入れるため pin もレビュー面も無く、3導線のうち最も無制御だった。

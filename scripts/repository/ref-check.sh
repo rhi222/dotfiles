@@ -1,5 +1,5 @@
 #!/bin/bash
-# リポジトリ内から参照されている scripts/ 配下のパスが実在するか検査する。
+# scripts/ 配下の参照先と、公開コマンド索引の網羅性を検査する。
 #
 #   bash scripts/repository/ref-check.sh
 #
@@ -9,8 +9,8 @@
 # run-tests.sh は各スクリプトの振る舞い、doc-budget.sh は行数しか見ない。
 # 一方 scripts/ 配下のパスは AGENTS.md の表・docs・Claude skill 本文・
 # herdr の config.toml・crontab 行・dotfilesLink.sh から**散文として**
-# 参照されていて（実測で prod 228件 / test 67件）、ここが壊れても
-# 呼ばれた瞬間まで誰も気付かない。cron と hook からの参照は黙って失敗する。
+# 参照されていて、ここが壊れても呼ばれた瞬間まで誰も気付かない。
+# cron と hook からの参照は黙って失敗する。
 #
 # 参照の書き方は1つではないので、次を同じ実体として扱う。
 #   scripts/example.sh / $DOTFILES_DIR/scripts/example.sh
@@ -139,9 +139,27 @@ while IFS= read -r hit; do
   violations=$((violations + 1))
 done < <(scan)
 
+# 参照先の実在検査では見つからない、公開コマンドの索引漏れも見る。
+# scripts/lib は source する Shell API であり、公開コマンドではない。
+index="$REPO_ROOT/docs/scripts-command-index.md"
+if [ -f "$index" ]; then
+  while IFS= read -r ref; do
+    case "$ref" in
+      scripts/lib/*) continue ;;
+    esac
+    grep -Fq "\`$ref\`" "$index" && continue
+    echo "ref-check: 公開コマンド索引に無い: $ref"
+    echo "    docs/scripts-command-index.md"
+    violations=$((violations + 1))
+  done < <(
+    find "$REPO_ROOT/scripts" -mindepth 2 -maxdepth 2 -type f -name '*.sh' -printf '%P\n' |
+      sed 's|^|scripts/|' | sort
+  )
+fi
+
 if [ "$violations" -gt 0 ]; then
   echo
-  echo "ref-check: $violations 件の参照が壊れている。"
+  echo "ref-check: $violations 件の参照切れまたは索引漏れがある。"
   echo "  実在しなくてよいものは scripts/repository/ref-check-allow.txt に宣言する。"
   echo "  例示やテストのフィクスチャなら、架空名を example* に寄せる（既に許可済み）。"
   exit 1

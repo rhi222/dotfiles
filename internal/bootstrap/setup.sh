@@ -47,12 +47,14 @@ init_local_configs() {
     "$DC/nvim/lua/my/local_config.lua.example|$DC/nvim/lua/my/local_config.lua"
     "$DC/claude/local-context.md.example|$HOME/.claude/local-context.md"
     "$DC/psql/psqlrc.local.example|$HOME/.config/psql/psqlrc.local"
+    "$DOTFILES_DIR/scripts/db/ssh-tunnel.tsv.example|$HOME/.config/dotfiles/ssh-tunnel.tsv"
   )
   local pair src dest
   for pair in "${pairs[@]}"; do
     src="${pair%%|*}"
     dest="${pair##*|}"
     if [ ! -e "$dest" ] && [ -e "$src" ]; then
+      mkdir -p "$(dirname "$dest")"
       cp "$src" "$dest"
       echo "[INFO] $dest を雛形から作成しました" >&2
       echo "       社内固有の値を埋めてください（この内容はコミットされません）" >&2

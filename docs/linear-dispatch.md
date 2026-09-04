@@ -53,7 +53,7 @@
   pushでリモートに上がっているのでローカルに残す意味が薄い
 - **失敗時（Todoへ差し戻す経路）はworktreeとブランチを調査用に意図的に残す。**
   newモードは着手前に前回の残骸を掃除する（残っていると `worktree add -b` がブランチ既存で失敗し、再実行が恒久的に BOUNCED になる）。
-  残りきったものは `worktree-cleanup.sh` も拾う
+  残りきったものは `scripts/worktree/cleanup.sh` も拾う
 - 成果物はdraft PRまで。
   マージは必ず人間
 

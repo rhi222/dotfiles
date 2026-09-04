@@ -68,6 +68,20 @@ func TestEntriesDeclarationIsSane(t *testing.T) {
 	}
 }
 
+func TestBootstrapDocumentsEntries(t *testing.T) {
+	// パス一覧は復旧契約。Entries に追加した機密ファイルが手動移行の台帳から
+	// 抜けても動作テストでは見つからないため、文言ではなくパスだけを固定する。
+	doc, err := os.ReadFile("../../docs/bootstrap.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range Entries {
+		if !bytes.Contains(doc, []byte(e.Rel)) {
+			t.Errorf("bootstrap.md に移植対象が無い: %s", e.Rel)
+		}
+	}
+}
+
 func setup(t *testing.T) Config {
 	t.Helper()
 	base := t.TempDir()
