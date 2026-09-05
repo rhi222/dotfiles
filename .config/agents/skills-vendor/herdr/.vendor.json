@@ -1,9 +1,9 @@
 {
   "origin": "https://github.com/herdrdev/herdr.git",
   "sub_path": "skills/herdr",
-  "commit": "3150bd92d6162ba248bc28fd4d40bd0d6238e1af",
-  "vendored_at": "2026-09-04",
-  "reviewed_commit": "3150bd92d6162ba248bc28fd4d40bd0d6238e1af",
+  "commit": "987651a760cdfe4cd9493388e8c16b8f99643a05",
+  "vendored_at": "2026-09-05",
+  "reviewed_commit": "987651a760cdfe4cd9493388e8c16b8f99643a05",
   "audit": {
     "high": 0,
     "med": 0,
