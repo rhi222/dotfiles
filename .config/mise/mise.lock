@@ -105,14 +105,14 @@ url = "https://github.com/marp-team/marp-cli/releases/download/v4.5.0/marp-cli-v
 url_api = "https://api.github.com/repos/marp-team/marp-cli/releases/assets/480912019"
 
 [[tools."aqua:modem-dev/hunk"]]
-version = "0.20.1"
+version = "0.21.0"
 backend = "aqua:modem-dev/hunk"
 specifiers = ["latest"]
 
 [tools."aqua:modem-dev/hunk"."platforms.linux-x64"]
-checksum = "sha256:889e338a1b0fcfdd69a5ece8d776cab58e0222b9ef4784f2fa519ade87b437c8"
-url = "https://github.com/modem-dev/hunk/releases/download/v0.20.1/hunkdiff-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/modem-dev/hunk/releases/assets/535228769"
+checksum = "sha256:7aee989da0e55465dec02fbee788e6bbe0fc1e303fae08184dabc0bd236278a4"
+url = "https://github.com/modem-dev/hunk/releases/download/v0.21.0/hunkdiff-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/modem-dev/hunk/releases/assets/541386488"
 
 [[tools."aqua:mvdan/sh"]]
 version = "3.14.0"
@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.62"
+version = "0.2.63"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:12058de9ab5e0078a468d11bd1a8c5b79f69768a15c06832cebde715075ed893"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.62/rumdl-v0.2.62-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/532322356"
+checksum = "sha256:e64a92441a92115c8c2eb6ef5d8aecb7a6fc83fdeb5af5772fd038d954b3d234"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.63/rumdl-v0.2.63-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/540877251"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.39"
+version = "2.36.40"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:1243d63d4f18e74441b15c237bff9a5201cab05e899f2b0b0490bc2d1bfedcd2"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.39.zip"
+checksum = "blake3:a0b68f3ce6a9878886ae450882075c70b2599217995332e7d3dc8365af40193a"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.40.zip"
 
 [[tools.bat]]
 version = "0.26.1"
