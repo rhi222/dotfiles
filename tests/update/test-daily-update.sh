@@ -187,6 +187,31 @@ assert_eq 0 \
   "cleanup 内部の見出しを daily-update の左端に出さない"
 assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "閾値未満では通知しない"
 
+# 候補0件は日次の正常系なので、空の内訳や実行案内を毎日ログへ残さない。
+sed 's/DELETE_CANDIDATES=3/DELETE_CANDIDATES=0/' "$FAKE_SCRIPT" >"$FAKE_SCRIPTS/worktree-cleanup-empty.sh"
+output=$(PATH="$STUB_BIN:$PATH" \
+  WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPTS/worktree-cleanup-empty.sh" \
+  WORKTREE_CLEANUP_NOTIFY_THRESHOLD=5 \
+  worktree_cleanup_check 2>&1)
+assert_output_contains "候補なし" "$output" "候補0件は短い結果だけを出す"
+assert_eq 0 \
+  "$(printf '%s\n' "$output" | grep -c '== サマリ ==')" \
+  "候補0件では cleanup の詳細を再掲しない"
+assert_eq 0 \
+  "$(printf '%s\n' "$output" | grep -c '通知閾値')" \
+  "候補0件では無関係な通知閾値を出さない"
+
+# cleanup が異常終了した場合は、契約行が0件でも診断出力を隠さない。
+cat >"$FAKE_SCRIPTS/worktree-cleanup-failed.sh" <<'EOF'
+#!/bin/bash
+echo "cleanup diagnostic"
+echo "worktree-cleanup: DELETE_CANDIDATES=0 PRUNE=0 SKIP=0 KEEP=0"
+exit 1
+EOF
+output=$(WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPTS/worktree-cleanup-failed.sh" \
+  worktree_cleanup_check 2>&1)
+assert_output_contains "cleanup diagnostic" "$output" "cleanup 異常終了時は診断を残す"
+
 : >"$WT_TEST_DIR/toast.log"
 output=$(PATH="$STUB_BIN:$PATH" \
   WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPT" \

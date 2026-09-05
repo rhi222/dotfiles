@@ -136,13 +136,8 @@ worktree_cleanup_check() {
     return 0
   fi
 
-  local out count
-  out=$(bash "$script" 2>&1)
-  # daily-update の `=== step ===` と cleanup 内部の `== section ==` を
-  # 同じ左端に並べると階層が潰れる。単独実行時の cleanup の体裁は変えず、
-  # 埋め込むここだけ2スペース字下げして子コマンドの出力だと分かるようにする。
-  printf '%s\n' "$out" | sed 's/^/  /'
-
+  local out count cleanup_status=0
+  out=$(bash "$script" 2>&1) || cleanup_status=$?
   # 表示行ではなく機械可読サマリ行から件数を取る（表示の体裁変更で壊れないように）。
   # `^worktree-cleanup:` で行頭アンカーする。dry-run ではこの行の後ろに人間向けの
   # 案内が出るため最終行ではなく、`tail -1` では取れない。
@@ -150,6 +145,19 @@ worktree_cleanup_check() {
     grep '^worktree-cleanup:' |
     sed -n 's/.*DELETE_CANDIDATES=\([0-9]\{1,\}\).*/\1/p' |
     head -1)
+
+  # 候補0件は日次運用の正常系なので、cleanup のモード・空の内訳・実行案内を再掲しない。
+  # 契約行を取得できなかった場合は異常を隠さないよう、従来どおり全出力を表示する。
+  if [ "$cleanup_status" -eq 0 ] && [ "$count" = 0 ]; then
+    echo "worktree掃除: 候補なし"
+    return 0
+  fi
+
+  # daily-update の `=== step ===` と cleanup 内部の `== section ==` を
+  # 同じ左端に並べると階層が潰れる。単独実行時の cleanup の体裁は変えず、
+  # 埋め込むここだけ2スペース字下げして子コマンドの出力だと分かるようにする。
+  printf '%s\n' "$out" | sed 's/^/  /'
+
   count="${count:-0}"
   echo "worktree掃除の候補: $count 件（通知閾値 $WORKTREE_CLEANUP_NOTIFY_THRESHOLD 件）"
 

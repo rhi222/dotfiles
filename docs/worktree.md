@@ -163,6 +163,7 @@ dry-run は `DELETE 候補: N 件`（分類結果）、`--execute` は `削除: 
 
 `daily-update.sh` が毎日 dry-run で候補を数え、**5件以上**で Windowsトースト通知を出す（閾値は `WORKTREE_CLEANUP_NOTIFY_THRESHOLD`）。
 このステップは情報提供なので `run_step_soft` で実行し、`gh` 未認証などで失敗しても daily-update 全体を FAILED にしない。
+候補が0件なら cleanup の空の内訳と実行案内は再掲せず、`候補なし` の1行だけをログへ出す。
 件数は表示行ではなく機械可読なサマリ行 `worktree-cleanup: DELETE_CANDIDATES=N ...` から取る。
 この行は dry-run では最終行にならない（後ろに案内が出る）ため `grep '^worktree-cleanup:'` で行頭アンカーして拾う。
 
