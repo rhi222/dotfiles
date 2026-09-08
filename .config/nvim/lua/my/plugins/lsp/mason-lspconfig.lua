@@ -1,9 +1,3 @@
-if not package.loaded["mason"] then
-	pcall(function()
-		require("mason").setup({})
-	end)
-end
-
 local servers = {
 	"bashls",
 	"biome",
