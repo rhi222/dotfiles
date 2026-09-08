@@ -22,6 +22,7 @@ docs/superpowers/
 # このリポジトリは public。社内固有情報を含むものはここで追跡から外す。
 # 運用の全体像は AGENTS.md の「社内固有情報を入れない運用」を参照。
 .config/*/skills/cross-repo-investigate/repos.yml
+.config/*/skills/glossary/glossary.md
 .config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json
 .config/claude/skills/sos-precheck/sos-precheck-posts.json
 

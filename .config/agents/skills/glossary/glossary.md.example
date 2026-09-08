@@ -1,0 +1,21 @@
+# 社内用語辞書（雛形）
+
+社内の用語・略語・システム名と、コード上の起点を書く。**実体（`glossary.md`）は
+gitignore されており、dotfiles リポジトリには入らない。** 実体は
+`~/.local/share/dotfiles-private/repo/.config/agents/skills/glossary/glossary.md` に置き、
+`dotfilesLink.sh` が symlink を張る。
+
+1用語1節。`意味` は必須、他は分かる範囲で書く。
+`起点` は `<cross-repo-investigate/repos.yml のエイリアス> / <リポジトリ内相対path>`。
+
+## dive連携
+
+- 意味: 予約記録を夜間に外部システムへ渡すバッチ処理
+- 別名: dive, ダイブ連携
+- 起点: `予約` / `batch/dive/main.go`
+- 関連: sample-record-api
+
+## sample-record-api
+
+- 意味: 予約の確定結果を保存するAPI。`example-service` が提供する
+- 起点: `example-service` / `api/booking_record.go`
