@@ -61,7 +61,6 @@ end
 local lsp_keymap_defs = {
 	{ name = "declaration", func = vim.lsp.buf.declaration },
 	{ name = "definition", func = vim.lsp.buf.definition },
-	{ name = "hover", func = vim.lsp.buf.hover },
 	{ name = "implementation", func = vim.lsp.buf.implementation },
 	{ name = "signature_help", func = vim.lsp.buf.signature_help },
 	{ name = "workspace_add", func = vim.lsp.buf.add_workspace_folder },

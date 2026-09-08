@@ -59,7 +59,6 @@ M.lsp = {
 	diagnostic_loclist = { "<space>q", desc = "Diagnostics to loclist" },
 	declaration = { "gD", desc = "Declaration" },
 	definition = { "gd", desc = "Definition" },
-	hover = { "K", desc = "Hover" },
 	implementation = { "gi", desc = "Implementation" },
 	signature_help = { "<C-k>", desc = "Signature help" },
 	workspace_add = { "<leader>lwa", desc = "Add workspace folder" },
