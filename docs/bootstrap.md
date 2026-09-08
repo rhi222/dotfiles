@@ -245,6 +245,8 @@ tar xzf claude-memory.tar.gz -C ~
   — 社内リポジトリのパスと日本語エイリアスの対応表
 - `.config/agents/skills/cross-repo-auto-discover/`
   — ディレクトリごとコピーする。`repos.yml` は上記ファイルへの symlink
+- `.config/agents/skills/glossary/glossary.md`
+  — 社内用語辞書。用語の意味とコード上の起点（repos.yml エイリアス + 相対path）
 - `.config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json`
   — 週次レポート対象の記事番号
 - `.config/claude/skills/sos-precheck/sos-precheck-posts.json`

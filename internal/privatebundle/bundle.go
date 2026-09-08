@@ -64,6 +64,7 @@ var Entries = []Entry{
 	{Repo, ".config/fish/my/conf.d/99-local.fish", false},
 	{Repo, ".config/nvim/lua/my/local_config.lua", false},
 	{Repo, ".config/agents/skills/cross-repo-investigate/repos.yml", false},
+	{Repo, ".config/agents/skills/glossary/glossary.md", false},
 	{Repo, ".config/claude/skills/esa-weekly-report/esa-weekly-report-posts.json", false},
 	{Repo, ".config/claude/skills/sos-precheck/sos-precheck-posts.json", false},
 	{Repo, ".config/agents/skills/cross-repo-auto-discover", false},
