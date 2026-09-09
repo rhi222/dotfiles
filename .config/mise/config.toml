@@ -9,7 +9,10 @@ python = { version = "latest", postinstall = "python -m pip install --upgrade bo
 rust = "latest"
 
 # パッケージマネージャ
-"npm:pnpm" = "latest"
+# npm backendはNG。mise生成のbin shimが常に`exec node <bin>`するが、
+# pnpm 11以降のbinはネイティブバイナリなので起動できない。aquaで公式リリースを取る。
+# repo毎の版はpnpm自身がpackageManagerフィールドを見て切り替える（pmOnFail=download）。
+pnpm = "latest"
 uv = "latest"
 
 # Node製CLI（Node本体と分離してツール単位で更新）

@@ -422,11 +422,6 @@ version = "23.1.0"
 backend = "npm:npm-check-updates"
 specifiers = ["latest"]
 
-[[tools."npm:pnpm"]]
-version = "12.3.4"
-backend = "npm:pnpm"
-specifiers = ["latest"]
-
 [[tools."npm:prettier"]]
 version = "3.9.6"
 backend = "npm:prettier"
@@ -458,6 +453,11 @@ specifiers = ["latest"]
 [[tools."pipx:xmlformatter"]]
 version = "0.2.9"
 backend = "pipx:xmlformatter"
+specifiers = ["latest"]
+
+[[tools.pnpm]]
+version = "12.3.4"
+backend = "aqua:pnpm/pnpm"
 specifiers = ["latest"]
 
 [[tools.python]]
