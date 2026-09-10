@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.67"
+version = "0.2.68"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:6c496e22b078de6357b8acf5fff3e53f9e3ac684372792a71c6a805f1d561b05"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.67/rumdl-v0.2.67-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/547491371"
+checksum = "sha256:a5fbbc1ab31400b16896f3e00192f931f766e3374ec5e31aadcd2114533f4f8b"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.68/rumdl-v0.2.68-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/549037306"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.41"
+version = "2.36.42"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:d69e24fe5dff5a707624d4c87de17ae4cbe7f536e4884fdf34750b13cde8623d"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.41.zip"
+checksum = "blake3:76b35d96decb4484b6949f4d3baaed3395f4ffcd63e59be9198defb9910310dc"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.42.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -278,14 +278,14 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/542974264"
 provenance = "github-attestations"
 
 [[tools."github:k1LoW/mo"]]
-version = "1.6.7"
+version = "1.6.8"
 backend = "github:k1LoW/mo"
 specifiers = ["latest"]
 
 [tools."github:k1LoW/mo"."platforms.linux-x64"]
-checksum = "sha256:130666a7c8dfd1528d07f87b21adf5bfc1314707889e85ebbab1a5248d7ded11"
-url = "https://github.com/k1LoW/mo/releases/download/v1.6.7/mo_v1.6.7_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/k1LoW/mo/releases/assets/499857678"
+checksum = "sha256:33972709836832579fde45adb8512bd15f444dc484ff988c0331579d35f115b8"
+url = "https://github.com/k1LoW/mo/releases/download/v1.6.8/mo_v1.6.8_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/k1LoW/mo/releases/assets/548262151"
 provenance = "github-attestations"
 provenance_verified = true
 
