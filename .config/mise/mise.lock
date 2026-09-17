@@ -45,14 +45,14 @@ url = "https://github.com/jesseduffield/lazydocker/releases/download/v0.25.2/laz
 url_api = "https://api.github.com/repos/jesseduffield/lazydocker/releases/assets/399711577"
 
 [[tools."aqua:jesseduffield/lazygit"]]
-version = "0.65.0"
+version = "0.65.1"
 backend = "aqua:jesseduffield/lazygit"
 specifiers = ["latest"]
 
 [tools."aqua:jesseduffield/lazygit"."platforms.linux-x64"]
-checksum = "sha256:44d8e7dd1484b4a66e191bd4ab25a71e8b4b3a65ab122f838e65677ef58c5506"
-url = "https://github.com/jesseduffield/lazygit/releases/download/v0.65.0/lazygit_0.65.0_linux_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/jesseduffield/lazygit/releases/assets/545957203"
+checksum = "sha256:02beacbcda0fa342e50ae3480ba8147307353af3fb28e1d5f790e02329c201a6"
+url = "https://github.com/jesseduffield/lazygit/releases/download/v0.65.1/lazygit_0.65.1_linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/jesseduffield/lazygit/releases/assets/560658266"
 
 [[tools."aqua:k1LoW/deck"]]
 version = "1.24.1"
@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.71"
+version = "0.2.73"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:0df534b2f3066318973a8f25862f5b6b1dd2234d76e42fc5e03374dd0b61d1ca"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.71/rumdl-v0.2.71-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/555673800"
+checksum = "sha256:d56a8e40471af32fe3229e845f3e299e3691665b15cd4ca28f2deb502c487666"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.73/rumdl-v0.2.73-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/557839623"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.44"
+version = "2.36.47"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:899399720f6bd6deb913801f713ca7a5774eae39d598c8ddfb0e059d2d97fa44"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.44.zip"
+checksum = "blake3:d98d30dde0d583317e1403d1555b756ff435d128e17601161001c52a69b81fea"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.47.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -257,14 +257,14 @@ url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64
 url_api = "https://api.github.com/repos/sharkdp/fd/releases/assets/530481615"
 
 [[tools.fzf]]
-version = "0.74.3"
+version = "0.74.4"
 backend = "aqua:junegunn/fzf"
 specifiers = ["latest"]
 
 [tools.fzf."platforms.linux-x64"]
-checksum = "sha256:3501a595e4b5c40a6b047340a0e8f805c46fd4e61ef95ef8a136ba8c61cf6f22"
-url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/junegunn/fzf/releases/assets/517537066"
+checksum = "sha256:05e6813a337cc722c3ed07e54a764b75cc5d671e2e60459db0ba696ee5fa7504"
+url = "https://github.com/junegunn/fzf/releases/download/v0.74.4/fzf-0.74.4-linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/junegunn/fzf/releases/assets/558287768"
 
 [[tools.gh]]
 version = "2.100.0"
@@ -390,7 +390,7 @@ backend = "npm:browser-sync"
 specifiers = ["latest"]
 
 [[tools."npm:ccmanager"]]
-version = "4.4.2"
+version = "4.4.3"
 backend = "npm:ccmanager"
 specifiers = ["latest"]
 
@@ -413,7 +413,7 @@ specifiers = ["latest"]
 trust_policy_excludes = '["cytoscape@3.34.1"]'
 
 [[tools."npm:neovim"]]
-version = "5.4.0"
+version = "5.5.0"
 backend = "npm:neovim"
 specifiers = ["latest"]
 
