@@ -261,7 +261,7 @@ main() {
   run_step "mise upgrade" mise upgrade
   # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
   # 参照されなくなったツール版を実削除。確認プロンプトなし）
-  run_step "mise prune" mise prune
+  run_step "mise prune" mise prune --yes
   # 以降の更新判定（fisher cacheを含む）が現在のdotctl実装を使えるよう、
   # Go更新後すぐに再ビルドする。
   run_step "dotctl rebuild" dotctl_rebuild

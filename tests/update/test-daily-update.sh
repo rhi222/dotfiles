@@ -116,6 +116,9 @@ assert_eq 0 \
   "$(grep -Ec 'MISE_(PYTHON|NODE|GO)_DEFAULT_PACKAGES_FILE' "$MISE_FISH_CONFIG")" \
   "Fish設定はdefault package fileを指定しない"
 assert_eq 1 \
+  "$(grep -Ec '^[[:space:]]*run_step "mise prune" mise prune --yes$' "$DAILY_UPDATE")" \
+  "mise pruneは非対話実行を明示する"
+assert_eq 1 \
   "$(grep -c '^"npm:@openai/codex" = "latest"$' "$MISE_CONFIG")" \
   "Node CLIをnpm backendで宣言する"
 assert_eq 1 \
