@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.74"
+version = "0.2.75"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:6e73dff282427061e5f086213e8923962714664cece97230bd3a0c5c02a5ebf9"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.74/rumdl-v0.2.74-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/573014016"
+checksum = "sha256:2831bd2eb58389e805c120463f4f52774fce225fa835111bc412131801d9da90"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.75/rumdl-v0.2.75-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/577473568"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.36.50"
+version = "2.37.0"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:7db92336773925635540a19029694f6d89ea22bf7168a0d55062df4d42fcd6e7"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.50.zip"
+checksum = "blake3:1e4e73809884709ff68b5b31e0f778bb9d9ad02da8b336d6414e47511a20b874"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.0.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -355,7 +355,7 @@ checksum = "sha256:6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc
 url = "https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.gz"
 
 [[tools."npm:@drawio/mcp"]]
-version = "1.6.0"
+version = "1.6.1"
 backend = "npm:@drawio/mcp"
 specifiers = ["latest"]
 
@@ -400,7 +400,7 @@ backend = "npm:ccstatusline"
 specifiers = ["latest"]
 
 [[tools."npm:ccusage"]]
-version = "20.0.23"
+version = "20.0.24"
 backend = "npm:ccusage"
 specifiers = ["latest"]
 
