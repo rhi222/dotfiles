@@ -86,7 +86,7 @@ echo '{"model":{"id":"claude-fable-5","display_name":"Fable 5"},"workspace":{"cu
 
 ## daily-update
 
-`scripts/update/daily.sh` は apt / cargo / mise / nvim / gh skill /
+`scripts/update/daily.sh` は apt / cargo / mise / Claude Code / nvim / gh skill /
 gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後にsoft checkと設定同期を行う。
 
 - 1ステップの失敗で止めず、最後に失敗名を集約する
