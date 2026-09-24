@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.37.0"
+version = "2.37.1"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:1e4e73809884709ff68b5b31e0f778bb9d9ad02da8b336d6414e47511a20b874"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.0.zip"
+checksum = "blake3:71ce0e9b9df533e27da09b4494c061fcca99914e830acc96cc75d53cbcb033c9"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.1.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -360,7 +360,7 @@ backend = "npm:@drawio/mcp"
 specifiers = ["latest"]
 
 [[tools."npm:@github/copilot"]]
-version = "1.0.86"
+version = "1.0.87"
 backend = "npm:@github/copilot"
 specifiers = ["latest"]
 
