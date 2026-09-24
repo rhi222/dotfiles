@@ -118,6 +118,10 @@ assert_eq 0 \
 assert_eq 1 \
   "$(grep -Ec '^[[:space:]]*run_step "mise prune" mise prune --yes$' "$DAILY_UPDATE")" \
   "mise pruneは非対話実行を明示する"
+# native版の自動更新は黙って止まることがあるため、日次で明示的に更新する
+assert_eq 1 \
+  "$(grep -Ec '^[[:space:]]*run_step "claude update" claude update </dev/null$' "$DAILY_UPDATE")" \
+  "Claude Codeを非対話で更新する"
 assert_eq 1 \
   "$(grep -c '^"npm:@openai/codex" = "latest"$' "$MISE_CONFIG")" \
   "Node CLIをnpm backendで宣言する"
