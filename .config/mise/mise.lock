@@ -135,14 +135,14 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86
 url_api = "https://api.github.com/repos/neovim/neovim/releases/assets/526503737"
 
 [[tools."aqua:rvben/rumdl"]]
-version = "0.2.75"
+version = "0.2.76"
 backend = "aqua:rvben/rumdl"
 specifiers = ["latest"]
 
 [tools."aqua:rvben/rumdl"."platforms.linux-x64"]
-checksum = "sha256:2831bd2eb58389e805c120463f4f52774fce225fa835111bc412131801d9da90"
-url = "https://github.com/rvben/rumdl/releases/download/v0.2.75/rumdl-v0.2.75-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/577473568"
+checksum = "sha256:90a8589a34cdc9aa50c9cf9a2b1e41837afe16bb11b2a7ace2e05dfb56a51176"
+url = "https://github.com/rvben/rumdl/releases/download/v0.2.76/rumdl-v0.2.76-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/rvben/rumdl/releases/assets/583329282"
 provenance = "github-attestations"
 
 [[tools."aqua:tree-sitter/tree-sitter"]]
@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.37.1"
+version = "2.37.3"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:71ce0e9b9df533e27da09b4494c061fcca99914e830acc96cc75d53cbcb033c9"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.1.zip"
+checksum = "blake3:062ed6db33f03b69016245ea7c237aec7b7cdc8f4dca7efd4ffddf9e4a96c5a8"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.3.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -300,14 +300,14 @@ url = "https://github.com/gitui-org/gitui/releases/download/v0.28.1/gitui-linux-
 url_api = "https://api.github.com/repos/gitui-org/gitui/releases/assets/380787855"
 
 [[tools.glab]]
-version = "1.118.0"
+version = "1.119.0"
 backend = "gitlab:gitlab-org/cli"
 specifiers = ["latest"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:f3782ddb62b6ab20d0031699ea7b43f345dc6f63e991883660e21343b9524931"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.118.0/downloads/glab_1.118.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E118%2E0/glab_1%2E118%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:4d83375d202ffa634eaf627fd9272b610fa599f20f5b711f55d770583eca2b84"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.119.0/downloads/glab_1.119.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E119%2E0/glab_1%2E119%2E0_linux_amd64%2Etar%2Egz"
 
 [[tools.go]]
 version = "1.27.1"
@@ -360,7 +360,7 @@ backend = "npm:@drawio/mcp"
 specifiers = ["latest"]
 
 [[tools."npm:@github/copilot"]]
-version = "1.0.87"
+version = "1.0.88"
 backend = "npm:@github/copilot"
 specifiers = ["latest"]
 
@@ -456,14 +456,14 @@ backend = "pipx:xmlformatter"
 specifiers = ["latest"]
 
 [[tools.pnpm]]
-version = "12.5.1"
+version = "12.6.0"
 backend = "aqua:pnpm/pnpm"
 specifiers = ["latest"]
 
 [tools.pnpm."platforms.linux-x64"]
-checksum = "sha256:5a397dfb6b3d4b07d3d7769586aeb471048faf04299a492e2808b95a9a1c701f"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.5.1/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/573486211"
+checksum = "sha256:3f4c66f668d0e84219679982d095b30da68325e1fac9284e7f5dc1584bd3d13e"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.6.0/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/581813243"
 provenance = "github-attestations"
 
 [[tools.python]]
@@ -512,14 +512,14 @@ url = "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-lin
 url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/528734864"
 
 [[tools.uv]]
-version = "0.12.17"
+version = "0.12.18"
 backend = "aqua:astral-sh/uv"
 specifiers = ["latest"]
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:fa82fd8dde8e8eefdecada6aa0889666556cfceb690d06e0c3bca49eb3070a63"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.17/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/573253080"
+checksum = "sha256:89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.18/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/582430671"
 provenance = "github-attestations"
 
 [[tools.yazi]]
