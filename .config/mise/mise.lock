@@ -423,7 +423,7 @@ backend = "npm:npm-check-updates"
 specifiers = ["latest"]
 
 [[tools."npm:prettier"]]
-version = "3.9.8"
+version = "3.9.9"
 backend = "npm:prettier"
 specifiers = ["latest"]
 
