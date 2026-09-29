@@ -1,6 +1,6 @@
 // Package wsl は WSL2 開発環境のキャッシュ掃除を行う。
 //
-// **開発環境の本体は触らない。** .cargo / .rustup / ~/go / mise の installs /
+// **開発環境の本体は触らない。** .cargo（registry/src を除く）/ .rustup / ~/go / mise の installs /
 // nvim の data / claude は対象外で、掃除するのは再取得できるキャッシュだけ。
 package wsl
 
@@ -87,6 +87,8 @@ var pathTargets = []pathTarget{
 	{"pnpm cache", ".cache/pnpm"},
 	// vim.loader のバイトコード。起動時に再生成され、消えたpathの分が溜まり続ける
 	{"nvim luac cache", ".cache/nvim/luac"},
+	// .crate の展開先。build 時に registry/cache から再展開されるので再ダウンロードは起きない
+	{"cargo registry src", ".cargo/registry/src"},
 }
 
 // SelectUnusedStores は削除してよい pnpm store を選ぶ。
