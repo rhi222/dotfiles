@@ -172,6 +172,43 @@ worktree_cleanup_check() {
   return 0
 }
 
+# 使っていない repository の node_modules の溜まり込みを検知する。削除はしない。
+# 件数ではなく合計サイズで通知する（小さいものが数件あっても困らないため）。
+NODE_MODULES_NOTIFY_THRESHOLD_MB="${NODE_MODULES_NOTIFY_THRESHOLD_MB:-3072}"
+NODE_MODULES_CLEANUP_SCRIPT="${NODE_MODULES_CLEANUP_SCRIPT:-$SCRIPT_DIR/../nodemodules/cleanup.sh}"
+
+node_modules_cleanup_check() {
+  local script="$NODE_MODULES_CLEANUP_SCRIPT"
+  if [ ! -f "$script" ]; then
+    echo "nodemodules/cleanup.sh が無いためスキップ: $script"
+    return 0
+  fi
+
+  local out summary count size
+  out=$(bash "$script" 2>&1)
+  summary=$(printf '%s\n' "$out" | grep '^node-modules-cleanup:' | head -1)
+  count=$(printf '%s\n' "$summary" | sed -n 's/.*CANDIDATES=\([0-9]\{1,\}\).*/\1/p')
+  size=$(printf '%s\n' "$summary" | sed -n 's/.*SIZE_MB=\([0-9]\{1,\}\).*/\1/p')
+
+  if [ "$count" = 0 ]; then
+    echo "node_modules掃除: 候補なし"
+    return 0
+  fi
+
+  printf '%s\n' "$out" | sed 's/^/  /'
+  count="${count:-0}"
+  size="${size:-0}"
+  echo "node_modules掃除の候補: $count 件 / $size MB（通知閾値 $NODE_MODULES_NOTIFY_THRESHOLD_MB MB）"
+
+  if [ "$size" -ge "$NODE_MODULES_NOTIFY_THRESHOLD_MB" ] && command -v powershell.exe >/dev/null 2>&1; then
+    # shellcheck source=../lib/notify-windows-toast.sh
+    source "$SCRIPT_DIR/../lib/notify-windows-toast.sh"
+    send_windows_toast "使っていない node_modules" \
+      "$count 件 / $size MB あります。bash scripts/nodemodules/cleanup.sh で確認してください。" || true
+  fi
+  return 0
+}
+
 # Only update skills managed via `gh skill install` (remote lines in
 # claude-skills.txt). Local-cloned or system skills lack GitHub metadata
 # and would trigger noisy "Reinstall to enable updates" warnings.
@@ -287,6 +324,7 @@ main() {
   # 消し忘れ worktree の検知。情報提供なので run_step_soft を使い、
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check
+  run_step_soft "node_modules cleanup check" node_modules_cleanup_check
   # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
   # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
   run_step_soft "vendored skill 更新チェック" vendored_skill_check
