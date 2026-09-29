@@ -134,6 +134,41 @@ func TestRunExecuteDeletesTargets(t *testing.T) {
 	}
 }
 
+func TestRunClearsMiseCacheViaCommand(t *testing.T) {
+	// **aube store は mise 自身に消させる。** installs とハードリンクを共有しており、
+	// 自前で消すとインデックスと食い違う
+	f := fakeRunner()
+	f.On("command", execx.Result{})
+	f.On("npm", execx.Result{})
+	f.On("uv", execx.Result{})
+	f.On("pip", execx.Result{})
+	f.On("mise", execx.Result{})
+
+	run(t, Config{Home: t.TempDir(), Execute: true}, f)
+
+	for _, c := range f.Calls {
+		if c.Name == "mise" && strings.Join(c.Args, " ") == "cache clear" {
+			return
+		}
+	}
+	t.Errorf("mise cache clear を呼んでいない: %v", f.Calls)
+}
+
+func TestRunDeletesNvimLuacCache(t *testing.T) {
+	// vim.loader のバイトコードは起動時に再生成される。古いpathの分が溜まり続ける
+	home := t.TempDir()
+	luac := filepath.Join(home, ".cache/nvim/luac")
+	if err := os.MkdirAll(luac, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	run(t, Config{Home: home, Execute: true}, fakeRunner())
+
+	if _, err := os.Stat(luac); err == nil {
+		t.Error("nvim luac cache を消していない")
+	}
+}
+
 func TestRunSkipsMissingPaths(t *testing.T) {
 	// **無いものは異常ではない。** その道具を使っていない端末では単に無い
 	out, _ := run(t, Config{Home: t.TempDir()}, fakeRunner())
@@ -145,7 +180,7 @@ func TestRunSkipsMissingPaths(t *testing.T) {
 func TestRunNeverTouchesDevEnvironment(t *testing.T) {
 	// **開発環境の本体は触らない。** 消すと再構築に時間がかかるものを守る
 	home := t.TempDir()
-	protected := []string{".cargo", ".rustup", "go", ".local/share/mise", ".config/nvim", ".claude"}
+	protected := []string{".cargo", ".rustup", "go", ".local/share/mise", ".local/share/nvim", ".config/nvim", ".claude"}
 	for _, rel := range protected {
 		p := filepath.Join(home, rel)
 		if err := os.MkdirAll(p, 0o755); err != nil {
@@ -180,10 +215,12 @@ func TestRunKeepsCurrentPnpmStore(t *testing.T) {
 	f.On("command", execx.Result{}) // npm
 	f.On("command", execx.Result{}) // uv
 	f.On("command", execx.Result{}) // pip
+	f.On("command", execx.Result{}) // mise
 	f.On("command", execx.Result{}) // pnpm
 	f.On("npm", execx.Result{})
 	f.On("uv", execx.Result{})
 	f.On("pip", execx.Result{})
+	f.On("mise", execx.Result{})
 	f.On("pnpm", execx.Result{Stdout: cur + "\n"})
 
 	out, _ := run(t, Config{Home: home, Execute: true}, f)
