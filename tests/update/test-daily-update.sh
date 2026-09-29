@@ -118,6 +118,10 @@ assert_eq 0 \
 assert_eq 1 \
   "$(grep -Ec '^[[:space:]]*run_step "mise prune" mise prune --yes$' "$DAILY_UPDATE")" \
   "mise pruneは非対話実行を明示する"
+# aube storeは古い版の中身を自動では捨てないため、日次で期限切れを掃除する
+assert_eq 1 \
+  "$(grep -Ec '^[[:space:]]*run_step "mise cache prune" mise cache prune$' "$DAILY_UPDATE")" \
+  "mise cacheの期限切れを日次で掃除する"
 # native版の自動更新は黙って止まることがあるため、日次で明示的に更新する
 assert_eq 1 \
   "$(grep -Ec '^[[:space:]]*run_step "claude update" claude update </dev/null$' "$DAILY_UPDATE")" \
