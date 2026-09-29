@@ -3,8 +3,12 @@ package command
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -14,6 +18,7 @@ import (
 const yaziUpdateUsage = `使い方: dotctl yazi-update
 
   package.tomlのrevとremote HEADを比較し、変更時だけya pkg upgradeを実行する。
+  前回deploy後にpackage.tomlだけが変わっていれば、先にya pkg install --discardで揃える。
 `
 
 var (
@@ -52,6 +57,10 @@ func runYaziUpdate(ctx context.Context, args []string, env Env) int {
 		return 1
 	}
 
+	if code := syncYaziPulledPackages(ctx, env); code != 0 {
+		return code
+	}
+
 	remote := make(map[string]string)
 	for _, ref := range refs {
 		if ref.pinned {
@@ -77,14 +86,105 @@ func runYaziUpdate(ctx context.Context, args []string, env Env) int {
 
 func runYaziUpgrade(ctx context.Context, env Env, count int) int {
 	fmt.Fprintf(env.Stdout, "yazi update: changes detected (%d packages), running upgrade\n", count)
-	res, err := env.Runner.Run(ctx, execx.Cmd{Name: env.YaziBin, Args: []string{"pkg", "upgrade"}})
+	return runYaziPkg(ctx, env, "upgrade")
+}
+
+// syncYaziPulledPackages は他端末のupgradeをpullした後の中身を宣言に揃える。
+//
+// package.tomlはrepoで共有するが、中身の plugins/ はgitignoreしている。pullで
+// package.tomlだけが進むと、yaはhashの合わない古い中身を「手元の編集」と見なして
+// upgradeを拒否する。**--discardは本物の編集も捨てる**ので、この端末で最後に
+// deployした中身から変わっていないと確かめられたときだけ使う。
+func syncYaziPulledPackages(ctx context.Context, env Env) int {
+	if env.YaziStateFile == "" {
+		return 0
+	}
+	saved, err := os.ReadFile(env.YaziStateFile)
+	if err != nil {
+		// 記録が無ければ中身の出自が分からないので触らない
+		return 0
+	}
+	savedToml, savedBody, _ := strings.Cut(string(saved), "\n")
+	toml, body, err := yaziFingerprints(env.YaziPackageFile)
+	if err != nil {
+		fmt.Fprintf(env.Stderr, "yazi update: 中身を確認できない: %v\n", err)
+		return 1
+	}
+	if toml == savedToml {
+		return 0
+	}
+	if body != strings.TrimSpace(savedBody) {
+		fmt.Fprintln(env.Stderr, "yazi update: 前回deploy後にpluginの中身が変更されているため、package.tomlに揃えない")
+		return 0
+	}
+	fmt.Fprintln(env.Stdout, "yazi update: package.toml changed since last deploy, syncing packages")
+	return runYaziPkg(ctx, env, "install", "--discard")
+}
+
+func runYaziPkg(ctx context.Context, env Env, args ...string) int {
+	res, err := env.Runner.Run(ctx, execx.Cmd{Name: env.YaziBin, Args: append([]string{"pkg"}, args...)})
 	fmt.Fprint(env.Stdout, res.Stdout)
 	fmt.Fprint(env.Stderr, res.Stderr)
 	if err != nil {
 		fmt.Fprintf(env.Stderr, "yazi update: %v\n", err)
 		return 1
 	}
-	return res.ExitCode
+	if res.ExitCode != 0 {
+		return res.ExitCode
+	}
+	return recordYaziState(env)
+}
+
+func recordYaziState(env Env) int {
+	if env.YaziStateFile == "" {
+		return 0
+	}
+	toml, body, err := yaziFingerprints(env.YaziPackageFile)
+	if err == nil {
+		err = writeFileAtomic(env.YaziStateFile, []byte(toml+"\n"+body+"\n"))
+	}
+	if err != nil {
+		fmt.Fprintf(env.Stderr, "yazi update: deploy状態を記録できない: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// yaziFingerprints はpackage.tomlと、その隣の plugins/・flavors/ の中身のhashを返す。
+func yaziFingerprints(packageFile string) (string, string, error) {
+	toml, err := os.ReadFile(packageFile)
+	if err != nil {
+		return "", "", err
+	}
+	tomlSum := sha256.Sum256(toml)
+
+	h := sha256.New()
+	dir := filepath.Dir(packageFile)
+	for _, sub := range []string{"plugins", "flavors"} {
+		err := filepath.WalkDir(filepath.Join(dir, sub), func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			b, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			rel, _ := filepath.Rel(dir, path)
+			fmt.Fprintf(h, "%s\x00%d\x00", rel, len(b))
+			h.Write(b)
+			return nil
+		})
+		if err != nil {
+			return "", "", err
+		}
+	}
+	return hex.EncodeToString(tomlSum[:]), hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func readYaziPackageRefs(path string) ([]yaziPackageRef, error) {

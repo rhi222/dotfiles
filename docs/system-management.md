@@ -98,6 +98,10 @@ gh extension / yazi / fisher / dotctl の既存導入物を更新し、最後に
 - npm / pipx / Go製CLIはmiseのtoolとして宣言し、`mise upgrade`で更新する
 - 新規追加は担当の宣言ファイル・setupコマンドで行い、daily-updateは更新だけを担う
 - yaziは `package.toml` のrevとremote HEADを比較し、全packageが同じならupgradeをskipする。
+- yaziの中身（`plugins/`）はgitignoreなので、他端末のupgradeをpullすると `package.toml` だけが進む。
+  yaはこれを手元の編集と見なしてupgradeを拒否する。
+  このため、前回deploy時から中身が変わっていないときに限り、先に `ya pkg install --discard` で宣言に揃える。
+  中身が変わっていれば揃えずに警告し、upgradeの失敗をそのまま出す。
   `package.toml` が無い環境も成功扱いでskipする
 - fisherはremote commit SHAを `~/.cache/dotfiles/fisher-update.refs` に記録し、
   宣言またはSHAが変わったときだけfull reconcileする。cache削除時は次回full updateする

@@ -310,6 +310,7 @@ func main() {
 		FisherCacheFile:   fisherCacheFile,
 		YaziPackageFile:   envOr("YAZI_PACKAGE_FILE", filepath.Join(homeDir(), ".config", "yazi", "package.toml")),
 		YaziBin:           envOr("YAZI_BIN", "ya"),
+		YaziStateFile:     envOr("YAZI_STATE_FILE", filepath.Join(envOr("XDG_CACHE_HOME", filepath.Join(homeDir(), ".cache")), "dotfiles", "yazi-deployed.state")),
 
 		Color: isTerminal(os.Stdout),
 	}))
