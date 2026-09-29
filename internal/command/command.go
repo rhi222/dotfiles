@@ -85,6 +85,8 @@ type Env struct {
 	// YaziPackageFile / YaziBin はyazi-updateの宣言と実行command。
 	YaziPackageFile string
 	YaziBin         string
+	// YaziStateFile はこの端末で最後にdeployしたpackage.tomlと中身のfingerprint。
+	YaziStateFile string
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
