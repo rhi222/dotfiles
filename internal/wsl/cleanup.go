@@ -1,7 +1,7 @@
 // Package wsl は WSL2 開発環境のキャッシュ掃除を行う。
 //
-// **開発環境の本体は触らない。** .cargo / .rustup / ~/go / mise / nvim /
-// claude は対象外で、掃除するのは再取得できるキャッシュだけ。
+// **開発環境の本体は触らない。** .cargo / .rustup / ~/go / mise の installs /
+// nvim の data / claude は対象外で、掃除するのは再取得できるキャッシュだけ。
 package wsl
 
 import (
@@ -75,6 +75,8 @@ var cmdTargets = []cmdTarget{
 	{"npm cache", "npm", ".npm", []string{"npm", "cache", "clean", "--force"}},
 	{"uv cache", "uv", ".cache/uv", []string{"uv", "cache", "clean"}},
 	{"pip cache", "pip", ".cache/pip", []string{"pip", "cache", "purge"}},
+	// npm backend の aube store が大半。installs とはハードリンクなので消しても壊れない
+	{"mise cache", "mise", ".cache/mise", []string{"mise", "cache", "clear"}},
 }
 
 // **これらは消しても再取得できる。** ブラウザ自動化のバイナリとビルドキャッシュ。
@@ -83,6 +85,8 @@ var pathTargets = []pathTarget{
 	{"playwright cache", ".cache/ms-playwright"},
 	{"node-gyp cache", ".cache/node-gyp"},
 	{"pnpm cache", ".cache/pnpm"},
+	// vim.loader のバイトコード。起動時に再生成され、消えたpathの分が溜まり続ける
+	{"nvim luac cache", ".cache/nvim/luac"},
 }
 
 // SelectUnusedStores は削除してよい pnpm store を選ぶ。

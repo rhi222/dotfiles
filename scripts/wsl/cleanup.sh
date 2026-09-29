@@ -7,7 +7,7 @@
 # 実装は Go 側（internal/wsl）にある。**この入口を残しているのは AGENTS.md が
 # このパスで案内しているため。**
 #
-# .cargo / .rustup / ~/go / mise / nvim / claude など開発環境の本体は触らない。
+# .cargo / .rustup / ~/go / mise の installs / nvim の data / claude など開発環境の本体は触らない。
 # ext4.vhdx の圧縮は Windows 側で手動（実行後に手順を案内する）。
 set -uo pipefail
 
