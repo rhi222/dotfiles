@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.37.4"
+version = "2.37.5"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:4aabb4558c4570a67fc70a04a8283b0f08fc9a999e2e24a0df4bcba377827f49"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.4.zip"
+checksum = "blake3:84b6b66ea53bd7cd46c4892828675ed9b8583e365e612c39f69d69bd09e8a46b"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.5.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -375,7 +375,7 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.157.0"
+version = "0.157.1"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 

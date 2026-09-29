@@ -66,7 +66,7 @@ func runFisherUpdate(ctx context.Context, args []string, env Env) int {
 		}
 		return 0
 	}
-	if err := writeFisherCache(env.FisherCacheFile, state); err != nil {
+	if err := writeFileAtomic(env.FisherCacheFile, state); err != nil {
 		fmt.Fprintf(env.Stderr, "fisher update: cacheを保存できない: %v\n", err)
 		return 1
 	}
@@ -147,12 +147,12 @@ func resolveFisherPlugin(ctx context.Context, runner execx.Runner, plugin string
 	return "", true, fmt.Errorf("remote refが見つからない: %s", plugin)
 }
 
-func writeFisherCache(path string, data []byte) error {
+func writeFileAtomic(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(dir, ".fisher-update-*")
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+"-*")
 	if err != nil {
 		return err
 	}
