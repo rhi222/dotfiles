@@ -262,6 +262,9 @@ main() {
   # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
   # 参照されなくなったツール版を実削除。確認プロンプトなし）
   run_step "mise prune" mise prune --yes
+  # aube store などは古い版の中身を自動では捨てない。30日読まれていないものだけ消す
+  # （installsとはハードリンクなので使用中のツールは壊れない）
+  run_step "mise cache prune" mise cache prune
   # native版Claude Codeは自前で自動更新するが、黙って数日止まることがあった
   # （2026-09-19〜09-24）。日次で明示的に回し、失敗はFAILED通知に乗せる。
   run_step "claude update" claude update </dev/null
