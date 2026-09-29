@@ -169,6 +169,28 @@ func TestRunDeletesNvimLuacCache(t *testing.T) {
 	}
 }
 
+func TestRunDeletesCargoRegistrySrcOnly(t *testing.T) {
+	// src は .crate の展開先で build 時に再展開される。cache/index は残して再取得を防ぐ
+	home := t.TempDir()
+	reg := filepath.Join(home, ".cargo/registry")
+	for _, d := range []string{"src", "cache", "index"} {
+		if err := os.MkdirAll(filepath.Join(reg, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	run(t, Config{Home: home, Execute: true}, fakeRunner())
+
+	if _, err := os.Stat(filepath.Join(reg, "src")); err == nil {
+		t.Error("cargo registry src を消していない")
+	}
+	for _, d := range []string{"cache", "index"} {
+		if _, err := os.Stat(filepath.Join(reg, d)); err != nil {
+			t.Errorf("registry/%s を消した", d)
+		}
+	}
+}
+
 func TestRunSkipsMissingPaths(t *testing.T) {
 	// **無いものは異常ではない。** その道具を使っていない端末では単に無い
 	out, _ := run(t, Config{Home: t.TempDir()}, fakeRunner())
