@@ -338,19 +338,27 @@ func humanSizeOrDash(ctx context.Context, r execx.Runner, path string) string {
 }
 
 const vhdxGuidance = `  WSL2 のディスクイメージ (ext4.vhdx) は、中で削除しても自動では縮みません。
-  実ディスクの空きを取り戻すには Windows 側で圧縮します。
+  実ディスクの空きを取り戻すには Windows 側で圧縮します（PowerShell だけで完結）。
 
   1. PowerShell を「管理者として実行」で開く
-  2. WSL を停止:
-       wsl --shutdown
-  3. diskpart を起動して圧縮:
-       diskpart
-       select vdisk file="C:\Users\<ユーザー名>\AppData\Local\Packages\<ディストロのパッケージ名>\LocalState\ext4.vhdx"
-       attach vdisk readonly
-       compact vdisk
-       detach vdisk
-       exit
+  2. 以下をそのまま貼り付けて実行（WSL 停止 → ext4.vhdx 自動検出 → diskpart で圧縮）:
 
-  ※ vhdx の場所が不明な場合（PowerShell）:
-       (Get-ChildItem -Path $env:LOCALAPPDATA\Packages -Recurse -Filter ext4.vhdx -ErrorAction SilentlyContinue).FullName
+wsl --shutdown
+
+$vhdx = Get-ChildItem $env:LOCALAPPDATA\Packages -Recurse -Filter ext4.vhdx -ErrorAction SilentlyContinue |
+  Select-Object -First 1 -ExpandProperty FullName
+$vhdx  # 対象を確認
+
+@"
+select vdisk file="$vhdx"
+attach vdisk readonly
+compact vdisk
+detach vdisk
+exit
+"@ | diskpart
+
+  ※ ディストロを複数入れている場合、-First 1 が意図しない ext4.vhdx を選ぶことがあります。
+    先に一覧を確認し、必要なら $vhdx にパスを直接代入してください:
+       Get-ChildItem $env:LOCALAPPDATA\Packages -Recurse -Filter ext4.vhdx -ErrorAction SilentlyContinue |
+         Select-Object FullName
 `

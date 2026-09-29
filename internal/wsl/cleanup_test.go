@@ -291,7 +291,9 @@ func TestRunShowsVhdxGuidance(t *testing.T) {
 	// **中で削除しても ext4.vhdx は自動では縮まない。** 手順を出さないと
 	// 「掃除したのにディスクが空かない」で終わる
 	out, _ := run(t, Config{Home: t.TempDir()}, fakeRunner())
-	for _, want := range []string{"ext4.vhdx", "wsl --shutdown", "compact vdisk"} {
+	// パスを手で書き換えずに済むよう、PowerShell だけで検出から圧縮まで完結させる。
+	// here-string の閉じ "@ は行頭でないと構文エラーになるため、行頭にあることまで見る
+	for _, want := range []string{"ext4.vhdx", "wsl --shutdown", "compact vdisk", "\n\"@ | diskpart", "Select-Object FullName"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("案内に %q が無い", want)
 		}
