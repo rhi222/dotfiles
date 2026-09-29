@@ -159,6 +159,7 @@ Go製 `dotctl` が複雑な状態判定を担い、`scripts/<feature>/*.sh` の�
 | skill audit / vendor       | `scripts/skills/{audit,vendor}.sh`          |
 | private bundle             | `scripts/settings/private-bundle.sh`        |
 | WSL cleanup                | `scripts/wsl/cleanup.sh`                    |
+| 古いnode_modules cleanup   | `scripts/nodemodules/cleanup.sh`            |
 | residue / migration doctor | `scripts/doctor/{residue,migration}.sh`     |
 | docker clean               | `dclean`（fish function）                   |
 

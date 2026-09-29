@@ -76,6 +76,7 @@ Goの細かな分岐はpackage内のunit test、Shell内部APIと公開wrapper�
 | `doctor/`        | migrationと環境残骸                                       |
 | `docker/`        | Docker掃除                                                |
 | `wsl/`           | WSL掃除                                                   |
+| `nodemodules/`   | 使っていないnode_modulesの掃除                            |
 | `automation/`    | cronからのheadless実行基盤                                |
 | `skills/`        | skillの追加・監査・vendoring                              |
 | `worktree/`      | worktreeの初期化・掃除と `wt` / `wtd`                     |

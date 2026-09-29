@@ -44,6 +44,8 @@ type Env struct {
 	WorktreePRStateCmd string
 	// WorktreeInitDir はリポジトリ固有の初期化スクリプトの置き場。
 	WorktreeInitDir string
+	// NodeModulesRoots は node_modules の走査ルート（スペース区切り）。
+	NodeModulesRoots string
 	// Cwd はカレントディレクトリ（worktree init の既定の対象）。
 	Cwd string
 
@@ -100,6 +102,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   plugin vendor      vendored agent plugin の更新と点検
   private-bundle     ローカル設定の集約と運搬
   wsl cleanup        WSL2 のキャッシュ掃除
+  node-modules cleanup  使っていない repository の node_modules を掃除する
   doctor residue     環境の残骸を洗い出す
   doctor migration   移行前チェック
   docker clean       docker の不要リソースを掃除する
@@ -144,6 +147,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runPrivateBundle(ctx, args[1:], env)
 	case "wsl":
 		return runWSL(ctx, args[1:], env)
+	case "node-modules":
+		return runNodeModules(ctx, args[1:], env)
 	case "doctor":
 		return runDoctor(ctx, args[1:], env)
 	case "docker":

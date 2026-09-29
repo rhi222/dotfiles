@@ -97,9 +97,10 @@
 
 ### 掃除
 
-| スクリプト               | 呼び出し元 |
-| ------------------------ | ---------- |
-| `scripts/wsl/cleanup.sh` | doc        |
+| スクリプト                       | 呼び出し元 |
+| -------------------------------- | ---------- |
+| `scripts/wsl/cleanup.sh`         | doc        |
+| `scripts/nodemodules/cleanup.sh` | doc        |
 
 ### Linear
 

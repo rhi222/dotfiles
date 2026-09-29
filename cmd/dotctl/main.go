@@ -290,6 +290,7 @@ func main() {
 		WorktreeRoots:      envOr("WORKTREE_CLEANUP_ROOTS", defaultWorktreeRoots),
 		WorktreePRStateCmd: os.Getenv("WORKTREE_CLEANUP_PR_STATE_CMD"),
 		WorktreeInitDir:    envOr("WORKTREE_INIT_D", defaultWorktreeInitDir()),
+		NodeModulesRoots:   envOr("NODE_MODULES_CLEANUP_ROOTS", defaultWorktreeRoots),
 		Cwd:                cwd(),
 
 		ClaudeSettings:  claudeSettings(),
