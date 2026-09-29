@@ -62,10 +62,12 @@ PAM ログインを経由しないため `pam_systemd` が走らず、systemd-lo
 - **`mise` が CLI ツールのほぼ全部を持ってくる。** gh・fzf・ripgrep・fd・tmux・neovim・yazi・
   ghq・git-wt・herdr・lazygit・shellcheck などは `.config/mise/config.toml` の宣言から入る。
   **apt で個別に入れない**（二重管理になり、`daily-update.sh` の更新対象からも外れる）
-- **例外は `tig` だけで、これは `apt-packages.txt` に宣言してある。** mise にも aqua にも無く、
+- **mise側の例外は `tig` で、これは `apt-packages.txt` に宣言してある。** mise にも aqua にも無く、
   GitHub リリースがソース tarball しか配っていないので `ubi` でも取れない
   （`tig-completion.bash has unknown extension` で落ちる）。**apt 版は 2.5.8 で upstream より古い。**
   新しい版が要るならソースビルドになるが、そのときは mise の管理外になることを承知して入れる
+- **`git` も `apt-packages.txt` に宣言してある。** Ubuntu標準版は古いので、`apt.sh` が
+  `ppa:git-core/ppa` を登録してから入れる。以後は `daily-update.sh` の `apt upgrade` で追従する
 - **`ghq` もこの時点では無い。** 手順1の `ghq get` が使えるのは `mise install`（手順1の最後）の後なので、
   最初の1回だけは `git clone` でリポジトリを取る
 
