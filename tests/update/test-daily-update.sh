@@ -254,6 +254,48 @@ output=$(WORKTREE_CLEANUP_SCRIPT="$FAKE_SCRIPTS/does-not-exist.sh" \
 assert_eq 0 "$exit_code" "worktree-cleanup.sh が無くても成功扱い"
 assert_output_contains "スキップ" "$output" "スキップの理由を出す"
 
+echo ""
+echo "[2b] node_modules_cleanup_check"
+
+# 検知だけで削除しない。合計サイズが閾値以上のときだけ通知する。
+cat >"$FAKE_SCRIPTS/nm-cleanup.sh" <<'EOF'
+#!/bin/bash
+echo "node_modules cleanup  mode: DRY-RUN"
+echo "  [DELETE] 3.0G  2026-01-01  /r/a/node_modules"
+echo "node-modules-cleanup: CANDIDATES=2 SIZE_MB=4096"
+[ "$*" = "" ] || echo "ARGS=[$*]"
+EOF
+
+: >"$WT_TEST_DIR/toast.log"
+output=$(PATH="$STUB_BIN:$PATH" \
+  NODE_MODULES_CLEANUP_SCRIPT="$FAKE_SCRIPTS/nm-cleanup.sh" \
+  NODE_MODULES_NOTIFY_THRESHOLD_MB=8192 \
+  node_modules_cleanup_check 2>&1)
+assert_output_contains "  [DELETE] 3.0G" "$output" "候補の内訳を字下げして出す"
+assert_output_contains "2 件 / 4096 MB" "$output" "件数と合計サイズを出す"
+assert_eq 0 "$(printf '%s\n' "$output" | grep -c 'ARGS=')" "--execute を渡さず dry-run で呼ぶ"
+assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "サイズが閾値未満なら通知しない"
+
+: >"$WT_TEST_DIR/toast.log"
+output=$(PATH="$STUB_BIN:$PATH" \
+  NODE_MODULES_CLEANUP_SCRIPT="$FAKE_SCRIPTS/nm-cleanup.sh" \
+  NODE_MODULES_NOTIFY_THRESHOLD_MB=4096 \
+  node_modules_cleanup_check 2>&1)
+assert_eq 1 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "サイズが閾値以上なら通知する"
+assert_output_contains "4096 MB" "$(cat "$WT_TEST_DIR/toast.log")" "通知本文に合計サイズを含む"
+
+sed 's/CANDIDATES=2 SIZE_MB=4096/CANDIDATES=0 SIZE_MB=0/' "$FAKE_SCRIPTS/nm-cleanup.sh" >"$FAKE_SCRIPTS/nm-cleanup-empty.sh"
+output=$(NODE_MODULES_CLEANUP_SCRIPT="$FAKE_SCRIPTS/nm-cleanup-empty.sh" \
+  node_modules_cleanup_check 2>&1)
+assert_output_contains "node_modules掃除: 候補なし" "$output" "候補0件は短い結果だけを出す"
+assert_eq 0 "$(printf '%s\n' "$output" | grep -c 'DRY-RUN')" "候補0件では詳細を再掲しない"
+
+exit_code=0
+output=$(NODE_MODULES_CLEANUP_SCRIPT="$FAKE_SCRIPTS/does-not-exist.sh" \
+  node_modules_cleanup_check 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "nodemodules/cleanup.sh が無くても成功扱い"
+assert_output_contains "スキップ" "$output" "スキップの理由を出す"
+
 rm -rf "$WT_TEST_DIR" "$STUB_BIN" "$FAKE_SCRIPTS"
 
 echo ""
