@@ -301,6 +301,7 @@ func VendorStatus(ctx context.Context, r execx.Runner, cfg VendorConfig, noNetwo
 	}
 
 	rc := 0
+	var behind []string
 	for _, name := range names {
 		dir := filepath.Join(cfg.VendorDir, name)
 		jsonPath := filepath.Join(dir, ".vendor.json")
@@ -330,7 +331,7 @@ func VendorStatus(ctx context.Context, r execx.Runner, cfg VendorConfig, noNetwo
 			if remote := RemoteHead(ctx, r, meta.Origin); remote != "" && remote != meta.Commit {
 				fmt.Fprintf(w.out(), "[--] %s: upstream の HEAD が違う（%s -> %s）\n",
 					name, Short(meta.Commit), Short(remote))
-				fmt.Fprintf(w.out(), "     確認: bash scripts/skills/vendor.sh update %s\n", name)
+				behind = append(behind, name)
 			}
 		}
 
@@ -346,6 +347,10 @@ func VendorStatus(ctx context.Context, r execx.Runner, cfg VendorConfig, noNetwo
 		if ok {
 			fmt.Fprintf(w.out(), "[OK] %s (%s, reviewed %s)\n", name, Short(meta.Commit), meta.VendoredAt)
 		}
+	}
+	// 名前ごとに案内すると [OK] 行に埋もれるので、まとめて取り込めるコマンドを末尾に1行だけ出す。
+	if len(behind) > 0 {
+		fmt.Fprintf(w.out(), "\n確認: bash scripts/skills/vendor.sh update %s\n", strings.Join(behind, " "))
 	}
 	return rc
 }

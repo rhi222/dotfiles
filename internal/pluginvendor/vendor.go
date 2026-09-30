@@ -189,6 +189,7 @@ func Status(ctx context.Context, r execx.Runner, cfg Config, noNetwork bool, w I
 		return 0
 	}
 	rc := 0
+	var behind []string
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -226,12 +227,16 @@ func Status(ctx context.Context, r execx.Runner, cfg Config, noNetwork bool, w I
 		if !noNetwork {
 			if remote := skill.RemoteHead(ctx, r, meta.Origin); remote != "" && remote != meta.Commit {
 				fmt.Fprintf(w.out(), "[--] %s: upstream更新あり（%s -> %s）\n", name, skill.Short(meta.Commit), skill.Short(remote))
-				fmt.Fprintf(w.out(), "     確認: bash scripts/plugins/vendor.sh update %s\n", name)
+				behind = append(behind, name)
 			}
 		}
 		if ok {
 			fmt.Fprintf(w.out(), "[OK] %s (%s, reviewed %s)\n", name, skill.Short(meta.Commit), meta.VendoredAt)
 		}
+	}
+	// 名前ごとに案内すると [OK] 行に埋もれるので、まとめて取り込めるコマンドを末尾に1行だけ出す。
+	if len(behind) > 0 {
+		fmt.Fprintf(w.out(), "\n確認: bash scripts/plugins/vendor.sh update %s\n", strings.Join(behind, " "))
 	}
 	return rc
 }
