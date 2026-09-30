@@ -34,7 +34,10 @@ linear_cycle_issues | jq '[.[]
 優先順は、期日超過（`dueDate` が今日より前）→ `createdAt` が古い → `em:*` ラベルの
 手薄な軸。**最大3件**に絞る。
 
-アクティブなCycleが無い週は `linear_issues_in_state "Todo"` に同じフィルタをかける。
+**Cycleの候補が3件に満たない週は、`linear_issues_in_state "Todo"` に同じフィルタをかけて補う。**
+アクティブなCycleが無い週も同じ。
+Cycleだけを見ていた頃は、manager の実作業単位の大半がCycleに載っておらず、9月前半から候補0件が続いた。
+補う分は Cycle の候補より後ろに並べ、合計で最大3件にする。
 Linearにアクセスできない場合はセクションごと省略し、日報作成を続行する。
 
 ## 承認を取る
