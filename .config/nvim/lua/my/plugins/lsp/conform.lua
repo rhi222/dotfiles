@@ -301,7 +301,6 @@ require("conform").setup({
 		go = { "goimports" },
 		graphql = get_web_formatter_cached,
 		html = { "prettier" },
-		http = { "kulala" },
 		javascript = get_web_formatter_cached,
 		javascriptreact = get_web_formatter_cached,
 		json = get_web_formatter_cached,
@@ -324,11 +323,6 @@ require("conform").setup({
 	},
 
 	formatters = {
-		kulala = {
-			command = "kulala-fmt",
-			args = { "format", "$FILENAME" },
-			stdin = false,
-		},
 		sqlfluff = {
 			command = "sqlfluff",
 			args = { "format", "--stdin-filename", "$FILENAME", "-" },

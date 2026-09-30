@@ -1,4 +1,9 @@
 local km = require("my.plugins.keymaps")
+
+local function add_to_package_path(plugin)
+	package.path = plugin.dir .. "/?.lua;" .. plugin.dir .. "/?/init.lua;" .. package.path
+end
+
 return {
 	{
 		"rmagatti/auto-session",
@@ -8,24 +13,25 @@ return {
 		end,
 	},
 	-- http client
-	-- nvim-treesitter への依存は持たない。kulala は自前の kulala_http パーサを
-	-- tree-sitter CLI で生成し、ft http を language.register で奪うため。
+	-- rockspec の依存を luarocks を使わずに入れる（lazy_nvim.lua の rocks 参照）。
+	-- http parser は nvim-treesitter が入れる。
 	{
-		-- 2026-09 上流 mistweaverco/kulala.nvim が404（削除か非公開化）。fetchが認証promptで落ちる。
-		-- pin はcheckoutしか止めないため、既存cloneをlazy root外へ移しlocal pluginとして扱う。
-		-- ponytail: 新しい端末ではcloneできない。移転先が出たら元の "owner/repo" 指定に戻す
-		dir = vim.fn.stdpath("data") .. "/vendor/kulala.nvim",
-		name = "kulala.nvim",
+		"rest-nvim/rest.nvim",
 		ft = "http",
+		dependencies = {
+			"nvim-neotest/nvim-nio",
+			"j-hui/fidget.nvim",
+			-- 純 Lua の rock。module が repo 直下にあり rtp の lua/ から引けないため package.path に足す
+			{ "manoelcampos/xml2lua", config = add_to_package_path },
+			{ "lunarmodules/lua-mimetypes", config = add_to_package_path },
+		},
 		config = function()
-			require("my/plugins/tools/kulala")
+			require("my/plugins/tools/rest-nvim")
 		end,
 		keys = {
-			-- ft を付けてバッファローカルにする。rest.nvim 時代はグローバル束縛だったため
-			-- 全バッファで <C-e>（既定のスクロール）が潰れていた
-			km.lazy_key("tools", "kulala_run", function()
-				require("kulala").run()
-			end, { ft = "http" }),
+			-- ft を付けてバッファローカルにする。グローバル束縛だと
+			-- 全バッファで <C-e>（既定のスクロール）が潰れる
+			km.lazy_key("tools", "rest_run", "<cmd>Rest run<CR>", { ft = "http" }),
 		},
 	},
 	-- markdown preview
