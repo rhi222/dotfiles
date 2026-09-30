@@ -46,7 +46,7 @@ git diff --staged       # ステージ内容が単一の意図に閉じている
 | `ci`       | CI設定・スクリプトの変更                   |
 | `build`    | ビルドシステム・外部依存への影響           |
 
-迷ったときの分岐は `.config/claude/skills/git-commit/SKILL.md` にフローチャートがある。
+迷ったときの分岐は `.config/agents/skills/git-commit/SKILL.md` にフローチャートがある。
 
 ## 書き方
 

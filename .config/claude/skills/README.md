@@ -9,8 +9,8 @@
   シンボリックリンクする。`<name>-workspace/`（skill-creator の作業ディレクトリ）は
   スキルではないのでリンク対象外・gitignore 対象
 - 外部スキルは `gh skill` で `~/.claude/skills/` に直接インストールする。
-  宣言リストは `scripts/setup/claude-skills.txt`（管理コマンドは CLAUDE.md の
-  「Claude Code skill管理」を参照）
+  宣言リストは `scripts/setup/claude-skills.txt`（配置・信頼境界・管理コマンドは
+  `docs/agent-skills.md` を参照）
 
 ### 自作スキル一覧
 
