@@ -487,6 +487,61 @@ assert_tool_triad "cargo" run_cargo_case "$CARGO_TEST_DIR/cargo.log" "install-up
 rm -rf "$CARGO_TEST_DIR"
 
 echo ""
+echo ""
+echo "[7] mise_upgrade"
+
+# 進捗行（resolving の ✓ 行・進捗バー・download 中の行）はログから落とす。
+# WARN・version range 外の案内・更新したものの一覧はそのまま残す。
+MISE_TEST_DIR="$(mktemp -d)"
+cat >"$MISE_TEST_DIR/mise" <<'MISEEOF'
+#!/bin/bash
+cat >&2 <<'OUT'
+mise by @jdx – resolving 63 tools
+mise ✓ rust                                 0ms
+mise ████████████████ 63/63 · resolved 63 tools in 3ms
+mise ███████░░░░░░░░░ 31/63 · 3.0s
+  aqua:example/tool@1.0.0                     resolving · fetching from mise-versions.jdx.dev  3.0s
+mise ⇢ node@24.21.0         0ms · already installed
+mise WARN  newer uv release 0.12.21 ignored by minimum_release_age (48h)
+mise by @jdx – installing 1 tools
+  uv@0.12.19                     downloading  3.0s  0.1/19.8 MB · 152 kB/s
+  uv@0.12.19                     verifying    24.0s
+mise ✓ uv@0.12.19                     24.4s  uv-x86_64-unknown-linux-gnu.tar.gz
+
+Upgraded 1 tools:
+  uv 0.12.18 → 0.12.19
+mise Newer versions are available but do not match the configured version ranges:
+  java 21.0.2 → 27.0.0 (config.toml)
+OUT
+exit "${MISE_EXIT:-0}"
+MISEEOF
+chmod +x "$MISE_TEST_DIR/mise"
+
+exit_code=0
+output=$(PATH="$MISE_TEST_DIR:$PATH" mise_upgrade 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "mise: 成功なら rc=0"
+for noise in "resolving 63 tools" "mise ✓" "████" "fetching from" "already installed" "installing 1 tools" "downloading" "verifying"; do
+  TOTAL=$((TOTAL + 1))
+  if echo "$output" | grep -qF "$noise"; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: mise: 進捗行を出さない ($noise)"
+  else
+    PASS=$((PASS + 1))
+    echo "  PASS: mise: 進捗行を出さない ($noise)"
+  fi
+done
+assert_output_contains "mise WARN  newer uv release" "$output" "mise: WARN は残す"
+assert_output_contains "Upgraded 1 tools:" "$output" "mise: 更新一覧の見出しを残す"
+assert_output_contains "  uv 0.12.18 → 0.12.19" "$output" "mise: 更新したものを残す"
+assert_output_contains "  java 21.0.2 → 27.0.0" "$output" "mise: version range 外の案内を残す"
+
+exit_code=0
+output=$(PATH="$MISE_TEST_DIR:$PATH" MISE_EXIT=1 mise_upgrade 2>&1) || exit_code=$?
+assert_eq 1 "$exit_code" "mise: 失敗の rc を隠さない"
+assert_eq 1 "$(grep -c 'run_step "mise upgrade" mise_upgrade$' "$DAILY_UPDATE")" "mise: main から mise_upgrade を呼ぶ"
+
+rm -rf "$MISE_TEST_DIR"
+
 # =============================================================================
 echo "=== vendored skill 更新チェック ==="
 # 検知は plugin 側と同じ dotctl の status に任せ、出力書式を揃える。
