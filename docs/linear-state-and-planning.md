@@ -17,7 +17,12 @@
 | `AI Running`  | started   | AI実行中                                         | AI     |
 | `My Review`   | started   | 自分の判断待ち（**AIの成果物**）                 | 自分   |
 | `Waiting`     | started   | 他人待ち。チームレビュー・CI・返信待ち           | 他人   |
-| `Backlog`     | backlog   | Cycleを3回繰り越したもの（能動的に使わない）     | —      |
+| `Backlog`     | backlog   | 棚上げ。やると決めきれていない                   | —      |
+
+**`Backlog` は起票時に置く棚上げで、繰り越しの行き先ではない。**
+当初は「Cycleを3回繰り越したもの」と定義したが、移す仕組みが無く一度も使われなかった。
+繰り越しの多いissueは In Progress や Waiting にいることが多く、機械的に移すとボールの所持者の軸と衝突する。
+繰り越しは state ではなく回数で検出する（[Cycleとestimate](#cycleとestimate)）。
 
 **`In Progress` と `My Review` の判定は一問。**
 **「その成果物をAIが作ったか」で、YESだけが `My Review` に入る。**
