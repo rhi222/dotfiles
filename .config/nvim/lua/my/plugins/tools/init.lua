@@ -11,7 +11,11 @@ return {
 	-- nvim-treesitter への依存は持たない。kulala は自前の kulala_http パーサを
 	-- tree-sitter CLI で生成し、ft http を language.register で奪うため。
 	{
-		"mistweaverco/kulala.nvim",
+		-- 2026-09 上流 mistweaverco/kulala.nvim が404（削除か非公開化）。fetchが認証promptで落ちる。
+		-- pin はcheckoutしか止めないため、既存cloneをlazy root外へ移しlocal pluginとして扱う。
+		-- ponytail: 新しい端末ではcloneできない。移転先が出たら元の "owner/repo" 指定に戻す
+		dir = vim.fn.stdpath("data") .. "/vendor/kulala.nvim",
+		name = "kulala.nvim",
 		ft = "http",
 		config = function()
 			require("my/plugins/tools/kulala")
