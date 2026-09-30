@@ -2,7 +2,7 @@
 # 自分のopen PRを夜間に見張り、CI失敗と未対応レビューをheadless Claudeで直す
 #
 # crontab設定例:
-#   30 1 * * 2-6 bash <dotfiles>/scripts/prwatch/nightly.sh >> $HOME/.pr-watch.log 2>&1
+#   30 1 * * 2-6 $HOME/scripts/prwatch/nightly.sh >> $HOME/.pr-watch.log 2>&1
 #
 # 有効化: touch ~/.config/pr-watch-enabled   （--dry-run はフラグ無しでも判定だけ出す）
 #
