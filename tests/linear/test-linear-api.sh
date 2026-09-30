@@ -90,6 +90,10 @@ check "payloadにestimate=S(2)が入る" grep -q '"estimate":2' "$CURL_LOG"
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-1", "title": "t", "description": "d", "url": "u"}]}}}' >"$tmp/list.json"
 export CURL_RESPONSE="$tmp/list.json"
 check "issues_in_stateが配列を返す" test "$(linear_issues_in_state 'AI Queued' | jq 'length')" = "1"
+: >"$CURL_LOG"
+linear_issues_in_state 'Todo' >/dev/null
+# EMレーンの候補出しはTodoから補うときにestimate(S/M)で絞るため、取得しないと必ず0件になる
+check "issues_in_stateがestimateを取得する" grep -q 'estimate' "$CURL_LOG"
 
 # 6. linear_issue_move / linear_comment が成功する
 echo '{"data": {"issueUpdate": {"success": true}}}' >"$tmp/move.json"
