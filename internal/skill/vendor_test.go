@@ -722,3 +722,30 @@ func gitRun(t *testing.T, dir string, args ...string) {
 		t.Fatalf("git %v: %v\n%s", args, err, b)
 	}
 }
+
+func TestVendorStatusListsUpdateCommandOnceAtEnd(t *testing.T) {
+	cfg, bare := vendorEnv(t)
+	var out, errOut bytes.Buffer
+	w := VendorIO{Stdout: &out, Stderr: &errOut}
+	for _, name := range []string{"alpha", "beta"} {
+		if code := VendorAdd(context.Background(), execx.New(), cfg, bare, "skills/demo", name, w); code != 0 {
+			t.Fatalf("add failed: %s", errOut.String())
+		}
+		// upstream の HEAD とずらす（レビュー済みのまま）
+		jsonPath := filepath.Join(cfg.VendorDir, name, ".vendor.json")
+		meta, _ := LoadMeta(jsonPath)
+		meta.Commit = "0000000000000000000000000000000000000000"
+		meta.ReviewedCommit = meta.Commit
+		if err := SaveMeta(jsonPath, meta); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out.Reset()
+	VendorStatus(context.Background(), execx.New(), cfg, false, w)
+	got := out.String()
+	want := "\n確認: bash scripts/skills/vendor.sh update alpha beta\n"
+	if !strings.HasSuffix(got, want) || strings.Count(got, "確認:") != 1 {
+		t.Fatalf("更新コマンドは末尾に1行だけ出す: %q", got)
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rhi222/dotfiles/internal/execx"
 	"github.com/rhi222/dotfiles/internal/skill"
 )
 
@@ -139,5 +140,28 @@ func TestStatusRejectsInvalidJSONAndManifestVersion(t *testing.T) {
 	code := Status(context.Background(), nil, Config{VendorDir: root}, true, IO{Stdout: &out})
 	if code == 0 || !strings.Contains(out.String(), "不正なJSON") || !strings.Contains(out.String(), "manifest version") {
 		t.Fatalf("code=%d out=%q", code, out.String())
+	}
+}
+
+func TestStatusListsUpdateCommandOnceAtEnd(t *testing.T) {
+	root := t.TempDir()
+	f := execx.NewFake()
+	for _, name := range []string{"alpha", "beta"} {
+		dir := filepath.Join(root, name)
+		writeTestManifests(t, dir)
+		meta := testMeta()
+		meta.Files = []string{".claude-plugin/plugin.json", ".codex-plugin/plugin.json"}
+		meta.GeneratedFiles = nil
+		if err := saveMeta(filepath.Join(dir, ".vendor.json"), meta); err != nil {
+			t.Fatal(err)
+		}
+		f.On("git", execx.Result{Stdout: "ffffffffffffffff\tHEAD\n"})
+	}
+	var out bytes.Buffer
+	Status(context.Background(), f, Config{VendorDir: root}, false, IO{Stdout: &out})
+	got := out.String()
+	want := "\n確認: bash scripts/plugins/vendor.sh update alpha beta\n"
+	if !strings.HasSuffix(got, want) || strings.Count(got, "確認:") != 1 {
+		t.Fatalf("更新コマンドは末尾に1行だけ出す: %q", got)
 	}
 }
