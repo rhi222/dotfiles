@@ -154,6 +154,34 @@ echo '{"data": {"cycles": {"nodes": []}}}' >"$tmp/cycle-empty.json"
 export CURL_RESPONSE="$tmp/cycle-empty.json"
 check "アクティブなCycleが無ければ空配列" test "$(linear_cycle_issues | jq -c '.')" = "[]"
 
+# 9. linear_carried_over <min>: 閉じたCycleで未完了のまま残った回数がmin以上のopen issue
+#
+# Backlogを繰り越しの行き先にしない代わりに、滞留を回数で検出する。
+# 回数の多い順に返し、閉じたissueは数えない（もう滞留していない）。
+cat >"$tmp/carry.json" <<'EOF'
+{"data": {"cycles": {"nodes": [
+  {"number": 1, "uncompletedIssuesUponClose": {"nodes": [
+    {"identifier": "NSY-1", "title": "3回", "state": {"name": "In Progress", "type": "started"}},
+    {"identifier": "NSY-2", "title": "閉じた", "state": {"name": "Done", "type": "completed"}},
+    {"identifier": "NSY-3", "title": "1回", "state": {"name": "Todo", "type": "unstarted"}}]}},
+  {"number": 2, "uncompletedIssuesUponClose": {"nodes": [
+    {"identifier": "NSY-1", "title": "3回", "state": {"name": "In Progress", "type": "started"}},
+    {"identifier": "NSY-2", "title": "閉じた", "state": {"name": "Done", "type": "completed"}}]}},
+  {"number": 3, "uncompletedIssuesUponClose": {"nodes": [
+    {"identifier": "NSY-1", "title": "3回", "state": {"name": "In Progress", "type": "started"}},
+    {"identifier": "NSY-2", "title": "閉じた", "state": {"name": "Done", "type": "completed"}}]}},
+  {"number": 4, "uncompletedIssuesUponClose": {"nodes": []}}
+]}}}
+EOF
+export CURL_RESPONSE="$tmp/carry.json"
+: >"$CURL_LOG"
+carry=$(linear_carried_over 3)
+check "carried_overがmin以上だけ返す" test "$(jq -c 'map(.identifier)' <<<"$carry")" = '["NSY-1"]'
+check "carried_overが回数を返す" test "$(jq -r '.[0].count' <<<"$carry")" = "3"
+check "carried_overが現在のstateを返す" test "$(jq -r '.[0].state' <<<"$carry")" = "In Progress"
+check "carried_overは閉じたissueを数えない" test "$(linear_carried_over 1 | jq -c 'map(.identifier)')" = '["NSY-1","NSY-3"]'
+check "carried_overもteam_idで絞る" grep -q "$TEAM_ID" "$CURL_LOG"
+
 rm -rf "$tmp"
 echo "---"
 echo "pass: $pass, fail: $fail"
