@@ -44,6 +44,10 @@ MANAGER_LABEL_ID=$(jq -r '.labels["role:manager"]' "$LINEAR_CONFIG_DIR/config.js
 PEOPLE_LABEL_ID=$(jq -r '.labels["em:people"]' "$LINEAR_CONFIG_DIR/config.json")
 export CREATED_IDENTIFIER="NSY-100"
 export EXISTING_IDENTIFIER="NSY-42"
+# 出力するURLはタイトル由来のslugを落とした短い形にする。
+# APIが返すurlには日本語タイトルのslugが付いて長くなり、ターミナルで読めないため
+CREATED_URL="https://linear.app/example/issue/$CREATED_IDENTIFIER/"
+EXISTING_URL="https://linear.app/example/issue/$EXISTING_IDENTIFIER/"
 
 # --- unseen ---
 
@@ -80,7 +84,7 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[]},"issueCreate":{"success":true,"issue":{"id":"i1","identifier":"%s","url":"u"}}}}\n' "${CREATED_IDENTIFIER:?}"
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[]},"issueCreate":{"success":true,"issue":{"id":"i1","identifier":"%s","url":"https://linear.app/example/issue/%s/pms-shu-tong-shi-yan"}}}}\n' "${CREATED_IDENTIFIER:?}" "${CREATED_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 export PATH="$tmp/bin:$PATH"
@@ -96,7 +100,7 @@ PERMALINK="https://slack.example.com/archives/C0EXAMPLE/p1786335015733309?thread
 out6=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.733309" "$PERMALINK" \
   "PMS疎通試験の結果をまとめる" "試験結果を共有し、次の判断材料にする" "スレで疎通試験の話が出た" \
   "role:player" "em:tech" 2>&1)
-check "createがcreatedを返す" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6"
+check "createがcreatedとURLを返す" grep -qxF "created $CREATED_IDENTIFIER $CREATED_URL" <<<"$out6"
 check "seenにキーが追記される" grep -qxF "C0EXAMPLE/1786335015.733309" "$LINEAR_SLACK_SWEEP_SEEN"
 check "issueCreateが呼ばれる" grep -q "issueCreate" "$CURL_LOG"
 check "Triageに起票する" grep -q "$TRIAGE_STATE_ID" "$CURL_LOG"
@@ -110,7 +114,7 @@ check "本文に期待アウトカムが入る" grep -q "期待アウトカム" 
 # 推定は付加価値であって起票の前提ではない。手で叩くときに省けること
 : >"$CURL_LOG"
 out6b=$(bash "$SCRIPT" create "C0EXAMPLE/1786335015.999999" "$PERMALINK" "t" "o" "s" 2>&1)
-check "ラベル省略でも起票できる" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6b"
+check "ラベル省略でも起票できる" grep -qxF "created $CREATED_IDENTIFIER $CREATED_URL" <<<"$out6b"
 check "ラベル省略時もsrc:slackは付く" grep -q "$SLACK_LABEL_ID" "$CURL_LOG"
 
 # --- create（未知のラベル名） ---
@@ -120,7 +124,7 @@ check "ラベル省略時もsrc:slackは付く" grep -q "$SLACK_LABEL_ID" "$CURL
 : >"$CURL_LOG"
 out6c=$(bash "$SCRIPT" create "C0EXAMPLE/1786335016.111111" "$PERMALINK" "t" "o" "s" \
   "em:engineering" "role:player" 2>&1)
-check "未知のラベルがあっても起票は成功する" grep -q "^created $CREATED_IDENTIFIER$" <<<"$out6c"
+check "未知のラベルがあっても起票は成功する" grep -qxF "created $CREATED_IDENTIFIER $CREATED_URL" <<<"$out6c"
 check "未知のラベルは無視して残りは付ける" grep -q "$PLAYER_LABEL_ID" "$CURL_LOG"
 check "未知のラベルを警告に出す" grep -q "em:engineering" <<<"$out6c"
 
@@ -146,7 +150,7 @@ while [[ $# -gt 0 ]]; do
   else args="$args $1"; shift; fi
 done
 echo "ARGS:$args" >> "${CURL_LOG:?}"
-printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[{"id":"i-old","identifier":"%s"}]},"commentCreate":{"success":true}}}\n' "${EXISTING_IDENTIFIER:?}"
+printf '{"data":{"viewer":{"id":"user-me"},"issues":{"nodes":[{"id":"i-old","identifier":"%s","url":"https://linear.app/example/issue/%s/old-slug"}]},"commentCreate":{"success":true}}}\n' "${EXISTING_IDENTIFIER:?}" "${EXISTING_IDENTIFIER:?}"
 EOF
 chmod +x "$tmp/bin/curl"
 
@@ -154,7 +158,7 @@ chmod +x "$tmp/bin/curl"
 : >"$CURL_LOG"
 out8=$(bash "$SCRIPT" create "C0EXAMPLE/9999.0" "$PERMALINK" "t" "o" "スレが再燃した" \
   "role:manager" "em:people" 2>&1)
-check "重複時はcommentedを返す" grep -q "^commented $EXISTING_IDENTIFIER$" <<<"$out8"
+check "重複時はcommentedとURLを返す" grep -qxF "commented $EXISTING_IDENTIFIER $EXISTING_URL" <<<"$out8"
 check "重複時はissueCreateを呼ばない" test "$(grep -c 'issueCreate' "$CURL_LOG")" -eq 0
 check "重複時はcommentCreateを呼ぶ" grep -q "commentCreate" "$CURL_LOG"
 # 既にtriage済みかもしれない相手の分類を機械が上書きしない
