@@ -93,7 +93,10 @@ chmod +x "$tmp/bin/"*
 export PATH="$tmp/bin:$PATH" GHQ_ROOT="$tmp/ghq" CLAUDE_BIN="$tmp/bin/claude"
 export GH_LOG="$tmp/gh.log" CLAUDE_LOG="$tmp/claude.log"
 export PR_WATCH_STATE_DIR="$tmp/state"
-reset_logs() { : >"$GH_LOG"; : >"$CLAUDE_LOG"; }
+reset_logs() {
+  : >"$GH_LOG"
+  : >"$CLAUDE_LOG"
+}
 
 # --- 1. 無効なら何もしない ---
 reset_logs
