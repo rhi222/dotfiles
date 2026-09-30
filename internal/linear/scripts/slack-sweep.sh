@@ -54,7 +54,7 @@ permalink_core() {
   sed -E 's|^.*(/archives/[^/?]+/p[0-9]+).*$|\1|' <<<"$1"
 }
 
-# linear_find_by_url <url-core> → {id, identifier} または {}
+# linear_find_by_url <url-core> → {id, identifier, url} または {}
 # searchableContent はタイトルと本文の両方を見る（description より広い）。
 # includeArchived を付けるのは autoArchivePeriod が1ヶ月で、
 # 少し前のissueはアーカイブ側に居るため
@@ -64,7 +64,7 @@ linear_find_by_url() {
   linear_gql 'query($team: ID!, $q: String!) {
     issues(filter: {team: {id: {eq: $team}}, searchableContent: {contains: $q}},
            includeArchived: true, first: 1) {
-      nodes { id identifier }
+      nodes { id identifier url }
     }
   }' "$(jq -n --arg t "$team" --arg q "$1" '{team: $t, q: $q}')" | jq '.issues.nodes[0] // {}'
 }
@@ -88,6 +88,14 @@ label_allowed() {
     [[ "$l" == "$1" ]] && return 0
   done
   return 1
+}
+
+# short_url <issue url> → https://linear.app/<ws>/issue/<ID>/
+# APIのurlは末尾にタイトル由来のslugが付き、日本語タイトルだと長くなって
+# ターミナルで読めない。identifierまでで切ってもLinearはそのissueを開ける。
+# ワークスペース名はAPIの値から取るので、ここに社内固有の値を書かずに済む
+short_url() {
+  sed -E 's#(/issue/[^/?]+).*#\1/#' <<<"$1"
 }
 
 cmd_create() {
@@ -118,26 +126,28 @@ cmd_create() {
     echo "skipped(seen) $key"
     return 0
   fi
-  local body created ident core hit issue_id
+  local body created ident url core hit issue_id
   core=$(permalink_core "$permalink")
   hit=$(linear_find_by_url "$core") || return 1
   issue_id=$(jq -r '.id // ""' <<<"$hit")
   if [[ -n "$issue_id" ]]; then
     ident=$(jq -r '.identifier' <<<"$hit")
+    url=$(jq -r '.url // ""' <<<"$hit")
     # 同じスレが再燃したときにissueを増やさない。
     # ポインタの司令塔なので、issueとスレは1:1に保つ。
     # ラベルも触らない。既にtriageを通って人間が付け直しているかもしれない分類を、
     # スレを読み直しただけの機械が上書きしない
     linear_comment "$issue_id" "$(printf 'Slackで再言及: %s\n\n%s\n' "$permalink" "$summary")" || return 1
     seen_add "$key"
-    echo "commented $ident"
+    echo "commented $ident $(short_url "$url")"
     return 0
   fi
   body=$(printf '元URL: %s\n\n期待アウトカム: %s\n\n## 経緯\n%s\n' "$permalink" "$outcome" "$summary")
   created=$(linear_issue_create "$title" "$body" "Triage" "${labels[@]}") || return 1
   ident=$(jq -r '.identifier' <<<"$created")
+  url=$(jq -r '.url // ""' <<<"$created")
   seen_add "$key"
-  echo "created $ident"
+  echo "created $ident $(short_url "$url")"
 }
 
 usage() {
