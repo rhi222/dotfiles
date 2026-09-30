@@ -52,7 +52,7 @@ linear_state_id() { linear_config ".states[\"$1\"]"; }
 linear_label_id() { linear_config ".labels[\"$1\"]"; }
 
 # linear_issues_in_state <state名>
-#   → [{id, identifier, title, description, url, dueDate, createdAt, labels, parent, children}]
+#   → [{id, identifier, title, description, url, estimate, dueDate, createdAt, labels, parent, children}]
 #
 # dueDate / createdAt は「期日超過」「滞留日数」で優先順位を付けるために返す。
 # labels は role/em の偏りを見るため、parent/children は親子の取り残し検出のため。
@@ -63,7 +63,7 @@ linear_issues_in_state() {
   linear_gql 'query($team: ID!, $state: ID!) {
     issues(filter: {team: {id: {eq: $team}}, state: {id: {eq: $state}}}, first: 50) {
       nodes {
-        id identifier title description url dueDate createdAt
+        id identifier title description url estimate dueDate createdAt
         labels { nodes { name } }
         parent { identifier }
         children { nodes { identifier } }
