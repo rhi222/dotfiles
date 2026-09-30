@@ -35,7 +35,15 @@ local Plugin = require("lazy.core.plugin")
 local errors = {}
 for _, plugin in pairs(require("lazy").plugins()) do
 	if Plugin.has_errors(plugin) then
-		table.insert(errors, plugin.name)
+		-- 名前だけだと一時的な失敗（GitHub 5xx 等）と恒久的な失敗を後から区別できない
+		local msgs = {}
+		for _, task in ipairs(plugin._.tasks or {}) do
+			if task:has_errors() then
+				local out = vim.trim(task:output(vim.log.levels.ERROR)):gsub("\n", " | ")
+				table.insert(msgs, task.name .. ": " .. out)
+			end
+		end
+		table.insert(errors, plugin.name .. (#msgs > 0 and (" — " .. table.concat(msgs, "; ")) or ""))
 	end
 end
 table.sort(errors)
