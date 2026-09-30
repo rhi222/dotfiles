@@ -178,7 +178,13 @@ Triageは**機械が拾ったものの受信箱**。スイープが起票したd
 
 ### 3. 今夜AIに投げる候補をスコアリングする
 
-`Todo` から、`ai:blocked-human` が付いていないものを対象に3軸で評価する。
+`Todo` の実作業単位（子を持たない）で、`role:player` が付き、`ai:blocked-human` が付いていないものを対象に3軸で評価する。
+Linearのview「④ 今夜の仕込み候補」も同じ条件で絞っている。
+
+- **親の有無では絞らない。** dispatchが見るのは `repo:` 行かPR URLで、親の有無ではない。
+  単独の課題（親を持たない実作業単位）も、`repo:` 行を足せば投げられる。
+  以前は「子だけ」に絞っており、候補が1件しか残らず実装レーンが一度も回らなかった
+- **`role:manager` は対象外。** EMレーンの担当で、候補出しは日報作成時に行う（`nippo-add` の `em-delegation.md`）
 
 | 軸               | 高い条件                                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -192,15 +198,15 @@ Triageは**機械が拾ったものの受信箱**。スイープが起票したd
 
 ```bash
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-linear_gql '{ issues(first: 100, filter: {state: {type: {nin: ["completed","canceled"]}}}) {
+linear_gql '{ issues(first: 100, filter: {state: {name: {eq: "Todo"}}, children: {length: {eq: 0}}}) {
   nodes { identifier title dueDate createdAt
           parent { identifier dueDate }
           labels { nodes { name } } } } }' \
 | jq -r --arg t "$(date +%F)" '
   [.issues.nodes[]
+   | select(.labels.nodes|map(.name)|index("role:player"))
    | select((.labels.nodes|map(.name)|index("ai:blocked-human")) == null)
-   | . + {eff_due: (.dueDate // .parent.dueDate)}
-   | select(.parent != null)]                       # dispatch対象は子だけ
+   | . + {eff_due: (.dueDate // .parent.dueDate)}]
   | sort_by(.eff_due // "9999-99-99")
   | .[] | "\(.identifier)\tdue=\(.eff_due // "-")\t\(if (.eff_due // "9999") < $t then "超過" else "  " end)\t\(.title[0:40])"'
 ```
@@ -292,5 +298,5 @@ repo: github.com/<owner>/<name>
 
 - このskillは**起票しない**。新規タスクの起票は `/linear-add`
 - `dueDate` はJiraが持つ。Linear側で勝手に日付を作らない
-- 夜間dispatchは現在 **cron未登録**（数日運用してから判断する方針）。`AI Queued` に置いても
-  自動では走らない。試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear/dispatch-cron.sh`
+- 夜間dispatchは平日深夜（火〜土の1:00）にcronで走る。`AI Queued` に置けば翌朝までに処理される。
+  手で試すなら `env LINEAR_DISPATCH_MAX=1 bash ~/scripts/linear/dispatch-cron.sh`
