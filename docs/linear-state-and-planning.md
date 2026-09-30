@@ -23,6 +23,7 @@
 当初は「Cycleを3回繰り越したもの」と定義したが、移す仕組みが無く一度も使われなかった。
 繰り越しの多いissueは In Progress や Waiting にいることが多く、機械的に移すとボールの所持者の軸と衝突する。
 繰り越しは state ではなく回数で検出する（[Cycleとestimate](#cycleとestimate)）。
+`/linear-triage` の整合チェック10）が `linear_carried_over 3` で3回以上のopen issueを出す。
 
 **`In Progress` と `My Review` の判定は一問。**
 **「その成果物をAIが作ったか」で、YESだけが `My Review` に入る。**

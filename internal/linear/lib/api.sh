@@ -141,6 +141,33 @@ linear_cycle_issues() {
   }' "$(jq -n --arg t "$team" '{team: $t}')" | jq '.cycles.nodes[0].issues.nodes // []'
 }
 
+# linear_carried_over <min>
+#   → 閉じたCycleで未完了のまま残った回数がmin以上のopen issue
+#     [{identifier, title, state, count}]（回数の多い順）
+#
+# Backlogを繰り越しの行き先にしない代わりに、滞留を回数で検出する（linear-triage）。
+# 閉じたissueは数えない。stateは現在のもので、行き先の判断は人間がする。
+# ponytail: 閉じたCycle30本（約7ヶ月）・各100件まで。Queryの複雑度上限（10000）のため。超えたらpaginationを足す
+linear_carried_over() {
+  local min="$1" team
+  team=$(linear_config '.team_id') || return 1
+  linear_gql 'query($team: ID!) {
+    cycles(filter: {team: {id: {eq: $team}}, isPast: {eq: true}}, first: 30) {
+      nodes {
+        uncompletedIssuesUponClose(first: 100) {
+          nodes { identifier title state { name type } }
+        }
+      }
+    }
+  }' "$(jq -n --arg t "$team" '{team: $t}')" | jq --argjson min "$min" '
+    [.cycles.nodes[].uncompletedIssuesUponClose.nodes[]
+     | select(.state.type | IN("completed", "canceled", "duplicate") | not)]
+    | group_by(.identifier)
+    | map({identifier: .[0].identifier, title: .[0].title, state: .[0].state.name, count: length})
+    | map(select(.count >= $min))
+    | sort_by(-.count, .identifier)'
+}
+
 # linear_issue_create <title> <description> <state名> [label名...] → {id, identifier, url}
 #
 # assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
