@@ -112,6 +112,17 @@ yazi_pkg_upgrade() {
 # 検出は `command -v` で行う。cargo は cargo-<sub> という名前のバイナリを
 # PATH と $CARGO_HOME/bin から引くので、`~/.cargo/bin` が PATH にあることが前提。
 # 外れていた場合は「更新をスキップする」側に倒れるので、壊れる方向には転ばない。
+# mise upgrade は非TTYでも進捗表示を1行ずつ吐き、ログが「更新なし」の確認行で埋まる。
+# 進捗行だけを落とし、WARN・version range 外の案内・Upgraded 一覧は残す。
+# 出力はすべて stderr なので stream では分けられない。
+# ponytail: 行の形で判定するため、mise が表示を変えたら新しい進捗行が漏れて見えるだけ（情報は失わない）。
+MISE_PROGRESS_PATTERN='^mise (by @jdx – |✓ |⇢ |[█░])|^  [^ ]+ +(resolving|downloading|fetching|installing|verifying|extracting)( |$)'
+
+mise_upgrade() {
+  mise upgrade 2>&1 | { grep -vE "$MISE_PROGRESS_PATTERN" || true; }
+  return "${PIPESTATUS[0]}"
+}
+
 cargo_install_update() {
   if ! command -v cargo-install-update >/dev/null 2>&1; then
     echo "cargo-update not installed, skipping"
@@ -241,7 +252,7 @@ main() {
   run_step "apt upgrade" sudo apt-get upgrade -y -qq
   run_step "cargo install-update" cargo_install_update
   run_step "mise self-update" mise self-update -y
-  run_step "mise upgrade" mise upgrade
+  run_step "mise upgrade" mise_upgrade
   # upgrade で最新でなくなった版を同一実行内で掃除する（tracked 設定から
   # 参照されなくなったツール版を実削除。確認プロンプトなし）
   run_step "mise prune" mise prune --yes
