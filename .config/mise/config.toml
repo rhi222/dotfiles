@@ -98,6 +98,8 @@ lockfile_platforms = ["linux-x64"]
 # リリース直後の壊れた版・yank される版を掴まないための枯らし期間。
 # mise デフォルトは 24h だが、より安全側に 48h へ延長する。
 minimum_release_age = "48h"
+# よく使い発行元も信頼できるものは枯らさず最新を使う。
+minimum_release_age_excludes = ["npm:@openai/codex", "github:k1LoW/mo", "herdr"]
 
 # idiomatic version files を尊重（repo 単位で pin できる）
 # Go は .go-version だけを尊重し、非推奨の go.mod 読み取りは無効化する。
