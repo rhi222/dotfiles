@@ -167,13 +167,13 @@ url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd6
 url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
 
 [[tools.aws]]
-version = "2.37.5"
+version = "2.37.6"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:84b6b66ea53bd7cd46c4892828675ed9b8583e365e612c39f69d69bd09e8a46b"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.5.zip"
+checksum = "blake3:6fc7fc97472ead949f3a769da691f2fe85217dd54d075a2faa00c3e36bc72c60"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.6.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -278,16 +278,15 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/565857134"
 provenance = "github-attestations"
 
 [[tools."github:k1LoW/mo"]]
-version = "1.6.8"
+version = "1.6.9"
 backend = "github:k1LoW/mo"
 specifiers = ["latest"]
 
 [tools."github:k1LoW/mo"."platforms.linux-x64"]
-checksum = "sha256:33972709836832579fde45adb8512bd15f444dc484ff988c0331579d35f115b8"
-url = "https://github.com/k1LoW/mo/releases/download/v1.6.8/mo_v1.6.8_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/k1LoW/mo/releases/assets/548262151"
+checksum = "sha256:d69a7963cc7be94deedabb335ae5a5780c9dc038e7f656b40ace697876ca0961"
+url = "https://github.com/k1LoW/mo/releases/download/v1.6.9/mo_v1.6.9_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/k1LoW/mo/releases/assets/595342726"
 provenance = "github-attestations"
-provenance_verified = true
 
 [[tools.gitui]]
 version = "0.28.1"
@@ -324,14 +323,14 @@ backend = "go:golang.org/x/tools/cmd/goimports"
 specifiers = ["latest"]
 
 [[tools.herdr]]
-version = "0.9.1"
+version = "0.9.3"
 backend = "aqua:herdrdev/herdr"
 specifiers = ["latest"]
 
 [tools.herdr."platforms.linux-x64"]
-checksum = "sha256:2a02fed16beb651ef006e1d43f048f652ca4dc58ad053cd2d44450563d5c54b7"
-url = "https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-linux-x86_64"
-url_api = "https://api.github.com/repos/herdrdev/herdr/releases/assets/568559679"
+checksum = "sha256:18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7"
+url = "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-x86_64"
+url_api = "https://api.github.com/repos/herdrdev/herdr/releases/assets/599036383"
 
 [[tools.java]]
 version = "21.0.2"
@@ -375,7 +374,7 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.157.1"
+version = "0.159.2"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 
@@ -390,9 +389,12 @@ backend = "npm:browser-sync"
 specifiers = ["latest"]
 
 [[tools."npm:ccmanager"]]
-version = "4.4.3"
+version = "4.4.4"
 backend = "npm:ccmanager"
 specifiers = ["latest"]
+
+[tools."npm:ccmanager".options]
+allow_low_downloads = "true"
 
 [[tools."npm:ccstatusline"]]
 version = "2.2.30"
