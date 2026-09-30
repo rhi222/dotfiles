@@ -113,6 +113,12 @@
 | `scripts/linear/dispatch-cron.sh`    | doc skill link cron |
 | `scripts/linear/em-dispatch.sh`      | doc skill           |
 
+### PR見張り
+
+| スクリプト                   | 呼び出し元 |
+| ---------------------------- | ---------- |
+| `scripts/prwatch/nightly.sh` | doc cron   |
+
 ### 日報・レポート
 
 | スクリプト                         | 呼び出し元         |
