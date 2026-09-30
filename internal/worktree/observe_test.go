@@ -175,6 +175,65 @@ func TestPRStateDoesNotCallGhWhenOverridden(t *testing.T) {
 	}
 }
 
+func TestPRStateUsesGlabForGitLabRemote(t *testing.T) {
+	// GitLab の repo に gh を投げると必ず失敗し、マージ済みでも KEEP に倒れていた。
+	tests := []struct {
+		name string
+		out  string
+		want PRKind
+		raw  string
+	}{
+		{"merged", `[{"iid":3903,"state":"merged"}]`, PRMerged, "MERGED !3903"},
+		{"closed", `[{"iid":12,"state":"closed"}]`, PRClosed, "CLOSED !12"},
+		{"opened", `[{"iid":5,"state":"opened"}]`, PROpen, "OPEN !5"},
+		{"none", `[]`, PRNone, "NONE"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := execx.NewFake().
+				On("git", execx.Result{Stdout: "ssh://git@gitlab.example.com/group/app.git\n"}).
+				On("glab", execx.Result{Stdout: tt.out})
+			got := prState(context.Background(), f, "/repo", "feat/x", "")
+			if got.Kind != tt.want || got.Raw != tt.raw {
+				t.Errorf("got %+v, want Kind=%v Raw=%q", got, tt.want, tt.raw)
+			}
+			last := f.Calls[len(f.Calls)-1]
+			if want := "glab mr list --source-branch feat/x --all --output json --per-page 1"; last.String() != want {
+				t.Errorf("呼び出し = %q, want %q", last.String(), want)
+			}
+			if last.Dir != "/repo" {
+				t.Errorf("Dir = %q, want /repo", last.Dir)
+			}
+		})
+	}
+}
+
+func TestPRStateGlabFailureIsUnavailable(t *testing.T) {
+	for name, res := range map[string]execx.Result{
+		"非0で返る":   {ExitCode: 1, Stderr: "glab: 401 Unauthorized"},
+		"JSONでない": {Stdout: "oops"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := execx.NewFake().
+				On("git", execx.Result{Stdout: "git@gitlab.example.com:group/app.git\n"}).
+				On("glab", res)
+			if got := prState(context.Background(), f, "/repo", "b", ""); got.Kind != PRUnavailable {
+				t.Errorf("Kind = %v, want PRUnavailable", got.Kind)
+			}
+		})
+	}
+}
+
+func TestPRStateUsesGhWhenOnlyPathMentionsGitLab(t *testing.T) {
+	// host ではなく repository 名に gitlab を含むだけなら GitHub として扱う。
+	f := execx.NewFake().
+		On("git", execx.Result{Stdout: "https://github.com/someone/gitlab-tools.git\n"}).
+		On("gh", execx.Result{Stdout: "OPEN #1\n"})
+	if got := prState(context.Background(), f, "/repo", "b", ""); got.Kind != PROpen {
+		t.Errorf("Kind = %v, want PROpen", got.Kind)
+	}
+}
+
 // --- 未追跡件数 ---
 
 func TestUntrackedCount(t *testing.T) {
