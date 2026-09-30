@@ -27,13 +27,15 @@ input=$(jq -n \
   --arg me "$(linear_viewer_id)" \
   --arg title "<title>" --arg desc "<description>" \
   '{teamId: $team, stateId: $state, assigneeId: $me, title: $title, description: $desc,
-    labelIds: ["<labelId>"], projectId: "<projectId>", parentId: "<親issueのid>"}')
+    estimate: 2, labelIds: ["<labelId>"], projectId: "<projectId>", parentId: "<親issueのid>"}')
 linear_gql 'mutation($input: IssueCreateInput!) {
   issueCreate(input: $input) { success issue { id identifier url } }
 }' "$(jq -n --argjson i "$input" '{input: $i}')" | jq '.issueCreate.issue'
 ```
 
 labelId は `linear_label_id` で引く。`projectId` / `parentId` は不要ならキーごと省く。
+`estimate: 2` はSの既定値で、違うものだけ後から個別に直す。
+子issueを持たせる親課題では省く（estimateは実作業単位にだけ付ける）。
 
 ## 重複チェック（元URL / Jiraキーで既存issueを検索）
 

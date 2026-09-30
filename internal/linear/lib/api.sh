@@ -146,6 +146,8 @@ linear_cycle_issues() {
 # assigneeは常に自分。個人の司令塔なので未アサインだと My Issues に出てこない
 # labelは可変長。role:* / em:* を起票時に付けられるようにしてある
 # （src:* だけだと後からまとめてバックフィルする羽目になる）
+# estimateは既定でS(2)。違うものだけ後から個別に直す。
+# Linearのteam既定値（defaultIssueEstimate）は0/1しか受け付けずSにできないため、ここで渡す
 linear_issue_create() {
   local title="$1" desc="$2" state="$3"
   shift 3
@@ -154,7 +156,7 @@ linear_issue_create() {
   sid=$(linear_state_id "$state") || return 1
   me=$(linear_viewer_id) || return 1
   input=$(jq -n --arg t "$team" --arg ti "$title" --arg d "$desc" --arg s "$sid" --arg a "$me" \
-    '{teamId: $t, title: $ti, description: $d, stateId: $s, assigneeId: $a, labelIds: []}')
+    '{teamId: $t, title: $ti, description: $d, stateId: $s, assigneeId: $a, estimate: 2, labelIds: []}')
   for label in "$@"; do
     [[ -n "$label" ]] || continue
     lid=$(linear_label_id "$label") || return 1
