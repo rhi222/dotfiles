@@ -19,6 +19,10 @@
 #   - GitHubへはコメント・resolve・ラベルなど一切書き込まない。pushだけ
 set -euo pipefail
 
+# cronのPATH（/usr/bin:/bin）には mise 管理の gh / ghq が無い。末尾に足すのは、
+# 既にPATHにあるもの（対話シェル・テストのstub）を優先させるため
+export PATH="$PATH:$HOME/.local/share/mise/shims"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 source "$REPO_ROOT/internal/automation/cron-claude.sh"
 
