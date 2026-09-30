@@ -83,6 +83,8 @@ check "issue_createがidentifierを返す" test "$(jq -r '.identifier' <<<"$out"
 check "payloadにstateIdが入る" grep -q "$TRIAGE_STATE_ID" "$CURL_LOG"
 check "payloadにlabelIdが入る" grep -q "$GITHUB_LABEL_ID" "$CURL_LOG"
 check "payloadにassigneeIdが入る（My Issuesに出すため）" grep -q 'user-me' "$CURL_LOG"
+# Linearのteam既定値は0/1しか持てずS(2)にできないため、起票側で渡す
+check "payloadにestimate=S(2)が入る" grep -q '"estimate":2' "$CURL_LOG"
 
 # 5. linear_issues_in_state がnodes配列を返す
 echo '{"data": {"issues": {"nodes": [{"id": "i1", "identifier": "NSY-1", "title": "t", "description": "d", "url": "u"}]}}}' >"$tmp/list.json"
