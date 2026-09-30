@@ -143,6 +143,15 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+-- rest.nvimのformat
+-- https://github.com/rest-nvim/rest.nvim/issues/414#issuecomment-2308721227
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "json",
+	callback = function(ev)
+		vim.bo[ev.buf].formatprg = "jq"
+	end,
+})
+
 -- TSVファイルでタブ文字を可視化
 vim.api.nvim_create_autocmd("FileType", {
 	group = "vimrc_augroup",

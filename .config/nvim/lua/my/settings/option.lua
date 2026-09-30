@@ -64,3 +64,11 @@ vim.o.foldenable = false
 --      "To adjust what `:restart` restores, set 'sessionoptions'"
 -- terminal を含めないので、どちらの復元でも terminal バッファは戻らない。
 vim.opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
+
+-- html filetype に formatprg を設定（rest-nvim の checkhealth 警告回避）
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "html",
+	callback = function()
+		vim.bo.formatprg = "prettier --parser html"
+	end,
+})
