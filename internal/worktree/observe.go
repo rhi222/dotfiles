@@ -2,6 +2,8 @@ package worktree
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -88,6 +90,8 @@ func prState(ctx context.Context, r execx.Runner, repo, branch, override string)
 
 	if override != "" {
 		res, err = r.Run(ctx, execx.Cmd{Name: override, Args: []string{repo, branch}})
+	} else if isGitLab(ctx, r, repo) {
+		return mrState(ctx, r, repo, branch)
 	} else {
 		res, err = r.Run(ctx, execx.Cmd{
 			Name: "gh",
@@ -115,6 +119,66 @@ func prState(ctx context.Context, r execx.Runner, repo, branch, override string)
 		return PRState{Kind: PRClosed, Raw: raw}
 	default:
 		return PRState{Kind: PROpen, Raw: raw}
+	}
+}
+
+// isGitLab は origin の host が GitLab か。取れなければ false（gh に任せる）。
+//
+// **host だけを見る。** repository 名に gitlab を含む GitHub repo を誤判定しない。
+func isGitLab(ctx context.Context, r execx.Runner, repo string) bool {
+	res, err := r.Run(ctx, execx.Cmd{Name: "git", Args: []string{"-C", repo, "remote", "get-url", "origin"}})
+	if err != nil || !res.OK() {
+		return false
+	}
+	return strings.Contains(remoteHost(strings.TrimSpace(res.Stdout)), "gitlab")
+}
+
+// remoteHost は scheme 形式（ssh://user@host:port/path）と scp 形式（user@host:path）から host を取り出す。
+func remoteHost(url string) string {
+	if i := strings.Index(url, "://"); i >= 0 {
+		url = url[i+3:]
+		if j := strings.IndexByte(url, '/'); j >= 0 {
+			url = url[:j]
+		}
+	} else if j := strings.IndexByte(url, ':'); j >= 0 {
+		url = url[:j]
+	}
+	if i := strings.LastIndexByte(url, '@'); i >= 0 {
+		url = url[i+1:]
+	}
+	if j := strings.IndexByte(url, ':'); j >= 0 {
+		url = url[:j]
+	}
+	return url
+}
+
+// mrState は GitLab の MR 状態を PRState に揃えて返す。glab に --jq は無いので JSON を読む。
+func mrState(ctx context.Context, r execx.Runner, repo, branch string) PRState {
+	res, err := r.Run(ctx, execx.Cmd{
+		Name: "glab",
+		Args: []string{"mr", "list", "--source-branch", branch, "--all", "--output", "json", "--per-page", "1"},
+		Dir:  repo,
+	})
+	if err != nil || !res.OK() {
+		return PRState{Kind: PRUnavailable}
+	}
+	var mrs []struct {
+		IID   int    `json:"iid"`
+		State string `json:"state"`
+	}
+	if json.Unmarshal([]byte(res.Stdout), &mrs) != nil {
+		return PRState{Kind: PRUnavailable}
+	}
+	if len(mrs) == 0 {
+		return PRState{Kind: PRNone, Raw: "NONE"}
+	}
+	switch mrs[0].State {
+	case "merged":
+		return PRState{Kind: PRMerged, Raw: fmt.Sprintf("MERGED !%d", mrs[0].IID)}
+	case "closed":
+		return PRState{Kind: PRClosed, Raw: fmt.Sprintf("CLOSED !%d", mrs[0].IID)}
+	default:
+		return PRState{Kind: PROpen, Raw: fmt.Sprintf("OPEN !%d", mrs[0].IID)}
 	}
 }
 

@@ -125,6 +125,8 @@ herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`�
 Claude Code の worktree はセッション実行中に lock されるため、これを PR 状態より先に判定しないと作業中のディレクトリを消す。
 `--force` はルール4だけを飛ばし、**`locked` は `--force` でも削除しない**（`git worktree remove -f -f` は実装していない）。
 `gh` の呼び出しに失敗した場合も KEEP に倒すので、判定不能なときに削除側へ行くことはない。
+origin の host に `gitlab` を含む repository は `gh` ではなく `glab mr list` で MR 状態を見る（表示は `MERGED !123`）。
+CodeCommit など PR を引けない remote は取得失敗として KEEP になる。
 
 **未追跡ファイルは dirty 扱いにしない。**
 `plans/`（superpowers のスクラッチ）やレビューメモのような使い捨てファイル1個で、マージ済み worktree の削除がほぼ全部ブロックされてしまうため（実測で削除候補が6件から1件に落ちた）。
