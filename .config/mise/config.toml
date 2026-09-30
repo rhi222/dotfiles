@@ -23,7 +23,8 @@ uv = "latest"
 "npm:@openai/codex" = "latest"
 "npm:aws-cdk" = "latest"
 "npm:browser-sync" = "latest"
-"npm:ccmanager" = "latest"
+# 週間DL数がaubeの閾値(1000)を下回りupgradeが止まるため個別に許可する。
+"npm:ccmanager" = { version = "latest", allow_low_downloads = true }
 "npm:ccstatusline" = "latest"
 "npm:ccusage" = "latest"
 # 3.34.1はnpmのgitHeadと公式repositoryの同version commitを確認済み。
