@@ -30,9 +30,18 @@ userロールの本文のうち、`<` で始まるもの（`<system-reminder>` �
 残すと1 sessionが数十万字になり、判定が注入文を知識と取り違える。
 
 当日より前に更新が止まったログファイルは開かない。
-Codexは開始日のディレクトリに置かれるので、日付をまたいだsessionのために前日分も読む。
+Codexのrolloutは開始日のディレクトリに置かれたまま、resumeで追記される。
+そのため全日付のディレクトリをglobし、当日に更新されていないファイルはmtimeで飛ばす。
+Claudeはファイル名のuuidをsession idにする。
+resumeやforkをしたログは、先頭行の `sessionId` が元sessionのままのことがあり、digest名が衝突するため。
+compact後の要約（`isCompactSummary`）は前日以前の内容を含むので捨てる。
 
 ## 既知の限界
 
 - `<` で始まる本文はHTMLの貼り付けでも捨てる。取りこぼしが問題になったら、既知のタグ名に絞る。
 - 処理済みsessionの台帳は持たない。同じ日を再実行すると、vaultとの突き合わせで重複として落ちる。
+
+## 導入
+
+マージ後に `dotctl rebuild` を実行する。
+古いバイナリは `session digest` を知らず、終了コード2で止まる。
