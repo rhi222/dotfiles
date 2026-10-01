@@ -167,7 +167,7 @@ func Audit(ctx context.Context, r execx.Runner, root string) (AuditResult, error
 	// html comments -> hosts -> size
 	for _, f := range all {
 		if IsBinaryFile(f) {
-			add(HIGH, rel(f), 0, "非テキストファイル（レビューできない）", "")
+			add(HIGH, rel(f), 0, binaryDesc, "")
 		}
 	}
 

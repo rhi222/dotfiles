@@ -1,0 +1,16 @@
+{
+  "origin": "https://github.com/nanaism/yomiyasu.git",
+  "sub_path": "skills/yomiyasu",
+  "commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
+  "vendored_at": "2026-10-01",
+  "reviewed_commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
+  "audit": {
+    "high": 0,
+    "med": 0,
+    "low": 1
+  },
+  "license": "MIT",
+  "binary_sha256": {
+    "assets/algo-artis.png": "57c7c204d43d0e2873e3b61221db3ac4ba75a7ce29271a6deaeb3bd09f26fdec"
+  }
+}
