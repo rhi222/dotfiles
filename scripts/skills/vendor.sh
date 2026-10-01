@@ -1,7 +1,7 @@
 #!/bin/bash
 # skill-vendor.sh — dotctl skill vendor への互換 wrapper。
 #
-#   bash scripts/skills/vendor.sh add <owner/repo|git-url> <sub-path> [name]
+#   bash scripts/skills/vendor.sh add <owner/repo|git-url> <sub-path> [name] [--allow-binary <path>]...
 #   bash scripts/skills/vendor.sh update <name> [name...]
 #   bash scripts/skills/vendor.sh status [--no-network]
 #   bash scripts/skills/vendor.sh list

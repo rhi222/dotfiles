@@ -69,12 +69,29 @@ func (w VendorIO) confirm(prompt string, autoYes bool) bool {
 	return ConfirmTTY(prompt, w.out())
 }
 
+// binaryDigests は paths の digest を dir から計算する。
+func binaryDigests(dir string, paths []string) (map[string]string, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	out := map[string]string{}
+	for _, p := range paths {
+		h, err := FileSHA256(filepath.Join(dir, p))
+		if err != nil {
+			return nil, err
+		}
+		out[p] = h
+	}
+	return out, nil
+}
+
 // runAudit は audit を走らせ、findings を stderr へ出して件数を返す。
+// reviewed に載った非テキストファイルは確認済みとして除く。
 //
 // **人向けの findings は stderr へ回す。** Shell 版がそうしているのは、
 // stdout に混ぜると件数を読む側が findings の行を拾ってしまうため。
-func runAudit(ctx context.Context, r execx.Runner, dir string, w VendorIO) (AuditResult, error) {
-	res, err := Audit(ctx, r, dir)
+func runAudit(ctx context.Context, r execx.Runner, dir string, reviewed map[string]string, w VendorIO) (AuditResult, error) {
+	res, err := AuditReviewed(ctx, r, dir, reviewed)
 	if err != nil {
 		return res, err
 	}
@@ -119,8 +136,17 @@ func VendorAdd(ctx context.Context, r execx.Runner, cfg VendorConfig, spec, subP
 		return 1
 	}
 
+	digests, err := binaryDigests(src, cfg.AllowBinary)
+	if err != nil {
+		fmt.Fprintf(w.err(), "Error: %v\n", err)
+		return 1
+	}
+	for _, p := range cfg.AllowBinary {
+		fmt.Fprintf(w.out(), "確認済みとして取り込む非テキストファイル: %s (sha256 %s)\n", p, digests[p])
+	}
+
 	fmt.Fprintf(w.out(), "=== audit: %s (%s @ %s) ===\n", name, origin, Short(commit))
-	res, aerr := runAudit(ctx, r, src, w)
+	res, aerr := runAudit(ctx, r, src, digests, w)
 	if aerr != nil {
 		fmt.Fprintf(w.err(), "Error: %v\n", aerr)
 		return 1
@@ -152,6 +178,7 @@ func VendorAdd(ctx context.Context, r execx.Runner, cfg VendorConfig, spec, subP
 		ReviewedCommit: commit,
 		Audit:          AuditCount{res.High, res.Med, res.Low},
 		License:        DetectLicense(dest),
+		BinarySHA256:   digests,
 	}); err != nil {
 		fmt.Fprintf(w.err(), "Error: %v\n", err)
 		return 1
@@ -251,8 +278,19 @@ func VendorUpdate(ctx context.Context, r execx.Runner, cfg VendorConfig, name st
 	fmt.Fprintf(w.out(), "=== diff: %s (%s -> %s) ===\n", name, Short(meta.Commit), Short(commit))
 	fmt.Fprint(w.out(), diffOut)
 	fmt.Fprintln(w.out(), "")
+	// 記録済みのパスだけを確認済みとして扱う。中身が変わっていれば diff に
+	// "Binary files differ" が出ているので、承認が新しい digest の確認になる。
+	recorded := make([]string, 0, len(meta.BinarySHA256))
+	for p := range meta.BinarySHA256 {
+		recorded = append(recorded, p)
+	}
+	digests, err := binaryDigests(src, recorded)
+	if err != nil {
+		fmt.Fprintf(w.err(), "Error: upstream から確認済みの非テキストファイルが消えています: %v\n", err)
+		return 1
+	}
 	fmt.Fprintf(w.out(), "=== audit: %s (upstream の新しい内容) ===\n", name)
-	res, aerr := runAudit(ctx, r, src, w)
+	res, aerr := runAudit(ctx, r, src, digests, w)
 	if aerr != nil {
 		fmt.Fprintf(w.err(), "Error: %v\n", aerr)
 		return 1
@@ -278,6 +316,7 @@ func VendorUpdate(ctx context.Context, r execx.Runner, cfg VendorConfig, name st
 		ReviewedCommit: commit,
 		Audit:          AuditCount{res.High, res.Med, res.Low},
 		License:        DetectLicense(dest),
+		BinarySHA256:   digests,
 	}); err != nil {
 		fmt.Fprintf(w.err(), "Error: %v\n", err)
 		return 1
@@ -320,7 +359,7 @@ func VendorStatus(ctx context.Context, r execx.Runner, cfg VendorConfig, noNetwo
 			ok = false
 		}
 
-		res, aerr := Audit(ctx, r, dir)
+		res, aerr := AuditReviewed(ctx, r, dir, meta.BinarySHA256)
 		if aerr == nil && res.High != 0 {
 			fmt.Fprintf(w.out(), "[NG] %s: audit に HIGH が %d 件ある\n", name, res.High)
 			rc = 1

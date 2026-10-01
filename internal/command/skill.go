@@ -27,13 +27,15 @@ const auditUsage = `使い方: dotctl skill audit [--quiet] <skill-dir>
 `
 
 const vendorUsage = `使い方:
-  dotctl skill vendor add <owner/repo|git-url> <sub-path> [name]
+  dotctl skill vendor add <owner/repo|git-url> <sub-path> [name] [--allow-binary <path>]...
   dotctl skill vendor update <name> [name...]
   dotctl skill vendor status [--no-network]
   dotctl skill vendor list
 
   <sub-path> はリポジトリ内の skill ディレクトリ。直下にある場合は "." を渡す。
   [name] を省略すると <sub-path> の basename（"." のときはリポジトリ名）を使う。
+  --allow-binary は中身を確かめた非テキストファイル（skill からの相対パス）を名指しし、
+  digest を .vendor.json に記録して取り込む。
 `
 
 func runSkill(ctx context.Context, args []string, env Env) int {
@@ -99,11 +101,12 @@ func runSkillVendor(ctx context.Context, args []string, env Env) int {
 
 	switch args[0] {
 	case "add":
-		rest := args[1:]
-		if len(rest) < 2 {
+		rest, allow, ok := splitAllowBinary(args[1:])
+		if !ok || len(rest) < 2 {
 			fmt.Fprint(env.Stderr, vendorUsage)
 			return 2
 		}
+		cfg.AllowBinary = allow
 		name := ""
 		if len(rest) >= 3 {
 			name = rest[2]
@@ -162,4 +165,21 @@ func runSkillTrusted(args []string, env Env) int {
 		return 0
 	}
 	return 1
+}
+
+// splitAllowBinary は --allow-binary <path> を位置引数から抜き出す。
+// 値が無ければ ok=false。
+func splitAllowBinary(args []string) (rest, allow []string, ok bool) {
+	for i := 0; i < len(args); i++ {
+		if args[i] != "--allow-binary" {
+			rest = append(rest, args[i])
+			continue
+		}
+		if i+1 >= len(args) {
+			return nil, nil, false
+		}
+		i++
+		allow = append(allow, args[i])
+	}
+	return rest, allow, true
 }

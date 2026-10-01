@@ -30,6 +30,9 @@ type VendorConfig struct {
 	Today string
 	// AutoYes は承認プロンプトを自動 yes にする（テスト専用）。
 	AutoYes bool
+	// AllowBinary は add で受け入れる非テキストファイル（skill からの相対パス）。
+	// 人が中身を確かめたものだけを名指しする。
+	AllowBinary []string
 }
 
 // VendorMeta は .vendor.json の内容。
@@ -41,6 +44,8 @@ type VendorMeta struct {
 	ReviewedCommit string     `json:"reviewed_commit"`
 	Audit          AuditCount `json:"audit"`
 	License        string     `json:"license"`
+	// BinarySHA256 は人が確認した非テキストファイルの digest。
+	BinarySHA256 map[string]string `json:"binary_sha256,omitempty"`
 }
 
 // AuditCount は取込時の findings 件数。
@@ -224,19 +229,29 @@ func Preflight(cfg VendorConfig, src, name string) error {
 		}
 	}
 
-	// 非テキストファイルは読んでレビューできないので入れない。
+	allowed := map[string]bool{}
+	for _, p := range cfg.AllowBinary {
+		if _, err := os.Stat(filepath.Join(src, p)); err != nil {
+			return &PreflightError{Msg: fmt.Sprintf("--allow-binary のファイルがありません: %s", p)}
+		}
+		allowed[p] = true
+	}
+
+	// 非テキストファイルは読んでレビューできないので、人が名指ししたもの以外は入れない。
 	// **判定は audit と一致させる**（IsBinaryFile を共有している）。
 	var bin []string
 	for _, f := range allFiles(src) {
-		if IsBinaryFile(f) {
-			bin = append(bin, "  "+strings.TrimPrefix(f, src+"/"))
+		rel := strings.TrimPrefix(f, src+"/")
+		if IsBinaryFile(f) && !allowed[rel] {
+			bin = append(bin, "  "+rel)
 		}
 	}
 	if len(bin) > 0 {
 		sort.Strings(bin)
 		return &PreflightError{
-			Msg:    "非テキストファイルが含まれています（レビューできないため取り込みません）",
-			Detail: strings.Join(bin, "\n"),
+			Msg: "非テキストファイルが含まれています（レビューできないため取り込みません）",
+			Detail: strings.Join(bin, "\n") +
+				"\n  中身を確かめたものは --allow-binary <path> で名指しすると digest を記録して取り込みます",
 		}
 	}
 	return nil
