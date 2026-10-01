@@ -13,7 +13,9 @@ type claudeLine struct {
 	Timestamp   string `json:"timestamp"`
 	IsMeta      bool   `json:"isMeta"`
 	IsSidechain bool   `json:"isSidechain"`
-	Message     struct {
+	// IsCompactSummary は compact 後に差し込まれる会話の要約。前日以前の内容を含む。
+	IsCompactSummary bool `json:"isCompactSummary"`
+	Message          struct {
 		Content json.RawMessage `json:"content"`
 	} `json:"message"`
 }
@@ -40,7 +42,7 @@ func ParseClaude(r io.Reader, day Day) (Session, int, error) {
 		if s.Cwd == "" {
 			s.Cwd = l.Cwd
 		}
-		if l.IsMeta || l.IsSidechain {
+		if l.IsMeta || l.IsSidechain || l.IsCompactSummary {
 			return nil
 		}
 		at, err := time.Parse(time.RFC3339Nano, l.Timestamp)

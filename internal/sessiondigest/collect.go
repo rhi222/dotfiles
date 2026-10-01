@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 )
 
 type Options struct {
@@ -28,24 +27,27 @@ type parser func(io.Reader, Day) (Session, int, error)
 // Collect は当日に発言のある session を開始時刻順に返す。
 //
 // Claude は projects/<slug>/*.jsonl だけを見る（subagents/ は1段深いので glob に掛からない）。
-// Codex は開始日のディレクトリに置かれるので、日付をまたいだ session のために前日分も読む。
+// Codex は開始日のディレクトリに置かれたまま resume で追記されるので、全日付を glob し、
+// 当日に更新されていないファイルは parseFile の mtime 判定で開かずに飛ばす。
 func Collect(opt Options) (Result, error) {
 	claude, _ := filepath.Glob(filepath.Join(opt.ClaudeRoot, "projects", "*", "*.jsonl"))
-	var codex []string
-	for _, d := range []time.Time{opt.Day.Start.AddDate(0, 0, -1), opt.Day.Start} {
-		m, _ := filepath.Glob(filepath.Join(opt.CodexRoot, "sessions", d.Format("2006/01/02"), "rollout-*.jsonl"))
-		codex = append(codex, m...)
-	}
+	codex, _ := filepath.Glob(filepath.Join(opt.CodexRoot, "sessions", "*", "*", "*", "rollout-*.jsonl"))
 
 	var res Result
 	for _, src := range []struct {
-		files []string
-		parse parser
-	}{{claude, ParseClaude}, {codex, ParseCodex}} {
+		files  []string
+		parse  parser
+		fileID bool
+	}{{claude, ParseClaude, true}, {codex, ParseCodex, false}} {
 		for _, path := range src.files {
 			s, skipped, err := parseFile(path, opt.Day, src.parse)
 			if err != nil {
 				return res, err
+			}
+			// Claude はファイル名の uuid が session の正。resume/fork したログは
+			// 先頭行の sessionId が元 session のままで、digest 名が衝突しうる。
+			if src.fileID {
+				s.SessionID = strings.TrimSuffix(filepath.Base(path), ".jsonl")
 			}
 			res.Skipped += skipped
 			if len(s.Turns) > 0 && s.UserTurns() >= opt.MinUserTurns {
