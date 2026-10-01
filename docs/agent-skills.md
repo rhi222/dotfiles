@@ -77,6 +77,12 @@ skillの発動を分ける理由は、通常依頼ではCodexが今回の作業�
 - **バイナリ判定は `grep -Iq`。**
   **`file --mime` は使わない。**
   コードブロックの多い `.md` が `application/javascript` と判定され、`vercel-react-best-practices` の正当な `rules/*.md` 27件が誤って弾かれる
+- **非テキストファイルは名指しで受け入れる。**
+  `add` は既定で画像などを弾くが、人が中身を確かめたものは `--allow-binary <path>` で通す。
+  digest を `.vendor.json` の `binary_sha256` に記録し、`status` は一致するときだけHIGHから除く。
+  差し替われば `[NG]` になる。
+  `update` は記録済みのパスだけを確認済みとして扱い、diffの承認を新しいdigestの確認とみなす。
+  plugin vendoringの `binary_sha256` と同じ考え方
 - **`lint.sh` は `skills-vendor/` と `plugins/` を除外する。**
   `lint.sh` は「ignore 済み＝自分が保守しない」で第三者コードを切る前提に立っているが、vendored は **追跡していながら自分は保守しない**ので、この前提の唯一の例外になる
 - **`secret-scan.sh` は除外しない。**
