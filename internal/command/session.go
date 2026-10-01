@@ -19,15 +19,19 @@ func runSession(args []string, env Env) int {
 		fmt.Fprint(env.Stderr, sessionUsage)
 		return 2
 	}
-	if args[0] == "-h" || args[0] == "--help" {
+	switch args[0] {
+	case "-h", "--help":
 		fmt.Fprint(env.Stdout, sessionUsage)
 		return 0
-	}
-	if args[0] != "nvim-plan" {
+	case "nvim-plan":
+		return runNvimPlan(args[1:], env)
+	default:
 		fmt.Fprintf(env.Stderr, "dotctl session: 知らないサブコマンド: %s\n\n%s", args[0], sessionUsage)
 		return 2
 	}
+}
 
+func runNvimPlan(args []string, env Env) int {
 	fs := flag.NewFlagSet("nvim-plan", flag.ContinueOnError)
 	fs.SetOutput(env.Stderr)
 	markers := fs.String("markers", "", "marker directory")
@@ -35,7 +39,7 @@ func runSession(args []string, env Env) int {
 	socket := fs.String("socket", "", "Herdr socket path")
 	focused := fs.String("focused", "", "focused workspace id")
 	legacy := fs.Bool("legacy", false, "accept version 1 markers")
-	if err := fs.Parse(args[1:]); err != nil {
+	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	if fs.NArg() != 0 || *markers == "" || *panes == "" || *socket == "" {
