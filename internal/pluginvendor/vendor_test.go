@@ -87,7 +87,7 @@ func TestStatusAcceptsReviewedBinaryDigest(t *testing.T) {
 	dir := filepath.Join(root, "demo")
 	writeTestManifests(t, dir)
 	write(t, filepath.Join(dir, "payload.bin"), "\x00payload")
-	hash, err := fileSHA256(filepath.Join(dir, "payload.bin"))
+	hash, err := skill.FileSHA256(filepath.Join(dir, "payload.bin"))
 	if err != nil {
 		t.Fatal(err)
 	}

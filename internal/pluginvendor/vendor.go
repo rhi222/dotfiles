@@ -3,8 +3,6 @@ package pluginvendor
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -101,43 +99,6 @@ func actualFiles(root string) []string {
 	return out
 }
 
-func fileSHA256(path string) (string, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	sum := sha256.Sum256(b)
-	return hex.EncodeToString(sum[:]), nil
-}
-
-// audit ignores binary findings only when the reviewed digest still matches.
-func audit(ctx context.Context, r execx.Runner, dir string, meta Meta) (skill.AuditResult, error) {
-	res, err := skill.Audit(ctx, r, dir)
-	if err != nil {
-		return res, err
-	}
-	filtered := skill.AuditResult{}
-	for _, f := range res.Findings {
-		if f.Level == skill.HIGH && f.Desc == "非テキストファイル（レビューできない）" {
-			want, ok := meta.BinarySHA256[f.Path]
-			got, herr := fileSHA256(filepath.Join(dir, f.Path))
-			if ok && herr == nil && got == want {
-				continue
-			}
-		}
-		filtered.Findings = append(filtered.Findings, f)
-		switch f.Level {
-		case skill.HIGH:
-			filtered.High++
-		case skill.MED:
-			filtered.Med++
-		default:
-			filtered.Low++
-		}
-	}
-	return filtered, nil
-}
-
 func validateFiles(dir string, meta Meta) []string {
 	want := expectedFiles(meta)
 	var problems []string
@@ -215,7 +176,7 @@ func Status(ctx context.Context, r execx.Runner, cfg Config, noNetwork bool, w I
 			fmt.Fprintf(w.out(), "[NG] %s: %s\n", name, problem)
 			ok, rc = false, 1
 		}
-		res, aerr := audit(ctx, r, dir, meta)
+		res, aerr := skill.AuditReviewed(ctx, r, dir, meta.BinarySHA256)
 		if aerr != nil || res.High != 0 || res.Med != meta.Audit.Med || res.Low != meta.Audit.Low {
 			if aerr != nil {
 				fmt.Fprintf(w.out(), "[NG] %s: audit失敗: %v\n", name, aerr)
@@ -353,14 +314,14 @@ func Update(ctx context.Context, r execx.Runner, cfg Config, name string, w IO) 
 		return 1
 	}
 	for path := range meta.BinarySHA256 {
-		hash, herr := fileSHA256(filepath.Join(candidate, path))
+		hash, herr := skill.FileSHA256(filepath.Join(candidate, path))
 		if herr != nil {
 			fmt.Fprintf(w.err(), "Error: binary hashを計算できません: %s\n", path)
 			return 1
 		}
 		meta.BinarySHA256[path] = hash
 	}
-	res, err := audit(ctx, r, candidate, meta)
+	res, err := skill.AuditReviewed(ctx, r, candidate, meta.BinarySHA256)
 	if err != nil {
 		fmt.Fprintf(w.err(), "Error: audit失敗: %v\n", err)
 		return 1
