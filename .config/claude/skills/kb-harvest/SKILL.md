@@ -22,16 +22,22 @@ DIGEST_DIR="$(mktemp -d)"
 dotctl session digest --date "$TARGET_DATE" --out-dir "$DIGEST_DIR"
 ```
 
+**Bashの呼び出しをまたいでシェル変数は残らない。**
+このブロックは1回のBash呼び出しで実行し、`TARGET_DATE` `VAULT` `GLOSSARY` `DIGEST_DIR` の値を
+`echo` で出して控える。以降の手順では控えた実際のパスを直接書く。
+
 stdoutの索引が0行なら「対象なし」と伝えて終わる。
 stderrに `session-digest: SKIPPED=N` が出たら、件数だけ利用者に伝えて続ける。
 
 ## 手順
 
-1. **判定を並列に投げる。** 索引の `file` を、`chars` の合計がおよそ20万字を超えないように束ね、
-   1束につきsubagentを1つ起動する。すべて1つのメッセージで同時に起動する。
+1. **判定を並列に投げる。** 索引の `file` を、`chars` の合計がおよそ8万字を超えないように束ね、
+   1束につきsubagentを1つ起動する。1 sessionだけで8万字を超えるものは単独で1束にする。
+   すべて1つのメッセージで同時に起動する。
    - prompt: `judge.md` の全文と、担当するdigestファイルのパスの一覧
    - **digest本文をこのsessionで読まない。** 読むとコンテキストが溢れる
-2. **返答を検査する。** JSONとして読めない返答は、その束のsessionを「判定失敗」として一覧の末尾に出し、残りは続ける
+2. **返答を検査する。** JSONとして読めない返答は、その束のsessionを「判定失敗」として一覧の末尾に出し、残りは続ける。
+   束に渡したsessionが `results` に欠けていたら、そのsessionも「判定失敗」に入れる
 3. **vaultと突き合わせる。** 候補ごとに `title` と主要な語で `rg -l` を掛ける
    - `term`: `$GLOSSARY` の見出しと `別名:`
    - `system` / `org`: `$VAULT/03_Product` `$VAULT/05_Organization` `$VAULT/06_Domain`

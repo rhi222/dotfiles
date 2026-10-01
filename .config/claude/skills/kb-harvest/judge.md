@@ -30,19 +30,26 @@ digestが長いときは Read の offset / limit で分けて全部読む。
 
 ## 出力
 
-次のJSONだけを返す。前後に文章を付けない。候補が無ければ `candidates` を空配列にする。
+次のJSONだけを返す。前後に文章を付けない。
+渡されたdigestごとに `results` へ1要素を入れる。
+`session_id` はdigest冒頭の見出し（`# <source> session <id>`）の id を使う。
+候補が無いdigestも、`candidates` を空配列にして入れる。
 
 ```json
 {
-  "session_id": "<digestのsession id>",
-  "candidates": [
+  "results": [
     {
-      "kind": "term | system | org | skill",
-      "title": "短い見出し",
-      "body": "上の表の形の本文",
-      "evidence": ["根拠になった発言の短い引用"],
-      "dest_hint": "06_Domain/example-project/",
-      "confidence": "high | low"
+      "session_id": "<digestのsession id>",
+      "candidates": [
+        {
+          "kind": "term | system | org | skill",
+          "title": "短い見出し",
+          "body": "上の表の形の本文",
+          "evidence": ["根拠になった発言の短い引用"],
+          "dest_hint": "06_Domain/example-project/",
+          "confidence": "high | low"
+        }
+      ]
     }
   ]
 }
