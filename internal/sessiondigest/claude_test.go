@@ -104,3 +104,15 @@ func TestNewDayRejectsBadDate(t *testing.T) {
 		t.Error("want error")
 	}
 }
+
+// レビュー指摘の回帰: compact後の要約は前日以前の内容を含むので、当日の発言として数えない。
+func TestParseClaudeDropsCompactSummary(t *testing.T) {
+	log := `{"type":"user","sessionId":"s1","isCompactSummary":true,"timestamp":"2026-09-30T01:00:00Z","message":{"role":"user","content":"This session is being continued from a previous conversation."}}`
+	s, _, err := ParseClaude(strings.NewReader(log), mustDay(t, "2026-09-30", utc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Turns) != 0 {
+		t.Errorf("turns = %+v", s.Turns)
+	}
+}
