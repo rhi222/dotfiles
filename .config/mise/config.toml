@@ -57,6 +57,8 @@ herdr = "latest"
 # GitHub Releasesからバイナリをインストール
 # https://mise.jdx.dev/dev-tools/backends/github.html
 "github:k1LoW/mo" = "latest"
+# ghq 1.11系の配布名変更にaqua定義が未対応のため、release assetを自動選択する。
+"github:x-motemen/ghq" = "latest"
 
 # GitLab Releasesからバイナリをインストール
 glab = "latest"  # aquaに無いので gitlab:gitlab-org/cli backend
@@ -67,7 +69,6 @@ glab = "latest"  # aquaに無いので gitlab:gitlab-org/cli backend
 "aqua:k1LoW/deck" = "latest"
 "aqua:k1LoW/tcmux" = "latest"
 "aqua:k1LoW/git-wt" = "latest"
-"aqua:x-motemen/ghq" = "latest"
 "aqua:mvdan/sh" = "latest"          # shfmt
 "aqua:koalaman/shellcheck" = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"

@@ -55,14 +55,14 @@ url = "https://github.com/jesseduffield/lazygit/releases/download/v0.65.1/lazygi
 url_api = "https://api.github.com/repos/jesseduffield/lazygit/releases/assets/560658266"
 
 [[tools."aqua:k1LoW/deck"]]
-version = "1.24.1"
+version = "1.24.2"
 backend = "aqua:k1LoW/deck"
 specifiers = ["latest"]
 
 [tools."aqua:k1LoW/deck"."platforms.linux-x64"]
-checksum = "sha256:d7e3915b4647cbca994942edf7699e72072da2d51a219494cda90d61f3896956"
-url = "https://github.com/k1LoW/deck/releases/download/v1.24.1/deck_v1.24.1_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/k1LoW/deck/releases/assets/469115745"
+checksum = "sha256:260b0d2cf98a27c950008bbfa611e21400633b8182e1a0fe70530465ba9fb034"
+url = "https://github.com/k1LoW/deck/releases/download/v1.24.2/deck_v1.24.2_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/k1LoW/deck/releases/assets/595520194"
 
 [[tools."aqua:k1LoW/git-wt"]]
 version = "0.29.3"
@@ -156,24 +156,14 @@ url = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.27.0/tree
 url_api = "https://api.github.com/repos/tree-sitter/tree-sitter/releases/assets/536857303"
 provenance = "github-attestations"
 
-[[tools."aqua:x-motemen/ghq"]]
-version = "1.10.1"
-backend = "aqua:x-motemen/ghq"
-specifiers = ["latest"]
-
-[tools."aqua:x-motemen/ghq"."platforms.linux-x64"]
-checksum = "sha256:32e380aa8ac76fdd58758cc06174d9ee5db7270bd0cbcc18138b5d36def91b6b"
-url = "https://github.com/x-motemen/ghq/releases/download/v1.10.1/ghq_linux_amd64.zip"
-url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/394135802"
-
 [[tools.aws]]
-version = "2.37.6"
+version = "2.37.7"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:6fc7fc97472ead949f3a769da691f2fe85217dd54d075a2faa00c3e36bc72c60"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.6.zip"
+checksum = "blake3:651b650f9bfdb7acc04e7b3b963e2f46872565d1540b0889b45842e15bd23c3e"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.7.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -288,6 +278,17 @@ url = "https://github.com/k1LoW/mo/releases/download/v1.6.9/mo_v1.6.9_linux_amd6
 url_api = "https://api.github.com/repos/k1LoW/mo/releases/assets/595342726"
 provenance = "github-attestations"
 
+[[tools."github:x-motemen/ghq"]]
+version = "1.11.1"
+backend = "github:x-motemen/ghq"
+specifiers = ["latest"]
+
+[tools."github:x-motemen/ghq"."platforms.linux-x64"]
+checksum = "sha256:fad61bed3d509df64b62c0457927433b9fc125d3b1eab097768a557b93624dfa"
+url = "https://github.com/x-motemen/ghq/releases/download/v1.11.1/ghq_v1.11.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/x-motemen/ghq/releases/assets/598193844"
+provenance = "github-attestations"
+
 [[tools.gitui]]
 version = "0.28.1"
 backend = "aqua:gitui-org/gitui"
@@ -299,14 +300,14 @@ url = "https://github.com/gitui-org/gitui/releases/download/v0.28.1/gitui-linux-
 url_api = "https://api.github.com/repos/gitui-org/gitui/releases/assets/380787855"
 
 [[tools.glab]]
-version = "1.119.0"
+version = "1.120.0"
 backend = "gitlab:gitlab-org/cli"
 specifiers = ["latest"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:4d83375d202ffa634eaf627fd9272b610fa599f20f5b711f55d770583eca2b84"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.119.0/downloads/glab_1.119.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E119%2E0/glab_1%2E119%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:4e6c59de9f7ed2f304bf93aad01ea8f8a69584f0450ce90ad696ef81f69c69aa"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.120.0/downloads/glab_1.120.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E120%2E0/glab_1%2E120%2E0_linux_amd64%2Etar%2Egz"
 
 [[tools.go]]
 version = "1.27.1"
@@ -359,7 +360,7 @@ backend = "npm:@drawio/mcp"
 specifiers = ["latest"]
 
 [[tools."npm:@github/copilot"]]
-version = "1.0.88"
+version = "1.0.89"
 backend = "npm:@github/copilot"
 specifiers = ["latest"]
 
@@ -374,7 +375,7 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.159.2"
+version = "0.159.3"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 
@@ -458,14 +459,14 @@ backend = "pipx:xmlformatter"
 specifiers = ["latest"]
 
 [[tools.pnpm]]
-version = "12.7.0"
+version = "12.8.1"
 backend = "aqua:pnpm/pnpm"
 specifiers = ["latest"]
 
 [tools.pnpm."platforms.linux-x64"]
-checksum = "sha256:68190c7d289efecd66ff088c93b9c5ec361989e8194239e004bd905403d3d3e5"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.7.0/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/588119302"
+checksum = "sha256:db3906881f63e41b655e3b97d473603dc26326c2470d0b1b8083689e1bcbd1e8"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.8.1/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/595935887"
 provenance = "github-attestations"
 
 [[tools.python]]
@@ -514,14 +515,14 @@ url = "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-lin
 url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/528734864"
 
 [[tools.uv]]
-version = "0.12.19"
+version = "0.12.20"
 backend = "aqua:astral-sh/uv"
 specifiers = ["latest"]
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:23bf5552d220e0842b65c862097b2ebaeba0064b74eda5e565e77fd25969d8c8"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587159011"
+checksum = "sha256:6590717592ace991ff83a63fef799e3ad9d33ecc8f96c5d6bdd732496e79337f"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.20/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/596657933"
 provenance = "github-attestations"
 
 [[tools.yazi]]
@@ -535,14 +536,14 @@ url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unkn
 url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261400"
 
 [[tools.yq]]
-version = "4.53.6"
+version = "4.54.1"
 backend = "aqua:mikefarah/yq"
 specifiers = ["latest"]
 
 [tools.yq."platforms.linux-x64"]
-checksum = "sha256:c5f056448f973ae7d39b5401949648a78f2dc1947d6a8eb65be60d5c504b9385"
-url = "https://github.com/mikefarah/yq/releases/download/v4.53.6/yq_linux_amd64"
-url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/522028022"
+checksum = "sha512:57a5e74afd5aafb63c373be84c37fb778957051af3f2d1f563ae77df27b16f0e221cd64a6b7d7729f087fccbfe7d5b4aa1b42e9004d6c2df478f160b17392ead"
+url = "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64"
+url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/597222595"
 provenance = "cosign"
 
 [[tools.zoxide]]
