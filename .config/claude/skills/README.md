@@ -23,6 +23,7 @@
 | esa-diff-weekly    | esa週次差分URL取得&サマリ                                     |
 | esa-weekly-report  | esa週次エグゼクティブレポート生成                             |
 | executive-report   | 部長会用の役員報告リライト                                    |
+| kb-harvest         | 当日のsessionからvault/glossaryへのナレッジ候補を拾う         |
 | linear-add         | Linear起票（規約の自動適用）                                  |
 | linear-recall      | 起票済みLinear issueの検索・想起                              |
 | linear-slack-sweep | Slackスタンプ→Linear Triage起票                               |

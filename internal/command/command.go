@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/rhi222/dotfiles/internal/agentusage"
 	"github.com/rhi222/dotfiles/internal/docker"
@@ -89,6 +90,12 @@ type Env struct {
 	YaziBin         string
 	// YaziStateFile はこの端末で最後にdeployしたpackage.tomlと中身のfingerprint。
 	YaziStateFile string
+
+	// SessionDigestClaudeRoot / SessionDigestCodexRoot は session ログのルート（~/.claude, ~/.codex）。
+	SessionDigestClaudeRoot string
+	SessionDigestCodexRoot  string
+	// Location は日付の境界に使うタイムゾーン（nil なら time.Local）。
+	Location *time.Location
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
@@ -108,6 +115,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   docker clean       docker の不要リソースを掃除する
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
   session nvim-plan  nvim のherdr復元計画をJSONで出す
+  session digest     当日のagent sessionから本文だけのdigestを作る（kb-harvest）
   fisher-update      変更があるときだけfish pluginを更新する
   yazi-update        変更があるときだけyazi packageを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする

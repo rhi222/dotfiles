@@ -305,13 +305,15 @@ func main() {
 		Docker:            dockerConfig(),
 		TrustedOwnersFile: envOr("TRUSTED_SKILL_OWNERS_FILE", repoPath("scripts/skills/trusted-owners.txt")),
 
-		AgentUsage:        agentUsageConfig(),
-		AgentUsageSelfExe: selfExe,
-		FisherPluginFile:  fisherPluginFile,
-		FisherCacheFile:   fisherCacheFile,
-		YaziPackageFile:   envOr("YAZI_PACKAGE_FILE", filepath.Join(homeDir(), ".config", "yazi", "package.toml")),
-		YaziBin:           envOr("YAZI_BIN", "ya"),
-		YaziStateFile:     envOr("YAZI_STATE_FILE", filepath.Join(envOr("XDG_CACHE_HOME", filepath.Join(homeDir(), ".cache")), "dotfiles", "yazi-deployed.state")),
+		AgentUsage:              agentUsageConfig(),
+		AgentUsageSelfExe:       selfExe,
+		SessionDigestClaudeRoot: envOr("CLAUDE_CONFIG_DIR", filepath.Join(homeDir(), ".claude")),
+		SessionDigestCodexRoot:  envOr("CODEX_HOME", filepath.Join(homeDir(), ".codex")),
+		FisherPluginFile:        fisherPluginFile,
+		FisherCacheFile:         fisherCacheFile,
+		YaziPackageFile:         envOr("YAZI_PACKAGE_FILE", filepath.Join(homeDir(), ".config", "yazi", "package.toml")),
+		YaziBin:                 envOr("YAZI_BIN", "ya"),
+		YaziStateFile:           envOr("YAZI_STATE_FILE", filepath.Join(envOr("XDG_CACHE_HOME", filepath.Join(homeDir(), ".cache")), "dotfiles", "yazi-deployed.state")),
 
 		Color: isTerminal(os.Stdout),
 	}))
