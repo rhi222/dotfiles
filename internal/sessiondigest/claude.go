@@ -51,7 +51,7 @@ func ParseClaude(r io.Reader, day Day) (Session, int, error) {
 		}
 		for _, text := range claudeTexts(l.Message.Content) {
 			if keep(l.Type, text) {
-				s.Turns = append(s.Turns, Turn{Role: l.Type, Text: text, At: at})
+				s.Turns = append(s.Turns, Turn{Role: l.Type, Text: text, At: day.local(at)})
 			}
 		}
 		return nil
