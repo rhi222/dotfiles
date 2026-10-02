@@ -83,7 +83,8 @@ cat >"$tmp/bin/claude" <<'EOF'
 #!/bin/bash
 printf '%s\n---END---\n' "$*" >> "${CLAUDE_LOG:?}"
 [[ "${CLAUDE_NO_COMMIT:-0}" == "1" ]] || git commit -q --allow-empty -m "fix by agent"
-echo done
+# 判断理由は先頭に来ることが多い。末尾だけ残すと朝に読めないので複数行を出す
+printf 'AGENT-REASON-FIRST-LINE\nline2\nline3\nline4\ndone\n'
 EOF
 cat >"$tmp/bin/ghq" <<'EOF'
 #!/bin/bash
@@ -97,6 +98,10 @@ reset_logs() {
   : >"$GH_LOG"
   : >"$CLAUDE_LOG"
 }
+
+# --- 0. botのレビュー指摘も人の指摘と同じく拾う（AIレビューbotの指摘にも対応したいため）---
+bot_pr='{"reviewDecision":null,"commits":{"nodes":[]},"reviewThreads":{"nodes":[{"isResolved":false,"isOutdated":false,"comments":{"nodes":[{"author":{"login":"github-actions"}}]}}]}}'
+check "botだけのレビュー指摘もfeedbackとして拾う" test "$(bash -c 'source "$1"; prwatch_reasons "$2"' _ "$(dirname "$SCRIPT")/../../internal/prwatch/scripts/nightly.sh" "$bot_pr")" = "feedback"
 
 # --- 1. 無効なら何もしない ---
 reset_logs
@@ -127,6 +132,13 @@ check "レビュー指摘の本文をプロンプトに渡す" grep -q 'REVIEW-S
 check "agentにghを渡さない" bash -c "! grep -q 'Bash(gh' \"\$1\"" _ "$CLAUDE_LOG"
 check "ローカルのfeatブランチは動かさない" test "$(git -C "$REPO" rev-parse feat1)" = "$SHA1"
 check "実行結果をlast-runに残す" grep -q 'pull/2' "$PR_WATCH_STATE_DIR/last-run.txt"
+check "agentの出力全文をPRごとに残す" grep -q 'AGENT-REASON-FIRST-LINE' "$PR_WATCH_STATE_DIR/example-org_repo1_2.log"
+check "結果行に出力全文の場所を示す" grep -qE 'pull/2.*example-org_repo1_2\.log' <<<"$out"
+# プロンプトをPRごとに切り出す（claude stubは呼び出しごとに ---END--- で区切る）
+prompt_of() { awk -v pr="pull/$1 " 'BEGIN{RS="---END---"} index($0, pr){print}' "$CLAUDE_LOG"; }
+check "CI失敗のPRにはCIログ欄を入れる" grep -q 'CIの失敗ログ' <<<"$(prompt_of 1)"
+check "指摘だけのPRにはCIログ欄を入れない" bash -c "! grep -q 'CIの失敗ログ' <<<\"\$1\"" _ "$(prompt_of 2)"
+check "CIが落ちていないPRには未対応指摘欄だけを入れる" grep -q '未対応のレビュー指摘' <<<"$(prompt_of 2)"
 
 # --- 4. 再実行: push済みのheadと、push待ちのworktreeは触らない ---
 # PR1はpush後のheadを記録しているはず。stubのheadRefOidをそれに合わせて再実行する
