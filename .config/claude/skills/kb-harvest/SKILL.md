@@ -26,8 +26,9 @@ dotctl session digest --date "$TARGET_DATE" --out-dir "$DIGEST_DIR"
 このブロックは1回のBash呼び出しで実行し、`TARGET_DATE` `VAULT` `GLOSSARY` `DIGEST_DIR` の値を
 `echo` で出して控える。以降の手順では控えた実際のパスを直接書く。
 
-stdoutの索引が0行なら「対象なし」と伝えて終わる。
-stderrに `session-digest: SKIPPED=N` が出たら、件数だけ利用者に伝えて続ける。
+stdoutの索引が0行なら「対象なし」と伝え、手順7の後片付けをしてから終わる。
+stderrに `session-digest: SKIPPED=N UNREADABLE=M` が出たら、件数だけ利用者に伝えて続ける。
+`UNREADABLE` は開けなかったログファイルの数で、そのsessionは判定から漏れている。
 
 ## 手順
 
@@ -58,7 +59,10 @@ stderrに `session-digest: SKIPPED=N` が出たら、件数だけ利用者に伝
    - `system` / `org` の追記: 既存ノートの**末尾にだけ**節を足す。既存の本文は書き換えない
    - 書いた節の末尾に `出典: session <session_id>（<TARGET_DATE>）` を付ける
    - `skill`: 書かない
-6. 書いたファイルの一覧を出して終わる。commitはしない
+6. 書いたファイルの一覧を出す。commitはしない
+7. **digestを後片付けする。** digestは会話本文の写しなので残さない。
+   判定に失敗した束があっても、書き込みを中断したときも、最後に必ず
+   `dotctl session digest-clean <控えたDIGEST_DIRのパス>` を実行する
 
 ## やってはいけないこと
 
