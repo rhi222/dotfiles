@@ -122,8 +122,8 @@ func runSessionDigest(args []string, env Env) int {
 			return 1
 		}
 	}
-	if res.Skipped > 0 {
-		fmt.Fprintf(env.Stderr, "session-digest: SKIPPED=%d\n", res.Skipped)
+	if res.Skipped > 0 || res.Unreadable > 0 {
+		fmt.Fprintf(env.Stderr, "session-digest: SKIPPED=%d UNREADABLE=%d\n", res.Skipped, res.Unreadable)
 	}
 	return 0
 }
