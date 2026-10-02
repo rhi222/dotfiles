@@ -5,15 +5,23 @@ gitignore されており、dotfiles リポジトリには入らない。** 実�
 `~/.local/share/dotfiles-private/repo/.config/agents/skills/glossary/glossary.md` に置き、
 `dotfilesLink.sh` が symlink を張る。
 
-1用語1節。`意味` は必須、他は分かる範囲で書く。
-`起点` は `<cross-repo-investigate/repos.yml のエイリアス> / <リポジトリ内相対path>`。
+1用語1節。`意味` は必須、他は分かる範囲で書く。項目は次の順に並べる。
+
+- `意味`: 1〜2文の定義。実装の流れや注意点は書かず、`詳細` へ逃がす
+- `別名`: 表記ゆれ・略称。別の概念の名前は入れない
+- `起点`: `<cross-repo-investigate/repos.yml のエイリアス> / <リポジトリ内相対path>`。1行に1つ
+- `詳細`: 長い説明を置いた vault ノートへの Wiki Link
+- `関連`: 関連する用語の見出し
+- `出典`: 確定させた根拠。session・チケット番号と日付
 
 ## dive連携
 
 - 意味: 予約記録を夜間に外部システムへ渡すバッチ処理
 - 別名: dive, ダイブ連携
 - 起点: `予約` / `batch/dive/main.go`
+- 詳細: [[dive連携の処理フロー]]
 - 関連: sample-record-api
+- 出典: session 00000000-0000-0000-0000-000000000000（2026-01-01）, EXAMPLE-123
 
 ## sample-record-api
 
