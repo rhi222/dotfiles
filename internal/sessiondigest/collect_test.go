@@ -177,3 +177,47 @@ func TestCollectSkipsFilesNotUpdatedOnDay(t *testing.T) {
 		t.Errorf("sessions = %d, want 0", len(res.Sessions))
 	}
 }
+
+// 軽微指摘の回帰: 日付はローカル時刻で切るのに表示がUTCだと、digestの時刻が利用者の記憶とずれる。
+func TestWriteDigestShowsLocalTime(t *testing.T) {
+	jst := time.FixedZone("JST", 9*3600)
+	day, _ := NewDay("2026-10-01", jst)
+	s, _, err := ParseClaude(strings.NewReader(claudeUser("s1", "2026-09-30T15:30:00Z", "深夜")), day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := WriteDigest(t.TempDir(), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.StartedAt != "2026-10-01T00:30:00+09:00" {
+		t.Errorf("StartedAt = %s", e.StartedAt)
+	}
+	body, _ := os.ReadFile(e.File)
+	if !strings.Contains(string(body), "## user (00:30)") {
+		t.Errorf("digest:\n%s", body)
+	}
+}
+
+// 軽微指摘の回帰: 読めないログが1本あっても、他のsessionは出す。
+func TestCollectContinuesPastUnreadableFile(t *testing.T) {
+	root := t.TempDir()
+	claudeRoot := filepath.Join(root, "claude")
+	writeFile(t, filepath.Join(claudeRoot, "projects", "p1", "good.jsonl"), threeTurns("good"))
+	// ディレクトリは開けるが読めない（chmodと違い、rootで動くCIでも読めない）
+	bad := filepath.Join(claudeRoot, "projects", "p1", "bad.jsonl")
+	if err := os.MkdirAll(bad, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(bad, fixtureMtime, fixtureMtime); err != nil {
+		t.Fatal(err)
+	}
+	day, _ := NewDay("2026-09-30", utc)
+	res, err := Collect(Options{ClaudeRoot: claudeRoot, CodexRoot: filepath.Join(root, "codex"), Day: day, MinUserTurns: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Sessions) != 1 || res.Unreadable != 1 {
+		t.Errorf("sessions = %d, unreadable = %d", len(res.Sessions), res.Unreadable)
+	}
+}

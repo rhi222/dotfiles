@@ -84,3 +84,17 @@ func TestSessionDigestUsage(t *testing.T) {
 		}
 	}
 }
+
+func TestSessionDigestReportsUnreadable(t *testing.T) {
+	env, _, errb, root := digestEnv(t)
+	if err := os.MkdirAll(filepath.Join(root, "claude", "projects", "p1", "bad.jsonl"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	code := Run(context.Background(), []string{"session", "digest", "--date", "2026-09-30", "--out-dir", filepath.Join(root, "out")}, env)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, errb)
+	}
+	if !strings.Contains(errb.String(), "UNREADABLE=1") {
+		t.Errorf("stderr = %q", errb)
+	}
+}
