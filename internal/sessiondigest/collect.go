@@ -18,8 +18,9 @@ type Options struct {
 }
 
 type Result struct {
-	Sessions []Session
-	Skipped  int // 読めなかった行の合計
+	Sessions   []Session
+	Skipped    int // 読めなかった行の合計
+	Unreadable int // 開けなかった・読み切れなかったファイルの数
 }
 
 type parser func(io.Reader, Day) (Session, int, error)
@@ -41,8 +42,10 @@ func Collect(opt Options) (Result, error) {
 	}{{claude, ParseClaude, true}, {codex, ParseCodex, false}} {
 		for _, path := range src.files {
 			s, skipped, err := parseFile(path, opt.Day, src.parse)
+			// 1本読めないだけで他の session まで出なくなるのを避ける。件数は呼び出し側が報告する
 			if err != nil {
-				return res, err
+				res.Unreadable++
+				continue
 			}
 			// Claude はファイル名の uuid が session の正。resume/fork したログは
 			// 先頭行の sessionId が元 session のままで、digest 名が衝突しうる。

@@ -39,3 +39,18 @@ func WriteDigest(dir string, s Session) (IndexEntry, error) {
 		StartedAt: s.StartedAt().Format(time.RFC3339), UserTurns: s.UserTurns(), Chars: chars,
 	}, nil
 }
+
+// CleanDigests は WriteDigest が書いた <source>-*.md だけを消し、空になった dir を外す。
+// **他のファイルは消さない。** 誤った dir を渡されても被害を digest に限るため、
+// 残ったファイルがあれば dir は残してエラーを返す。
+func CleanDigests(dir string) error {
+	for _, pattern := range []string{"claude-*.md", "codex-*.md"} {
+		files, _ := filepath.Glob(filepath.Join(dir, pattern))
+		for _, f := range files {
+			if err := os.Remove(f); err != nil {
+				return err
+			}
+		}
+	}
+	return os.Remove(dir)
+}

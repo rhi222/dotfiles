@@ -56,6 +56,9 @@ func NewDay(date string, loc *time.Location) (Day, error) {
 
 func (d Day) Contains(t time.Time) bool { return !t.Before(d.Start) && t.Before(d.End) }
 
+// local は時刻を日付判定と同じタイムゾーンへ寄せる。digest の表示をローカル時刻にするため。
+func (d Day) local(t time.Time) time.Time { return t.In(d.Start.Location()) }
+
 // ponytail: 先頭一致の判定。"<" で始まる本文（HTMLの貼り付けなど）も落ちる。
 // 取りこぼしが問題になったら、既知のタグ名の一覧に絞る。
 var injectedPrefixes = []string{

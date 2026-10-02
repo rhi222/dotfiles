@@ -17,6 +17,8 @@ const sessionUsage = `使い方:
   dotctl session digest --date YYYY-MM-DD --out-dir DIR [--min-user-turns N]
     当日のClaude/Codex sessionから本文だけを取り出し、sessionごとのMarkdownをDIRへ書く。
     stdoutには索引をJSON Linesで出す。
+  dotctl session digest-clean DIR
+    digestが書いたファイルだけを消し、空になったDIRを外す。
 `
 
 func runSession(args []string, env Env) int {
@@ -32,6 +34,16 @@ func runSession(args []string, env Env) int {
 		return runNvimPlan(args[1:], env)
 	case "digest":
 		return runSessionDigest(args[1:], env)
+	case "digest-clean":
+		if len(args) != 2 {
+			fmt.Fprint(env.Stderr, sessionUsage)
+			return 2
+		}
+		if err := sessiondigest.CleanDigests(args[1]); err != nil {
+			fmt.Fprintf(env.Stderr, "dotctl session digest-clean: %v\n", err)
+			return 1
+		}
+		return 0
 	default:
 		fmt.Fprintf(env.Stderr, "dotctl session: 知らないサブコマンド: %s\n\n%s", args[0], sessionUsage)
 		return 2
@@ -122,8 +134,8 @@ func runSessionDigest(args []string, env Env) int {
 			return 1
 		}
 	}
-	if res.Skipped > 0 {
-		fmt.Fprintf(env.Stderr, "session-digest: SKIPPED=%d\n", res.Skipped)
+	if res.Skipped > 0 || res.Unreadable > 0 {
+		fmt.Fprintf(env.Stderr, "session-digest: SKIPPED=%d UNREADABLE=%d\n", res.Skipped, res.Unreadable)
 	}
 	return 0
 }

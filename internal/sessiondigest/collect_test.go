@@ -177,3 +177,70 @@ func TestCollectSkipsFilesNotUpdatedOnDay(t *testing.T) {
 		t.Errorf("sessions = %d, want 0", len(res.Sessions))
 	}
 }
+
+// 軽微指摘の回帰: 日付はローカル時刻で切るのに表示がUTCだと、digestの時刻が利用者の記憶とずれる。
+func TestWriteDigestShowsLocalTime(t *testing.T) {
+	jst := time.FixedZone("JST", 9*3600)
+	day, _ := NewDay("2026-10-01", jst)
+	s, _, err := ParseClaude(strings.NewReader(claudeUser("s1", "2026-09-30T15:30:00Z", "深夜")), day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := WriteDigest(t.TempDir(), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.StartedAt != "2026-10-01T00:30:00+09:00" {
+		t.Errorf("StartedAt = %s", e.StartedAt)
+	}
+	body, _ := os.ReadFile(e.File)
+	if !strings.Contains(string(body), "## user (00:30)") {
+		t.Errorf("digest:\n%s", body)
+	}
+}
+
+// 軽微指摘の回帰: 読めないログが1本あっても、他のsessionは出す。
+func TestCollectContinuesPastUnreadableFile(t *testing.T) {
+	root := t.TempDir()
+	claudeRoot := filepath.Join(root, "claude")
+	writeFile(t, filepath.Join(claudeRoot, "projects", "p1", "good.jsonl"), threeTurns("good"))
+	// ディレクトリは開けるが読めない（chmodと違い、rootで動くCIでも読めない）
+	bad := filepath.Join(claudeRoot, "projects", "p1", "bad.jsonl")
+	if err := os.MkdirAll(bad, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(bad, fixtureMtime, fixtureMtime); err != nil {
+		t.Fatal(err)
+	}
+	day, _ := NewDay("2026-09-30", utc)
+	res, err := Collect(Options{ClaudeRoot: claudeRoot, CodexRoot: filepath.Join(root, "codex"), Day: day, MinUserTurns: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Sessions) != 1 || res.Unreadable != 1 {
+		t.Errorf("sessions = %d, unreadable = %d", len(res.Sessions), res.Unreadable)
+	}
+}
+
+// digestは会話本文の写しなので後片付けする。ただし自分が書いたdigest以外は消さない。
+func TestCleanDigestsRemovesOnlyDigests(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "kb-harvest.x")
+	writeFile(t, filepath.Join(dir, "claude-s1.md"), "a")
+	writeFile(t, filepath.Join(dir, "codex-c1.md"), "b")
+	if err := CleanDigests(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Errorf("dir remains: %v", err)
+	}
+
+	keep := filepath.Join(t.TempDir(), "other")
+	writeFile(t, filepath.Join(keep, "claude-s1.md"), "a")
+	writeFile(t, filepath.Join(keep, "notes.md"), "mine")
+	if err := CleanDigests(keep); err == nil {
+		t.Error("want error when foreign files remain")
+	}
+	if _, err := os.Stat(filepath.Join(keep, "notes.md")); err != nil {
+		t.Errorf("foreign file removed: %v", err)
+	}
+}

@@ -53,7 +53,7 @@ func ParseCodex(r io.Reader, day Day) (Session, int, error) {
 			}
 			for _, c := range m.Content {
 				if (c.Type == "input_text" || c.Type == "output_text") && keep(m.Role, c.Text) {
-					s.Turns = append(s.Turns, Turn{Role: m.Role, Text: c.Text, At: at})
+					s.Turns = append(s.Turns, Turn{Role: m.Role, Text: c.Text, At: day.local(at)})
 				}
 			}
 		}
