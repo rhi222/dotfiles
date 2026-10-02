@@ -4,7 +4,7 @@
 if type -q mise
     set -l cache $HOME/.cache/mise-activate.fish
     set -l mise_bin (type -p mise)
-    if not test -f $cache; or test $mise_bin -nt $cache
+    if not test -s $cache; or test $mise_bin -nt $cache
         mkdir -p (path dirname $cache)
         mise activate fish >$cache
     end

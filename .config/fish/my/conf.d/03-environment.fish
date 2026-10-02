@@ -23,7 +23,7 @@ set -gx LS_COLORS "$LS_COLORS:ow=01;33:tw=01;33"
 if type -q zoxide
     set -l cache $HOME/.cache/zoxide-init.fish
     set -l zoxide_bin (type -p zoxide)
-    if not test -f $cache; or test $zoxide_bin -nt $cache
+    if not test -s $cache; or test $zoxide_bin -nt $cache
         mkdir -p (path dirname $cache)
         zoxide init fish >$cache
     end
