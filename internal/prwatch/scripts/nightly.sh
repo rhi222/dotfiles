@@ -66,7 +66,7 @@ prwatch_ci_log() {
 # prwatch_one <url> <dry-run 0/1> → 結果を1行でstdoutへ
 prwatch_one() {
   local url="$1" dry="$2"
-  local slug owner name number pr reasons key head branch repo_path wt before after prompt log
+  local slug owner name number pr reasons key head branch repo_path wt before after prompt log out_file
   slug="${url#https://github.com/}" # owner/name/pull/N
   owner="${slug%%/*}"
   name="${slug#*/}" && name="${name%%/*}"
@@ -141,25 +141,28 @@ $(prwatch_ci_log "$owner/$name" "$branch")
     -p "$prompt" --allowedTools "$ALLOWED_TOOLS" 2>&1)
   set -e
   after=$(git -C "$wt" rev-parse HEAD)
+  # 指摘ごとの判断理由を朝に読めるよう、全文をPRごとに残す（前回分は上書き）
+  out_file="${key%.sha}.log"
+  printf '%s\n' "$log" >"$out_file"
 
   if [[ "$after" == "$before" ]]; then
     # 直せなかったheadを毎晩繰り返さない。新しいpushかレビューで head が変われば再挑戦する
     echo "$head" >"$key"
     git -C "$repo_path" worktree remove --force "$wt" >/dev/null 2>&1 || true
-    echo "$url: NO CHANGE [$reasons] $(tail -3 <<<"$log" | tr '\n' ' ')"
+    echo "$url: NO CHANGE [$reasons] コードは変えなかった。判断の全文: $out_file"
     return 0
   fi
   if [[ "$(jq -r '.isDraft' <<<"$pr")" != "true" ]]; then
-    echo "$url: FIXED [$reasons] push待ち（レビュー中のため自動pushしない）: cd $wt && git push origin HEAD:$branch"
+    echo "$url: FIXED [$reasons] push待ち（レビュー中のため自動pushしない）: cd $wt && git push origin HEAD:$branch 判断の全文: $out_file"
     return 0
   fi
   if ! git -C "$wt" push -q origin "HEAD:refs/heads/$branch" 2>/dev/null; then
-    echo "$url: FIXED [$reasons] pushに失敗（remoteが進んだ可能性）。worktreeを残す: $wt"
+    echo "$url: FIXED [$reasons] pushに失敗（remoteが進んだ可能性）。worktreeを残す: $wt 判断の全文: $out_file"
     return 0
   fi
   echo "$after" >"$key"
   git -C "$repo_path" worktree remove --force "$wt" >/dev/null 2>&1 || true
-  echo "$url: PUSHED [$reasons] draftへ修正をpushした"
+  echo "$url: PUSHED [$reasons] draftへ修正をpushした。判断の全文: $out_file"
 }
 
 main() {
