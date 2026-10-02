@@ -112,15 +112,23 @@ prwatch_one() {
   }
   before=$(git -C "$wt" rev-parse HEAD)
 
-  prompt="PR $url の問題を直してほしい。対応が要る理由: $reasons
+  # 理由に当たる欄だけを渡す。空のCIログ欄を渡すと、agentが落ちていないCIを調べに行く
+  prompt="PR $url の問題を直してほしい。対応が要る理由: $reasons"
+  if [[ "$reasons" == *feedback* ]]; then
+    prompt+="
 
-# 未対応のレビュー指摘
-$(prwatch_feedback_text "$pr")
+# 未対応のレビュー指摘（botの指摘も含む）
+$(prwatch_feedback_text "$pr")"
+  fi
+  if [[ "$reasons" == *ci* ]]; then
+    prompt+="
 
 # CIの失敗ログ（末尾）
 \`\`\`
-$([[ "$reasons" == *ci* ]] && prwatch_ci_log "$owner/$name" "$branch")
-\`\`\`
+$(prwatch_ci_log "$owner/$name" "$branch")
+\`\`\`"
+  fi
+  prompt+="
 
 # 進め方の契約
 - 指摘とCI失敗の原因を直し、テストとlintが通る状態でconventional commitsでコミットする（Claude署名は付けない）
