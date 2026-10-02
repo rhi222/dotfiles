@@ -3,11 +3,12 @@
 自分が作ったopenなPRを夜間に見張り、CI失敗と未対応のレビュー指摘をheadless Claudeで直す。
 会話セッション内で1つのPRを回す `/pr-watch` skillの夜間版で、PRを指定しなくても全部を見る。
 
-| 操作         | コマンド                                    |
-| ------------ | ------------------------------------------- |
-| 判定だけ見る | `bash scripts/prwatch/nightly.sh --dry-run` |
-| 有効化       | `touch ~/.config/pr-watch-enabled`          |
-| 前回の結果   | `cat ~/.local/state/pr-watch/last-run.txt`  |
+| 操作         | コマンド                                            |
+| ------------ | --------------------------------------------------- |
+| 判定だけ見る | `bash scripts/prwatch/nightly.sh --dry-run`         |
+| 有効化       | `touch ~/.config/pr-watch-enabled`                  |
+| 前回の結果   | `cat ~/.local/state/pr-watch/last-run.txt`          |
+| 判断の全文   | `~/.local/state/pr-watch/<owner>_<repo>_<番号>.log` |
 
 cronは火〜土の1:30（Linearの夜間dispatchの後）。
 
@@ -26,7 +27,16 @@ PRはURLからrepoもブランチも決まるので、人が足す情報が無�
 | `ci`       | 最新コミットのCIが `FAILURE` / `ERROR`                                     |
 | `feedback` | 未解決かつoutdatedでないレビュースレッドがある、または `CHANGES_REQUESTED` |
 
+**botの指摘も人の指摘と同じく拾う。**
+AIレビューbot（GitHub Actions）の指摘にも対応したいため。
+妥当でない指摘はagentがコードを変えずに理由を残し、同じheadでは繰り返さない。
+
 1晩に手を動かすのは最大3件（`PR_WATCH_MAX`）。
+
+agentの出力は全文をPRごとに残し、結果行にその場所を出す。
+指摘ごとの判断理由は出力の先頭に来ることが多く、末尾だけでは読めなかった。
+CIが落ちていないPRには、CIの失敗ログ欄を渡さない。
+空の欄を渡すと、agentが落ちていないCIを調べに行っていた。
 
 ## 安全弁
 
