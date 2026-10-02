@@ -57,7 +57,8 @@ stderrに `session-digest: SKIPPED=N UNREADABLE=M` が出たら、件数だけ�
    - `term`: `glossary` skillの「追記する」の規則に従い、`$GLOSSARY` の末尾へ書く。`$GLOSSARY` が無ければ書かずに本文を示すだけにする
    - `system` / `org` の新規: 置き場候補のディレクトリの既存ノートの書式（Frontmatter、見出し、Wiki Link）に合わせて作る。置き場が判断できなければ `$VAULT/01_Inbox/` に置く
    - `system` / `org` の追記: 既存ノートの**末尾にだけ**節を足す。既存の本文は書き換えない
-   - 書いた節の末尾に `出典: session <session_id>（<TARGET_DATE>）` を付ける
+   - 出典に `session <session_id>（<TARGET_DATE>）` を書く。`term` は `- 出典:` 項目に、`system` / `org` は書いた節の末尾に付ける
+   - `term` の詳細を同じ回に `system` ノートへ書いたなら、glossary の意味は短くし `- 詳細:` からそのノートを指す
    - `skill`: 書かない
 6. 書いたファイルの一覧を出す。commitはしない
 7. **digestを後片付けする。** digestは会話本文の写しなので残さない。
