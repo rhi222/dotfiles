@@ -98,3 +98,17 @@ func TestSessionDigestReportsUnreadable(t *testing.T) {
 		t.Errorf("stderr = %q", errb)
 	}
 }
+
+func TestSessionDigestClean(t *testing.T) {
+	env, _, errb, root := digestEnv(t)
+	outDir := filepath.Join(root, "out")
+	if code := Run(context.Background(), []string{"session", "digest", "--date", "2026-09-30", "--out-dir", outDir}, env); code != 0 {
+		t.Fatalf("digest exit = %d", code)
+	}
+	if code := Run(context.Background(), []string{"session", "digest-clean", outDir}, env); code != 0 {
+		t.Fatalf("clean exit = %d, stderr = %s", code, errb)
+	}
+	if _, err := os.Stat(outDir); !os.IsNotExist(err) {
+		t.Errorf("out dir remains: %v", err)
+	}
+}

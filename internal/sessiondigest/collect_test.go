@@ -221,3 +221,26 @@ func TestCollectContinuesPastUnreadableFile(t *testing.T) {
 		t.Errorf("sessions = %d, unreadable = %d", len(res.Sessions), res.Unreadable)
 	}
 }
+
+// digestは会話本文の写しなので後片付けする。ただし自分が書いたdigest以外は消さない。
+func TestCleanDigestsRemovesOnlyDigests(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "kb-harvest.x")
+	writeFile(t, filepath.Join(dir, "claude-s1.md"), "a")
+	writeFile(t, filepath.Join(dir, "codex-c1.md"), "b")
+	if err := CleanDigests(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Errorf("dir remains: %v", err)
+	}
+
+	keep := filepath.Join(t.TempDir(), "other")
+	writeFile(t, filepath.Join(keep, "claude-s1.md"), "a")
+	writeFile(t, filepath.Join(keep, "notes.md"), "mine")
+	if err := CleanDigests(keep); err == nil {
+		t.Error("want error when foreign files remain")
+	}
+	if _, err := os.Stat(filepath.Join(keep, "notes.md")); err != nil {
+		t.Errorf("foreign file removed: %v", err)
+	}
+}
