@@ -40,6 +40,14 @@ compact後の要約（`isCompactSummary`）は前日以前の内容を含むの�
 
 - `<` で始まる本文はHTMLの貼り付けでも捨てる。取りこぼしが問題になったら、既知のタグ名に絞る。
 - 処理済みsessionの台帳は持たない。同じ日を再実行すると、vaultとの突き合わせで重複として落ちる。
+- 読めないログファイルは飛ばし、件数を `session-digest: SKIPPED=N UNREADABLE=M` の `UNREADABLE` で返す。1本のために全体を止めない。
+
+## digestの扱い
+
+digestは会話本文の写しなので、skillは最後に `dotctl session digest-clean <DIR>` で消す。
+消すのは `claude-*.md` と `codex-*.md` だけで、他のファイルが残っていればディレクトリを残してエラーにする。
+skillに `rm` の権限を持たせないため、削除はdotctlに置いた。
+時刻は日付の判定と同じローカル時刻で出す。
 
 ## 導入
 
