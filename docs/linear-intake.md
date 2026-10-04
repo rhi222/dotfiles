@@ -5,7 +5,7 @@
 ## Slackからの起票
 
 **Slackからの起票はスタンプ1つで完結する。**
-`:nishiyama_todo:` を押すと翌朝の `linear-slack-sweep` が拾い、Triage に「元URL＋期待アウトカム」の形で積む。
+`:nishiyama_todo:` を押すと次の `linear-slack-sweep`（平日10:10/13:10/17:10）が拾い、Triage に「元URL＋期待アウトカム」の形で積む。
 
 - **Slack検索の `hasmy::emoji:` を候補生成に使い、リアクションの実在確認を最終防壁にする。**
   絵文字名が実在の英単語だと本文にもフォールバックする（`hasmy::ticket:` が本文の "air-ticketing" を拾った）。

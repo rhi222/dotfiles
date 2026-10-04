@@ -538,7 +538,7 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 | esa 週次レポート        | `~/.config/esa-weekly-enabled`         | 金曜 16:00                   |
 | Linear スイープ         | `~/.config/linear-sweep-enabled`       | 平日 8:00                    |
 | Linear 夜間ディスパッチ | `~/.config/linear-dispatch-enabled`    | 火〜土曜 1:00                |
-| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 10:10                   |
+| Slack スタンプ起票      | `~/.config/linear-slack-sweep-enabled` | 平日 10:10 / 13:10 / 17:10   |
 | 自分のPRの夜間見張り    | `~/.config/pr-watch-enabled`           | 火〜土曜 1:30                |
 
 ### cron を登録する
@@ -554,7 +554,7 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 0 16 * * 5 $HOME/scripts/nippo/esa-weekly-cron.sh >> $HOME/.esa-weekly-cron.log 2>&1
 0 8 * * 1-5 $HOME/scripts/linear/sweep.sh >> $HOME/.linear-sweep.log 2>&1
 0 1 * * 2-6 $HOME/scripts/linear/dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
-10 10 * * 1-5 $HOME/scripts/linear/slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
+10 10,13,17 * * 1-5 $HOME/scripts/linear/slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 30 1 * * 2-6 $HOME/scripts/prwatch/nightly.sh >> $HOME/.pr-watch.log 2>&1
 ```
 
