@@ -61,21 +61,39 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
    - GitHub活動（Phase 3）と重複して見えることがあるが、**視点が違うので両方残す**。
      GitHub活動は「どのPRを動かしたか」、Linear作業サマリは「どの課題が前に進んだか」
 
-5. **Phase 4: AI分析準備**
+5. **Phase 3-3: issue化の候補を拾う**
+   - Phase 2（Slack）と Phase 3（GitHub）で**大きく動いたのに、対応するLinear issueが無い仕事**を拾う。
+     職能の配分は issue が無い仕事を数えられないので、ここに出さないと配分が実態より偏って見える
+     （Jira起点の不具合対応や本番障害対応が、issue無しのまま配分表から漏れた）
+   - 「大きく動いた」の目安（どれか1つ）:
+     - 自分のPRを作成・マージした／レビューを返した
+     - 同じスレ・同じ話題で自分が3回以上発言した
+     - 障害・本番・インシデントの対応に関わった
+   - 照合の順番。1 か 2 で当たったら候補から外す:
+     1. Phase 3-2 で取った当日分の identifier・タイトルに、NSY番号・Jiraキー（`EXAMPLE-1234` の `1234` だけでも可）・PR番号が含まれる
+     2. Slackのpermalink（`/archives/<CID>/p<TS>` 部分）・PR URL・Jiraキーで
+        `.config/claude/skills/linear-add/references/api-recipes.md` の「重複チェック」を引く（`includeArchived: true` を付ける）
+     3. 話題のキーワードで同じファイルの「キーワードで思い出す」を引く
+   - 3 のキーワード一致は**確定ではない**。候補から外さず、`既存の可能性: NSY-xx` と添えて残す
+     （`linear-recall` と同じく、候補を確定扱いして漏らす事故を避ける）
+   - **起票はしない。** 出すだけで、起票するかは本人が `/linear-add` で決める
+   - Linearにアクセスできない場合はこのフェーズを飛ばす（照合できないまま全件を候補に出さない）
+
+6. **Phase 4: AI分析準備**
    - 日報ドラフトの構造化読み込み
    - 目標設定ファイル（nippo-goals.md）の読み込み
 
-6. **Phase 5: AI分析・レポート生成**
+7. **Phase 5: AI分析・レポート生成**
    - `system-prompt.md` のペルソナに従い分析を実行
    - 重点4軸での活動分析
-   - 作業ログ・GitHub活動・Linear作業サマリからの自動セクション生成
+   - 作業ログ・GitHub活動・Linear作業サマリ・issue化の候補からの自動セクション生成
    - 時間サマリ生成
    - `output-format.md` のフォーマットで出力
 
-7. **Phase 6: 結果追記**
+8. **Phase 6: 結果追記**
    - 分析結果を元ファイルに追記
 
-8. **Phase 7: 今日の1問**
+9. **Phase 7: 今日の1問**
    - チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
    - 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
    - 答えが無ければ何も書かない。ファイルに空欄を残さない
