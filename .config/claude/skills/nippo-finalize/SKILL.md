@@ -1,6 +1,6 @@
 ---
 name: nippo-finalize
-description: 日報の事実情報を整理して仕上げる（4軸評価レポートを自動生成、内省欄は空白で残す）。「日報を仕上げて」「finalize」「今日のまとめ」「日報を完成」「事実整理」など業務終了時の整理で使用。内省的な問いの生成は nippo-reflect を使う。
+description: 日報の事実情報を整理して仕上げる（4軸評価レポートを自動生成し、最後に内省の1問をチャットで聞く）。「日報を仕上げて」「finalize」「今日のまとめ」「日報を完成」「事実整理」など業務終了時の整理で使用。内省的な問いの生成は nippo-reflect を使う。
 disable-model-invocation: true
 argument-hint: "[日付 YYYY-MM-DD] (省略時は本日)"
 allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(command:*), Bash(gh:*), Bash(jq:*), Bash(sort:*), Bash(paste:*), Bash(bash:*), Bash(source:*), Bash(ghq:*), mcp__claude_ai_Slack__slack_search_public_and_private
@@ -74,6 +74,11 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 
 7. **Phase 6: 結果追記**
    - 分析結果を元ファイルに追記
+
+8. **Phase 7: 今日の1問**
+   - チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
+   - 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
+   - 答えが無ければ何も書かない。ファイルに空欄を残さない
 
 ## 前提条件
 
@@ -253,6 +258,7 @@ echo "✅ Phase 4 完了: AI分析準備"
 
 # Phase 5: system-prompt.md と output-format.md に従って分析・レポート生成
 # Phase 6: 分析結果を $NIPPO_FILE に追記
+# Phase 7: チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に残す
 ```
 
 ## GitHub活動収集の詳細
