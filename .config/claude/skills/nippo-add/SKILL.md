@@ -72,7 +72,23 @@ Linear や `em-dispatch.sh` にアクセスできない場合も日報作成は�
    linear_issues_in_state "My Review" | jq 'length'
    ```
 
-2. **今日やる3件** — Linearから選んで転記する。選び方は次節の目標逆算ロジックに従う
+2. **今日やる3件** — Linearから選んで転記する
+   - **1件目は `focus:week` ラベルの issue に固定する。** 期日超過があってもこの枠は譲らない。
+     2・3件目は次節の目標逆算ロジックで選ぶ
+
+     ```bash
+     source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
+     { linear_issues_in_state "Todo"; linear_issues_in_state "In Progress"; } | jq -s 'add | [.[]
+       | select([.labels.nodes[].name] | index("focus:week"))]'
+     ```
+
+   - 枠を固定する理由: 選び方が期日優先だけだと、期日の無い「重要だが緊急でない」仕事
+     （部の改善活動、コア・拡張カスタマイズの推進など）が永久に選ばれない。
+     `focus:week` は `/linear-triage` の週次の整合チェックで毎週1件だけ指名する
+   - 1件目には「今日の予定」のブロック可能時間から1枠を割り当てて書く
+     （例: `12:00〜13:00`）。時間が決まっていないと期日のある仕事に負ける
+   - 該当が無い・2件以上ある場合は、1件目に `🎯 未指名（/linear-triage で今週の1件を決める）`
+     と書く。勝手に選ばない
 
 Linearにアクセスできない場合（config未生成・オフライン）は、プレースホルダのまま残して
 日報作成を続行する。日報の作成自体を止めない。
