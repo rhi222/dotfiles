@@ -1,9 +1,9 @@
 {
   "origin": "https://github.com/mattpocock/skills.git",
   "sub_path": "skills/productivity/grill-me",
-  "commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
-  "vendored_at": "2026-09-30",
-  "reviewed_commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+  "commit": "24fe0ef7737efae15c87225755e9f6f5965e4888",
+  "vendored_at": "2026-10-05",
+  "reviewed_commit": "24fe0ef7737efae15c87225755e9f6f5965e4888",
   "audit": {
     "high": 0,
     "med": 0,

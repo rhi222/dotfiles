@@ -1,13 +1,13 @@
 {
   "origin": "https://github.com/nanaism/yomiyasu.git",
   "sub_path": "skills/yomiyasu",
-  "commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
-  "vendored_at": "2026-10-01",
-  "reviewed_commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
+  "commit": "4075fc34fb0333ca1fe42d32cd619338f4a138ba",
+  "vendored_at": "2026-10-05",
+  "reviewed_commit": "4075fc34fb0333ca1fe42d32cd619338f4a138ba",
   "audit": {
     "high": 0,
     "med": 0,
-    "low": 1
+    "low": 3
   },
   "license": "MIT",
   "binary_sha256": {
