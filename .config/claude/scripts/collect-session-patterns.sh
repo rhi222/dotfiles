@@ -54,10 +54,14 @@ else:
     skill_cmds = []
     natural = []
     noise = {'/clear', 'exit', 'yes', 'no', 'y', 'n', ''}
+    # スキル化候補にならない組み込みコマンド。引数付き（/model opus）も外すため先頭語で判定する
+    noise_cmds = {'/model'}
 
     for e in entries:
         display = str(e.get('display', '')).strip()
         if display.lower() in noise:
+            continue
+        if display.split()[0].lower() in noise_cmds:
             continue
         if display.startswith('/'):
             skill_cmds.append(e)
