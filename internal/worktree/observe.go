@@ -197,6 +197,18 @@ func hasTrackedChanges(ctx context.Context, r execx.Runner, path string) bool {
 	return strings.TrimSpace(res.Stdout) != ""
 }
 
+// headMerged は worktree の HEAD が origin/HEAD に取り込み済みか。
+//
+// **判定できなければ false に倒す。** origin/HEAD が無い・fetch が古いときは
+// 未取り込み扱いになり、detached は SKIP のまま残る。
+// squash merge された commit は祖先にならないので、これも残る。
+func headMerged(ctx context.Context, r execx.Runner, path string) bool {
+	res, err := r.Run(ctx, execx.Cmd{
+		Name: "git", Args: []string{"-C", path, "merge-base", "--is-ancestor", "HEAD", "refs/remotes/origin/HEAD"},
+	})
+	return err == nil && res.OK()
+}
+
 // untrackedCount は未追跡ファイルの件数。測れなければ 0。
 func untrackedCount(ctx context.Context, r execx.Runner, path string) int {
 	res, err := r.Run(ctx, execx.Cmd{

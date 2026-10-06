@@ -112,14 +112,15 @@ herdr（`herdr worktree create`、保存先デフォルト `~/.herdr/worktrees`�
 
 判定は上から順に評価し、最初にマッチした時点で確定する。
 
-| 順  | 条件                                  | 判定       |
-| --- | ------------------------------------- | ---------- |
-| 1   | `locked`                              | **SKIP**   |
-| 2   | `prunable`（ディレクトリ消失）        | **PRUNE**  |
-| 3   | detached HEAD                         | **SKIP**   |
-| 4   | 追跡ファイルに未コミット変更あり      | **SKIP**   |
-| 5   | PR が MERGED または CLOSED            | **DELETE** |
-| 6   | それ以外（OPEN / PRなし / `gh` 失敗） | **KEEP**   |
+| 順  | 条件                                         | 判定       |
+| --- | -------------------------------------------- | ---------- |
+| 1   | `locked`                                     | **SKIP**   |
+| 2   | `prunable`（ディレクトリ消失）               | **PRUNE**  |
+| 3   | detached で HEAD が origin/HEAD 未取り込み   | **SKIP**   |
+| 4   | 追跡ファイルに未コミット変更あり             | **SKIP**   |
+| 5   | detached（HEAD が origin/HEAD 取り込み済み） | **DELETE** |
+| 6   | PR が MERGED または CLOSED                   | **DELETE** |
+| 7   | それ以外（OPEN / PRなし / `gh` 失敗）        | **KEEP**   |
 
 **`locked` を最優先にしているのが安全性の要。**
 Claude Code の worktree はセッション実行中に lock されるため、これを PR 状態より先に判定しないと作業中のディレクトリを消す。
@@ -127,6 +128,11 @@ Claude Code の worktree はセッション実行中に lock されるため、�
 `gh` の呼び出しに失敗した場合も KEEP に倒すので、判定不能なときに削除側へ行くことはない。
 origin の host に `gitlab` を含む repository は `gh` ではなく `glab mr list` で MR 状態を見る（表示は `MERGED !123`）。
 CodeCommit など PR を引けない remote は取得失敗として KEEP になる。
+
+**detached はブランチが無く PR を引けないので、HEAD が `refs/remotes/origin/HEAD` の祖先かで判定する。**
+取り込み済みなら worktree を消しても commit は失われない。
+origin/HEAD が無い、fetch が古い、squash merge で祖先にならない場合は未取り込み扱いで SKIP に残る。
+残ったものは手で確認して `git worktree remove` する。
 
 **未追跡ファイルは dirty 扱いにしない。**
 `plans/`（superpowers のスクラッチ）やレビューメモのような使い捨てファイル1個で、マージ済み worktree の削除がほぼ全部ブロックされてしまうため（実測で削除候補が6件から1件に落ちた）。
@@ -144,7 +150,7 @@ N は**未追跡エントリ数**で、未追跡ディレクトリは配下の�
 削除は常に `git worktree remove --force` で行う。
 git は**未追跡ファイルがあるだけでも `--force` なしの削除を拒否する**ため、これを付けないと未追跡のみの worktree（＝実際の削除候補の大半）が消せない。
 安全性はスクリプトの `--force` フラグではなく上の判定表が担保している。
-DELETE に到達するのは locked でも prunable でも detached でもなく、追跡ファイルがクリーンか利用者が明示的に `--force` を指定したものだけ。
+DELETE に到達するのは locked でも prunable でも未取り込みの detached でもなく、追跡ファイルがクリーンか利用者が明示的に `--force` を指定したものだけ。
 `git worktree remove -f -f`（二重 force）は実装していないので、`locked` は `--force` を付けても削除されない。
 
 削除に失敗した場合は git のエラーメッセージをそのまま表示する。

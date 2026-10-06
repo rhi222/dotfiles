@@ -79,6 +79,10 @@ type Observation struct {
 	Path   string
 	Branch string // detached のとき空
 
+	// HeadMerged は detached のとき、HEAD が origin/HEAD に取り込み済みか。
+	// 取り込み済みなら消しても commit は失われない。
+	HeadMerged bool
+
 	Locked      bool
 	LockDetail  string
 	Prunable    bool
@@ -96,7 +100,7 @@ type Observation struct {
 // Options は判定を変える利用者の指定。
 type Options struct {
 	// Force は追跡ファイルに未コミット変更がある worktree も削除対象にする。
-	// **locked と detached には効かない。**
+	// **locked と、origin/HEAD に未取り込みの detached には効かない。**
 	Force bool
 }
 
@@ -126,9 +130,10 @@ func Classify(o Observation, opt Options) Decision {
 		return Decision{PRUNE, fmt.Sprintf("ディレクトリ消失 (%s)", detailOr(o.PruneDetail)), SkipNone}
 	}
 
-	// 3. detached HEAD: ブランチが無く PR 判定ができない。
-	if o.Branch == "" {
-		return Decision{SKIP, "detached HEAD（PR判定不能）", SkipDetached}
+	// 3. detached HEAD: ブランチが無く PR 判定ができない。origin/HEAD に
+	//    取り込まれていない commit は worktree を消すと reflog にしか残らない。
+	if o.Branch == "" && !o.HeadMerged {
+		return Decision{SKIP, "detached HEAD（origin/HEAD に未取り込み）", SkipDetached}
 	}
 
 	// 4. 追跡ファイルの未コミット変更: 作業中の可能性。--force で解除できる。
@@ -136,22 +141,27 @@ func Classify(o Observation, opt Options) Decision {
 		return Decision{SKIP, "未コミット変更あり（--force で削除対象に含める）", SkipDirty}
 	}
 
-	// 5. PR が取れない: 判定不能なときは削除側へ倒さない。
+	// 5. 取り込み済みの detached: PR を引かずに削除対象。
+	if o.Branch == "" {
+		return Decision{DELETE, deleteReason("detached（origin/HEAD に取り込み済み）", o, opt), SkipNone}
+	}
+
+	// 6. PR が取れない: 判定不能なときは削除側へ倒さない。
 	if o.PR.Kind == PRUnavailable {
 		return Decision{KEEP, "PR状態の取得に失敗", SkipNone}
 	}
 
-	// 6. MERGED / CLOSED: 削除対象。
+	// 7. MERGED / CLOSED: 削除対象。
 	if o.PR.Kind == PRMerged || o.PR.Kind == PRClosed {
 		return Decision{DELETE, deleteReason(o.PR.Raw, o, opt), SkipNone}
 	}
 
-	// 7. PR なし。
+	// 8. PR なし。
 	if o.PR.Kind == PRNone {
 		return Decision{KEEP, "PR なし", SkipNone}
 	}
 
-	// 8. それ以外（OPEN など）は raw をそのまま理由にする。
+	// 9. それ以外（OPEN など）は raw をそのまま理由にする。
 	return Decision{KEEP, o.PR.Raw, SkipNone}
 }
 

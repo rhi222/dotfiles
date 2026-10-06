@@ -86,8 +86,11 @@ build_fixture() {
   echo scratch2 >"$repo/.wt/untracked-only/scratch2.txt"
   # locked
   git -C "$repo" worktree lock --reason "claude session" "$repo/.wt/locked-one"
-  # detached
+  # detached。origin/HEAD を init に置き、detached-one だけ未取り込みの commit を持たせる
+  git -C "$repo" update-ref refs/remotes/origin/HEAD HEAD
   git -C "$repo" worktree add -q --detach "$repo/.wt/detached-one" >/dev/null 2>&1
+  git -C "$repo/.wt/detached-one" commit -q --allow-empty -m wip
+  git -C "$repo" worktree add -q --detach "$repo/.wt/detached-merged" >/dev/null 2>&1
   # prunable（ディレクトリだけ消す）
   rm -rf "$repo/.wt/gone-one"
 }
@@ -172,10 +175,11 @@ check "PR 取得失敗は KEEP" "yes" "$(grep -qE '\[KEEP  \] pr-fails .*取得�
 check "追跡変更ありは SKIP" "yes" "$(grep -q '\[SKIP  \] dirty-tracked' <<<"$out" && echo yes || echo no)"
 check "未追跡のみは DELETE で件数を併記" "yes" "$(grep -qE '\[DELETE\] untracked-only .*未追跡 2 件あり' <<<"$out" && echo yes || echo no)"
 check "locked は SKIP" "yes" "$(grep -qE '\[SKIP  \] locked-one .*locked \(claude session\)' <<<"$out" && echo yes || echo no)"
-check "detached は SKIP" "yes" "$(grep -qE '\[SKIP  \] （detached）.*detached HEAD' <<<"$out" && echo yes || echo no)"
+check "未取り込みの detached は SKIP" "yes" "$(grep -qE '\[SKIP  \] （detached）.*detached HEAD' <<<"$out" && echo yes || echo no)"
+check "取り込み済みの detached は DELETE" "yes" "$(grep -qE '\[DELETE\] （detached）.*取り込み済み' <<<"$out" && echo yes || echo no)"
 check "消えたディレクトリは PRUNE" "yes" "$(grep -q '\[PRUNE \] gone-one' <<<"$out" && echo yes || echo no)"
 
-echo "== --force で locked と detached は消えない =="
+echo "== --force で locked と未取り込みの detached は消えない =="
 out=$(run_go --force)
 check "locked は --force でも SKIP" "yes" "$(grep -q '\[SKIP  \] locked-one' <<<"$out" && echo yes || echo no)"
 check "detached は --force でも SKIP" "yes" "$(grep -qE '\[SKIP  \] （detached）' <<<"$out" && echo yes || echo no)"
@@ -204,6 +208,10 @@ check "CLOSED の worktree が消えている" "no" \
   "$([ -d "$GO_ROOT/example.com/o/r/.wt/closed-clean" ] && echo yes || echo no)"
 check "未追跡のみの worktree が消えている" "no" \
   "$([ -d "$GO_ROOT/example.com/o/r/.wt/untracked-only" ] && echo yes || echo no)"
+check "取り込み済みの detached が消えている" "no" \
+  "$([ -d "$GO_ROOT/example.com/o/r/.wt/detached-merged" ] && echo yes || echo no)"
+check "未取り込みの detached は残っている" "yes" \
+  "$([ -d "$GO_ROOT/example.com/o/r/.wt/detached-one" ] && echo yes || echo no)"
 check "locked の worktree は残っている" "yes" \
   "$([ -d "$GO_ROOT/example.com/o/r/.wt/locked-one" ] && echo yes || echo no)"
 check "OPEN の worktree は残っている" "yes" \

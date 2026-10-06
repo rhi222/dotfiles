@@ -107,12 +107,19 @@ func BuildPlan(ctx context.Context, r execx.Runner, cfg Config) *Plan {
 				PruneDetail: e.PruneDetail,
 			}
 
-			// **locked / prunable / detached では余分な観測をしない。** 判定に
-			// 使わない情報のために git と gh を呼ぶのは無駄で、gh 未認証の端末で
-			// 無意味に遅くなる。Classify の順序と対応している。
-			if !e.Locked && !e.Prunable && e.Branch != "" {
+			// **判定に使わない観測はしない。** locked / prunable / 未取り込みの
+			// detached で git と gh を呼ぶのは無駄で、gh 未認証の端末で無意味に
+			// 遅くなる。detached はブランチが無いので gh も呼ばない。
+			// Classify の順序と対応している。
+			active := !e.Locked && !e.Prunable
+			if active && e.Branch == "" {
+				obs.HeadMerged = headMerged(ctx, r, e.Path)
+			}
+			if active && (e.Branch != "" || obs.HeadMerged) {
 				obs.HasTrackedChanges = hasTrackedChanges(ctx, r, e.Path)
 				obs.UntrackedCount = untrackedCount(ctx, r, e.Path)
+			}
+			if active && e.Branch != "" {
 				obs.PR = prState(ctx, r, repo, e.Branch, cfg.PRStateCmd)
 			}
 
@@ -163,8 +170,8 @@ func Execute(ctx context.Context, r execx.Runner, p *Plan, opt ExecOptions) {
 		// **常に --force で remove する。** git worktree remove は未追跡ファイルが
 		// 1つでもあると --force なしで exit 128 で拒否するため、未追跡のみの
 		// MERGED を既定モードでも消せるようにするには常に要る。安全性は
-		// Classify が担保していて、DELETE に到達するのは locked/prunable/detached
-		// でなく、かつ追跡変更なし（または利用者が --force を指定した）ものだけ。
+		// Classify が担保していて、DELETE に到達するのは locked/prunable/未取り込みの
+		// detached でなく、かつ追跡変更なし（または利用者が --force を指定した）ものだけ。
 		//
 		// -f -f（二重 force）は実装しない。locked は必ず SKIP されるので不要で、
 		// locked を強制削除する手段はあえて持たせない。

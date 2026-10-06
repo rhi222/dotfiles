@@ -10,12 +10,13 @@ import "testing"
 //
 //  1. locked                          -> SKIP
 //  2. prunable（ディレクトリ消失）     -> PRUNE
-//  3. detached HEAD                   -> SKIP
+//  3. detached で origin/HEAD 未取り込み -> SKIP
 //  4. 追跡ファイルに未コミット変更あり -> SKIP（--force で解除）
-//  5. PR 取得失敗                     -> KEEP
-//  6. PR が MERGED / CLOSED           -> DELETE
-//  7. PR なし                         -> KEEP
-//  8. それ以外（OPEN など）           -> KEEP
+//  5. detached（取り込み済み）         -> DELETE
+//  6. PR 取得失敗                     -> KEEP
+//  7. PR が MERGED / CLOSED           -> DELETE
+//  8. PR なし                         -> KEEP
+//  9. それ以外（OPEN など）           -> KEEP
 func TestClassify(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -81,17 +82,37 @@ func TestClassify(t *testing.T) {
 
 		// --- ルール3: detached HEAD ---
 		{
-			name:        "detached HEAD は PR 判定できないので SKIP",
+			name:        "detached HEAD が未取り込みなら SKIP",
 			obs:         Observation{Branch: ""},
 			wantVerdict: SKIP,
-			wantReason:  "detached HEAD（PR判定不能）",
+			wantReason:  "detached HEAD（origin/HEAD に未取り込み）",
 		},
 		{
-			name:        "detached は --force でも SKIP",
+			name:        "未取り込みの detached は --force でも SKIP",
 			obs:         Observation{Branch: ""},
 			force:       true,
 			wantVerdict: SKIP,
-			wantReason:  "detached HEAD（PR判定不能）",
+			wantReason:  "detached HEAD（origin/HEAD に未取り込み）",
+		},
+		{
+			// 取り込み済みなら失う commit が無いので PR を引かずに消してよい
+			name:        "取り込み済みの detached は DELETE",
+			obs:         Observation{Branch: "", HeadMerged: true, UntrackedCount: 1},
+			wantVerdict: DELETE,
+			wantReason:  "detached（origin/HEAD に取り込み済み）（未追跡 1 件あり）",
+		},
+		{
+			name:        "取り込み済みの detached でも追跡変更があれば SKIP",
+			obs:         Observation{Branch: "", HeadMerged: true, HasTrackedChanges: true},
+			wantVerdict: SKIP,
+			wantReason:  "未コミット変更あり（--force で削除対象に含める）",
+		},
+		{
+			name:        "取り込み済みの detached は --force で追跡変更ごと DELETE",
+			obs:         Observation{Branch: "", HeadMerged: true, HasTrackedChanges: true},
+			force:       true,
+			wantVerdict: DELETE,
+			wantReason:  "detached（origin/HEAD に取り込み済み）（未コミット変更あり・破棄されます）",
 		},
 
 		// --- ルール4: 追跡ファイルの未コミット変更 ---
@@ -110,7 +131,7 @@ func TestClassify(t *testing.T) {
 			wantReason:  "MERGED #1（未追跡 3 件あり）",
 		},
 
-		// --- ルール5: PR 取得失敗 ---
+		// --- ルール6: PR 取得失敗 ---
 		{
 			// 判定不能なときは削除側へ倒さない
 			name:        "PR が取れなければ KEEP",
@@ -126,7 +147,7 @@ func TestClassify(t *testing.T) {
 			wantReason:  "PR状態の取得に失敗",
 		},
 
-		// --- ルール6: MERGED / CLOSED ---
+		// --- ルール7: MERGED / CLOSED ---
 		{
 			name:        "MERGED は DELETE",
 			obs:         Observation{Branch: "feat", PR: PRState{Kind: PRMerged, Raw: "MERGED #10737"}},
@@ -159,7 +180,7 @@ func TestClassify(t *testing.T) {
 			wantReason:  "MERGED #1（未コミット変更あり・破棄されます）（未追跡 2 件あり）",
 		},
 
-		// --- ルール7-8: KEEP ---
+		// --- ルール8-9: KEEP ---
 		{
 			name:        "PR が無ければ KEEP",
 			obs:         Observation{Branch: "feat", PR: PRState{Kind: PRNone}},

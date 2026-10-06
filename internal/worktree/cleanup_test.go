@@ -113,6 +113,8 @@ func TestBuildPlanSkipsPRLookupForLockedAndDetached(t *testing.T) {
 	f.On("git", execx.Result{Stdout: "worktree /repo\nbranch refs/heads/main\n\n" +
 		"worktree /repo/.wt/l\nbranch refs/heads/l\nlocked busy\n\n" +
 		"worktree /repo/.wt/d\ndetached\n\n"})
+	// merge-base --is-ancestor（exit 1 = origin/HEAD に未取り込み）
+	f.On("git", execx.Result{ExitCode: 1})
 
 	p := BuildPlan(context.Background(), f, Config{Roots: "/d", Repos: []string{"/repo"}})
 
@@ -129,6 +131,34 @@ func TestBuildPlanSkipsPRLookupForLockedAndDetached(t *testing.T) {
 	}
 	if p.Repos[0].Items[1].Decision.SkipKind != SkipDetached {
 		t.Errorf("2件目 = %+v", p.Repos[0].Items[1].Decision)
+	}
+}
+
+func TestBuildPlanDeletesDetachedMergedIntoOriginHead(t *testing.T) {
+	// detached は PR を引かず、HEAD が origin/HEAD の祖先かで判定する
+	f := execx.NewFake()
+	f.On("git", execx.Result{Stdout: "/repo/.git\n"})
+	f.On("git", execx.Result{Stdout: "worktree /repo\nbranch refs/heads/main\n\n" +
+		"worktree /repo/.wt/d\ndetached\n\n"})
+	// merge-base --is-ancestor（exit 0 = 取り込み済み）
+	f.On("git", execx.Result{})
+	// status --untracked-files=no / normal
+	f.On("git", execx.Result{Stdout: ""})
+	f.On("git", execx.Result{Stdout: ""})
+
+	p := BuildPlan(context.Background(), f, Config{Roots: "/d", Repos: []string{"/repo"}})
+
+	for _, c := range f.Calls {
+		if c.Name == "gh" {
+			t.Error("detached なのに gh を呼んでいる")
+		}
+	}
+	if got := p.Repos[0].Items[0].Decision; got.Verdict != DELETE {
+		t.Errorf("判定 = %+v", got)
+	}
+	ancestor := f.Calls[2].Args
+	if strings.Join(ancestor, " ") != "-C /repo/.wt/d merge-base --is-ancestor HEAD refs/remotes/origin/HEAD" {
+		t.Errorf("3回目の呼び出し = %v", ancestor)
 	}
 }
 
