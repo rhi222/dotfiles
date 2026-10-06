@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><!--TITLE--></title>
+<!--STYLE-->
+</head>
+<body>
+
+<div class="toolbar">
+  <h1><!--TITLE--></h1>
+  <span class="hint">テキストを選択するとコメントを追加できます</span>
+  <span class="cnt" id="cnt">コメント 0件</span>
+  <button onclick="copyAll()">📋 全コメントをコピー</button>
+  <button onclick="window.print()">🖨 印刷</button>
+</div>
+
+<div class="wrap"><div class="reveal"><div class="slides">
+<!--SLIDES-->
+</div></div></div>
+
+<button id="addBtn">💬 コメント</button>
+<div id="dlg">
+  <div class="quote" id="dlgQuote"></div>
+  <textarea id="dlgText" placeholder="コメントを入力…"></textarea>
+  <div class="btns">
+    <button class="danger" id="dlgDel" style="display:none;">削除</button>
+    <button id="dlgCancel">キャンセル</button>
+    <button class="primary" id="dlgSave">保存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+/* ===== Googleスライド式ハイライトコメント ===== */
+const LS_KEY = 'deck-comments-' + location.pathname;
+let comments = [];
+try { comments = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { comments = []; }
+
+let pendingRange = null;   // 新規コメント対象の選択範囲
+let editingId = null;      // 編集中コメントのid
+
+const addBtn = document.getElementById('addBtn');
+const dlg = document.getElementById('dlg');
+const dlgQuote = document.getElementById('dlgQuote');
+const dlgText = document.getElementById('dlgText');
+
+function saveStore() { try { localStorage.setItem(LS_KEY, JSON.stringify(comments)); } catch (e) {} }
+function updateCnt() { document.getElementById('cnt').textContent = `コメント ${comments.length}件`; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1600);
+}
+function doCopy(text) {
+  const done = () => toast('コピーしました');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { alert('コピーに失敗しました'); }
+  document.body.removeChild(ta);
+}
+
+/* --- スライド情報の解決（スライド本体 or スピーカーノート） --- */
+function hostInfo(el) {
+  const host = el.closest ? el.closest('.slide, .note') : null;
+  if (!host) return null;
+  const slide = host.classList.contains('note') ? host.previousElementSibling : host;
+  if (!slide || !slide.classList.contains('slide')) return null;
+  const num = slide.querySelector('.num').textContent.trim().split('/')[0].trim();
+  const area = host.classList.contains('note') ? 'スピーカーノート' : 'スライド本文';
+  return { host, num, title: slide.dataset.title, area };
+}
+
+/* --- 範囲を <mark> でハイライト（複数テキストノード対応） --- */
+function wrapRange(range, cid) {
+  const rootEl = range.commonAncestorContainer.nodeType === 3
+    ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer;
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+  const targets = [];
+  let n;
+  while ((n = walker.nextNode())) {
+    if (range.intersectsNode(n) && n.textContent !== '') targets.push(n);
+  }
+  targets.forEach(node => {
+    const r = document.createRange();
+    r.selectNodeContents(node);
+    if (node === range.startContainer) r.setStart(node, range.startOffset);
+    if (node === range.endContainer) r.setEnd(node, range.endOffset);
+    if (r.collapsed || !r.toString().trim()) return;
+    const mark = document.createElement('mark');
+    mark.className = 'cmt';
+    mark.dataset.cid = cid;
+    try { r.surroundContents(mark); } catch (e) { /* 端ノードの部分選択で稀に失敗 → スキップ */ }
+  });
+}
+function unwrap(cid) {
+  document.querySelectorAll(`mark.cmt[data-cid="${cid}"]`).forEach(m => {
+    const parent = m.parentNode;
+    while (m.firstChild) parent.insertBefore(m.firstChild, m);
+    parent.removeChild(m);
+    parent.normalize();
+  });
+}
+
+/* --- 復元: 引用テキストをホスト内から探してrange化 --- */
+function findRange(container, quote) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode: node => node.parentNode.closest('#dlg, #addBtn') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
+  const nodes = [];
+  let full = '', n;
+  while ((n = walker.nextNode())) { nodes.push({ node: n, start: full.length }); full += n.textContent; }
+  const idx = full.indexOf(quote);
+  if (idx < 0) return null;
+  const end = idx + quote.length;
+  const range = document.createRange();
+  let gotS = false, gotE = false;
+  for (const item of nodes) {
+    const len = item.node.textContent.length;
+    if (!gotS && idx < item.start + len) { range.setStart(item.node, idx - item.start); gotS = true; }
+    if (gotS && !gotE && end <= item.start + len) { range.setEnd(item.node, end - item.start); gotE = true; break; }
+  }
+  return (gotS && gotE) ? range : null;
+}
+function restore() {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  comments.forEach(c => {
+    const slide = slides.find(s => s.querySelector('.num').textContent.trim().split('/')[0].trim() === c.num);
+    if (!slide) return;
+    const host = c.area === 'スピーカーノート' ? slide.nextElementSibling : slide;
+    if (!host) return;
+    const range = findRange(host, c.quote);
+    if (range) wrapRange(range, c.id);
+  });
+}
+
+/* --- 選択 → コメント追加ボタン表示 --- */
+document.addEventListener('mouseup', e => {
+  if (e.target.closest('#dlg') || e.target.closest('#addBtn')) return;
+  setTimeout(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) { addBtn.style.display = 'none'; return; }
+    const range = sel.getRangeAt(0);
+    const el = range.commonAncestorContainer.nodeType === 3
+      ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer;
+    if (!hostInfo(el)) { addBtn.style.display = 'none'; return; }
+    pendingRange = range.cloneRange();
+    const rect = range.getBoundingClientRect();
+    addBtn.style.left = (window.scrollX + rect.left + rect.width / 2 - 44) + 'px';
+    addBtn.style.top = (window.scrollY + rect.top - 38) + 'px';
+    addBtn.style.display = 'block';
+  }, 0);
+});
+
+addBtn.addEventListener('click', () => {
+  if (!pendingRange) return;
+  addBtn.style.display = 'none';
+  editingId = null;
+  dlgQuote.textContent = '「' + pendingRange.toString().trim() + '」';
+  dlgText.value = '';
+  document.getElementById('dlgDel').style.display = 'none';
+  const rect = pendingRange.getBoundingClientRect();
+  openDlg(rect);
+});
+
+/* --- ハイライトクリック → 閲覧・編集 --- */
+document.addEventListener('click', e => {
+  const mark = e.target.closest('mark.cmt');
+  if (!mark) return;
+  const c = comments.find(x => x.id === mark.dataset.cid);
+  if (!c) return;
+  editingId = c.id;
+  pendingRange = null;
+  document.querySelectorAll('mark.cmt.active').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll(`mark.cmt[data-cid="${c.id}"]`).forEach(m => m.classList.add('active'));
+  dlgQuote.textContent = '「' + c.quote + '」';
+  dlgText.value = c.text;
+  document.getElementById('dlgDel').style.display = '';
+  openDlg(mark.getBoundingClientRect());
+});
+
+function openDlg(rect) {
+  dlg.style.display = 'block';
+  const left = Math.min(window.scrollX + rect.left, window.scrollX + document.documentElement.clientWidth - 340);
+  dlg.style.left = Math.max(8, left) + 'px';
+  dlg.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+  dlgText.focus();
+}
+function closeDlg() {
+  dlg.style.display = 'none';
+  editingId = null;
+  pendingRange = null;
+  document.querySelectorAll('mark.cmt.active').forEach(m => m.classList.remove('active'));
+}
+
+document.getElementById('dlgCancel').addEventListener('click', closeDlg);
+document.getElementById('dlgSave').addEventListener('click', () => {
+  const text = dlgText.value.trim();
+  if (!text) { dlgText.focus(); return; }
+  if (editingId) {
+    const c = comments.find(x => x.id === editingId);
+    if (c) c.text = text;
+  } else if (pendingRange) {
+    const el = pendingRange.commonAncestorContainer.nodeType === 3
+      ? pendingRange.commonAncestorContainer.parentNode : pendingRange.commonAncestorContainer;
+    const info = hostInfo(el);
+    if (!info) { closeDlg(); return; }
+    const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    comments.push({ id, num: info.num, title: info.title, area: info.area, quote: pendingRange.toString().trim(), text });
+    wrapRange(pendingRange, id);
+    window.getSelection().removeAllRanges();
+  }
+  saveStore(); updateCnt(); closeDlg();
+  toast('コメントを保存しました');
+});
+document.getElementById('dlgDel').addEventListener('click', () => {
+  if (!editingId) return;
+  unwrap(editingId);
+  comments = comments.filter(x => x.id !== editingId);
+  saveStore(); updateCnt(); closeDlg();
+  toast('コメントを削除しました');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDlg(); addBtn.style.display = 'none'; } });
+
+/* --- 全コメントコピー（箇所つき） --- */
+function copyAll() {
+  if (!comments.length) { toast('コメントはまだありません — テキストを選択して追加できます'); return; }
+  const sorted = comments.slice().sort((a, b) => Number(a.num) - Number(b.num));
+  const body = sorted.map((c, i) =>
+    `${i + 1}. 【スライド${c.num}：${c.title}】（${c.area}）\n` +
+    `   対象: 「${c.quote}」\n` +
+    `   コメント: ${c.text}`
+  ).join('\n\n');
+  doCopy(`${document.title} へのコメント ${comments.length}件\n` + '='.repeat(40) + '\n\n' + body);
+}
+
+restore();
+updateCnt();
+</script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>デッキ名 YYYY-MM-DD（発表用）</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/white.min.css">
+<style>
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy: #2b4a7a; --navy2: #3e64a0; --ink: #222a33; --sub: #5f6b7a;
+    --line: #c9d6e8; --bg: #eef1f5; --red: #c8641a; --green: #3e64a0; --gray: #8a99a8;
+  }
+  html, body { background: var(--bg); }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* ===== ツールバー ===== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--navy); color: #fff;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px; border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 8px rgba(20,40,70,.25);
+  }
+  .toolbar h1 { font-size: 14px; font-weight: 700; flex: 1; }
+  .toolbar button {
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    background: #fff; color: var(--navy); border: none; border-radius: 6px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .toolbar button:hover { background: #dbe6f0; }
+  .toolbar .cnt {
+    background: #ffe58a; color: #6d5410; font-size: 11.5px; font-weight: 700;
+    border-radius: 999px; padding: 3px 10px;
+  }
+  .toolbar .hint { font-size: 11px; color: #c3d2e0; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff; font-size: 13px;
+    padding: 10px 22px; border-radius: 999px; opacity: 0;
+    transition: opacity .25s; pointer-events: none; z-index: 20;
+    box-shadow: 0 4px 14px rgba(20,40,70,.35);
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== スライド ===== */
+  .slide {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    margin: 26px 0 10px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(20,40,70,.08);
+  }
+  .slide .body { aspect-ratio: 16 / 9; padding: 32px 46px 24px; display: flex; flex-direction: column; position: relative; }
+  .slide .num {
+    position: absolute; top: 16px; right: 20px;
+    font-size: 12px; color: var(--sub);
+  }
+  .kicker { font-size: 13px; font-weight: 700; color: var(--red); letter-spacing: .08em; margin-bottom: 4px; }
+  .kicker.gray { color: var(--gray); }
+  .kicker.green { color: var(--green); }
+  h2.title { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1.35; margin-bottom: 6px; }
+  .lead { font-size: 14.5px; color: var(--navy2); font-weight: 600; margin-bottom: 14px; line-height: 1.6; }
+  .content { flex: 1; min-height: 0; font-size: 14px; line-height: 1.65; }
+
+  ul.pts { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  ul.pts li { padding-left: 16px; position: relative; }
+  ul.pts li::before { content: "▪"; position: absolute; left: 0; color: var(--gray); font-size: 10px; top: 4px; }
+  ul.pts li b { color: var(--navy); }
+  .risk { color: var(--red); font-weight: 700; }
+  .ok { color: var(--green); font-weight: 700; }
+  .dim { color: var(--sub); font-size: .92em; }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; line-height: 1.55; }
+  table.t th { background: #f2f6fa; color: var(--navy); font-size: 12px; white-space: nowrap; }
+  table.t td.num { text-align: right; }
+
+  .cols2 { display: flex; gap: 16px; }
+  .cols2 > div { flex: 1; }
+  .cols3 { display: flex; gap: 12px; }
+  .cols3 > div { flex: 1; }
+  .panel { border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; }
+  .panel h3 { font-size: 13.5px; color: var(--navy); margin-bottom: 7px; }
+  .panel p, .panel li { font-size: 12.5px; line-height: 1.6; }
+  .panel ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .panel.good { border-color: #b5d4c3; background: #f2f9f5; }
+  .panel.bad  { border-color: #dcb9b4; background: #faf3f2; }
+  .panel.good h3 { color: var(--green); }
+  .panel.bad h3 { color: var(--red); }
+
+  .bigmsg {
+    border-left: 5px solid var(--navy); background: #f2f6fa;
+    padding: 12px 18px; font-size: 15px; font-weight: 700; color: var(--navy);
+    border-radius: 0 8px 8px 0; margin-top: auto; line-height: 1.55;
+  }
+  .bigmsg .arrow { color: var(--red); }
+  .bigmsg.red { border-left-color: var(--red); }
+
+  /* ===== ハイライトコメント（Googleスライド式） ===== */
+  mark.cmt {
+    background: #ffe58a; color: inherit; border-bottom: 2px solid #e0a800;
+    cursor: pointer; padding: 0 1px; border-radius: 2px;
+  }
+  mark.cmt.active { background: #ffd34d; }
+  #addBtn {
+    position: absolute; z-index: 30; display: none;
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    background: var(--navy); color: #fff; border: none; border-radius: 999px;
+    padding: 6px 14px; cursor: pointer; box-shadow: 0 3px 10px rgba(20,40,70,.35);
+    white-space: nowrap;
+  }
+  #addBtn:hover { background: var(--navy2); }
+  #dlg {
+    position: absolute; z-index: 31; display: none;
+    width: 320px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(20,40,70,.28); padding: 12px 14px;
+  }
+  #dlg .quote {
+    font-size: 11.5px; color: var(--sub); background: #fbf5dd; border-left: 3px solid #e0a800;
+    padding: 5px 8px; border-radius: 0 4px 4px 0; margin-bottom: 8px;
+    max-height: 60px; overflow: hidden; line-height: 1.5;
+  }
+  #dlg textarea {
+    width: 100%; min-height: 64px; font-family: inherit; font-size: 13px; line-height: 1.6;
+    border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; resize: vertical;
+  }
+  #dlg textarea:focus { outline: 2px solid var(--navy2); border-color: transparent; }
+  #dlg .btns { display: flex; gap: 8px; margin-top: 8px; }
+  #dlg .btns button {
+    font-family: inherit; font-size: 12px; font-weight: 600; border-radius: 6px;
+    padding: 6px 14px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  }
+  #dlg .btns .primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  #dlg .btns .danger { color: var(--red); border-color: #dcb9b4; margin-right: auto; }
+
+  /* ===== スピーカーノート ===== */
+  .note {
+    background: #fbf8ef; border: 1px solid #e4dcc3; border-radius: 10px;
+    padding: 12px 16px; margin: 0 0 6px; font-size: 13px; line-height: 1.65; color: #4a4433;
+  }
+  .note .nh { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .note .nh .lbl { font-size: 11.5px; font-weight: 700; color: #8a7b45; letter-spacing: .05em; }
+  .note .talk { margin-bottom: 5px; }
+
+  .sec-div {
+    margin: 42px 0 -10px; font-size: 13px; font-weight: 700; color: var(--sub);
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+
+  @media print {
+    .toolbar, .note, .sec-div, .toast, #addBtn, #dlg { display: none !important; }
+    mark.cmt { background: none; border-bottom: none; }
+    .wrap { max-width: none; padding: 0; }
+    .slide { border: none; border-radius: 0; box-shadow: none; margin: 0; page-break-after: always; }
+  }
+
+  .reveal { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Meiryo", sans-serif; }
+  .reveal .slides section { text-align: left; padding: 0; height: 540px; }
+  .reveal .slides section .body { aspect-ratio: auto; width: 960px; height: 540px; padding: 30px 42px 20px; display: flex; flex-direction: column; position: relative; background: #fff; }
+  .reveal h2.title { font-size: 22px; margin: 0 0 8px; text-transform: none; letter-spacing: 0; font-family: inherit; }
+  .reveal p, .reveal li { font-size: inherit; line-height: inherit; margin: 0; }
+  .reveal .content { font-size: 12px; }
+  .reveal .lead { font-size: 12.5px; }
+  .reveal table.t { font-size: 11px; margin: 0; }
+  .reveal table.t th, .reveal table.t td { padding: 5px 8px; }
+  .reveal .panel p, .reveal .panel li { font-size: 10.5px; }
+  .reveal .panel h3 { font-size: 11.5px; margin: 0 0 7px; text-transform: none; letter-spacing: 0; font-family: inherit; }
+  .reveal ul.pts { margin: 0; }
+  .reveal ul.pts li { font-size: 12px; }
+  .reveal .bigmsg { font-size: 12.5px; }
+  .reveal .num { font-size: 9px; }
+  .reveal .kicker { font-size: 10px; }
+  .reveal .dim { font-size: 9.5px; }
+  .reveal ul { list-style: none; }
+  .reveal table { border-collapse: collapse; }
+  .reveal table.t tbody tr:last-child td, .reveal table.t tbody tr:last-child th, .reveal table.t tr:last-child td { border-bottom: 1px solid var(--line) !important; }
+  .reveal table.t th, .reveal table.t td { border: 1px solid var(--line) !important; }
+  .reveal b { font-weight: 700; }
+  .todo { background: #fff3cd; color: #7a5a00; border: 1px dashed #d9a400; border-radius: 4px; padding: 0 5px; font-weight: 700; }
+  table.t td.n { text-align: right; }
+  .reveal .panel { padding: 10px 11px; }
+  .reveal .bigmsg { padding: 9px 13px; }
+  .reveal .progress, .reveal .controls { color: var(--navy); }
+  body.export .controls, body.export .help-badge, body.export .progress, body.export .slide-number { display: none !important; }
+  .help-badge { position: fixed; right: 14px; bottom: 10px; font-size: 11px; color: #5a6d80; background: rgba(255,255,255,.85); padding: 4px 8px; border-radius: 6px; z-index: 50; }
+
+  /* ===== レイアウト調整（発表用） ===== */
+  :root { --amber: #5f6b7a; --paper: #f3f7fc; --brand: #3e64a0; --orange: #e8913a; }
+  .reveal .slides section .body { padding: 26px 40px 18px; }
+  
+  .reveal .num { top: 18px; bottom: auto; right: 40px; left: auto; position: absolute; font-size: 9.5px; color: var(--gray); letter-spacing: .05em; }
+  .reveal .kicker { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; margin-bottom: 6px; }
+  .reveal .kicker::before { content: ""; width: 14px; height: 3px; background: currentColor; border-radius: 2px; }
+  .reveal h2.title { font-size: 22px; line-height: 1.4; margin-bottom: 8px; color: var(--brand); }
+  .reveal .lead { font-size: 12px; font-weight: 500; color: var(--sub); line-height: 1.7; margin-bottom: 0; }
+  .reveal .lead b { color: var(--navy); }
+  .reveal .content { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; }
+  .reveal .content > .cols2 { flex: 1; }
+  .reveal .cols2, .reveal .cols3 { gap: 12px; }
+
+  /* パネル：色は上辺のアクセントで示す */
+  .reveal .panel { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+  .reveal .panel.good { background: #eef4fb; border-color: #c3d5ec; border-top: 3px solid var(--green); }
+  .reveal .panel.bad  { background: #fdf4ea; border-color: #f1d3b4; border-top: 3px solid var(--red); }
+  .reveal .panel h3 { font-size: 12.5px; line-height: 1.5; margin-bottom: 8px; }
+  .reveal .panel p, .reveal .panel li { font-size: 11.5px; line-height: 1.65; }
+  .reveal .panel ul { gap: 6px; }
+  .reveal .panel li { padding-left: 1em; text-indent: -1em; }
+
+  /* キーメッセージ帯 */
+  .reveal .bigmsg {
+    flex-shrink: 0; margin-top: auto; background: #e8f1fb; color: #1c2b45; border-left: 8px solid #2a5ea8;
+    border-radius: 0 10px 10px 0; padding: 11px 16px; font-size: 12.5px; line-height: 1.7;
+  }
+  .reveal .bigmsg .arrow { color: #b85a12; }
+  .reveal .bigmsg .chip { border: 1px solid #c3d5ec; }
+
+  /* 表 */
+  .reveal table.t th { background: var(--navy); color: #fff; font-size: 11px; border-color: var(--navy) !important; }
+  .reveal table.t td { background: #fff; }
+  .reveal table.t tr:nth-child(odd) td { background: var(--paper); }
+  .reveal table.t td:first-child { color: var(--navy); white-space: nowrap; }
+  .reveal .panel table.t { font-size: 11px; }
+  .reveal .panel.good table.t th { background: #3e64a0; border-color: #3e64a0 !important; }
+
+  /* 1枚目：振り返り表 */
+  .reveal h2.title.fit { font-size: 20px; }
+  .reveal table.t.review { font-size: 11px; }
+  .reveal table.t.review td { line-height: 1.5; padding: 5px 8px; }
+  .reveal td.judge { text-align: center; vertical-align: middle; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 700; line-height: 1.4; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .badge.risk { background: #fde6cf; color: var(--red); }
+  .badge.ok   { background: #dce8f6; color: var(--green); }
+  .badge.part { background: #e9edf2; color: var(--amber); }
+
+  /* 5・6枚目：いま → 打ち手 → 効果 */
+  .reveal .panel.now { padding: 7px 14px; }
+  .reveal .panel.now p { font-size: 12.5px; }
+  .reveal .panel.now b { display: inline-block; background: var(--red); color: #fff; font-size: 10.5px; padding: 1px 8px; border-radius: 4px; margin-right: 6px; }
+  .reveal .panel.hero { padding: 8px 16px; }
+  .reveal .panel.hero h3 { font-size: 15px; color: var(--green); margin-bottom: 6px; }
+  .reveal .panel.hero ul li { font-size: 11.5px; }
+  .reveal .cols3 .panel { padding: 6px 12px; }
+  .reveal .cols3 .panel h3 { font-size: 12px; margin-bottom: 2px; }
+  .reveal .cols3 .panel p { font-size: 11.5px; }
+
+  /* 7枚目：マイルストーン表 */
+  .reveal table.t.plan { flex: 1; font-size: 12.5px; }
+  .reveal table.t.plan td { line-height: 1.6; padding: 8px 10px; }
+  .reveal table.t.plan th { font-size: 12px; padding: 7px 10px; }
+  .reveal table.t.plan th:first-child { width: 11%; }
+  .reveal table.t.plan th:nth-child(3) { width: 15%; }
+  .reveal table.t.plan td:first-child { font-size: 14px; vertical-align: middle; text-align: center; }
+  .reveal table.t.plan th:nth-child(3), .reveal table.t.plan td:nth-child(3) { box-shadow: inset 0 0 0 999px rgba(232,145,58,.10); }
+  .reveal table.t.plan th:nth-child(3) { background: #d97f26; border-color: #d97f26 !important; }
+  .reveal .next { font-size: 12px; color: var(--sub); background: var(--paper); border-left: 3px solid var(--gray); padding: 8px 12px; border-radius: 0 6px 6px 0; }
+
+  /* 8枚目：判定 */
+  .reveal .panel.chain { font-size: 13px; line-height: 1.85; background: var(--paper); }
+  .reveal .panel h3 + table.t { margin-top: 0; }
+  .reveal ul.lg li { font-size: 12.5px; line-height: 1.65; }
+  .reveal ul.lg { gap: 8px; }
+
+  /* ===== 論理展開を見せる部品 ===== */
+  .reveal .arr { display: flex; align-items: center; justify-content: center; color: var(--navy); font-size: 18px; font-weight: 700; flex: 0 0 auto; }
+  .reveal .tag { display: inline-block; white-space: nowrap; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 4px; margin-right: 8px; vertical-align: 1px; }
+  .reveal .sublabel { font-size: 11px; font-weight: 700; color: var(--sub); margin-bottom: 4px; }
+
+  /* 1枚目 */
+  .reveal .focus { display: grid; grid-template-columns: auto 1fr 1fr; gap: 10px; align-items: stretch; margin-top: auto; }
+  .reveal .focus-h { display: flex; align-items: center; font-size: 12.5px; font-weight: 700; color: var(--navy); }
+  .reveal .focus-c { display: flex; align-items: center; background: #e8f1fb; color: #1c2b45; font-size: 12.5px; font-weight: 700; padding: 9px 12px; border-radius: 0 10px 10px 0; border-left: 8px solid #2a5ea8; }
+  .reveal .focus-c .tag { background: #2a5ea8; color: #fff; }
+  .reveal .agenda { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 5px; font-size: 10.5px; color: var(--sub); }
+  .reveal .agenda .step { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--navy); font-weight: 700; background: #fff; }
+  .reveal .agenda .step.on { background: var(--red); border-color: var(--red); color: #fff; }
+  .reveal .agenda .sep { color: var(--gray); }
+
+  /* 2枚目 */
+  .reveal .panel.dir { padding: 6px 14px; background: var(--paper); }
+  .reveal .panel.dir h3 { margin-bottom: 4px; }
+  .reveal .panel.dir ul.row3 { flex-direction: row; gap: 14px; }
+  .reveal .panel.dir ul.row3 li { flex: 1; font-size: 11px; }
+  .reveal .gaprow { display: flex; gap: 8px; align-items: stretch; }
+  .reveal .gapmain { flex: 1; }
+  .reveal table.t.gap { font-size: 11.5px; }
+  .reveal table.t.gap td { padding: 4px 9px; }
+  .reveal .thtag { display: inline-block; margin-left: 8px; font-size: 9.5px; padding: 0 6px; border-radius: 3px; vertical-align: 1px; }
+  .reveal table.t th.th-done { background: #3e64a0; border-color: #3e64a0 !important; }
+  .reveal table.t th.th-done .thtag { background: #dce8f6; color: var(--green); }
+  .reveal table.t th.th-open { background: #d97f26; border-color: #d97f26 !important; }
+  .reveal table.t th.th-open .thtag { background: #fdebd6; color: #d97f26; }
+  .reveal table.t.gap td:nth-child(3) { box-shadow: inset 0 0 0 999px rgba(232,145,58,.10); }
+  .reveal .goalbox { flex: 0 0 120px; border: 2px dashed #e8913a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; padding: 10px; background: #fff6ec; }
+  .reveal .goal-h { font-size: 12px; font-weight: 700; color: #d97f26; }
+  .reveal .goal-q { font-size: 40px; font-weight: 700; color: #e8913a; line-height: 1; }
+  .reveal .bigmsg.two { display: grid; grid-template-columns: 1fr 1.25fr; gap: 18px; }
+
+  /* 3枚目 */
+  .reveal .pivot { display: flex; gap: 6px; align-items: stretch; }
+  .reveal .pv { flex: 1; font-size: 11.5px; line-height: 1.6; padding: 7px 12px; border-radius: 6px; }
+  .reveal .pv.old { background: var(--paper); color: var(--sub); border: 1px solid var(--line); flex: .8; }
+  .reveal .pv.new { background: #fdf4ea; border: 1px solid #f1d3b4; border-left: 4px solid var(--red); color: var(--ink); flex: 1.1; }
+  .reveal .pv.new b { color: var(--red); }
+  .reveal .pv.where { background: #fff; border: 1px solid var(--navy); color: var(--navy); font-weight: 700; }
+  .reveal .evidence { font-size: 10.5px; color: var(--sub); line-height: 1.6; padding: 6px 12px; border-left: 3px solid var(--gray); background: var(--paper); border-radius: 0 6px 6px 0; }
+
+  /* 4枚目 */
+  .reveal .route { display: flex; gap: 8px; align-items: stretch; flex: 1; min-height: 0; }
+  .reveal .route > .arr { align-items: flex-start; padding-top: 8px; }
+  .reveal .route-col { flex: 2.1; display: flex; flex-direction: column; gap: 8px; }
+  .reveal .route-col.narrow { flex: .75; }
+  .reveal .way { font-size: 11.5px; line-height: 1.6; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff; }
+  .reveal .way.past { border-left: 4px solid var(--green); }
+  .reveal .way.next { border-left: 4px solid #e8913a; background: #fff6ec; }
+  .reveal .when { display: inline-block; font-size: 10px; font-weight: 700; color: #fff; background: var(--green); border-radius: 3px; padding: 0 6px; margin-right: 6px; }
+  .reveal .way.next .when { background: #b7791f; }
+  .reveal .panel.evid { padding: 7px 10px; flex: 1; }
+  .reveal .panel.evid h3 { font-size: 11.5px; margin-bottom: 5px; }
+  .reveal .panel.evid table.t { font-size: 10.5px; }
+  .reveal .panel.evid table.t td, .reveal .panel.evid table.t th { padding: 3px 7px; line-height: 1.45; }
+  .reveal .rule { font-size: 11px; color: var(--sub); line-height: 1.6; padding-left: 1em; text-indent: -1em; }
+  .reveal .bigmsg.fork { display: flex; align-items: center; gap: 10px; }
+  .reveal .fork-l { flex: 1; }
+  .reveal .fork-m { white-space: nowrap; }
+  .reveal .fork-r { display: flex; flex-direction: column; gap: 4px; }
+  .reveal .chip { background: #fff; color: var(--navy); font-weight: 700; border-radius: 4px; padding: 2px 10px; white-space: nowrap; }
+  .reveal .chip small { font-size: 9.5px; color: var(--sub); margin-left: 6px; font-weight: 500; }
+
+  /* 7枚目 */
+  .reveal .planrow { display: flex; gap: 8px; align-items: stretch; flex: 1; }
+  .reveal .planrow table.t.plan { font-size: 12px; }
+  .reveal .goalbox.reached { flex: 0 0 118px; border: 2px solid var(--green); background: #eef4fb; }
+  .reveal .goalbox.reached .goal-h { color: var(--green); }
+  .reveal .goal-t { font-size: 12px; font-weight: 700; color: var(--navy); line-height: 1.6; }
+
+  /* 8枚目 */
+  .reveal .chain4 { display: flex; gap: 4px; align-items: stretch; }
+  .reveal .ch { flex: 1; font-size: 11.5px; line-height: 1.55; padding: 8px 10px; border-radius: 6px; background: var(--paper); border: 1px solid var(--line); }
+  .reveal .ch b { display: block; font-size: 11px; color: var(--navy); margin-bottom: 2px; }
+  .reveal .ch.hl { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .reveal .ch.hl b { color: #ffd9a0; }
+  .reveal .cols2.tight .panel { padding: 8px 12px; }
+  .reveal .cols2.tight .panel h3 { font-size: 11.5px; margin-bottom: 4px; }
+  .reveal .cols2.tight .panel p, .reveal .cols2.tight .panel li { font-size: 10.8px; line-height: 1.55; }
+  .reveal .cols2.tight .panel ul { gap: 3px; }
+  .reveal .content > div[style*="display:grid"] { flex: 1; }
+  .reveal .content > div[style*="display:grid"] .panel b { font-size: 13.5px; }
+  .reveal .content > div[style*="display:grid"] { min-height: 0; }
+
+  /* 淡色のキーメッセージ帯（左に濃い青の線、角丸） */
+  .reveal .bigmsg.soft { background: #e8f1fb; color: #1c2b45; border-left: 8px solid #2a5ea8; border-radius: 0 10px 10px 0; }
+  .reveal .bigmsg.soft .arrow { color: #b85a12; }
+  .reveal .panel.hero ul.tight { gap: 3px; }
+  .reveal .panel.hero ul.tight li { font-size: 11px; line-height: 1.5; }
+
+  /* 辺の装飾はメインメッセージ（.bigmsg）だけに使う。ほかのカードは装飾なし */
+  .reveal .panel.good, .reveal .panel.bad { border-top-width: 1px; border-top-style: solid; }
+  .reveal .panel.good { border-top-color: #c3d5ec; }
+  .reveal .panel.bad  { border-top-color: #f1d3b4; }
+  .reveal .pv.new { border-left: 1px solid #f1d3b4; border-radius: 6px; }
+  .reveal .evidence, .reveal .next { border: 1px solid var(--line); border-radius: 6px; }
+  .reveal .way.past, .reveal .way.next { border-left-width: 1px; }
+  .reveal .way.past { border-left-color: var(--line); }
+  .reveal .way.next { border-color: #f1d3b4; }
+  .reveal .focus-c { border-left: 1px solid #c3d5ec; border: 1px solid #c3d5ec; border-radius: 8px; }
+</style>
+</head>
+<body><div class="reveal"><div class="slides">
+
+<!-- 1. 表＋注力点（振り返り・現状把握の1枚目） -->
+<section data-title="振り返り">
+<div class="body">
+    <span class="num">1 / 6</span>
+    <p class="kicker gray">YYYY-MM-DD　会議名　パート名</p>
+    <h2 class="title fit">振り返り：〇〇は進み、△△はこれから</h2>
+    <div class="content">
+      <table class="t review">
+        <tr><th style="width:12%;">項目</th><th style="width:24%;">掲げたこと</th><th>振り返り</th><th style="width:10%;">判定</th></tr>
+        <tr><td><b>項目1</b></td><td>掲げたこと</td><td>事実ベースで1〜2文</td><td class="judge"><span class="badge ok">進んだ</span></td></tr>
+        <tr><td><b>項目2</b></td><td>掲げたこと</td><td>事実ベースで1〜2文</td><td class="judge"><span class="badge risk">継続</span></td></tr>
+        <tr><td><b>項目3</b></td><td>掲げたこと</td><td>事実ベースで1〜2文</td><td class="judge"><span class="badge part">部分</span></td></tr>
+      </table>
+      <div class="focus">
+        <div class="focus-h">注力すべきと判断したのは2つ。</div>
+        <div class="focus-c"><span class="tag">課題A</span>課題Aを一行で</div>
+        <div class="focus-c"><span class="tag">課題B</span>課題Bを一行で</div>
+      </div>
+      <div class="agenda">
+        <span>このあと</span><span class="step on">①問い1</span><span class="sep">→</span><span class="step">②問い2</span><span class="sep">→</span><span class="step">③問い3</span><span>の順に答える。</span>
+      </div>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>話す順に書く。表は「判定の列だけ見てください」のように見る場所を指定する。</aside>
+</section>
+
+<!-- 2. 課題：前提パネル＋表＋?の箱＋帯 -->
+<section data-title="①課題A">
+<div class="body">
+    <span class="num">2 / 6</span>
+    <p class="kicker">① 問い1</p>
+    <h2 class="title">課題A：〇〇は進んだが、△△をまだ決めていない</h2>
+    <p class="lead">背景を1〜2文。強調は<b>一語だけ</b>太字。</p>
+    <div class="content">
+      <div class="panel dir">
+        <h3>前提（示された方向など）</h3>
+        <ul style="gap:2px;">
+          <li>・1行に収まる長さで</li>
+          <li>・1行に収まる長さで</li>
+        </ul>
+      </div>
+      <div class="gaprow">
+        <div class="gapmain">
+          <p class="sublabel">表の見出し</p>
+          <table class="t gap">
+            <tr><th style="width:14%;">対象</th><th class="th-done">進んだもの<span class="thtag">決まったこと</span></th><th class="th-open" style="width:40%;">残っているもの<span class="thtag">これから決めること</span></th></tr>
+            <tr><td><b>A</b></td><td>…</td><td>…</td></tr>
+            <tr><td><b>B</b></td><td>…</td><td>…</td></tr>
+          </table>
+        </div>
+        <div class="arr">→</div>
+        <div class="goalbox"><div class="goal-h">決めること</div><div class="goal-q">?</div></div>
+      </div>
+      <div class="bigmsg">
+        <div><b>決まったこと</b>：…</div>
+        <div><span class="arrow"><b>これから決めること</b>：…</span></div>
+      </div>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>…</aside>
+</section>
+
+<!-- 3. 打ち手：いま → 打ち手（いちばん大きく）→ 変わること の上下3段 -->
+<section data-title="②打ち手">
+<div class="body">
+    <span class="num">3 / 6</span>
+    <p class="kicker">② 問い2</p>
+    <h2 class="title">打ち手の名前：何をするかを一文で</h2>
+    <p class="lead"><span class="tag">課題Bへの答え</span>補足を一文。</p>
+    <div class="content">
+      <div class="panel bad now">
+        <p><b>いま</b>　困っていることを1〜2文で。</p>
+      </div>
+      <div class="panel good hero">
+        <h3>打ち手：〇〇を整える</h3>
+        <div style="display:flex; gap:18px; align-items:center;">
+          <div style="flex:0 0 auto; display:flex; align-items:center; gap:5px; font-size:11.5px; white-space:nowrap;">
+            <div style="border:1px solid var(--line); border-radius:5px; padding:6px 8px; background:#fff;">入力</div>
+            <div style="font-size:20px; color:var(--navy);">→</div>
+            <div style="border:2px solid var(--green); border-radius:8px; padding:8px 10px; background:#fff; text-align:center;"><b style="color:var(--green);">中心の仕組み</b><br>要素1<br>要素2</div>
+            <div style="font-size:20px; color:var(--navy);">→</div>
+            <div style="border:1px solid var(--line); border-radius:5px; padding:6px 8px; background:#fff;">使う人</div>
+          </div>
+          <ul class="tight" style="flex:1;">
+            <li>・<b>中身</b>：…</li>
+            <li>・<b>形</b>：…</li>
+            <li>・<b>担う人</b>：…</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cols3">
+        <div class="panel"><h3>場面1</h3><p>変わることを1文</p></div>
+        <div class="panel"><h3>場面2</h3><p>変わることを1文</p></div>
+        <div class="panel"><h3>場面3</h3><p>変わることを1文</p></div>
+      </div>
+      <div class="bigmsg">進め方を一文。<span class="arrow">いちばん伝えたいことを一文。</span></div>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>いま → 打ち手 → 変わること → 進め方 の順に話す。</aside>
+</section>
+
+<!-- 4. マイルストーン：行＝施策（レーン）、列＝時期。時期は目安と明記 -->
+<section data-title="③進め方">
+<div class="body">
+    <span class="num">4 / 6</span>
+    <p class="kicker">③ 問い3</p>
+    <h2 class="title">ゴールへ向けて施策1・施策2・施策3を並行で進めるマイルストーン</h2>
+    <p class="lead">施策1＝…、施策2＝…、施策3＝…。期日はこのスライドにだけ、目安として書く。</p>
+    <div class="content">
+      <p class="sublabel" style="margin-bottom:0;">時期は目安</p>
+      <div class="planrow">
+      <table class="t plan">
+        <tr><th style="width:12%;"></th><th>時期1</th><th>時期2</th><th>時期3</th><th>期末</th></tr>
+        <tr><td><b>施策1</b></td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td><b>施策2</b></td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td><b>施策3</b></td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+      </table>
+        <div class="arr">→</div>
+        <div class="goalbox reached"><div class="goal-h">ゴール</div><div class="goal-t">目指す状態を一文</div></div>
+      </div>
+      <p class="next">その先：…</p>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>レーンの順（施策1 → 2 → 3）に話す。</aside>
+</section>
+
+<!-- 5. 判定：イシュー→目指す状態→確かめたいこと→測り方 の鎖＋先行／遅行指標 -->
+<section data-title="④判定">
+<div class="body">
+    <span class="num">5 / 6</span>
+    <p class="kicker">④ 問い4</p>
+    <h2 class="title">進んだかは「〇〇できるようになったか」で見る</h2>
+    <div class="content">
+      <div class="chain4">
+        <div class="ch"><b>イシュー</b>…</div><div class="arr">→</div>
+        <div class="ch"><b>目指す状態</b>…</div><div class="arr">→</div>
+        <div class="ch"><b>確かめたいこと</b>…</div><div class="arr">→</div>
+        <div class="ch hl"><b>測り方</b>…</div>
+      </div>
+      <div class="cols2">
+        <div class="panel good" style="flex:1;">
+          <h3>毎月見る（先行指標）</h3>
+          <table class="t"><tr><th>確かめたいこと</th><th>見る数字</th></tr><tr><td>…</td><td>…（下がってほしい）</td></tr></table>
+        </div>
+        <div class="panel" style="flex:1;">
+          <h3>期末に見る（遅行指標）</h3>
+          <ul class="lg"><li>・…</li><li>・…</li></ul>
+        </div>
+      </div>
+      <div class="bigmsg">進め方はマイルストーンごとに確かめる。効いていなければやり方を変える。</div>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>…</aside>
+</section>
+
+<!-- 6. まとめ：問い①〜④を列見出しにした流れ図 -->
+<section data-title="まとめ">
+<div class="body">
+    <span class="num">6 / 6</span>
+    <p class="kicker">まとめ</p>
+    <h2 class="title">結論を一文（句読点は少なく）</h2>
+    <div class="content">
+      <div style="display:grid; grid-template-columns:1fr 20px 1.15fr 20px 1.1fr 20px 1.05fr; grid-template-rows:auto 1fr 1fr 1fr; gap:6px 4px; font-size:13px; line-height:1.5;">
+        <div class="dim" style="grid-column:1; grid-row:1; font-size:11px; font-weight:700;">① 問い1</div>
+        <div class="dim" style="grid-column:3; grid-row:1; font-size:11px; font-weight:700;">② 問い2</div>
+        <div class="dim" style="grid-column:5; grid-row:1; font-size:11px; font-weight:700;">③ 問い3</div>
+        <div class="dim" style="grid-column:7; grid-row:1; font-size:11px; font-weight:700;">④ 問い4</div>
+        <div class="panel bad" style="grid-column:1; grid-row:2 / span 2; display:flex; flex-direction:column; justify-content:center;"><b style="color:var(--red);">課題A</b>…</div>
+        <div style="grid-column:2; grid-row:2 / span 2; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--navy);">→</div>
+        <div class="panel good" style="grid-column:3; grid-row:2;"><b style="color:var(--green);">施策1（中心）</b><br>…</div>
+        <div class="panel good" style="grid-column:3; grid-row:3;"><b style="color:var(--green);">施策2</b><br>…</div>
+        <div class="panel bad" style="grid-column:1; grid-row:4; display:flex; flex-direction:column; justify-content:center;"><b style="color:var(--red);">課題B</b>…</div>
+        <div style="grid-column:2; grid-row:4; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--navy);">→</div>
+        <div class="panel good" style="grid-column:3; grid-row:4;"><b style="color:var(--green);">施策3</b><br>…</div>
+        <div style="grid-column:4; grid-row:2 / span 3; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--navy);">→</div>
+        <div class="panel" style="grid-column:5; grid-row:2 / span 3; display:flex; flex-direction:column; justify-content:center; gap:6px;"><b>3本を並行で進める</b><div>時期1：…</div><div>時期2：…</div><div>期末：…</div></div>
+        <div style="grid-column:6; grid-row:2 / span 3; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--navy);">→</div>
+        <div class="panel" style="grid-column:7; grid-row:2 / span 3; display:flex; flex-direction:column; justify-content:center; gap:6px;"><b>判定</b><div>…</div></div>
+      </div>
+      <div class="bigmsg">いちばん持ち帰ってほしい一文。<span class="arrow">強調はここだけ。</span></div>
+    </div>
+  </div>
+<aside class="notes"><b>スピーカーノート（1分）</b><br>…</aside>
+</section>
+
+</div></div>
+<div class="help-badge">S：発表者ビュー（原稿＋タイマー）／F：全画面／?：操作一覧／印刷は URL 末尾に ?print-pdf</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script>
+  if (location.search.indexOf('export') >= 0) document.body.classList.add('export');
+  Reveal.initialize({ width: 960, height: 540, margin: 0, minScale: 0.2, maxScale: 2.0, hash: true, slideNumber: 'c/t', progress: true, controls: true, center: false, transition: 'none', plugins: [ RevealNotes ] });
+</script>
+</body>
+</html>
