@@ -34,6 +34,7 @@
 | pr-review          | PR内容のセルフレビュー                                        |
 | pr-watch           | PRの定期監視（レビュー対応・CI修正の自動化）                  |
 | puml-from-drawio   | draw.io→PlantUML変換                                          |
+| reveal-deck        | reveal.jsデッキのデザイン雛形・閲覧用HTML生成・PNG書き出し    |
 | nippo-\*           | 日報システム（後述）                                          |
 | session-patterns   | セッション履歴から繰り返しパターンを抽出                      |
 
