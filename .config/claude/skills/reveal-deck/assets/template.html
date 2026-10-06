@@ -371,6 +371,16 @@
   .reveal .way.past { border-left-color: var(--line); }
   .reveal .way.next { border-color: #f1d3b4; }
   .reveal .focus-c { border-left: 1px solid #c3d5ec; border: 1px solid #c3d5ec; border-radius: 8px; }
+  /* 表の統一：見出しは紺、本文11.5px・余白5px 8px。例外はマイルストーン表（12.5px）。列の強調は差分表の「これから決めること」だけ */
+  .reveal table.t, .reveal .panel table.t, .reveal table.t.review, .reveal table.t.gap, .reveal .panel.evid table.t { font-size: 11.5px; }
+  .reveal table.t th, .reveal table.t td,
+  .reveal table.t.review td, .reveal table.t.gap td,
+  .reveal .panel.evid table.t td, .reveal .panel.evid table.t th { padding: 5px 8px; line-height: 1.5; }
+  .reveal table.t th, .reveal .panel.good table.t th, .reveal table.t th.th-done { background: var(--navy); border-color: var(--navy) !important; color: #fff; font-size: 11.5px; }
+  .reveal table.t.plan, .reveal .planrow table.t.plan { font-size: 12.5px; }
+  .reveal table.t.plan th { font-size: 12.5px; padding: 6px 9px; }
+  .reveal table.t.plan th:nth-child(3) { background: var(--navy); border-color: var(--navy) !important; }
+  .reveal table.t.plan th:nth-child(3), .reveal table.t.plan td:nth-child(3) { box-shadow: none; }
 </style>
 </head>
 <body><div class="reveal"><div class="slides">
