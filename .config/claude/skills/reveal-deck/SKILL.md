@@ -17,7 +17,7 @@ description: reveal.js（960x540）の発表デッキをHTMLで作る・直す�
 
 1. 新規なら `assets/template.html` を `<deck>_reveal.html` としてコピーする。サンプル6枚（表＋注力点、課題、打ち手3段、マイルストーン、判定、まとめの流れ図）から使う型だけ残す
 2. 文言・構成を直す前に、「今 → 案」の表で変更案を出して承認を得る。ユーザーが文言を指定した場合や「消して」などの明確な指示はそのまま入れてよい
-3. `_reveal.html` を直す。スライド番号（`<span class="num">n / N</span>`）と、本文中の「スライドn」参照も合わせる
+3. `_reveal.html` を直す。スライド番号（`<span class="num">n / N</span>`）を合わせる。本文でスライド番号を参照しない（前後のスライドは施策名などの言葉で指す）
 4. 描画してはみ出しを確かめる。はみ出したら、まず文字サイズ・幅・余白で直し、文言は変えない
    ```bash
    ~/.claude/skills/reveal-deck/scripts/export_png.sh <deck>_reveal.html /tmp/chk 3   # 3枚目だけ書き出して Read で見る
