@@ -143,17 +143,7 @@ func Classify(o Observation, opt Options) Decision {
 
 	// 6. MERGED / CLOSED: 削除対象。
 	if o.PR.Kind == PRMerged || o.PR.Kind == PRClosed {
-		reason := o.PR.Raw
-		// --force 時は追跡ファイルの未コミット変更が破棄される。何が失われるかを
-		// 行に出す。FORCE=0 のときはルール4で SKIP 済みなのでここには来ない。
-		if opt.Force && o.HasTrackedChanges {
-			reason += "（未コミット変更あり・破棄されます）"
-		}
-		// 未追跡があれば件数を併記する（使い捨てスクラッチを黙って消さないため）。
-		if o.UntrackedCount > 0 {
-			reason += fmt.Sprintf("（未追跡 %d 件あり）", o.UntrackedCount)
-		}
-		return Decision{DELETE, reason, SkipNone}
+		return Decision{DELETE, deleteReason(o.PR.Raw, o, opt), SkipNone}
 	}
 
 	// 7. PR なし。
@@ -163,6 +153,20 @@ func Classify(o Observation, opt Options) Decision {
 
 	// 8. それ以外（OPEN など）は raw をそのまま理由にする。
 	return Decision{KEEP, o.PR.Raw, SkipNone}
+}
+
+// deleteReason は DELETE 行の理由に、削除で失われるものを併記する。
+func deleteReason(reason string, o Observation, opt Options) string {
+	// --force 時は追跡ファイルの未コミット変更が破棄される。何が失われるかを
+	// 行に出す。FORCE=0 のときはルール4で SKIP 済みなのでここには来ない。
+	if opt.Force && o.HasTrackedChanges {
+		reason += "（未コミット変更あり・破棄されます）"
+	}
+	// 未追跡があれば件数を併記する（使い捨てスクラッチを黙って消さないため）。
+	if o.UntrackedCount > 0 {
+		reason += fmt.Sprintf("（未追跡 %d 件あり）", o.UntrackedCount)
+	}
+	return reason
 }
 
 func detailOr(s string) string {
