@@ -96,6 +96,7 @@ AIが「学び・気づき」を代筆したり、「次の一手」を決定す
 | 朝         | `/nippo-add`             | 日報作成・タスク確認                 |
 | 日中       | `/nippo-add start:/end:` | 作業ログ記録                         |
 | 業務終了前 | `/nippo-finalize`        | 事実の自動整理（内省欄は空白）       |
+| 業務終了前 | `/kb-harvest`            | sessionから用語・知識を拾う          |
 | 業務終了時 | `/nippo-reflect`         | 問いに自分で答える（5〜10分）        |
 | 必要に応じ | `/nippo-brief`           | 今日のサマリー確認                   |
 | 週次       | `/nippo-weekly`          | 週次レポート（セッション分析含む）   |
@@ -160,4 +161,5 @@ NIPPO_FILE="$(nippo_daily_file "$(nippo_resolve_date "${ARGUMENTS:-}")")"
 1. `/nippo-add 最初の作業メモ` で日報を作成
 2. 日中は `/nippo-add start:タスク名` と `/nippo-add end:タスク名` で時間計測
 3. 業務終了時に `/nippo-finalize` で事実を整理
+   - 続けて `/kb-harvest` で、その日のsessionから用語と知識をglossaryとvaultへ拾う
 4. `/nippo-reflect` で問いに答え、内省を深める

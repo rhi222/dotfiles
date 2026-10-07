@@ -98,6 +98,10 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
    - 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
    - 答えが無ければ何も書かない。ファイルに空欄を残さない
 
+10. **Phase 8: kb-harvestへの案内**
+    - 最後に「`/kb-harvest` で今日のsessionから用語・知識を拾えます」と1行だけ出す
+    - kb-harvestは承認が要るので、ここからは実行しない（`disable-model-invocation` で呼べない）
+
 ## 前提条件
 
 - `/nippo-add` で日々のタスクが記録されていること
@@ -277,6 +281,7 @@ echo "✅ Phase 4 完了: AI分析準備"
 # Phase 5: system-prompt.md と output-format.md に従って分析・レポート生成
 # Phase 6: 分析結果を $NIPPO_FILE に追記
 # Phase 7: チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に残す
+# Phase 8: /kb-harvest を1行で案内する
 ```
 
 ## GitHub活動収集の詳細
