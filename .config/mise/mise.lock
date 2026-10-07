@@ -157,13 +157,13 @@ url_api = "https://api.github.com/repos/tree-sitter/tree-sitter/releases/assets/
 provenance = "github-attestations"
 
 [[tools.aws]]
-version = "2.37.9"
+version = "2.37.10"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws."platforms.linux-x64"]
-checksum = "blake3:9ed4175382f46fdaa266407e86b8a51e288a4f45489ce0a07cf1a56dbb68a95d"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.9.zip"
+checksum = "blake3:354838924a518f6240b52f3f52f42391fa8a0699d5796fea52b0944ff00f9735"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.10.zip"
 
 [[tools.bat]]
 version = "0.26.1"
@@ -208,14 +208,14 @@ checksum = "sha256:76e1db84e98f22f78de0a87e309bfbbf297732847f9720db36750646c85c8
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64-musl-baseline.zip"
 
 [[tools.delta]]
-version = "0.19.2"
+version = "0.20.1"
 backend = "aqua:dandavison/delta"
 specifiers = ["latest"]
 
 [tools.delta."platforms.linux-x64"]
-checksum = "sha256:8e695c5f586a8c53d6c3b01be0b4a422ed218bfed2a56191caebe373a1c18ab2"
-url = "https://github.com/dandavison/delta/releases/download/0.19.2/delta-0.19.2-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/dandavison/delta/releases/assets/383662069"
+checksum = "sha256:50f08c879f84c81ceb220e476491a7f492d2c9c671e79918cc44badf961a6240"
+url = "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/dandavison/delta/releases/assets/610498121"
 
 [[tools.deno]]
 version = "2.9.7"
@@ -375,7 +375,7 @@ backend = "npm:@mistweaverco/kulala-fmt"
 specifiers = ["latest"]
 
 [[tools."npm:@openai/codex"]]
-version = "0.160.0"
+version = "0.160.1"
 backend = "npm:@openai/codex"
 specifiers = ["latest"]
 
@@ -452,7 +452,7 @@ extras = "all"
 version = "4.4.0"
 backend = "pipx:sqlfluff"
 specifiers = ["latest"]
-uv = { path = "locks/pipx-sqlfluff/4.4.0", digest = "sha256:56bc7288ff45ca16c19fb4ceeab5b02f9dbbc341d641cc4546c0d963e639faf2" }
+uv = { path = "locks/pipx-sqlfluff/4.4.0", digest = "sha256:e86b3b71b14189b86bf848e2da384079a75a8e486f7ebe5a05a6ea55ba978e17" }
 
 [[tools."pipx:xmlformatter"]]
 version = "0.2.9"
@@ -460,14 +460,14 @@ backend = "pipx:xmlformatter"
 specifiers = ["latest"]
 
 [[tools.pnpm]]
-version = "12.9.0"
+version = "12.9.1"
 backend = "aqua:pnpm/pnpm"
 specifiers = ["latest"]
 
 [tools.pnpm."platforms.linux-x64"]
-checksum = "sha256:df37180e8b3d964e08e8a6bf3bff1374dcf37108fbce1ef7ddc9b70f7cad141f"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.9.0/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/606603786"
+checksum = "sha256:b4f58449ac02d9d24023ac89e17e05e8331f8ddc12ca1f489cf231bc2bb2bce1"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.9.1/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/608496438"
 provenance = "github-attestations"
 
 [[tools.python]]
@@ -516,14 +516,14 @@ url = "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-lin
 url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/528734864"
 
 [[tools.uv]]
-version = "0.12.22"
+version = "0.12.23"
 backend = "aqua:astral-sh/uv"
 specifiers = ["latest"]
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:b9980552309f09c15172b8be828555e375097f16deb459795ce7bfd200380f0b"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.22/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/604418465"
+checksum = "sha256:9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.23/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/608232628"
 provenance = "github-attestations"
 
 [[tools.yazi]]
