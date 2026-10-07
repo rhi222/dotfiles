@@ -24,7 +24,7 @@ check "descriptionが除外対象を明記する" grep -q 'PR本文' "$SKILL/SKI
 check "references/terms.mdがある" test -f "$SKILL/references/terms.md"
 check "references/diagrams.mdがある" test -f "$SKILL/references/diagrams.md"
 for id in T1 T2 T3 D1 D2 D3 D4; do
-  check "自己チェック$idがある" grep -q "| $id |" "$SKILL/SKILL.md"
+  check "自己チェック$idがある" grep -qE "^\| *$id *\|" "$SKILL/SKILL.md"
 done
 check "evals.jsonが正しいJSON" jq -e . "$SKILL/evals/evals.json"
 check "evalsのskill_nameが一致" jq -e '.skill_name == "explain-doc"' "$SKILL/evals/evals.json"
