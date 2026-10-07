@@ -282,6 +282,7 @@ func main() {
 	os.Exit(command.Run(context.Background(), os.Args[1:], command.Env{
 		Stdout:     os.Stdout,
 		Stderr:     os.Stderr,
+		Stdin:      os.Stdin,
 		Runner:     execx.New(),
 		Commit:     buildinfo.Commit,
 		Repo:       envOr("DOTCTL_REPO", buildinfo.Repo),
@@ -309,6 +310,7 @@ func main() {
 		AgentUsageSelfExe:       selfExe,
 		SessionDigestClaudeRoot: envOr("CLAUDE_CONFIG_DIR", filepath.Join(homeDir(), ".claude")),
 		SessionDigestCodexRoot:  envOr("CODEX_HOME", filepath.Join(homeDir(), ".codex")),
+		FollowupStateDir:        envOr("FOLLOWUP_STATE_DIR", filepath.Join(homeDir(), ".local", "state", "followup")),
 		FisherPluginFile:        fisherPluginFile,
 		FisherCacheFile:         fisherCacheFile,
 		YaziPackageFile:         envOr("YAZI_PACKAGE_FILE", filepath.Join(homeDir(), ".config", "yazi", "package.toml")),

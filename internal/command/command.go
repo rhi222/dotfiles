@@ -96,6 +96,10 @@ type Env struct {
 	SessionDigestCodexRoot  string
 	// Location は日付の境界に使うタイムゾーン（nil なら time.Local）。
 	Location *time.Location
+	// Stdin は `--in -` で読む標準入力
+	Stdin io.Reader
+	// FollowupStateDir は followup の状態・一覧mdの置き場
+	FollowupStateDir string
 }
 
 const usage = `使い方: dotctl <subcommand> [args...]
@@ -116,6 +120,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
   session nvim-plan  nvim のherdr復元計画をJSONで出す
   session digest     当日のagent sessionから本文だけのdigestを作る（kb-harvest）
+  followup apply     返事待ち・頼まれ事の差分を取り、一覧mdと通知文を書く
   fisher-update      変更があるときだけfish pluginを更新する
   yazi-update        変更があるときだけyazi packageを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする
@@ -165,6 +170,8 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return runAgentUsage(ctx, args[1:], env)
 	case "session":
 		return runSession(args[1:], env)
+	case "followup":
+		return runFollowup(args[1:], env)
 	case "fisher-update":
 		return runFisherUpdate(ctx, args[1:], env)
 	case "yazi-update":
