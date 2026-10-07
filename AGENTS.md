@@ -22,6 +22,7 @@ dotfilesリポジトリ。
 | [docs/development-workflows.md](docs/development-workflows.md)       | Git hook、gf、設定構造、文書予算を触る         |
 | [docs/worktree.md](docs/worktree.md)                                 | `git wt`、初期化、一覧、掃除を触る             |
 | [docs/pr-watch.md](docs/pr-watch.md)                                 | 自分のPRの夜間見張り（CI・レビュー対応）を触る |
+| [docs/followup.md](docs/followup.md)                                 | 返事待ち・頼まれ事の毎時まとめを触る           |
 | [docs/session-restore-strategy.md](docs/session-restore-strategy.md) | `he` のherdr/nvim/agent復元を触る              |
 | [docs/herdr-ui.md](docs/herdr-ui.md)                                 | herdrのtab statusとkeybindingを変える          |
 | [docs/notifications.md](docs/notifications.md)                       | Windows toastの内容・抑止条件を変える          |

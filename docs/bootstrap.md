@@ -556,6 +556,7 @@ wsl.exe --shutdown                                    # .wslconfig の反映（W
 0 1 * * 2-6 $HOME/scripts/linear/dispatch-cron.sh >> $HOME/.linear-dispatch.log 2>&1
 10 10,13,17 * * 1-5 $HOME/scripts/linear/slack-sweep-cron.sh >> $HOME/.linear-slack-sweep.log 2>&1
 30 1 * * 2-6 $HOME/scripts/prwatch/nightly.sh >> $HOME/.pr-watch.log 2>&1
+0 9-18 * * 1-5 $HOME/scripts/followup/digest-cron.sh >> $HOME/.followup-cron.log 2>&1
 ```
 
 フラグ作成前に、各機能の説明と手動確認方法を [AGENTS.md](../AGENTS.md) で確認する。
