@@ -14,6 +14,11 @@ require("my.settings.option")
 local cb = vim.g.clipboard
 assert(cb ~= nil, "WSLでは vim.g.clipboard が設定されること")
 
+-- nvim が読むキーは cache_enabled。無効（または綴り違いで無視）だと、ヤンクのたびに
+-- win32yank.exe の終了を同期で待つ。WSL interop の起動は 0.1〜0.3s かかり、
+-- Windows 側が重いと数秒止まる（:CpCurrentFilePath が重い件の回帰）。
+assert(cb.cache_enabled == 1, "cache_enabled = 1 でヤンクを非同期にすること")
+
 local registers = { "+", "*" }
 
 -- 読み出しは副作用が無いので、そのまま走らせて成否を見る。

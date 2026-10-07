@@ -49,7 +49,9 @@ if vim.fn.has("wsl") == 1 then
 			["+"] = "win32yank.exe -o --lf",
 			["*"] = "win32yank.exe -o --lf",
 		},
-		cache_enable = 0,
+		-- 1 でヤンクを非同期にする（書き込み中の読み出しはキャッシュが返る）。
+		-- 0 だと毎回 win32yank.exe の終了を同期で待ち、WSL interop が遅いと固まる
+		cache_enabled = 1,
 	}
 end
 -- TrueColor対応
