@@ -14,29 +14,30 @@
 
 ### 自作スキル一覧
 
-| スキル             | 説明                                                          |
-| ------------------ | ------------------------------------------------------------- |
-| backport-pr        | 既存PRを別ベースブランチ向けPRへ移植                          |
-| difit              | ステージ差分のブラウザレビュー                                |
-| doc-refine         | 文書の論理批評→AIくささ修正パイプライン（humanizeを内部参照） |
-| esa-api            | esa.io API共通ナレッジ (他esa-*から内部参照)                  |
-| esa-diff-weekly    | esa週次差分URL取得&サマリ                                     |
-| esa-weekly-report  | esa週次エグゼクティブレポート生成                             |
-| executive-report   | 部長会用の役員報告リライト                                    |
-| kb-harvest         | 当日のsessionからvault/glossaryへのナレッジ候補を拾う         |
-| linear-add         | Linear起票（規約の自動適用）                                  |
-| linear-recall      | 起票済みLinear issueの検索・想起                              |
-| linear-slack-sweep | Slackスタンプ→Linear Triage起票                               |
-| linear-triage      | 夕方triage支援（夜間dispatchの仕込み）                        |
-| pr-auto-update     | PRの自動更新（タイトル/説明文の再生成）                       |
-| pr-feedback        | PRレビューコメント分類と対応順序の決定                        |
-| pr-generate        | PR本文生成（commit履歴からタイトル/説明文を作成）             |
-| pr-review          | PR内容のセルフレビュー                                        |
-| pr-watch           | PRの定期監視（レビュー対応・CI修正の自動化）                  |
-| puml-from-drawio   | draw.io→PlantUML変換                                          |
-| reveal-deck        | reveal.jsデッキのデザイン雛形・閲覧用HTML生成・PNG書き出し    |
-| nippo-\*           | 日報システム（後述）                                          |
-| session-patterns   | セッション履歴から繰り返しパターンを抽出                      |
+| スキル                | 説明                                                          |
+| --------------------- | ------------------------------------------------------------- |
+| backport-pr           | 既存PRを別ベースブランチ向けPRへ移植                          |
+| difit                 | ステージ差分のブラウザレビュー                                |
+| doc-refine            | 文書の論理批評→AIくささ修正パイプライン（humanizeを内部参照） |
+| esa-api               | esa.io API共通ナレッジ (他esa-*から内部参照)                  |
+| esa-diff-weekly       | esa週次差分URL取得&サマリ                                     |
+| esa-weekly-report     | esa週次エグゼクティブレポート生成                             |
+| executive-report      | 部長会用の役員報告リライト                                    |
+| kb-harvest            | 当日のsessionからvault/glossaryへのナレッジ候補を拾う         |
+| linear-add            | Linear起票（規約の自動適用）                                  |
+| linear-recall         | 起票済みLinear issueの検索・想起                              |
+| linear-slack-sweep    | Slackスタンプ→Linear Triage起票                               |
+| linear-triage         | 夕方triage支援（夜間dispatchの仕込み）                        |
+| pr-auto-update        | PRの自動更新（タイトル/説明文の再生成）                       |
+| pr-feedback           | PRレビューコメント分類と対応順序の決定                        |
+| pr-generate           | PR本文生成（commit履歴からタイトル/説明文を作成）             |
+| pr-review             | PR内容のセルフレビュー                                        |
+| pr-watch              | PRの定期監視（レビュー対応・CI修正の自動化）                  |
+| puml-from-drawio      | draw.io→PlantUML変換                                          |
+| reveal-deck           | reveal.jsデッキのデザイン雛形・閲覧用HTML生成・PNG書き出し    |
+| resume-summary-prompt | 職務経歴書をGeminiで要約する依頼文を出力（本文は読まない）    |
+| nippo-\*              | 日報システム（後述）                                          |
+| session-patterns      | セッション履歴から繰り返しパターンを抽出                      |
 
 ---
 
