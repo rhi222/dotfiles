@@ -17,6 +17,7 @@ digestが長いときは Read の offset / limit で分けて全部読む。
 
 1. **用語（`term`）を最優先で拾う。**
    システム、サブシステム、バッチ、IF、画面、顧客やprojectの略号、社内の呼び名の意味がsession中に確定したら、単独の `term` として出す
+   - 意味を定める発言・ドキュメント・コードがsession中にある用語だけを出す。名前が出てきただけで、意味を文脈から推し量るしかない用語は出さない
    - 他の候補の本文に出てくる用語でも、別に `term` として出す。1 sessionに複数あれば全部出す
    - 同じものをシステムやチームで別の名前で呼んでいると分かったら、`別名:` に書く
 2. **リポジトリをまたぐ知識（`system`、`scope: "cross-repo"`）。**
@@ -48,6 +49,7 @@ digestが長いときは Read の offset / limit で分けて全部読む。
 渡されたdigestごとに `results` へ1要素を入れる。
 `session_id` はdigest冒頭の見出し（`# <source> session <id>`）の id を使う。
 候補が無いdigestも、`candidates` を空配列にして入れる。
+`confidence` は `high` か `low` のどちらかにする。`medium` などほかの値は使わない。
 
 ```json
 {
