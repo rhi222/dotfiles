@@ -47,7 +47,7 @@ stderrに `session-digest: SKIPPED=N UNREADABLE=M` が出たら、件数だけ�
 
    ```text
    [1] term / 新規     「用語」 … 意味の1行         → glossary.md
-   [2] system / 追記   見出し …                     → 06_Domain/<project>/<note>.md
+   [2] system(project) / 追記   見出し …            → 06_Domain/<project>/<note>.md
    [3] org / 新規      見出し …                     → 05_Organization/<note>.md
    [4] skill           「依頼の文面」×4回           → /session-patterns で深掘り
    採用する番号（例: 1,3 / all / none）
