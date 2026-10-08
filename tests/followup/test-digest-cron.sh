@@ -1,7 +1,7 @@
 #!/bin/bash
 # followup digest-cron.sh のテスト
 #
-# 重要: --allowedTools にSlack・Jiraの書き込み系が含まれていないことを検証する。
+# 重要: --allowedTools にSlackの読み取り2つとdotctlしか無いことを検証する。
 # 「書き込まない」の担保が許可リストそのものなので、ここが唯一の防壁になる。
 set -u
 
@@ -37,18 +37,19 @@ touch "$H/.config/followup-enabled"
 out2=$(HOME="$H" FOLLOWUP_DRY_RUN=1 FOLLOWUP_FORCE=1 bash "$SCRIPT" 2>&1)
 check "DRY_RUNで実行内容を表示する" grep -q "DRY_RUN" <<<"$out2"
 check "followup skillを呼ぶ" grep -q "/followup" <<<"$out2"
+check "Haikuで動かす" grep -q -- "--model haiku" <<<"$out2"
 check "timeoutを噛ませる" grep -q "timeout " <<<"$out2"
 out2b=$(HOME="$H" FOLLOWUP_DRY_RUN=1 FOLLOWUP_FORCE=1 FOLLOWUP_TIMEOUT=42 bash "$SCRIPT" 2>&1)
 check "timeoutを環境変数で上書きできる" grep -q "timeout 42" <<<"$out2b"
 
 # 3. 読み取り系だけを許可する
-for t in 'Bash(dotctl:\*)' slack_search_public_and_private slack_read_thread slack_read_user_profile \
-  getAccessibleAtlassianResources searchJiraIssuesUsingJql; do
+for t in 'Bash(dotctl:\*)' slack_read_thread slack_read_user_profile; do
   check "許可する: $t" grep -q "$t" <<<"$out2"
 done
 for t in slack_send_message slack_schedule_message slack_create_canvas slack_update_canvas \
   createJiraIssue editJiraIssue addCommentToJiraIssue transitionJiraIssue addWorklogToJiraIssue \
-  createIssueLink createConfluencePage updateConfluencePage 'Bash(bash:' 'Write'; do
+  createIssueLink createConfluencePage updateConfluencePage 'Bash(bash:' 'Write' \
+  slack_search_public_and_private searchJiraIssuesUsingJql; do
   check "許可しない: $t" test "$(grep -c "$t" <<<"$out2")" -eq 0
 done
 
@@ -57,25 +58,39 @@ STATE="$TMP/state"
 mkdir -p "$STATE" "$TMP/bin"
 cat >"$TMP/bin/claude" <<STUB
 #!/bin/bash
-printf '返事1件・頼まれ事0件\n' >"$STATE/notice"
+echo "\$*" >"$TMP/claude-args"
+printf '動きあり1件\n' >"$STATE/notice"
+STUB
+cat >"$TMP/bin/targets" <<STUB
+#!/bin/bash
+echo '[{"key":"slack:C1/1.000001"}]'
 STUB
 cat >"$TMP/bin/toast" <<STUB
 #!/bin/bash
 echo "TOAST \$*" >>"$TMP/toast.log"
 STUB
-chmod +x "$TMP/bin/claude" "$TMP/bin/toast"
+chmod +x "$TMP/bin/claude" "$TMP/bin/toast" "$TMP/bin/targets"
 HOME="$H" FOLLOWUP_FORCE=1 FOLLOWUP_STATE_DIR="$STATE" CLAUDE_BIN="$TMP/bin/claude" \
-  FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
-check "noticeがあればtoastを出す" grep -q "返事1件" "$TMP/toast.log"
+  FOLLOWUP_TARGETS_CMD="$TMP/bin/targets" FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
+check "読み取り指示をskillへ渡す" grep -q 'slack:C1/1.000001' "$TMP/claude-args"
+check "noticeがあればtoastを出す" grep -q "動きあり1件" "$TMP/toast.log"
 check "toast後にnoticeを消す" test ! -e "$STATE/notice"
 
 # 5. claude失敗 → toastを出さない
 rm -f "$TMP/toast.log"
-printf '返事9件・頼まれ事9件\n' >"$STATE/notice"
+printf '動きあり9件\n' >"$STATE/notice"
 printf '#!/bin/bash\nexit 1\n' >"$TMP/bin/claude"
 HOME="$H" FOLLOWUP_FORCE=1 FOLLOWUP_STATE_DIR="$STATE" CLAUDE_BIN="$TMP/bin/claude" \
-  FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
+  FOLLOWUP_TARGETS_CMD="$TMP/bin/targets" FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
 check "claude失敗時はtoastを出さない" test ! -e "$TMP/toast.log"
+
+# 5b. 対象抽出の失敗 → claudeを呼ばない
+rm -f "$TMP/claude-args"
+printf '#!/bin/bash\nexit 1\n' >"$TMP/bin/targets"
+printf '#!/bin/bash\necho "$*" >"%s/claude-args"\n' "$TMP" >"$TMP/bin/claude"
+HOME="$H" FOLLOWUP_FORCE=1 FOLLOWUP_STATE_DIR="$STATE" CLAUDE_BIN="$TMP/bin/claude" \
+  FOLLOWUP_TARGETS_CMD="$TMP/bin/targets" FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
+check "対象抽出の失敗でclaudeを呼ばない" test ! -e "$TMP/claude-args"
 
 # 6. symlink越しでもリポジトリを解決する
 ln -s "$SCRIPTS_DIR" "$H/scripts"
