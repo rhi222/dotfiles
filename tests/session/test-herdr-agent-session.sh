@@ -66,6 +66,25 @@ CODEX_THREAD_ID=codex-new invoke "$CODEX_HOOK" \
   '{"session_id":"codex-old","transcript_path":"/tmp/codex.jsonl"}'
 assert_eq "CLI を呼ばない" "empty" "$([[ -s "$LOG" ]] && echo present || echo empty)"
 
+echo "test: HERDR_BIN_PATH が消えていたら PATH 上の herdr で報告する"
+# mise upgrade は旧版の install dir を消す。稼働中の server が配った pane の
+# HERDR_BIN_PATH はその消えた path を指したままになる。
+: >"$LOG"
+for hook in "$CLAUDE_HOOK" "$CODEX_HOOK"; do
+  CODEX_THREAD_ID=s-1 HERDR_ENV=1 HERDR_PANE_ID=w5:p29 \
+    HERDR_BIN_PATH="$TEST_DIR/removed/herdr" PATH="$TEST_DIR:$PATH" \
+    "$hook" <<<'{"session_id":"s-1","transcript_path":"/tmp/s.jsonl"}'
+done
+assert_eq "Claude と Codex の両方が報告する" "2" \
+  "$(grep -c -- '--agent-session-id s-1' "$LOG")"
+
+echo "test: Claude の SessionStart source を渡す"
+# /clear で session が替わったとき、source が無いと Herdr は新 ID を拒否する。
+: >"$LOG"
+invoke "$CLAUDE_HOOK" '{"session_id":"claude-2","source":"clear"}'
+assert_eq "--session-start-source clear を含む" "yes" \
+  "$(grep -q -- '--session-start-source clear' "$LOG" && echo yes || echo no)"
+
 echo ""
 echo "TOTAL=$TOTAL PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
