@@ -140,6 +140,7 @@
 
 ### セッション復元
 
-| スクリプト                         | 呼び出し元 |
-| ---------------------------------- | ---------- |
-| `scripts/session/herdr-restore.sh` | doc fish   |
+| スクリプト                             | 呼び出し元 |
+| -------------------------------------- | ---------- |
+| `scripts/session/herdr-restore.sh`     | doc fish   |
+| `scripts/session/herdr-agent-check.sh` | doc cron   |
