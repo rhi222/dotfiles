@@ -9,8 +9,9 @@ allowed-tools: Bash(bash:*), mcp__claude_ai_Slack__slack_search_public_and_priva
 Slack上で「これタスクだ」と気づいた瞬間にスタンプを押すだけで、Linear の Triage に
 ポインタが積まれるようにする。判断（要約とタイトル生成）だけをここで行い、
 状態変更（重複チェック・起票・処理済み記録）は `scripts/linear/slack-sweep.sh` に任せる。
-スクリプトは `$(ghq root)/github.com/rhi222/dotfiles/scripts/linear/slack-sweep.sh` で解決する
+スクリプトは `$HOME/scripts/linear/slack-sweep.sh`（dotfiles の `scripts/linear` へのsymlink）で呼ぶ
 （どのリポジトリで作業中でも呼べるように、cwd 相対では書かない）。
+`ghq` でのパス解決は使わない。cronのPATHには `ghq` が無く、ヘッドレス実行で毎回解決に失敗していた。
 
 **Slackへは一切書き込まない。** リンクは Linear → Slack の一方向のみ。
 Slackはチームの共有物なので、個人のタスク管理都合のノイズを持ち込まない。
@@ -55,7 +56,7 @@ cronが落ちた日があっても次回が勝手に拾い直す。
 と `Message_ts:` から組む）。まとめてスクリプトに渡し、残ったものだけを次へ進める。
 
 ```bash
-bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/linear/slack-sweep.sh" unseen \
+bash "$HOME/scripts/linear/slack-sweep.sh" unseen \
   "C123/1786335015.733309" "C456/1786111487.003049"
 ```
 
@@ -124,7 +125,7 @@ Projectや親子付けと違って**スレを読めば決まる**。
 キーごとに1回呼ぶ。
 
 ```bash
-bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/linear/slack-sweep.sh" create \
+bash "$HOME/scripts/linear/slack-sweep.sh" create \
   "<key>" "<permalink>" "<タイトル>" "<期待アウトカム>" "<経緯>" \
   "role:player" "em:tech"
 ```
