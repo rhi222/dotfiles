@@ -55,9 +55,11 @@ type Message struct {
 	Text   string `json:"text"`
 }
 
+// Thread は skill が読んだ1本。読めなかったスレは Error で返し、前回の状態を保つ。
 type Thread struct {
 	Key    string  `json:"key"`
 	Latest Message `json:"latest"`
+	Error  bool    `json:"error,omitempty"`
 }
 
 type Input struct {
@@ -73,6 +75,7 @@ type Entry struct {
 	Latest Message
 	Mine   bool
 	New    bool
+	Unread bool // 今回読めず、前回の状態も無い
 }
 
 type Result struct {
@@ -81,7 +84,7 @@ type Result struct {
 	New     int
 }
 
-var slackURL = regexp.MustCompile(`https://[a-z0-9-]+\.slack\.com/archives/([A-Z0-9]+)/p(\d{10})(\d{6})(\?[^\s)\]>]*)?`)
+var slackURL = regexp.MustCompile(`(?i:https://[a-z0-9.-]+\.slack\.com)/archives/([A-Z0-9]+)/p(\d{10})(\d{6})(\?[^\s)\]>]*)?`)
 var threadTSParam = regexp.MustCompile(`[?&]thread_ts=(\d+\.\d+)`)
 
 // ExtractTargets はissue本文のSlack URLをスレ単位にまとめる。順序は初出順。
@@ -91,7 +94,7 @@ func ExtractTargets(issues []LinearIssue) []Target {
 	for _, is := range issues {
 		for _, m := range slackURL.FindAllStringSubmatch(is.Description, -1) {
 			ts := m[2] + "." + m[3]
-			if p := threadTSParam.FindStringSubmatch(m[4]); p != nil {
+			if p := threadTSParam.FindStringSubmatch(strings.ReplaceAll(m[4], "&amp;", "&")); p != nil {
 				ts = p[1]
 			}
 			key := "slack:" + m[1] + "/" + ts
@@ -166,12 +169,12 @@ func Apply(in Input, targets []Target, prev State, firstRun bool) (Result, error
 	if in.Me == "" {
 		return Result{}, errors.New("me がない")
 	}
-	got := map[string]Message{}
+	got := map[string]Thread{}
 	for _, th := range in.Threads {
-		if th.Latest.TS == "" {
+		if !th.Error && th.Latest.TS == "" {
 			return Result{}, fmt.Errorf("%s: latest.ts がない", th.Key)
 		}
-		got[th.Key] = th.Latest
+		got[th.Key] = th
 	}
 	known := map[string]bool{}
 	for _, t := range targets {
@@ -187,8 +190,16 @@ func Apply(in Input, targets []Target, prev State, firstRun bool) (Result, error
 	}
 	r := Result{State: State{}}
 	for _, t := range targets {
-		cur := got[t.Key]
+		th := got[t.Key]
 		old, seen := prev[t.Key]
+		if th.Error {
+			if seen {
+				r.State[t.Key] = old
+			}
+			r.Entries = append(r.Entries, Entry{Target: t, Latest: old, Mine: seen && old.ByID == in.Me, Unread: !seen})
+			continue
+		}
+		cur := th.Latest
 		advanced := !seen || tsAfter(cur.TS, old.TS)
 		if !advanced {
 			cur = old
@@ -221,7 +232,7 @@ func Render(r Result, at time.Time) string {
 		}
 		return tsAfter(es[i].Latest.TS, es[j].Latest.TS)
 	})
-	var mine, theirs []string
+	var mine, theirs, unread []string
 	for _, e := range es {
 		mark := ""
 		if e.New {
@@ -234,6 +245,10 @@ func Render(r Result, at time.Time) string {
 		title := ""
 		if len(e.Issues) > 0 {
 			title = e.Issues[0].Title
+		}
+		if e.Unread {
+			unread = append(unread, fmt.Sprintf("- %s %s %s", strings.Join(ids, ","), title, e.URL))
+			continue
 		}
 		s, _ := splitTS(e.Latest.TS)
 		line := fmt.Sprintf("- %s%s %s — %s %s「%s」 %s", mark, strings.Join(ids, ","), title,
@@ -256,6 +271,10 @@ func Render(r Result, at time.Time) string {
 			continue
 		}
 		b.WriteString(strings.Join(s.lines, "\n") + "\n")
+	}
+	// 読めないスレは通知が止まっていることに気付けるよう、あるときだけ節を出す
+	if len(unread) > 0 {
+		b.WriteString("\n## 読めなかった\n\n" + strings.Join(unread, "\n") + "\n")
 	}
 	return b.String()
 }

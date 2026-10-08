@@ -67,6 +67,10 @@ func followupTargets(b []byte, env Env) error {
 	if err := json.Unmarshal(b, &issues); err != nil {
 		return fmt.Errorf("入力が不正: %w", err)
 	}
+	// null は Unmarshal を通るが、対象0本として状態を全消去してしまう
+	if issues == nil {
+		return fmt.Errorf("入力が不正: issueの配列でない")
+	}
 	st, _, err := followup.Load(env.FollowupStateDir)
 	if err != nil {
 		return fmt.Errorf("状態を読めない: %w", err)
