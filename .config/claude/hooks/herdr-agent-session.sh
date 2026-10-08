@@ -14,6 +14,7 @@ herdr_bin=${HERDR_BIN_PATH:-}
 payload=$(cat)
 session_id=$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)
 transcript=$(printf '%s' "$payload" | jq -r '.transcript_path // empty' 2>/dev/null)
+start_source=$(printf '%s' "$payload" | jq -r '.source // empty' 2>/dev/null)
 [[ -n "$session_id" ]] || exit 0
 
 args=(
@@ -24,5 +25,7 @@ args=(
   --agent-session-id "$session_id"
 )
 [[ -z "$transcript" ]] || args+=(--agent-session-path "$transcript")
+# /clear で session が替わったとき、source が無いと Herdr は新 ID を拒否する。
+[[ -z "$start_source" ]] || args+=(--session-start-source "$start_source")
 
 "$herdr_bin" "${args[@]}" >/dev/null 2>&1 || true
