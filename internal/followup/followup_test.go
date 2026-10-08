@@ -13,9 +13,9 @@ const ws = "https://example.slack.com/archives/"
 
 func TestExtractTargets(t *testing.T) {
 	issues := []LinearIssue{
-		{Identifier: "NSY-1", Title: "a", URL: "https://linear.example/1",
+		{Identifier: "NSY-1", Title: "a", URL: "https://linear.example/1", State: LinearState{"Waiting"},
 			Description: "元: [" + ws + "C1/p1788425240728449](" + ws + "C1/p1788425240728449)"},
-		{Identifier: "NSY-2", Title: "b", URL: "https://linear.example/2",
+		{Identifier: "NSY-2", Title: "b", URL: "https://linear.example/2", State: LinearState{"Todo"},
 			Description: ws + "C2/p1790679401148219?thread_ts=1790677055.034899&cid=C2 と " + ws + "C1/p1788425240728449"},
 		{Identifier: "NSY-3", Title: "c", Description: "URLなし"},
 	}
@@ -23,10 +23,10 @@ func TestExtractTargets(t *testing.T) {
 	want := []Target{
 		{Key: "slack:C1/1788425240.728449", Channel: "C1", ThreadTS: "1788425240.728449",
 			URL:    ws + "C1/p1788425240728449",
-			Issues: []Issue{{"NSY-1", "a", "https://linear.example/1"}, {"NSY-2", "b", "https://linear.example/2"}}},
+			Issues: []Issue{{"NSY-1", "a", "https://linear.example/1", "Waiting"}, {"NSY-2", "b", "https://linear.example/2", "Todo"}}},
 		{Key: "slack:C2/1790677055.034899", Channel: "C2", ThreadTS: "1790677055.034899",
 			URL:    ws + "C2/p1790679401148219?thread_ts=1790677055.034899&cid=C2",
-			Issues: []Issue{{"NSY-2", "b", "https://linear.example/2"}}},
+			Issues: []Issue{{"NSY-2", "b", "https://linear.example/2", "Todo"}}},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got  %+v\nwant %+v", got, want)
@@ -50,8 +50,9 @@ func TestPromptsUsesStateTSAsOldest(t *testing.T) {
 }
 
 var targets = []Target{
-	{Key: "k1", URL: "u1", Issues: []Issue{{"NSY-1", "t1", ""}}},
-	{Key: "k2", URL: "u2", Issues: []Issue{{"NSY-2", "t2", ""}}},
+	{Key: "k1", URL: "u1", Issues: []Issue{{"NSY-1", "t1", "", "Todo"}}},
+	{Key: "k2", URL: "u2", Issues: []Issue{{"NSY-2", "t2", "", "Waiting"}}},
+	{Key: "k3", URL: "u3", Issues: []Issue{{"NSY-3", "t3", "", "In Progress"}}},
 }
 
 func msg(ts, by string) Message { return Message{TS: ts, ByID: by, ByName: by, Text: "x"} }
@@ -61,7 +62,7 @@ func input(m1, m2 Message) Input {
 }
 
 func TestApplyFirstRunHasNoNew(t *testing.T) {
-	r, err := Apply(input(msg("10.000000", "A"), msg("10.000000", "ME")), targets, State{}, true)
+	r, err := Apply(input(msg("10.000000", "A"), msg("10.000000", "ME")), targets[:2], State{}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +76,7 @@ func TestApplyFirstRunHasNoNew(t *testing.T) {
 
 func TestApplyNewOnlyWhenOtherSpeaksLater(t *testing.T) {
 	prev := State{"k1": msg("10.000000", "ME"), "k2": msg("10.000000", "A")}
-	r, err := Apply(input(msg("11.000000", "A"), msg("12.000000", "ME")), targets, prev, false)
+	r, err := Apply(input(msg("11.000000", "A"), msg("12.000000", "ME")), targets[:2], prev, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +94,7 @@ func TestApplyNewOnlyWhenOtherSpeaksLater(t *testing.T) {
 func TestApplyKeepsPrevWhenOnlyParentReturned(t *testing.T) {
 	// oldest は排他なので、動きが無いスレは親（古いts）だけが返る
 	prev := State{"k1": msg("20.000000", "ME"), "k2": msg("9.000010", "A")}
-	r, err := Apply(input(msg("10.000000", "A"), msg("9.000002", "B")), targets, prev, false)
+	r, err := Apply(input(msg("10.000000", "A"), msg("9.000002", "B")), targets[:2], prev, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +108,7 @@ func TestApplyKeepsPrevWhenOnlyParentReturned(t *testing.T) {
 
 func TestApplyNewKeyIsNotNew(t *testing.T) {
 	prev := State{"k1": msg("10.000000", "A"), "gone": msg("1.000000", "A")}
-	r, err := Apply(input(msg("10.000000", "A"), msg("11.000000", "A")), targets, prev, false)
+	r, err := Apply(input(msg("10.000000", "A"), msg("11.000000", "A")), targets[:2], prev, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +128,7 @@ func TestApplyRejectsIncompleteInput(t *testing.T) {
 		"no ts":       {Me: "ME", Threads: []Thread{{Key: "k1", Latest: Message{ByID: "A"}}, {Key: "k2", Latest: msg("1.0", "A")}}},
 	}
 	for name, in := range cases {
-		if _, err := Apply(in, targets, State{}, false); err == nil {
+		if _, err := Apply(in, targets[:2], State{}, false); err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}
@@ -150,17 +151,20 @@ func TestRender(t *testing.T) {
 	r := Result{Entries: []Entry{
 		{Target: targets[1], Latest: Message{TS: "1791429600.000000", ByName: "自分", Text: "お願いします"}, Mine: true},
 		{Target: targets[0], Latest: Message{TS: "1791433200.000000", ByName: "Aさん", Text: "確認しました"}, New: true},
+		{Target: targets[2], Latest: Message{TS: "1791426000.000000", ByName: "Bさん", Text: "了解"}},
 	}}
 	got := Render(r, time.Date(2026, 10, 8, 13, 0, 0, 0, loc))
+	// 動きなしは Linear の state 順（In Progress → Waiting）。最後の発言者でボールを推測しない
 	want := `# followup 2026-10-08 13:00
 
-## 自分の番
+## 🆕 動きあり
 
-- 🆕 NSY-1 t1 — Aさん 10/08 13:20「確認しました」 u1
+- [Todo] NSY-1 t1 — Aさん 10/08 13:20「確認しました」 u1
 
-## 相手待ち
+## 動きなし
 
-- NSY-2 t2 — 自分 10/08 12:20「お願いします」 u2
+- [In Progress] NSY-3 t3 — Bさん 10/08 11:20「了解」 u3
+- [Waiting] NSY-2 t2 — 自分 10/08 12:20「お願いします」 u2
 `
 	if got != want {
 		t.Fatalf("got:\n%s", got)
@@ -215,7 +219,7 @@ func TestExtractTargetsURLVariants(t *testing.T) {
 func TestApplyUnreadableThreadKeepsPrev(t *testing.T) {
 	prev := State{"k1": msg("10.000000", "A")}
 	in := Input{Me: "ME", Threads: []Thread{{Key: "k1", Error: true}, {Key: "k2", Error: true}}}
-	r, err := Apply(in, targets, prev, false)
+	r, err := Apply(in, targets[:2], prev, false)
 	if err != nil {
 		t.Fatal(err)
 	}
