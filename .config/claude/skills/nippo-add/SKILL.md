@@ -1,8 +1,8 @@
 ---
 name: nippo-add
-description: 日報に追記する（作業ログ、タスク開始/終了の時間計測、フォーカス設定）。「日報」「にっぽ」「作業記録」「ログ追加」「start:」「end:」などで使用。新規日報の作成、Linearからの今日のタスク転記、目標逆算タスクの提案も行う。未完了タスクの引き継ぎ転記は行わない（タスク管理はLinearに集約）。
+description: 日報に追記する（作業ログ、タスク開始/終了の時間計測）。「日報」「にっぽ」「作業記録」「ログ追加」「start:」「end:」などで使用。新規日報の作成、Linearからの今日のタスク転記、目標逆算タスクの提案も行う。未完了タスクの引き継ぎ転記は行わない（タスク管理はLinearに集約）。
 disable-model-invocation: true
-argument-hint: "<追記内容> (例: start:PRレビュー, end:PRレビュー, フォーカス:横断)"
+argument-hint: "<追記内容> (例: start:PRレビュー, end:PRレビュー)"
 allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc:*), Bash(bash:*), Bash(source:*), Bash(jq:*), Bash(ghq:*), Bash(mkdir:*), mcp__claude_ai_Google_Calendar__list_events
 ---
 
@@ -176,7 +176,6 @@ Linearにアクセスできない場合（config未生成・オフライン）�
 
 **特別な処理:**
 
-- `$ARGUMENTS` が「フォーカス:」で始まる → 今日のフォーカスセクションを更新
 - `$ARGUMENTS` が「こたえ:」で始まる → Codexの確認質問に回答する。手順は `em-answer.md` サポートファイルに従う
 
 **時間管理用の処理:**
