@@ -62,6 +62,18 @@ init_local_configs() {
   done
 }
 
+# Claude / Codex の session ID を Herdr へ報告する公式 hook を入れる。
+# settings を書き換えるので、Claude settings を配った後に呼ぶ。
+setup_herdr_integrations() {
+  local target
+  for target in claude codex; do
+    if ! herdr integration install "$target"; then
+      echo "[WARN] herdr の $target integration を入れられませんでした" >&2
+      echo "       復旧: herdr integration install $target" >&2
+    fi
+  done
+}
+
 setup_yazi_plugins() {
   if ! bash "$DOTFILES_DIR/scripts/setup/yazi-plugins.sh"; then
     echo "[WARN] yazi のプラグイン配置に失敗しました（yazi が起動できない状態です）" >&2
@@ -92,6 +104,7 @@ bootstrap_main() {
   init_local_configs
   link_main
   setup_claude_settings
+  setup_herdr_integrations
   setup_yazi_plugins
   print_next_steps
 }
