@@ -35,18 +35,26 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 2. **Phase 2: Slack情報収集・作業ログ追記**
    - Slack検索で本人の発言を当日分収集
    - 収集した発言を作業ログ・作業メモに追記
+   - **Slackの検索ツールが使えないときは黙って飛ばさない。** sessionにツールが読み込まれていないことがある
+     （`claude mcp list` では Connected でも起こる）
+     - 対話中なら、日報に書き込む前に止めて「Slackが使えない。sessionを立て直すか、Slackを飛ばして続けるか」を聞く
+     - ヘッドレス（`-p`）で聞けないとき、または飛ばすと決まったときは、作業ログに
+       `<!-- slack: skipped (理由) -->` を残して続ける
+   - 発言が0件だったときは `<!-- slack: 0件 -->` を残す（飛ばしたのか0件だったのかを後から区別するため）
 
 3. **Phase 3: GitHub活動収集・追記**
    - `gh` で当日の作成PR / マージPR / レビュー状況 / 実施したレビューを収集
    - 「## GitHub活動」セクションとして日報に追記
 
 4. **Phase 3-2: Linear活動収集・作業サマリ生成**
-   - 当日動いたissueを取得する（`updatedAt` が今日以降＝state遷移・コメント・編集で更新された）
+   - 対象日に動いたissueを取得する（`updatedAt` が対象日以降＝state遷移・コメント・編集で更新された）
 
      ```bash
      source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-     linear_activity_since "$(date +%F)"
+     linear_activity_since "<対象日 YYYY-MM-DD>"
      ```
+
+   - 過去日を指定した場合は、翌日以降の更新も混ざるので `updatedAt`（JST換算）が対象日のものに絞る
 
    - 「## 今日の作業サマリ（Linear）」セクションとして日報に追記する。内容は以下:
 
@@ -57,7 +65,8 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
      | My Review待ち | `My Review` のissue（＝翌朝の判断対象）                   |
      | 職能の配分    | `em:*` ラベルを集計して件数を並べる                       |
 
-   - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない
+   - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない。
+     飛ばしたときはセクションの代わりに `<!-- linear: skipped (理由) -->` を残す
    - GitHub活動（Phase 3）と重複して見えることがあるが、**視点が違うので両方残す**。
      GitHub活動は「どのPRを動かしたか」、Linear作業サマリは「どの課題が前に進んだか」
 
@@ -93,12 +102,25 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 8. **Phase 6: 結果追記**
    - 分析結果を元ファイルに追記
 
-9. **Phase 7: 今日の1問**
-   - チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
-   - 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
-   - 答えが無ければ何も書かない。ファイルに空欄を残さない
+9. **Phase 6-2: 完了チェック**
+   - 追記を終えたら、次を実行する
 
-10. **Phase 8: kb-harvestへの案内**
+     ```bash
+     bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/nippo/finalize-check.sh" "<対象日 YYYY-MM-DD>"
+     ```
+
+   - Slack / GitHub / Linear の痕跡（収集結果か `<!-- xxx: skipped (理由) -->` の印）と、
+     `## Finalize:` の見出しがそろっているかを見る。exit 1 なら、出力された項目のフェーズに戻って埋めるか、
+     飛ばした理由の印を残す
+   - 最終報告では、飛ばしたフェーズがあれば理由と一緒に必ず書く
+
+10. **Phase 7: 今日の1問**
+
+- チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
+- 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
+- 答えが無ければ何も書かない。ファイルに空欄を残さない
+
+11. **Phase 8: kb-harvestへの案内**
     - 最後に「`/kb-harvest` で今日のsessionから用語・知識を拾えます」と1行だけ出す
     - kb-harvestは承認が要るので、ここからは実行しない（`disable-model-invocation` で呼べない）
 
@@ -110,14 +132,14 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 - Slack情報収集を使う場合: 環境変数 `SLACK_MEMBER_ID` を本人のSlackメンバーIDに設定すること
   (fish: `set -Ux SLACK_MEMBER_ID U0XXXXXXX`)
 - GitHub活動収集を使う場合: `gh` CLI が認証済みであること（`gh auth status` / スコープに `repo` が必要）
-  未インストール・未認証の場合はPhase 3をスキップして処理を続行する
+  未インストール・未認証の場合はPhase 3をスキップし、日報に `<!-- github: skipped (gh未認証) -->` を残して続行する
 
 ## 実行スクリプト
 
 ```bash
 # パス解決は共有ライブラリに委ねる。ここで組み立てない。
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
-TODAY="$(nippo_resolve_date "")"
+TODAY="$(nippo_resolve_date "${ARGUMENTS:-}")"
 NIPPO_FILE="$(nippo_daily_file "$TODAY")"
 GOALS_FILE="$(nippo_goals_file)"
 
@@ -178,7 +200,8 @@ echo "✅ Phase 2 完了: Slack情報収集・作業ログ追記"
 # Phase 3: GitHub活動収集
 # 当日のPR活動（作成 / マージ / 自分のPRのレビュー状況 / 自分が実施したレビュー）を収集する。
 # commit単位は粒度が細かすぎるため収集しない。
-TARGET_DATE=$(date +%Y-%m-%d)
+# 対象日は Phase 1 の TODAY と同じ値を使う。$(date) にすると過去日の指定が効かない。
+TARGET_DATE="$TODAY"
 DAY_FROM="${TARGET_DATE}T00:00:00+09:00"
 DAY_TO="${TARGET_DATE}T23:59:59+09:00"
 REVIEW_SINCE=$(date -d "$TARGET_DATE -1 day" +%Y-%m-%d)
@@ -280,6 +303,7 @@ echo "✅ Phase 4 完了: AI分析準備"
 
 # Phase 5: system-prompt.md と output-format.md に従って分析・レポート生成
 # Phase 6: 分析結果を $NIPPO_FILE に追記
+# Phase 6-2: scripts/nippo/finalize-check.sh で収集フェーズの痕跡を確かめる
 # Phase 7: チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に残す
 # Phase 8: /kb-harvest を1行で案内する
 ```
