@@ -39,6 +39,7 @@ check "Vaultの既定は\$HOME起点" grep -q "$tmp_home2/Obsidian" <<<"$out2"
 check "allowedToolsにghが含まれる（GitHub活動収集用）" grep -q 'Bash(gh:\*)' <<<"$out2"
 check "allowedToolsにjqが含まれる（GitHub活動収集用）" grep -q 'Bash(jq:\*)' <<<"$out2"
 check "allowedToolsにbashが含まれる（finalize-check.sh 実行用）" grep -q 'Bash(bash:\*)' <<<"$out2"
+check "allowedToolsにSlack検索が含まれる（Phase 2 用）" grep -q 'mcp__claude_ai_Slack__slack_search_public_and_private' <<<"$out2"
 
 # 3. DRY_RUNでclaude本体が呼ばれていないこと（存在しないバイナリを指定しても成功する）
 out3=$(HOME="$tmp_home2" NIPPO_DRAFT_DRY_RUN=1 NIPPO_DRAFT_FORCE=1 CLAUDE_BIN=/nonexistent/claude bash "$SCRIPT" 2>&1)
