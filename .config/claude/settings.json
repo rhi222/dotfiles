@@ -70,12 +70,12 @@
       {
         "hooks": [
           {
-            "command": "$HOME/.config/claude/hooks/herdr-agent-session.sh",
+            "command": "bash '/home/nishiyama/.claude/hooks/herdr-agent-state.sh' session",
             "timeout": 10,
             "type": "command"
           }
         ],
-        "matcher": "*"
+        "matcher": "^(startup|resume|clear|compact|fork)$"
       }
     ],
     "Stop": [

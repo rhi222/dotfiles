@@ -9,7 +9,7 @@ profile file が優先されます。
 - `config.example.toml`: 共有テンプレート（コミット対象）
 - `~/.codex/config.toml`: ローカルの実体（コミットしない）
 - `rules/dotfiles.rules`: 共有するcommand rule（`~/.codex/rules/` へリンク）
-- `hooks.json` / `hooks/herdr-agent-session.sh`: Herdr native restore 用の session report
+- `hooks.json`: Herdr native restore 用の session report。hook 本体は `herdr integration install codex` が `~/.codex/` に置く
 - `skills/`: 自作 skill の実体（`dotfilesLink.sh` が `~/.agents/skills/` へ個別リンク）
 
 skill はディレクトリ全体ではなく1件ずつリンクする。`~/.agents/skills/` には外部から導入した

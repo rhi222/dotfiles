@@ -4,7 +4,7 @@
       {
         "hooks": [
           {
-            "command": "$HOME/.config/codex/hooks/herdr-agent-session.sh",
+            "command": "bash '/home/nishiyama/.codex/herdr-agent-state.sh' session",
             "timeout": 10,
             "type": "command"
           }
