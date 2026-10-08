@@ -1,67 +1,52 @@
 ---
 name: followup
-description: Slackで人に投げて返事を待っている件と、Slackのメンション・DMやJiraで自分が頼まれている件を集め、前回から変わったものに🆕を付けて一覧にする。「あれどうなった」「返事来てる？」「頼まれ事の一覧」「followup」などで使用。cronから毎時ヘッドレスで呼ばれる。Slack・Jiraへは書き込まない。
-allowed-tools: Bash(dotctl:*), mcp__claude_ai_Slack__slack_search_public_and_private, mcp__claude_ai_Slack__slack_read_thread, mcp__claude_ai_Slack__slack_read_user_profile, mcp__claude_ai_Atlassian__getAccessibleAtlassianResources, mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql
+description: Linearの未完了issueに貼ったSlackスレを読み、前回から他人の発言で動いたスレに🆕を付けて「自分の番／相手待ち」の一覧にする。「あれどうなった」「返事来てる？」「followup」などで使用。cronから平日3回ヘッドレスで呼ばれる。Slackへは書き込まない。
+allowed-tools: Bash(dotctl:*), Bash(~/scripts/followup/targets.sh), mcp__claude_ai_Slack__slack_read_thread, mcp__claude_ai_Slack__slack_read_user_profile
 ---
 
 # followup
 
-作業中に「あれどうなった」と気が散らないよう、返事待ちと頼まれ事を毎時まとめる。
-**判断（何が返事待ちか）だけをここで行い、差分・一覧・通知は `dotctl followup apply` に任せる。**
+**このskillは判断しない。** スレを読んで最後の発言を書き写すだけ。
+何を追うかはLinear、前回と何が違うかは `dotctl followup apply` が決める。
 
-**Slack・Jiraへは一切書き込まない。** 書き込めるtoolはこのskillに許可されていない。
+**Slackへは一切書き込まない。** 書き込めるtoolはこのskillに許可されていない。
 
-## 1. 自分を特定する
+## 1. 読み取り指示を得る
 
-`mcp__claude_ai_Slack__slack_read_user_profile` を引数なしで呼び、自分のuser IDを控える。
-以後の検索は「今日を含めて直近7日」に絞る（`after:` には8日前の日付を入れる）。
+引数に `[{"key","channel","thread_ts","oldest"}, ...]` のJSONがあればそれを使う。
+無ければ `~/scripts/followup/targets.sh` を実行し、そのstdoutを使う。
 
-## 2. 返事待ちを集める（kind: waiting）
+## 2. 自分を特定する
 
-1. `from:<@自分のID> after:<8日前>` で自分の発言を検索する。全ページ取り切る
-2. 次のどちらかに当たる発言だけを候補にする
-   - 特定の人をメンションした質問・依頼
-   - DMでの質問・依頼
-     雑談、報告、お礼、自分宛てのメモは候補にしない。迷ったら候補にしない
-3. 候補ごとに `slack_read_thread` でスレを読み、自分の発言より後に、相手（メンション先・DM相手）の発言があるかを見る
-   - あれば `replied: true`。`reply_at` は相手の最初の返信の時刻、`reply_summary` はその冒頭30字
-   - なければ `replied: false`
+`slack_read_user_profile` を引数なしで呼び、自分のuser IDを控える。
 
-## 3. 頼まれ事を集める（kind: asked）
+## 3. 各スレを読む
 
-**Slack**：`<@自分のID> after:<8日前>` と、DMで自分宛てに来た発言を検索する。
-スレを読み、その発言より後に自分が同じスレで発言していないものだけを残す。
+指示の1件ごとに `slack_read_thread` を呼ぶ。
 
-**Jira**：`getAccessibleAtlassianResources` でcloudIdを取り、次のJQLで検索する。
+- `channel_id`: `channel`、`message_ts`: `thread_ts`、`oldest`: `oldest`
+- `response_format` は指定しない（既定のdetailedだけが `Message TS` と発言者IDを出す）
+- `pagination_info` が続きを示していれば `cursor` で最後まで読む
 
-```
-assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC
-```
+出力に**表示された最後のメッセージ**を書き写す。返信が無い（`No thread messsages`）なら親メッセージを書き写す。
 
-`fields` は `["summary", "updated", "created"]`。`since` は `created`、`updated_at` は `updated`。
+- `ts`: `Message TS` の値
+- `by_id`: `From:` 行の括弧内のID
+- `by_name`: `From:` 行の名前
+- `text`: 本文の冒頭30字（改行は空白に）
 
 ## 4. dotctlへ渡す
 
-集めた件を次の形のJSONにし、heredocで渡す。
-
-- `key`：Slackは `slack:<channel_id>/<message_ts>`（返事待ちは自分の発言、頼まれ事は相手の発言）、Jiraは `jira:<課題キー>`
-- `where`：Slackはチャンネル名（`#name`）かDMなら `DM`、Jiraは `Jira`
-- `who`：相手の表示名。Jiraは空
-- `summary`：元の発言の冒頭30字。Jiraは `<課題キー> <summary>`
-- `since`：元の発言の時刻（ISO 8601、タイムゾーン付き）
-- `generated_at`：今の時刻
-
 ```bash
 dotctl followup apply --in - <<'JSON'
-{"generated_at":"2026-10-08T13:00:00+09:00","items":[
-{"key":"slack:C123/1786335015.733309","kind":"waiting","source":"slack","where":"#ch-x","who":"Aさん","summary":"〜の件どうでしょう","url":"https://example.slack.com/archives/C123/p1786335015733309","since":"2026-10-07T10:00:00+09:00","replied":true,"reply_at":"2026-10-08T11:20:00+09:00","reply_summary":"確認しました"},
-{"key":"jira:PROJ-123","kind":"asked","source":"jira","where":"Jira","who":"","summary":"PROJ-123 〜","url":"https://example.atlassian.net/browse/PROJ-123","since":"2026-10-06T09:00:00+09:00","updated_at":"2026-10-08T09:00:00+09:00"}
+{"me":"U0XXXX","threads":[
+{"key":"slack:C1/1788425240.728449","latest":{"ts":"1788425464.592589","by_id":"U0XXXX","by_name":"自分","text":"確認しました"}}
 ]}
 JSON
 ```
 
-0件でも `"items":[]` で渡す（一覧を「なし」に更新するため）。
-**検索やスレの読み取りが途中で失敗したら、dotctlを呼ばずに終える。** 欠けた結果で前回状態を上書きすると、まだ返事が無い件が消えたり、次回に全件が🆕になったりする。
+`key` は指示のものをそのまま使う。指示の全件を入れる。
+**1件でも読み取りに失敗したら、dotctlを呼ばずに終える。** dotctlは欠けた入力を拒否するが、呼ばないのが先。
 
 ## 5. 報告する
 
