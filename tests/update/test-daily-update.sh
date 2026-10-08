@@ -296,6 +296,32 @@ output=$(NODE_MODULES_CLEANUP_SCRIPT="$FAKE_SCRIPTS/does-not-exist.sh" \
 assert_eq 0 "$exit_code" "nodemodules/cleanup.sh が無くても成功扱い"
 assert_output_contains "スキップ" "$output" "スキップの理由を出す"
 
+echo ""
+echo "[2c] herdr_agent_check"
+
+# 未報告の agent pane が1件でもあれば通知する。restart まで気づけない失敗のため閾値は持たない。
+cat >"$FAKE_SCRIPTS/herdr-agent-check.sh" <<'EOF'
+#!/bin/bash
+echo "  w1:p2	claude	/repo/b"
+echo "herdr-agent-check: UNREPORTED=${FAKE_UNREPORTED:-1}"
+EOF
+
+: >"$WT_TEST_DIR/toast.log"
+output=$(PATH="$STUB_BIN:$PATH" \
+  HERDR_AGENT_CHECK_SCRIPT="$FAKE_SCRIPTS/herdr-agent-check.sh" \
+  herdr_agent_check 2>&1)
+assert_output_contains "w1:p2" "$output" "未報告の pane をログに出す"
+assert_eq 1 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "未報告があれば通知する"
+assert_output_contains "1 個" "$(cat "$WT_TEST_DIR/toast.log")" "通知本文に件数を含む"
+
+: >"$WT_TEST_DIR/toast.log"
+exit_code=0
+output=$(PATH="$STUB_BIN:$PATH" FAKE_UNREPORTED=0 \
+  HERDR_AGENT_CHECK_SCRIPT="$FAKE_SCRIPTS/herdr-agent-check.sh" \
+  herdr_agent_check 2>&1) || exit_code=$?
+assert_eq 0 "$exit_code" "0件でも成功扱い"
+assert_eq 0 "$(grep -c TOAST_CALLED "$WT_TEST_DIR/toast.log")" "0件なら通知しない"
+
 rm -rf "$WT_TEST_DIR" "$STUB_BIN" "$FAKE_SCRIPTS"
 
 echo ""

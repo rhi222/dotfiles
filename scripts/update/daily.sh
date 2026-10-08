@@ -220,6 +220,24 @@ node_modules_cleanup_check() {
   return 0
 }
 
+# session ID を Herdr へ報告できていない Claude / Codex を検知する。
+# 報告は黙って失敗するので、気づかないまま restart すると会話が復元されない。
+HERDR_AGENT_CHECK_SCRIPT="${HERDR_AGENT_CHECK_SCRIPT:-$SCRIPT_DIR/../session/herdr-agent-check.sh}"
+
+herdr_agent_check() {
+  local out count
+  out=$(bash "$HERDR_AGENT_CHECK_SCRIPT" 2>&1)
+  printf '%s\n' "$out"
+  count=$(printf '%s\n' "$out" | sed -n 's/^herdr-agent-check: UNREPORTED=\([0-9]\{1,\}\)$/\1/p')
+  if [ "${count:-0}" -gt 0 ] && command -v powershell.exe >/dev/null 2>&1; then
+    # shellcheck source=../lib/notify-windows-toast.sh
+    source "$SCRIPT_DIR/../lib/notify-windows-toast.sh"
+    send_windows_toast "herdr の agent 復元漏れ" \
+      "$count 個の agent が restart で復元されません。bash scripts/session/herdr-agent-check.sh で確認してください。" || true
+  fi
+  return 0
+}
+
 # Only update skills managed via `gh skill install` (remote lines in
 # claude-skills.txt). Local-cloned or system skills lack GitHub metadata
 # and would trigger noisy "Reinstall to enable updates" warnings.
@@ -282,6 +300,7 @@ main() {
   # gh 未認証などで daily-update 全体を FAILED にしない。
   run_step_soft "worktree cleanup check" worktree_cleanup_check
   run_step_soft "node_modules cleanup check" node_modules_cleanup_check
+  run_step_soft "herdr agent session check" herdr_agent_check
   # vendored skill の更新検知。取込はしない（未レビューのコードが有効になる
   # 瞬間を作らないため）。ネットワーク断で全体を FAILED にしないので soft。
   run_step_soft "vendored skill 更新チェック" bash "$SCRIPT_DIR/../skills/vendor.sh" status

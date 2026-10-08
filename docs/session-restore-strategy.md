@@ -43,6 +43,14 @@ nvimの起動種別とsession tagは復元契約である。pane移動後は旧t
 
 Claude と Codex の `SessionStart` hook は `pane report-agent-session` で session ID を Herdr へ報告する。Herdr は session snapshot にそれを保存し、server 再起動後に `claude --resume <id>` / `codex resume <id>` を使う。マーカーの残存や外部 script の投入タイミングに依存しない。
 
+**報告の失敗は restart するまで表に出ない。** hook は agent の起動を邪魔しないよう失敗を握りつぶすためである。
+2026-10 には、herdr を更新した後も旧 server が動き続け、各 pane の `HERDR_BIN_PATH` が削除済みの旧版を指していた。
+その結果、9日間に起動した Claude の大半が復元されなかった。
+
+- hook は `HERDR_BIN_PATH` が実行できなければ PATH 上の `herdr` を使う
+- Claude の hook は SessionStart の `source` を渡す。渡さないと `/clear` 後の新しい ID を Herdr が拒否し、古い会話が復元される
+- `daily.sh` が `scripts/session/herdr-agent-check.sh` で、agent が動いているのに session ID を持たない pane を毎日数え、1件でもあれば通知する
+
 ## 復元フロー
 
 ### 保存時
