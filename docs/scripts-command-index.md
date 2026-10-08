@@ -128,6 +128,7 @@
 | `scripts/nippo/create-cron.sh`     | doc cron           |
 | `scripts/nippo/draft-cron.sh`      | doc cron           |
 | `scripts/nippo/esa-weekly-cron.sh` | doc skill cron     |
+| `scripts/nippo/finalize-check.sh`  | skill              |
 | `scripts/esa/sos-precheck.sh`      | skill              |
 
 ### セッション復元
