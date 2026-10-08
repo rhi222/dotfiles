@@ -35,6 +35,12 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 2. **Phase 2: Slack情報収集・作業ログ追記**
    - Slack検索で本人の発言を当日分収集
    - 収集した発言を作業ログ・作業メモに追記
+   - **Slackの検索ツールが使えないときは黙って飛ばさない。** sessionにツールが読み込まれていないことがある
+     （`claude mcp list` では Connected でも起こる）
+     - 対話中なら、日報に書き込む前に止めて「Slackが使えない。sessionを立て直すか、Slackを飛ばして続けるか」を聞く
+     - ヘッドレス（`-p`）で聞けないとき、または飛ばすと決まったときは、作業ログに
+       `<!-- slack: skipped (理由) -->` を残して続ける
+   - 発言が0件だったときは `<!-- slack: 0件 -->` を残す（飛ばしたのか0件だったのかを後から区別するため）
 
 3. **Phase 3: GitHub活動収集・追記**
    - `gh` で当日の作成PR / マージPR / レビュー状況 / 実施したレビューを収集
@@ -59,7 +65,8 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
      | My Review待ち | `My Review` のissue（＝翌朝の判断対象）                   |
      | 職能の配分    | `em:*` ラベルを集計して件数を並べる                       |
 
-   - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない
+   - **Linearにアクセスできない場合はこのセクションを飛ばして続行する。** 日報の生成自体を止めない。
+     飛ばしたときはセクションの代わりに `<!-- linear: skipped (理由) -->` を残す
    - GitHub活動（Phase 3）と重複して見えることがあるが、**視点が違うので両方残す**。
      GitHub活動は「どのPRを動かしたか」、Linear作業サマリは「どの課題が前に進んだか」
 
@@ -95,12 +102,25 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 8. **Phase 6: 結果追記**
    - 分析結果を元ファイルに追記
 
-9. **Phase 7: 今日の1問**
-   - チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
-   - 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
-   - 答えが無ければ何も書かない。ファイルに空欄を残さない
+9. **Phase 6-2: 完了チェック**
+   - 追記を終えたら、次を実行する
 
-10. **Phase 8: kb-harvestへの案内**
+     ```bash
+     bash "$(ghq root)/github.com/rhi222/dotfiles/scripts/nippo/finalize-check.sh" "<対象日 YYYY-MM-DD>"
+     ```
+
+   - Slack / GitHub / Linear の痕跡（収集結果か `<!-- xxx: skipped (理由) -->` の印）と、
+     `## Finalize:` の見出しがそろっているかを見る。exit 1 なら、出力された項目のフェーズに戻って埋めるか、
+     飛ばした理由の印を残す
+   - 最終報告では、飛ばしたフェーズがあれば理由と一緒に必ず書く
+
+10. **Phase 7: 今日の1問**
+
+- チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に本人の言葉のまま残す
+- 問いの選び方は `system-prompt.md`、書き込み形式は `output-format.md` に従う
+- 答えが無ければ何も書かない。ファイルに空欄を残さない
+
+11. **Phase 8: kb-harvestへの案内**
     - 最後に「`/kb-harvest` で今日のsessionから用語・知識を拾えます」と1行だけ出す
     - kb-harvestは承認が要るので、ここからは実行しない（`disable-model-invocation` で呼べない）
 
@@ -112,7 +132,7 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 - Slack情報収集を使う場合: 環境変数 `SLACK_MEMBER_ID` を本人のSlackメンバーIDに設定すること
   (fish: `set -Ux SLACK_MEMBER_ID U0XXXXXXX`)
 - GitHub活動収集を使う場合: `gh` CLI が認証済みであること（`gh auth status` / スコープに `repo` が必要）
-  未インストール・未認証の場合はPhase 3をスキップして処理を続行する
+  未インストール・未認証の場合はPhase 3をスキップし、日報に `<!-- github: skipped (gh未認証) -->` を残して続行する
 
 ## 実行スクリプト
 
@@ -283,6 +303,7 @@ echo "✅ Phase 4 完了: AI分析準備"
 
 # Phase 5: system-prompt.md と output-format.md に従って分析・レポート生成
 # Phase 6: 分析結果を $NIPPO_FILE に追記
+# Phase 6-2: scripts/nippo/finalize-check.sh で収集フェーズの痕跡を確かめる
 # Phase 7: チャットで1問だけ聞き、回答を「## 今日を振り返って一言」に残す
 # Phase 8: /kb-harvest を1行で案内する
 ```
