@@ -1,4 +1,4 @@
-# followup の一覧を開く（cron が毎時書き換える）
+# followup の一覧を開く（cron が平日3回書き換える）
 #
 #   fu    # 最新の一覧をページャで開く
 function fu --description 'followup の一覧を開く'
