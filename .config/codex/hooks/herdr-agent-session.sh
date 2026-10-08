@@ -4,7 +4,12 @@
 set -uo pipefail
 
 [[ "${HERDR_ENV:-}" == 1 ]] || exit 0
-[[ -n "${HERDR_PANE_ID:-}" && -n "${HERDR_BIN_PATH:-}" ]] || exit 0
+[[ -n "${HERDR_PANE_ID:-}" ]] || exit 0
+
+# mise upgrade は旧版の install dir を消すが、稼働中の server が配った
+# HERDR_BIN_PATH は古いままなので、消えていたら PATH 上の herdr を使う。
+herdr_bin=${HERDR_BIN_PATH:-}
+[[ -x "$herdr_bin" ]] || herdr_bin=$(command -v herdr) || exit 0
 
 payload=$(cat)
 session_id=$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)
@@ -16,7 +21,7 @@ if [[ -n "${CODEX_THREAD_ID:-}" && "$CODEX_THREAD_ID" != "$session_id" ]]; then
   exit 0
 fi
 
-"$HERDR_BIN_PATH" pane report-agent-session "$HERDR_PANE_ID" \
+"$herdr_bin" pane report-agent-session "$HERDR_PANE_ID" \
   --source herdr:codex \
   --agent codex \
   --seq "$(date +%s%N)" \
