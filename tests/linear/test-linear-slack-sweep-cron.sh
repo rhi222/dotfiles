@@ -39,9 +39,13 @@ check "linear-slack-sweep skillを呼ぶ" grep -q "/linear-slack-sweep" <<<"$out
 # 3. allowedTools の中身
 check "Slack検索を許可する" grep -q "slack_search_public_and_private" <<<"$out2"
 check "スレ読み取りを許可する" grep -q "slack_read_thread" <<<"$out2"
-# skill 本文が bash "$(ghq root)/..." でスクリプトを解決するため、bash と ghq を許可する
+# skill 本文は bash "$HOME/scripts/linear/..." でスクリプトを呼ぶので、bash だけ許可する。
+# cron の PATH には ghq が無く、$(ghq root) は毎回解決に失敗していた
 check "スクリプト実行を許可する" grep -q 'Bash(bash:\*)' <<<"$out2"
-check "ghqでのパス解決を許可する" grep -q 'Bash(ghq:\*)' <<<"$out2"
+check "ghqを許可しない" test "$(grep -c 'Bash(ghq:\*)' <<<"$out2")" -eq 0
+SKILL_MD="$SCRIPTS_DIR/../.config/claude/skills/linear-slack-sweep/SKILL.md"
+check "skillがghqでパスを解決しない" test "$(grep -c 'ghq root' "$SKILL_MD")" -eq 0
+check "skillが\$HOME/scripts/linear経由でスクリプトを呼ぶ" grep -q '\$HOME/scripts/linear/slack-sweep.sh' "$SKILL_MD"
 # 検索が全期間スキャンになり after: の日付計算が消えたので、date は要らなくなった
 check "dateを許可しない" test "$(grep -c 'Bash(date:\*)' <<<"$out2")" -eq 0
 
