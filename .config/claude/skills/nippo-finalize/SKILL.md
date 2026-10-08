@@ -41,12 +41,14 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
    - 「## GitHub活動」セクションとして日報に追記
 
 4. **Phase 3-2: Linear活動収集・作業サマリ生成**
-   - 当日動いたissueを取得する（`updatedAt` が今日以降＝state遷移・コメント・編集で更新された）
+   - 対象日に動いたissueを取得する（`updatedAt` が対象日以降＝state遷移・コメント・編集で更新された）
 
      ```bash
      source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/linear-api.sh"
-     linear_activity_since "$(date +%F)"
+     linear_activity_since "<対象日 YYYY-MM-DD>"
      ```
+
+   - 過去日を指定した場合は、翌日以降の更新も混ざるので `updatedAt`（JST換算）が対象日のものに絞る
 
    - 「## 今日の作業サマリ（Linear）」セクションとして日報に追記する。内容は以下:
 
@@ -117,7 +119,7 @@ allowed-tools: Read, Write, Edit, Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(wc
 ```bash
 # パス解決は共有ライブラリに委ねる。ここで組み立てない。
 source "$(ghq root)/github.com/rhi222/dotfiles/scripts/lib/nippo-paths.sh"
-TODAY="$(nippo_resolve_date "")"
+TODAY="$(nippo_resolve_date "${ARGUMENTS:-}")"
 NIPPO_FILE="$(nippo_daily_file "$TODAY")"
 GOALS_FILE="$(nippo_goals_file)"
 
@@ -178,7 +180,8 @@ echo "✅ Phase 2 完了: Slack情報収集・作業ログ追記"
 # Phase 3: GitHub活動収集
 # 当日のPR活動（作成 / マージ / 自分のPRのレビュー状況 / 自分が実施したレビュー）を収集する。
 # commit単位は粒度が細かすぎるため収集しない。
-TARGET_DATE=$(date +%Y-%m-%d)
+# 対象日は Phase 1 の TODAY と同じ値を使う。$(date) にすると過去日の指定が効かない。
+TARGET_DATE="$TODAY"
 DAY_FROM="${TARGET_DATE}T00:00:00+09:00"
 DAY_TO="${TARGET_DATE}T23:59:59+09:00"
 REVIEW_SINCE=$(date -d "$TARGET_DATE -1 day" +%Y-%m-%d)
