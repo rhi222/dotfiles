@@ -43,13 +43,13 @@ out2b=$(HOME="$H" FOLLOWUP_DRY_RUN=1 FOLLOWUP_FORCE=1 FOLLOWUP_TIMEOUT=42 bash "
 check "timeoutを環境変数で上書きできる" grep -q "timeout 42" <<<"$out2b"
 
 # 3. 読み取り系だけを許可する
-for t in 'Bash(dotctl:\*)' slack_read_thread slack_read_user_profile; do
+for t in 'Bash(dotctl followup apply:\*)' slack_read_thread slack_read_user_profile; do
   check "許可する: $t" grep -q "$t" <<<"$out2"
 done
 for t in slack_send_message slack_schedule_message slack_create_canvas slack_update_canvas \
   createJiraIssue editJiraIssue addCommentToJiraIssue transitionJiraIssue addWorklogToJiraIssue \
   createIssueLink createConfluencePage updateConfluencePage 'Bash(bash:' 'Write' \
-  slack_search_public_and_private searchJiraIssuesUsingJql; do
+  slack_search_public_and_private searchJiraIssuesUsingJql 'Bash(dotctl:'; do
   check "許可しない: $t" test "$(grep -c "$t" <<<"$out2")" -eq 0
 done
 
@@ -75,6 +75,16 @@ HOME="$H" FOLLOWUP_FORCE=1 FOLLOWUP_STATE_DIR="$STATE" CLAUDE_BIN="$TMP/bin/clau
 check "読み取り指示をskillへ渡す" grep -q 'slack:C1/1.000001' "$TMP/claude-args"
 check "noticeがあればtoastを出す" grep -q "動きあり1件" "$TMP/toast.log"
 check "toast後にnoticeを消す" test ! -e "$STATE/notice"
+
+# 4b. claudeが成功してもapplyされなければ非0（読み取り失敗に気付けるように）
+cat >"$TMP/bin/targets" <<STUB
+#!/bin/bash
+echo '[]'
+STUB
+printf '#!/bin/bash\nexit 0\n' >"$TMP/bin/claude"
+HOME="$H" FOLLOWUP_FORCE=1 FOLLOWUP_STATE_DIR="$STATE" CLAUDE_BIN="$TMP/bin/claude" \
+  FOLLOWUP_TARGETS_CMD="$TMP/bin/targets" FOLLOWUP_TOAST_CMD="$TMP/bin/toast" bash "$SCRIPT" >/dev/null 2>&1
+check "applyされなければ非0" test $? -ne 0
 
 # 5. claude失敗 → toastを出さない
 rm -f "$TMP/toast.log"

@@ -87,3 +87,14 @@ func TestFollowupUsage(t *testing.T) {
 		}
 	}
 }
+
+func TestFollowupTargetsRejectsNull(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "followup")
+	env, _, _ := followupEnv(t, "null", dir)
+	if code := Run(context.Background(), []string{"followup", "targets", "--in", "-"}, env); code != 1 {
+		t.Fatalf("exit=%d, want 1", code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "targets.json")); err == nil {
+		t.Fatal("targets.json written for null")
+	}
+}

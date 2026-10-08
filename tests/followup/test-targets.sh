@@ -58,6 +58,13 @@ CURL_RESPONSE="$TMP/ng.json" bash "$SCRIPT" >/dev/null 2>&1
 check "Linear失敗で非0" test $? -ne 0
 check "Linear失敗でdotctlを呼ばない" test ! -e "$TMP/dotctl.log"
 
+# 3. data.issues が null（errorsなし）: dotctlを呼ばずに非0
+rm -f "$TMP/dotctl.log"
+echo '{"data":{"issues":null}}' >"$TMP/null.json"
+CURL_RESPONSE="$TMP/null.json" bash "$SCRIPT" >/dev/null 2>&1
+check "nullで非0" test $? -ne 0
+check "nullでdotctlを呼ばない" test ! -e "$TMP/dotctl.log"
+
 echo "---"
 echo "pass=$pass fail=$fail"
 [[ "$fail" -eq 0 ]]

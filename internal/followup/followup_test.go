@@ -195,3 +195,40 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		t.Fatalf("notice %q", b)
 	}
 }
+
+func TestExtractTargetsURLVariants(t *testing.T) {
+	issues := []LinearIssue{{Identifier: "NSY-9", Description: "" +
+		"https://Ex.slack.com/archives/C1/p1000000001000001 " +
+		"https://x.enterprise.slack.com/archives/C2/p1000000002000002 " +
+		"https://x.slack.com/archives/C3/p1000000003000009?cid=C3&amp;thread_ts=1000000003.000003"}}
+	got := ExtractTargets(issues)
+	var keys []string
+	for _, tg := range got {
+		keys = append(keys, tg.Key)
+	}
+	want := []string{"slack:C1/1000000001.000001", "slack:C2/1000000002.000002", "slack:C3/1000000003.000003"}
+	if !reflect.DeepEqual(keys, want) {
+		t.Fatalf("keys %v", keys)
+	}
+}
+
+func TestApplyUnreadableThreadKeepsPrev(t *testing.T) {
+	prev := State{"k1": msg("10.000000", "A")}
+	in := Input{Me: "ME", Threads: []Thread{{Key: "k1", Error: true}, {Key: "k2", Error: true}}}
+	r, err := Apply(in, targets, prev, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.State["k1"] != prev["k1"] {
+		t.Fatalf("prev lost: %+v", r.State)
+	}
+	if _, ok := r.State["k2"]; ok {
+		t.Fatal("unread new key stored")
+	}
+	if !r.Entries[1].Unread {
+		t.Fatalf("k2 not marked unread: %+v", r.Entries[1])
+	}
+	if !strings.Contains(Render(r, time.Now()), "## 読めなかった") {
+		t.Fatal("unread section missing")
+	}
+}
