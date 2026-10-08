@@ -119,11 +119,12 @@
 | ---------------------------- | ---------- |
 | `scripts/prwatch/nightly.sh` | doc cron   |
 
-### 返事待ち・頼まれ事
+### followup（Linearに貼ったSlackスレの動き）
 
-| スクリプト                        | 呼び出し元 |
-| --------------------------------- | ---------- |
-| `scripts/followup/digest-cron.sh` | doc cron   |
+| スクリプト                        | 呼び出し元     |
+| --------------------------------- | -------------- |
+| `scripts/followup/digest-cron.sh` | doc cron       |
+| `scripts/followup/targets.sh`     | doc skill cron |
 
 ### 日報・レポート
 
