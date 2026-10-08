@@ -19,16 +19,34 @@ import (
 )
 
 type LinearIssue struct {
-	Identifier  string `json:"identifier"`
-	Title       string `json:"title"`
-	URL         string `json:"url"`
-	Description string `json:"description"`
+	Identifier  string      `json:"identifier"`
+	Title       string      `json:"title"`
+	URL         string      `json:"url"`
+	Description string      `json:"description"`
+	State       LinearState `json:"state"`
+}
+
+type LinearState struct {
+	Name string `json:"name"`
 }
 
 type Issue struct {
 	Identifier string `json:"identifier"`
 	Title      string `json:"title"`
 	URL        string `json:"url"`
+	State      string `json:"state"`
+}
+
+// stateOrder は「動きなし」の並び順。ボールの持ち主はSlackの発言者でなくLinearのstateで見る。
+var stateOrder = map[string]int{"In Progress": 0, "My Review": 1, "Waiting": 2, "Todo": 3, "Triage": 4, "Backlog": 5}
+
+func stateRank(e Entry) int {
+	if len(e.Issues) > 0 {
+		if n, ok := stateOrder[e.Issues[0].State]; ok {
+			return n
+		}
+	}
+	return len(stateOrder)
 }
 
 // Target は追うスレ1本。key は slack:<channel>/<thread_ts>。
@@ -98,7 +116,7 @@ func ExtractTargets(issues []LinearIssue) []Target {
 				ts = p[1]
 			}
 			key := "slack:" + m[1] + "/" + ts
-			ref := Issue{is.Identifier, is.Title, is.URL}
+			ref := Issue{is.Identifier, is.Title, is.URL, is.State.Name}
 			i, ok := idx[key]
 			if !ok {
 				idx[key] = len(out)
@@ -230,33 +248,32 @@ func Render(r Result, at time.Time) string {
 		if es[i].New != es[j].New {
 			return es[i].New
 		}
+		if ri, rj := stateRank(es[i]), stateRank(es[j]); ri != rj {
+			return ri < rj
+		}
 		return tsAfter(es[i].Latest.TS, es[j].Latest.TS)
 	})
-	var mine, theirs, unread []string
+	var moved, still, unread []string
 	for _, e := range es {
-		mark := ""
-		if e.New {
-			mark = "🆕 "
-		}
 		ids := make([]string, len(e.Issues))
 		for i, is := range e.Issues {
 			ids[i] = is.Identifier
 		}
-		title := ""
+		title, state := "", ""
 		if len(e.Issues) > 0 {
-			title = e.Issues[0].Title
+			title, state = e.Issues[0].Title, e.Issues[0].State
 		}
 		if e.Unread {
 			unread = append(unread, fmt.Sprintf("- %s %s %s", strings.Join(ids, ","), title, e.URL))
 			continue
 		}
 		s, _ := splitTS(e.Latest.TS)
-		line := fmt.Sprintf("- %s%s %s — %s %s「%s」 %s", mark, strings.Join(ids, ","), title,
+		line := fmt.Sprintf("- [%s] %s %s — %s %s「%s」 %s", state, strings.Join(ids, ","), title,
 			e.Latest.ByName, time.Unix(s, 0).In(at.Location()).Format("01/02 15:04"), e.Latest.Text, e.URL)
-		if e.Mine {
-			theirs = append(theirs, line)
+		if e.New {
+			moved = append(moved, line)
 		} else {
-			mine = append(mine, line)
+			still = append(still, line)
 		}
 	}
 	var b strings.Builder
@@ -264,7 +281,7 @@ func Render(r Result, at time.Time) string {
 	for _, s := range []struct {
 		title string
 		lines []string
-	}{{"自分の番", mine}, {"相手待ち", theirs}} {
+	}{{"🆕 動きあり", moved}, {"動きなし", still}} {
 		fmt.Fprintf(&b, "\n## %s\n\n", s.title)
 		if len(s.lines) == 0 {
 			b.WriteString("- なし\n")

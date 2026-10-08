@@ -1,6 +1,6 @@
 ---
 name: followup
-description: Linearの未完了issueに貼ったSlackスレを読み、前回から他人の発言で動いたスレに🆕を付けて「自分の番／相手待ち」の一覧にする。「あれどうなった」「返事来てる？」「followup」などで使用。cronから平日3回ヘッドレスで呼ばれる。Slackへは書き込まない。
+description: Linearの未完了issueに貼ったSlackスレを読み、前回から他人の発言で動いたスレに🆕を付け、Linearのstate付きで一覧にする。「あれどうなった」「返事来てる？」「followup」などで使用。cronから平日3回ヘッドレスで呼ばれる。Slackへは書き込まない。
 allowed-tools: Bash(dotctl followup apply:*), Bash(~/scripts/followup/targets.sh), mcp__claude_ai_Slack__slack_read_thread, mcp__claude_ai_Slack__slack_read_user_profile
 ---
 

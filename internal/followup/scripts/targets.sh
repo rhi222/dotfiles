@@ -16,7 +16,7 @@ team=$(linear_config '.team_id')
 issues=$(linear_gql 'query($team: ID!) {
   issues(filter: {team: {id: {eq: $team}},
                   state: {type: {nin: ["completed", "canceled", "duplicate"]}}}, first: 250) {
-    nodes { identifier title url description }
+    nodes { identifier title url description state { name } }
   }
 }' "$(jq -n --arg t "$team" '{team: $t}')" | jq -e '.issues.nodes | arrays')
 dotctl followup targets --in - <<<"$issues"
