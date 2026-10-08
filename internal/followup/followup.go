@@ -1,7 +1,8 @@
-// Package followup は、Slack・Jiraから拾った返事待ちと頼まれ事を前回状態と比べ、
-// 変わった件に🆕を付けて一覧mdと通知文を作る。
+// Package followup は、Linearの未完了issueに貼られたSlackスレを対象に、
+// 最新発言が前回から進んだかを比べて一覧mdと通知文を作る。
 //
-// 判断（何が返事待ちか）は skill 側、状態（前回と何が違うか）はここ、と分ける。
+// 何を追うかはLinear（自分が起票したもの）、スレを読むのはskill、
+// 前回と何が違うかはここ、と分ける。判断はどこにも無い。
 package followup
 
 import (
@@ -10,155 +11,237 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
-// waitingWindow を過ぎた返事待ちは一覧から外す。
-const waitingWindow = 7 * 24 * time.Hour
+type LinearIssue struct {
+	Identifier  string `json:"identifier"`
+	Title       string `json:"title"`
+	URL         string `json:"url"`
+	Description string `json:"description"`
+}
 
-type Item struct {
-	Key          string     `json:"key"`
-	Kind         string     `json:"kind"` // waiting | asked
-	Source       string     `json:"source"`
-	Where        string     `json:"where"`
-	Who          string     `json:"who"`
-	Summary      string     `json:"summary"`
-	URL          string     `json:"url"`
-	Since        time.Time  `json:"since"`
-	Replied      bool       `json:"replied,omitempty"`
-	ReplyAt      *time.Time `json:"reply_at,omitempty"`
-	ReplySummary string     `json:"reply_summary,omitempty"`
-	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+type Issue struct {
+	Identifier string `json:"identifier"`
+	Title      string `json:"title"`
+	URL        string `json:"url"`
+}
+
+// Target は追うスレ1本。key は slack:<channel>/<thread_ts>。
+type Target struct {
+	Key      string  `json:"key"`
+	Channel  string  `json:"channel"`
+	ThreadTS string  `json:"thread_ts"`
+	URL      string  `json:"url"`
+	Issues   []Issue `json:"issues"`
+}
+
+// Prompt は skill に渡す読み取り指示。Oldest は slack_read_thread の oldest（排他）。
+type Prompt struct {
+	Key      string `json:"key"`
+	Channel  string `json:"channel"`
+	ThreadTS string `json:"thread_ts"`
+	Oldest   string `json:"oldest"`
+}
+
+type Message struct {
+	TS     string `json:"ts"`
+	ByID   string `json:"by_id"`
+	ByName string `json:"by_name"`
+	Text   string `json:"text"`
+}
+
+type Thread struct {
+	Key    string  `json:"key"`
+	Latest Message `json:"latest"`
 }
 
 type Input struct {
-	GeneratedAt time.Time `json:"generated_at"`
-	Items       []Item    `json:"items"`
+	Me      string   `json:"me"`
+	Threads []Thread `json:"threads"`
 }
 
-// State は key → 前回見たときの版。
-type State map[string]string
+// State は key → 前回までに見た最新発言。
+type State map[string]Message
 
 type Entry struct {
-	Item
-	New bool
+	Target
+	Latest Message
+	Mine   bool
+	New    bool
 }
 
 type Result struct {
-	Entries    []Entry
-	State      State
-	NewReplies int
-	NewAsked   int
+	Entries []Entry
+	State   State
+	New     int
 }
 
-// ParseInput は skill の出力を読む。欠けた入力で前回状態を上書きしないよう、
-// generated_at と items の欠落、key の空、未知の kind を弾く。
+var slackURL = regexp.MustCompile(`https://[a-z0-9-]+\.slack\.com/archives/([A-Z0-9]+)/p(\d{10})(\d{6})(\?[^\s)\]>]*)?`)
+var threadTSParam = regexp.MustCompile(`[?&]thread_ts=(\d+\.\d+)`)
+
+// ExtractTargets はissue本文のSlack URLをスレ単位にまとめる。順序は初出順。
+func ExtractTargets(issues []LinearIssue) []Target {
+	var out []Target
+	idx := map[string]int{}
+	for _, is := range issues {
+		for _, m := range slackURL.FindAllStringSubmatch(is.Description, -1) {
+			ts := m[2] + "." + m[3]
+			if p := threadTSParam.FindStringSubmatch(m[4]); p != nil {
+				ts = p[1]
+			}
+			key := "slack:" + m[1] + "/" + ts
+			ref := Issue{is.Identifier, is.Title, is.URL}
+			i, ok := idx[key]
+			if !ok {
+				idx[key] = len(out)
+				out = append(out, Target{Key: key, Channel: m[1], ThreadTS: ts, URL: m[0], Issues: []Issue{ref}})
+				continue
+			}
+			if !hasIssue(out[i].Issues, is.Identifier) {
+				out[i].Issues = append(out[i].Issues, ref)
+			}
+		}
+	}
+	return out
+}
+
+func hasIssue(is []Issue, id string) bool {
+	for _, i := range is {
+		if i.Identifier == id {
+			return true
+		}
+	}
+	return false
+}
+
+// Prompts は前回の最新tsを oldest にして、動きの無いスレを親だけで済ませる。
+func Prompts(ts []Target, st State) []Prompt {
+	out := make([]Prompt, 0, len(ts))
+	for _, t := range ts {
+		oldest := t.ThreadTS
+		if m, ok := st[t.Key]; ok && m.TS != "" {
+			oldest = m.TS
+		}
+		out = append(out, Prompt{t.Key, t.Channel, t.ThreadTS, oldest})
+	}
+	return out
+}
+
+// ParseInput は skill の出力を読む。threads の欠落は欠けた結果とみなして弾く。
 func ParseInput(b []byte) (Input, error) {
 	var probe map[string]json.RawMessage
 	if err := json.Unmarshal(b, &probe); err != nil {
 		return Input{}, err
 	}
-	if _, ok := probe["items"]; !ok {
-		return Input{}, errors.New("items がない")
+	if _, ok := probe["threads"]; !ok {
+		return Input{}, errors.New("threads がない")
 	}
 	var in Input
-	if err := json.Unmarshal(b, &in); err != nil {
-		return Input{}, err
-	}
-	if in.GeneratedAt.IsZero() {
-		return Input{}, errors.New("generated_at がない")
-	}
-	for i, it := range in.Items {
-		if it.Key == "" {
-			return Input{}, fmt.Errorf("items[%d]: key が空", i)
-		}
-		if it.Kind != "waiting" && it.Kind != "asked" {
-			return Input{}, fmt.Errorf("items[%d]: 知らない kind: %q", i, it.Kind)
-		}
-	}
-	return in, nil
+	err := json.Unmarshal(b, &in)
+	return in, err
 }
 
-func version(it Item) string {
-	switch {
-	case it.Kind == "waiting" && it.Replied && it.ReplyAt != nil:
-		return "replied:" + it.ReplyAt.UTC().Format(time.RFC3339)
-	case it.Kind == "waiting" && it.Replied:
-		return "replied:"
-	case it.Kind == "waiting":
-		return "waiting"
-	case it.UpdatedAt != nil:
-		return "updated:" + it.UpdatedAt.UTC().Format(time.RFC3339)
-	default:
-		return "seen"
-	}
+// tsAfter は Slack ts（秒.マイクロ秒）を比べる。float だと桁落ちしうるので分けて比べる。
+func tsAfter(a, b string) bool {
+	as, au := splitTS(a)
+	bs, bu := splitTS(b)
+	return as > bs || (as == bs && au > bu)
 }
 
-// Apply は前回状態と比べて🆕を判定する。firstRun では何も🆕にしない。
-func Apply(in Input, prev State, firstRun bool) Result {
+func splitTS(ts string) (int64, int64) {
+	s, u, _ := strings.Cut(ts, ".")
+	si, _ := strconv.ParseInt(s, 10, 64)
+	ui, _ := strconv.ParseInt((u + "000000")[:6], 10, 64)
+	return si, ui
+}
+
+// Apply は targets と skill の出力を突き合わせる。全スレが揃っていなければ失敗する
+// （欠けた結果で状態を上書きすると、次回に全件が🆕になったり消えたりする）。
+func Apply(in Input, targets []Target, prev State, firstRun bool) (Result, error) {
+	if in.Me == "" {
+		return Result{}, errors.New("me がない")
+	}
+	got := map[string]Message{}
+	for _, th := range in.Threads {
+		if th.Latest.TS == "" {
+			return Result{}, fmt.Errorf("%s: latest.ts がない", th.Key)
+		}
+		got[th.Key] = th.Latest
+	}
+	known := map[string]bool{}
+	for _, t := range targets {
+		known[t.Key] = true
+		if _, ok := got[t.Key]; !ok {
+			return Result{}, fmt.Errorf("%s: 読んだ結果がない", t.Key)
+		}
+	}
+	for k := range got {
+		if !known[k] {
+			return Result{}, fmt.Errorf("%s: 対象に無いkey", k)
+		}
+	}
 	r := Result{State: State{}}
-	cutoff := in.GeneratedAt.Add(-waitingWindow)
-	for _, it := range in.Items {
-		if _, dup := r.State[it.Key]; dup {
-			continue
+	for _, t := range targets {
+		cur := got[t.Key]
+		old, seen := prev[t.Key]
+		advanced := !seen || tsAfter(cur.TS, old.TS)
+		if !advanced {
+			cur = old
 		}
-		if it.Kind == "waiting" && it.Since.Before(cutoff) {
-			continue
+		e := Entry{Target: t, Latest: cur, Mine: cur.ByID == in.Me}
+		e.New = !firstRun && seen && advanced && !e.Mine
+		if e.New {
+			r.New++
 		}
-		v := version(it)
-		old, seen := prev[it.Key]
-		changed := !seen || old != v
-		isNew := false
-		if !firstRun {
-			if it.Kind == "waiting" {
-				isNew = it.Replied && changed
-			} else {
-				isNew = changed
-			}
-		}
-		if isNew {
-			if it.Kind == "waiting" {
-				r.NewReplies++
-			} else {
-				r.NewAsked++
-			}
-		}
-		r.State[it.Key] = v
-		r.Entries = append(r.Entries, Entry{Item: it, New: isNew})
+		r.State[t.Key] = cur
+		r.Entries = append(r.Entries, e)
 	}
-	return r
+	return r, nil
 }
 
 // Notice は toast の本文。🆕が無ければ空。
 func Notice(r Result) string {
-	if r.NewReplies+r.NewAsked == 0 {
+	if r.New == 0 {
 		return ""
 	}
-	return fmt.Sprintf("返事%d件・頼まれ事%d件", r.NewReplies, r.NewAsked)
+	return fmt.Sprintf("動きあり%d件", r.New)
 }
 
-// Render は一覧mdを作る。
+// Render は一覧mdを作る。時刻は at のタイムゾーンで出す。
 func Render(r Result, at time.Time) string {
-	var replied, waiting, asked []string
-	for _, e := range r.Entries {
+	es := append([]Entry(nil), r.Entries...)
+	sort.SliceStable(es, func(i, j int) bool {
+		if es[i].New != es[j].New {
+			return es[i].New
+		}
+		return tsAfter(es[i].Latest.TS, es[j].Latest.TS)
+	})
+	var mine, theirs []string
+	for _, e := range es {
 		mark := ""
 		if e.New {
 			mark = "🆕 "
 		}
-		days := int(at.Sub(e.Since).Hours() / 24)
-		who := ""
-		if e.Who != "" {
-			who = " " + e.Who
+		ids := make([]string, len(e.Issues))
+		for i, is := range e.Issues {
+			ids[i] = is.Identifier
 		}
-		switch {
-		case e.Kind == "waiting" && e.Replied:
-			replied = append(replied, fmt.Sprintf("- %s[%s]%s「%s」 ← %s 自分「%s」 %s",
-				mark, e.Where, who, e.ReplySummary, e.Since.Format("01/02"), e.Summary, e.URL))
-		case e.Kind == "waiting":
-			waiting = append(waiting, fmt.Sprintf("- [%s]%s %d日経過「%s」 %s", e.Where, who, days, e.Summary, e.URL))
-		default:
-			asked = append(asked, fmt.Sprintf("- %s[%s]%s %d日経過「%s」 %s", mark, e.Where, who, days, e.Summary, e.URL))
+		title := ""
+		if len(e.Issues) > 0 {
+			title = e.Issues[0].Title
+		}
+		s, _ := splitTS(e.Latest.TS)
+		line := fmt.Sprintf("- %s%s %s — %s %s「%s」 %s", mark, strings.Join(ids, ","), title,
+			e.Latest.ByName, time.Unix(s, 0).In(at.Location()).Format("01/02 15:04"), e.Latest.Text, e.URL)
+		if e.Mine {
+			theirs = append(theirs, line)
+		} else {
+			mine = append(mine, line)
 		}
 	}
 	var b strings.Builder
@@ -166,7 +249,7 @@ func Render(r Result, at time.Time) string {
 	for _, s := range []struct {
 		title string
 		lines []string
-	}{{"返事が来た", replied}, {"返事待ち", waiting}, {"頼まれ事", asked}} {
+	}{{"自分の番", mine}, {"相手待ち", theirs}} {
 		fmt.Fprintf(&b, "\n## %s\n\n", s.title)
 		if len(s.lines) == 0 {
 			b.WriteString("- なし\n")
@@ -179,31 +262,31 @@ func Render(r Result, at time.Time) string {
 
 // Load は前回状態を読む。ファイルが無ければ初回として空を返す。
 func Load(dir string) (State, bool, error) {
-	b, err := os.ReadFile(filepath.Join(dir, "state.json"))
-	if errors.Is(err, os.ErrNotExist) {
-		return State{}, true, nil
-	}
-	if err != nil {
-		return nil, false, err
-	}
 	var st State
-	if err := json.Unmarshal(b, &st); err != nil {
-		return nil, false, err
+	ok, err := readJSON(filepath.Join(dir, "state.json"), &st)
+	if !ok || err != nil {
+		return State{}, !ok && err == nil, err
 	}
 	return st, false, nil
+}
+
+func LoadTargets(dir string) ([]Target, error) {
+	var ts []Target
+	ok, err := readJSON(filepath.Join(dir, "targets.json"), &ts)
+	if err == nil && !ok {
+		err = errors.New("targets.json がない（先に dotctl followup targets を実行する）")
+	}
+	return ts, err
+}
+
+func SaveTargets(dir string, ts []Target) error {
+	return writeJSON(dir, "targets.json", ts)
 }
 
 // Save は state.json と latest.md を書き換え、🆕があれば notice を上書きする。
 // notice は cron が toast を出したあとに消す。🆕が無い実行では残す。
 func Save(dir string, r Result, md string) error {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return err
-	}
-	st, err := json.MarshalIndent(r.State, "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := writeAtomic(filepath.Join(dir, "state.json"), append(st, '\n')); err != nil {
+	if err := writeJSON(dir, "state.json", r.State); err != nil {
 		return err
 	}
 	if err := writeAtomic(filepath.Join(dir, "latest.md"), []byte(md)); err != nil {
@@ -213,6 +296,28 @@ func Save(dir string, r Result, md string) error {
 		return writeAtomic(filepath.Join(dir, "notice"), []byte(n+"\n"))
 	}
 	return nil
+}
+
+func readJSON(path string, v any) (bool, error) {
+	b, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, json.Unmarshal(b, v)
+}
+
+func writeJSON(dir, name string, v any) error {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return writeAtomic(filepath.Join(dir, name), append(b, '\n'))
 }
 
 func writeAtomic(path string, b []byte) error {

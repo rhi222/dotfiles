@@ -120,7 +120,7 @@ const usage = `使い方: dotctl <subcommand> [args...]
   agent-usage        AI agent のレート上限を表示する（herdr 連携）
   session nvim-plan  nvim のherdr復元計画をJSONで出す
   session digest     当日のagent sessionから本文だけのdigestを作る（kb-harvest）
-  followup apply     返事待ち・頼まれ事の差分を取り、一覧mdと通知文を書く
+  followup targets|apply  Linearに貼ったSlackスレの動きを前回と比べ、一覧mdと通知文を書く
   fisher-update      変更があるときだけfish pluginを更新する
   yazi-update        変更があるときだけyazi packageを更新する
   rebuild            ビルド元のrepositoryからdotctlを再ビルドする
