@@ -60,6 +60,7 @@ cat >"$TMP/bin/claude" <<STUB
 #!/bin/bash
 echo "\$*" >"$TMP/claude-args"
 printf '動きあり1件\n' >"$STATE/notice"
+echo "{}" >"$STATE/state.json"
 STUB
 cat >"$TMP/bin/targets" <<STUB
 #!/bin/bash

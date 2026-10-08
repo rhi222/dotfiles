@@ -28,7 +28,8 @@ CLAUDE_TIMEOUT="${FOLLOWUP_TIMEOUT:-300}"
 # スレを読んで書き写すだけで判断しないので、軽いモデルで足りる
 MODEL="haiku"
 # skill の allowed-tools と一致させる。書き込み系とSlack検索は意図的に入れていない
-ALLOWED_TOOLS="Bash(dotctl:*),mcp__claude_ai_Slack__slack_read_thread,mcp__claude_ai_Slack__slack_read_user_profile"
+# Slack本文（他人の発言）を読むので、dotctlもapplyだけに絞る
+ALLOWED_TOOLS="Bash(dotctl followup apply:*),mcp__claude_ai_Slack__slack_read_thread,mcp__claude_ai_Slack__slack_read_user_profile"
 
 if [[ "${FOLLOWUP_DRY_RUN:-0}" == "1" ]]; then
   echo "DRY_RUN: cd $REPO_ROOT && $TARGETS_CMD | timeout $CLAUDE_TIMEOUT $CLAUDE_BIN -p \"/followup <対象>\" --model $MODEL --allowedTools \"$ALLOWED_TOOLS\""
@@ -42,8 +43,16 @@ export PATH="$HOME/.local/bin:$PATH"
 export FOLLOWUP_STATE_DIR="$STATE_DIR"
 # 対象抽出が失敗したら claude を呼ばない（set -e で止まる）
 targets=$("$TARGETS_CMD")
+before=$(stat -c %Y "$STATE_DIR/state.json" 2>/dev/null || echo 0)
 cron_run_claude "followup" "$CLAUDE_TIMEOUT" "$CLAUDE_BIN" \
   -p "/followup $targets" --model "$MODEL" --allowedTools "$ALLOWED_TOOLS"
+
+# skillが途中で諦めるとclaudeは成功で終わるので、applyされたかを状態ファイルで確かめる
+after=$(stat -c %Y "$STATE_DIR/state.json" 2>/dev/null || echo 0)
+if [[ "$after" == "$before" ]]; then
+  echo "$(date): followup: applyされなかった（スレの読み取り失敗など）" >&2
+  exit 1
+fi
 
 notice="$STATE_DIR/notice"
 if [[ -s "$notice" ]]; then
