@@ -364,6 +364,6 @@ func Update(ctx context.Context, r execx.Runner, cfg Config, name string, w IO) 
 		return 1
 	}
 	fmt.Fprintf(w.out(), "-> 更新しました: %s\n", dest)
-	fmt.Fprintln(w.out(), "   次: pluginを再installし、新しいsessionで確認する")
+	fmt.Fprintln(w.out(), "   次: commit・push後に bash scripts/setup/agent-plugins.sh --update し、新しいsessionで確認する")
 	return 0
 }

@@ -10,9 +10,10 @@ CODEX_BIN="${CODEX_BIN:-codex}"
 SELECTOR="ponytail@personal"
 DRY_RUN=0
 REPLACE_UPSTREAM=0
+UPDATE=0
 
 usage() {
-  echo "Usage: bash scripts/setup/agent-plugins.sh [--dry-run] [--replace-upstream]" >&2
+  echo "Usage: bash scripts/setup/agent-plugins.sh [--dry-run] [--replace-upstream] [--update]" >&2
   exit 2
 }
 
@@ -20,6 +21,7 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --replace-upstream) REPLACE_UPSTREAM=1 ;;
+    --update) UPDATE=1 ;;
     -h | --help) usage ;;
     *) usage ;;
   esac
@@ -41,11 +43,15 @@ has_json_value() {
 install_claude() {
   if [ "$DRY_RUN" -eq 1 ] || ! has_json_value '"name"[[:space:]]*:[[:space:]]*"personal"' "$CLAUDE_BIN" plugin marketplace list --json; then
     run "$CLAUDE_BIN" plugin marketplace add "$MARKETPLACE_SOURCE" --scope user
+  elif [ "$UPDATE" -eq 1 ]; then
+    run "$CLAUDE_BIN" plugin marketplace update personal
   else
     echo "  [OK] marketplace personal"
   fi
   if [ "$DRY_RUN" -eq 1 ] || ! has_json_value '"id"[[:space:]]*:[[:space:]]*"ponytail@personal"' "$CLAUDE_BIN" plugin list --json; then
     run "$CLAUDE_BIN" plugin install "$SELECTOR" --scope user
+  elif [ "$UPDATE" -eq 1 ]; then
+    run "$CLAUDE_BIN" plugin update "$SELECTOR"
   else
     echo "  [OK] $SELECTOR"
   fi
@@ -54,10 +60,14 @@ install_claude() {
 install_codex() {
   if [ "$DRY_RUN" -eq 1 ] || ! has_json_value '"name"[[:space:]]*:[[:space:]]*"personal"' "$CODEX_BIN" plugin marketplace list --json; then
     run "$CODEX_BIN" plugin marketplace add "$MARKETPLACE_SOURCE"
+  elif [ "$UPDATE" -eq 1 ]; then
+    run "$CODEX_BIN" plugin marketplace upgrade personal
   else
     echo "  [OK] marketplace personal"
   fi
-  if [ "$DRY_RUN" -eq 1 ] || ! has_json_value '"pluginId"[[:space:]]*:[[:space:]]*"ponytail@personal"' "$CODEX_BIN" plugin list --json; then
+  # Codexにはplugin updateが無いため、upgrade後のmarketplaceから入れ直す
+  if [ "$DRY_RUN" -eq 1 ] || [ "$UPDATE" -eq 1 ] ||
+    ! has_json_value '"pluginId"[[:space:]]*:[[:space:]]*"ponytail@personal"' "$CODEX_BIN" plugin list --json; then
     run "$CODEX_BIN" plugin add "$SELECTOR"
   else
     echo "  [OK] $SELECTOR"
