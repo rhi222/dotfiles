@@ -91,6 +91,7 @@
   },
   "includeCoAuthoredBy": false,
   "language": "Japanese",
+  "model": "opus",
   "permissions": {
     "allow": [
       "Bash(awk:*)",
