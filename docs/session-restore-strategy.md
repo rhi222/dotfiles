@@ -82,7 +82,7 @@ herdr を更新した後も旧 server が動き続け、各 pane の `HERDR_BIN_
 | ---- | ---------- | ---- | ------------------------------------- |
 | nvim | 3          | 2秒  | `HERDR_RESTORE_NVIM_{BATCH,INTERVAL}` |
 
-独自 wrapper の投入はフォーカス中の workspace を先にし、同一グループ内はペイン ID の辞書順にする。AI agent は Herdr 本体が attach 後に復元する。native restore には投入間隔の調整項目がないため、負荷制御より取りこぼし防止を優先した選択である。
+独自 wrapper の投入はフォーカス中の workspace を先にし、同一グループ内はペイン ID の辞書順にする。AI agent は Herdr 本体が attach 後に復元し、間隔は `[session] startup_per_agent_delay_ms` で絞る。既定の100msでは agent 26件が数秒で一斉起動し、CPU と memory が張り付いて固まったため3000msにしている。
 
 **`he` と `herdr-restore.sh` の両方が flock を持つ。** 複数端末から同時に `he` を叩いても、
 サーバー起動と復元キューはそれぞれ1プロセスだけが行う。
