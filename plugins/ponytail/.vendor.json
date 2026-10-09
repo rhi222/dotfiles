@@ -1,9 +1,9 @@
 {
   "origin": "https://github.com/DietrichGebert/ponytail.git",
-  "commit": "e15862bb04d04285233a164460ced063941d9ef5",
-  "reviewed_commit": "e15862bb04d04285233a164460ced063941d9ef5",
-  "vendored_at": "2026-10-05",
-  "version": "4.12.0",
+  "commit": "9cc65d03aa2da1db7121b912d03596409ee340b8",
+  "reviewed_commit": "9cc65d03aa2da1db7121b912d03596409ee340b8",
+  "vendored_at": "2026-10-09",
+  "version": "5.1.0",
   "files": [
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
@@ -33,7 +33,7 @@
   },
   "audit": {
     "high": 0,
-    "med": 9,
+    "med": 10,
     "low": 0
   },
   "license": "MIT"
