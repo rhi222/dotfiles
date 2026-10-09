@@ -7,6 +7,7 @@
 #   --dry-run            何をどの順で流すかだけ出力して終わる
 #   --status             直近の復元がどこまで進んだかを1行で出して終わる
 #   --session NAME       既定セッションではなく名前付きセッションを対象にする
+#   --pick-agents        サーバー起動前に、agent を復元しない tab を fzf で選ばせて終わる
 #
 # 進行状況は状態ファイルに残し、開始と完了で Windows トースト通知を出す。
 # 投入が数分に散るため、走っているのか終わったのかを外から見えるようにする。
@@ -23,6 +24,7 @@ source "$SCRIPT_DIR/../../internal/session/restore.sh"
 
 DRY_RUN=0
 SHOW_STATUS=0
+PICK_AGENTS=0
 SESSION=""
 
 while [[ $# -gt 0 ]]; do
@@ -35,12 +37,16 @@ while [[ $# -gt 0 ]]; do
       SHOW_STATUS=1
       shift
       ;;
+    --pick-agents)
+      PICK_AGENTS=1
+      shift
+      ;;
     --session)
       SESSION="${2:-}"
       shift 2
       ;;
     *)
-      echo "usage: $(basename "$0") [--dry-run] [--status] [--session NAME]" >&2
+      echo "usage: $(basename "$0") [--dry-run] [--status] [--pick-agents] [--session NAME]" >&2
       exit 2
       ;;
   esac
@@ -82,6 +88,33 @@ if [[ "$SHOW_STATUS" -eq 1 ]]; then
     status_alive=1
   fi
   herdr_restore_status_render "$STATUS" "$(date +%s)" "$status_alive"
+  exit 0
+fi
+
+# agent を全部戻すと memory が足りず固まるため、戻さない tab を起動前に選ばせる。
+# 稼働中のサーバーは session.json を上書きするので、止まっているときだけ触る。
+# 選択を取り消した（Esc）ときや変換に失敗したときは、session.json を変えずに全部戻す。
+if [[ "$PICK_AGENTS" -eq 1 ]]; then
+  ALL="— 全部復元する —"
+  session_name="${SESSION:-default}"
+  session_dir=$(herdr session list --json 2>/dev/null | jq -r --arg name "$session_name" \
+    '.sessions[]? | select(.name == $name and .running != true) | .session_dir' | head -n 1)
+  file="$session_dir/session.json"
+  [[ -n "$session_dir" && -f "$file" ]] || exit 0
+  tabs=$(herdr_restore_agent_tabs "$file" 2>/dev/null) || exit 0
+  [[ -n "$tabs" ]] || exit 0
+  picked=$(printf '%s\n%s\n' "$ALL" "$tabs" |
+    fzf --multi --delimiter '\t' --with-nth 2.. --no-sort --reverse \
+      --header '復元しない agent tab を Tab で選んで Enter（選ばずに Enter で全部復元）') || exit 0
+  mapfile -t keys < <(printf '%s\n' "$picked" | grep -v -x -F -- "$ALL" | cut -f1)
+  ((${#keys[@]} > 0)) || exit 0
+  tmp="$file.$$.tmp"
+  if herdr_restore_drop_agent_tabs "$file" "${keys[@]}" >"$tmp" &&
+    jq -e '.workspaces | type == "array"' "$tmp" >/dev/null 2>&1; then
+    mv -f "$tmp" "$file"
+  else
+    rm -f "$tmp"
+  fi
   exit 0
 fi
 

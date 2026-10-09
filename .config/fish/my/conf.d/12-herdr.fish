@@ -37,6 +37,11 @@ function he --description 'herdr 起動: native agent restore + nvim の段階�
 
         # ロック取得後に再判定し、先行する `he` が起動済みなら二重起動しない。
         if not herdr session list --json 2>/dev/null | jq -e '.sessions[]? | select(.name == "default" and .running == true)' >/dev/null 2>&1
+            # 端末から叩いたときだけ、agent を戻さない tab を選ばせる。
+            if isatty stdin
+                $HOME/scripts/session/herdr-restore.sh --pick-agents 9>&-
+            end
+
             # headless でサーバー起動 → session.json からレイアウトを復元
             # バックグラウンドサーバーにはロック用 fd を継承させない。
             # disown でジョブテーブルから外し、呼び出し元シェルの exit を妨げないようにする。

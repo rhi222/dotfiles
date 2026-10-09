@@ -84,6 +84,12 @@ herdr を更新した後も旧 server が動き続け、各 pane の `HERDR_BIN_
 
 独自 wrapper の投入はフォーカス中の workspace を先にし、同一グループ内はペイン ID の辞書順にする。AI agent は Herdr 本体が attach 後に復元し、間隔は `[session] startup_per_agent_delay_ms` で絞る。既定の100msでは agent 26件が数秒で一斉起動し、CPU と memory が張り付いて固まったため3000msにしている。
 
+**戻す agent の数は起動前に選ばせる。** 間隔を空けても、全部がそろった時点の memory は減らない。
+26件では約13GBになり、nvim と LSP を足すと WSL の上限を超えて固まった。
+`he` がサーバーを起動する前に `herdr-restore.sh --pick-agents` が fzf を出し、選んだ tab の `agent_session` を `session.json` から外す。
+pane と cwd は残り、素の shell として戻る。
+稼働中のサーバーは `session.json` を上書きするので、止まっているときだけ触る。
+
 **`he` と `herdr-restore.sh` の両方が flock を持つ。** 複数端末から同時に `he` を叩いても、
 サーバー起動と復元キューはそれぞれ1プロセスだけが行う。
 

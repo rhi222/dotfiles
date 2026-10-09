@@ -213,3 +213,26 @@ herdr_restore_pane_is_nvim() {
   command="${command##*/}"
   [[ "$command" == nvim || "$command" == nvim-* ]]
 }
+
+# ---- 復元しない agent tab ---------------------------------------------------
+#
+# agent を全部戻すと memory が足りず WSL ごと固まるため、起動前に session.json から
+# 選んだ tab の agent_session を外す。pane と cwd は残り、素の shell として戻る。
+
+# agent を持つ tab を「<workspace>:<tab>\t<workspace名>/<tab名> (<agent数>)」で列挙する。
+herdr_restore_agent_tabs() {
+  jq -r '.workspaces | to_entries[] | .key as $w | .value.custom_name as $wn
+    | .value.tabs | to_entries[]
+    | ([.value.panes[] | select(.agent_session)] | length) as $n
+    | select($n > 0)
+    | "\($w):\(.key)\t\($wn)/\(.value.custom_name) (\($n))"' "$1"
+}
+
+# 引数の「<workspace>:<tab>」に当たる tab の agent_session を外した JSON を出す。
+herdr_restore_drop_agent_tabs() {
+  local file="$1"
+  shift
+  jq --args '
+    reduce ($ARGS.positional[] | split(":") | map(tonumber)) as [$w, $t] (.;
+      .workspaces[$w].tabs[$t].panes |= map_values(del(.agent_session)))' "$@" <"$file"
+}
