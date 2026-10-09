@@ -53,6 +53,16 @@ STUB_CONFIGURED=1 CLAUDE_BIN="$TMP/claude" CODEX_BIN="$TMP/codex" \
   exit 1
 }
 
+: >"$LOG"
+STUB_CONFIGURED=1 CLAUDE_BIN="$TMP/claude" CODEX_BIN="$TMP/codex" \
+  AGENT_PLUGIN_MARKETPLACE_ROOT="$ROOT" \
+  AGENT_PLUGIN_MARKETPLACE_SOURCE="$ROOT" \
+  bash "$ROOT/scripts/setup/agent-plugins.sh" --update >/dev/null
+grep -Fqx "claude plugin marketplace update personal" "$LOG"
+grep -Fqx "claude plugin update ponytail@personal" "$LOG"
+grep -Fqx "codex plugin marketplace upgrade personal" "$LOG"
+grep -Fqx "codex plugin add ponytail@personal" "$LOG"
+
 before="$(wc -l <"$LOG")"
 CLAUDE_BIN="$TMP/claude" CODEX_BIN="$TMP/codex" \
   AGENT_PLUGIN_MARKETPLACE_ROOT="$ROOT" \
