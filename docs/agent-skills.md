@@ -145,6 +145,19 @@ bash scripts/setup/agent-plugins.sh --replace-upstream
 `--replace-upstream` はpersonal版を先に導入してから、upstream版のpluginとmarketplaceを外す。
 開発中の未push差分を試す場合だけ `AGENT_PLUGIN_MARKETPLACE_SOURCE=$PWD` を指定する。
 
+`agent-plugins.sh` は導入済みなら飛ばすため、`vendor.sh update` 後の再installには使えない。
+vendor差分をpushした後、次で更新し、新しいsessionで確認する。
+Codexでは `/hooks` で更新後のhookをtrustし直す。
+
+```fish
+claude plugin marketplace update personal
+claude plugin update ponytail@personal
+codex plugin marketplace upgrade personal
+codex plugin add ponytail@personal
+```
+
+Codexで古いhookやskillが残る場合は、`codex plugin remove ponytail@personal` してから `add` し直す。
+
 ## upstream が skill をやめることがある
 
 `herdr` skill で実際に起きた。
