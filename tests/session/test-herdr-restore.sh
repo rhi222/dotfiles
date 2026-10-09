@@ -145,6 +145,29 @@ assert_eq "完了" \
   "nvim 9/10 (1件は使用中でスキップ) / 所要 3分18秒" \
   "$(herdr_restore_toast_done_body 9 10 1 198)"
 
+echo "test: 復元しない agent tab の選択"
+setup
+cat >"$TEST_DIR/session.json" <<'JSON'
+{"version":1,"workspaces":[
+ {"custom_name":"W","tabs":[
+  {"custom_name":"a","panes":{"1":{"cwd":"/x","agent_session":{"agent":"claude","value":"s1"}},"2":{"cwd":"/y","agent_session":{"agent":"codex","value":"s2"}}}},
+  {"custom_name":"plain","panes":{"1":{"cwd":"/z"}}}]},
+ {"custom_name":"V","tabs":[
+  {"custom_name":"b","panes":{"1":{"cwd":"/w","agent_session":{"agent":"claude","value":"s3"}}}}]}]}
+JSON
+assert_eq "agent を持つ tab だけを列挙する" \
+  "$(printf '0:0\tW/a (2)\n1:0\tV/b (1)')" \
+  "$(herdr_restore_agent_tabs "$TEST_DIR/session.json")"
+dropped=$(herdr_restore_drop_agent_tabs "$TEST_DIR/session.json" 0:0)
+assert_eq "選んだ tab の agent_session だけを外す" "s3" \
+  "$(printf '%s' "$dropped" | jq -r '[.. | .agent_session? // empty | .value] | join(",")')"
+assert_eq "pane と cwd は残す" "/x,/y,/z,/w" \
+  "$(printf '%s' "$dropped" | jq -r '[.workspaces[].tabs[].panes[].cwd] | join(",")')"
+assert_eq "何も選ばなければ変えない" "s1,s2,s3" \
+  "$(herdr_restore_drop_agent_tabs "$TEST_DIR/session.json" |
+    jq -r '[.. | .agent_session? // empty | .value] | join(",")')"
+teardown
+
 echo ""
 echo "TOTAL=$TOTAL PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" -eq 0 ]]
